@@ -62,6 +62,7 @@ a {
 
 .logo img {
     height: 90px;
+    width: auto; 
 }
 
 .navegacao .nav-item {
@@ -166,7 +167,7 @@ main {
     width: 100%;
     height: 280px;
     position: relative;
-    background-color: #000; /* Fundo preto para o container */
+    background-color: #000;
 }
 
 .card-imagem {
@@ -180,11 +181,10 @@ main {
     transition: opacity 0.5s ease-in-out;
 }
 
-/* --- ESTILO ADICIONADO PARA O VÍDEO NO CARD --- */
 .card-video {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Faz o vídeo cobrir a área, cortando o excesso */
+    object-fit: cover;
 }
 
 
@@ -282,7 +282,7 @@ main {
     min-width: 250px;
 }
 
-.rodape-coluna h4 {
+.rodape-coluna h3 {
     font-family: var(--fonte-titulos);
     font-size: 24px;
     color: var(--cor-destaque);
@@ -637,7 +637,6 @@ main {
     cursor: crosshair;
 }
 
-/* --- ESTILO ADICIONADO PARA O VÍDEO NA PÁGINA DO PRODUTO --- */
 .video-principal {
     width: 100%;
     border-radius: 8px;
@@ -846,7 +845,7 @@ main {
         overflow-wrap: break-word;
     }
 
-    .rodape-coluna h4 { font-size: 19px; margin-bottom: 8px; }
+    .rodape-coluna h3 { font-size: 19px; margin-bottom: 8px; }
     .rodape-coluna p, .rodape-coluna a { font-size: 13px; margin-bottom: 6px; }
     .rodape-coluna .pagamento-item i { font-size: 18px; }
     .rodape-base { padding: 15px 0; margin-top: 15px; }

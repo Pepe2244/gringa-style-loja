@@ -1,4 +1,3 @@
-// server.js (VERSÃO FINAL COM CORREÇÃO DEFINITIVA NA TRANSFORMAÇÃO)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -23,7 +22,6 @@ const storage = new CloudinaryStorage({
         resource_type: 'auto',
         public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
     },
-    // A LÓGICA DE TRANSFORMAÇÃO FOI MOVIDA PARA FORA DO 'PARAMS'
     transformation: function (req, file) {
         if (file.mimetype.startsWith('video')) {
             return {
@@ -45,11 +43,26 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage: storage });
 
+const allowedOrigins = [
+    'https://gringa-style.netlify.app',
+    'https://68c4735049234f000822595d--gringa-style.netlify.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:5500'
+];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
-const netlifyURL = 'https://gringa-style.netlify.app';
-app.use(cors({
-    origin: [netlifyURL, 'http://localhost:3000', 'http://127.0.0.1:5500']
-}));
+
 app.use('/imagens', express.static(path.join(__dirname, 'imagens')));
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
 
@@ -177,5 +190,5 @@ app.post('/api/produtos/:id/estoque', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
