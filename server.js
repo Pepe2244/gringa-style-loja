@@ -35,7 +35,7 @@ app.use(express.json());
 
 // ATENÇÃO: Deixe esta variável como um placeholder por enquanto.
 // Vamos preenchê-la com a URL do seu site no Netlify mais tarde.
-const netlifyURL = 'URL_DO_SEU_SITE_NO_NETLIFY_VAI_AQUI';
+const netlifyURL = 'https://gringa-style.netlify.app';
 app.use(cors({
     origin: [netlifyURL, 'http://localhost:3000', 'http://127.0.0.1:5500'] // Permite acesso do seu futuro site, localmente e via Live Server
 }));
