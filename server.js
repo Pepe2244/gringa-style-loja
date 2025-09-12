@@ -1,4 +1,4 @@
-// server.js (VERSÃO FINAL COM TRATAMENTO DE ERRO ROBUSTO E CORREÇÃO NA TRANSFORMAÇÃO)
+// server.js (VERSÃO FINAL COM TRATAMENTO DE ERRO ROBUSTO E CORREÇÃO FINAL NA TRANSFORMAÇÃO)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +24,7 @@ const storage = new CloudinaryStorage({
         public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
         transformation: [
             {
-                if: "resource_type = 'video'",
+                if: "resource_type = video",
                 width: 800,
                 quality: "auto:good",
                 crop: "limit",
@@ -32,7 +32,7 @@ const storage = new CloudinaryStorage({
                 audio_codec: "none"
             },
             {
-                if: "resource_type = 'image'",
+                if: "resource_type = image",
                 width: 800,
                 quality: "auto",
                 fetch_format: "auto",
