@@ -233,13 +233,17 @@
                     <textarea id="produto-descricao" required></textarea>
                 </div>
                 <div class="form-campo">
-                    <label for="produto-imagens-upload">Novas Imagens (selecione uma ou várias)</label>
-                    <input type="file" id="produto-imagens-upload" multiple accept="image/*">
-                    <small>Ao editar, o envio de novas imagens substituirá TODAS as antigas. Se não selecionar nenhuma, as imagens atuais serão mantidas.</small>
+                    <label for="produto-media-upload">Novas Mídias (imagens ou vídeo)</label>
+                    <input type="file" id="produto-media-upload" multiple accept="image/*,video/*">
+                    <small>Ao editar, o envio de novas mídias substituirá TODAS as antigas.</small>
                 </div>
                 <div class="form-campo">
                     <label>Imagens Atuais</label>
                     <div id="imagens-atuais-preview"></div>
+                </div>
+                 <div class="form-campo">
+                    <label>Vídeo Atual</label>
+                    <div id="video-atual-preview"></div>
                 </div>
                 <div class="form-botoes">
                     <button type="button" id="btn-cancelar" class="btn-admin btn-excluir">Cancelar</button>

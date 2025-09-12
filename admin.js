@@ -1,6 +1,5 @@
-// admin.js (VERSÃO FINAL COM URL DO RENDER)
+// admin.js (VERSÃO FINAL COM CORREÇÃO DE UPLOAD)
 document.addEventListener('DOMContentLoaded', () => {
-    // ATUALIZADO COM A URL REAL DO SEU BACKEND!
     const API_URL = 'https://gringa-style-backend.onrender.com';
 
     const senhaCorreta = "gringa123";
@@ -61,6 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function abrirModal(produto = null) {
         formProduto.reset();
         document.getElementById('imagens-atuais-preview').innerHTML = '';
+        document.getElementById('video-atual-preview').innerHTML = '';
+
 
         if (produto) {
             modalTitulo.textContent = 'Editar Produto';
@@ -75,10 +76,18 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 document.getElementById('imagens-atuais-preview').textContent = 'Nenhuma imagem cadastrada.';
             }
+
+            if (produto.video) {
+                document.getElementById('video-atual-preview').innerHTML = `<video src="${produto.video}" width="150" controls style="border-radius: 4px;"></video>`;
+            } else {
+                document.getElementById('video-atual-preview').textContent = 'Nenhum vídeo cadastrado.';
+            }
+
         } else {
             modalTitulo.textContent = 'Adicionar Novo Produto';
             document.getElementById('produto-id').value = '';
             document.getElementById('imagens-atuais-preview').textContent = 'Nenhuma imagem cadastrada.';
+            document.getElementById('video-atual-preview').textContent = 'Nenhum vídeo cadastrado.';
         }
         modalContainer.classList.add('visivel');
     }
@@ -91,21 +100,35 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
 
         const id = document.getElementById('produto-id').value;
-        const inputImagens = document.getElementById('produto-imagens-upload');
-        let caminhosDasImagens = [];
+        const inputMedia = document.getElementById('produto-media-upload');
+        let newImages = [];
+        let newVideo = null;
 
-        if (inputImagens.files.length > 0) {
+        // 1. FAZ O UPLOAD DOS NOVOS ARQUIVOS (SE HOUVER)
+        if (inputMedia.files.length > 0) {
             const formData = new FormData();
-            for (const file of inputImagens.files) {
-                formData.append('imagens', file);
+            for (const file of inputMedia.files) {
+                // *** CORREÇÃO PRINCIPAL AQUI ***
+                // Enviando os arquivos no campo 'media' que o servidor espera
+                formData.append('media', file);
             }
             try {
                 const responseUpload = await fetch(`${API_URL}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
-                if (!responseUpload.ok) throw new Error('Falha no upload das imagens.');
-                caminhosDasImagens = await responseUpload.json();
+                if (!responseUpload.ok) throw new Error('Falha no upload dos arquivos.');
+
+                // Processa a resposta para separar imagens e vídeos
+                const uploadedFiles = await responseUpload.json();
+                uploadedFiles.forEach(file => {
+                    if (file.type === 'image') {
+                        newImages.push(file.url);
+                    } else if (file.type === 'video') {
+                        newVideo = file.url; // Pega o primeiro vídeo, assumindo um por produto
+                    }
+                });
+
             } catch (error) {
                 console.error('Erro no upload:', error);
                 alert('Não foi possível fazer o upload das imagens.');
@@ -113,24 +136,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 2. MONTA O OBJETO DO PRODUTO PARA SALVAR
         const produtoData = {
             nome: document.getElementById('produto-nome').value,
             preco: parseFloat(document.getElementById('produto-preco').value),
             descricao: document.getElementById('produto-descricao').value,
-            imagens: caminhosDasImagens,
+            // Inicializa com arrays vazios ou nulos
+            imagens: [],
+            video: null
         };
 
-        if (id && caminhosDasImagens.length === 0) {
-            const produtoExistente = todosOsProdutos.find(p => p.id == id);
-            produtoData.imagens = produtoExistente ? produtoExistente.imagens : [];
-        }
+        // 3. LÓGICA PARA MANTER OU SUBSTITUIR MÍDIAS
+        const produtoExistente = id ? todosOsProdutos.find(p => p.id == id) : null;
 
+        // Se enviou novas imagens, elas substituem as antigas. Senão, mantém as existentes.
+        produtoData.imagens = newImages.length > 0 ? newImages : (produtoExistente ? produtoExistente.imagens : []);
+
+        // Se enviou um novo vídeo, ele substitui o antigo. Senão, mantém o existente.
+        produtoData.video = newVideo ? newVideo : (produtoExistente ? produtoExistente.video : null);
+
+        // 4. ENVIA OS DADOS PARA O SERVIDOR (CRIAR OU ATUALIZAR)
         const url = id ? `${API_URL}/api/produtos/${id}` : `${API_URL}/api/produtos`;
         const method = id ? 'PUT' : 'POST';
 
-        let response;
         try {
-            response = await fetch(url, {
+            const response = await fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(produtoData)
