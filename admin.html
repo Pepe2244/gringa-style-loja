@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Controle de Estoque</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos específicos para a página de admin */
+        :root {
+            --cor-fundo: #1A1A1A;
+            --cor-fundo-secundaria: #404040;
+            --cor-texto: #F5F5F5;
+            --cor-destaque: #FFA500;
+        }
+        body {
+            background-color: var(--cor-fundo);
+        }
+        .admin-container {
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: auto;
+            background-color: #2c2c2c;
+            border-radius: 8px;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .admin-tabela {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            color: var(--cor-texto);
+        }
+        .admin-tabela th, .admin-tabela td {
+            border: 1px solid #555;
+            padding: 12px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .admin-tabela th {
+            background-color: var(--cor-fundo-secundaria);
+            font-family: 'Teko', sans-serif;
+            font-size: 20px;
+            color: var(--cor-destaque);
+        }
+        .acoes-btn { display: flex; gap: 10px; }
+        .btn-admin {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: filter 0.2s ease;
+        }
+        .btn-admin:hover { filter: brightness(1.15); }
+        .btn-editar { background-color: #ffc107; color: black; }
+        .btn-excluir { background-color: #dc3545; color: white; }
+        .btn-adicionar { background-color: #28a745; color: white; padding: 10px 15px; }
+
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #dc3545; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #28a745; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Estilos Refinados do Modal */
+        .modal-admin-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center; align-items: center; z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-admin-container.visivel {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-admin {
+            background-color: #2c2c2c;
+            padding: 30px 40px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-admin-container.visivel .modal-admin {
+            transform: scale(1);
+        }
+        .modal-fechar-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            background: none; border: none;
+            color: #aaa;
+            font-size: 30px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-fechar-btn:hover { color: var(--cor-destaque); }
+
+        .form-campo { margin-bottom: 20px; }
+        .form-campo label { display: block; color: #ccc; margin-bottom: 8px; font-weight: bold; }
+        .form-campo input, .form-campo textarea {
+            width: 100%; padding: 12px;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+            border: 2px solid #555;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-campo input:focus, .form-campo textarea:focus {
+            outline: none;
+            border-color: var(--cor-destaque);
+            box-shadow: 0 0 8px rgba(255, 165, 0, 0.4);
+        }
+        .form-campo textarea { min-height: 120px; resize: vertical; }
+        .form-campo small { color: #888; margin-top: 5px; display: block; }
+        #imagens-atuais-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        input[type="file"] { border: none; padding-left: 0; }
+        input[type="file"]::file-selector-button {
+            background-color: var(--cor-fundo-secundaria);
+            color: var(--cor-texto);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-right: 10px;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background-color: var(--cor-destaque);
+            color: var(--cor-fundo);
+        }
+
+        .form-botoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+
+        .modal-admin::-webkit-scrollbar { width: 10px; }
+        .modal-admin::-webkit-scrollbar-track { background: var(--cor-fundo); }
+        .modal-admin::-webkit-scrollbar-thumb { background-color: #555; border-radius: 10px; }
+        .modal-admin::-webkit-scrollbar-thumb:hover { background-color: var(--cor-destaque); }
+
+        @media (max-width: 768px) {
+            .admin-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            .admin-tabela thead { display: none; }
+            .admin-tabela tr {
+                display: block;
+                border: 1px solid #555;
+                border-radius: 5px;
+                margin-bottom: 15px;
+                background-color: var(--cor-fundo-secundaria);
+            }
+            .admin-tabela td {
+                display: block;
+                text-align: right;
+                position: relative;
+                padding-left: 50%;
+                border: none;
+                border-bottom: 1px solid #444;
+            }
+            .admin-tabela td:last-child { border-bottom: none; }
+            .admin-tabela td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 10px;
+                text-align: left;
+                font-weight: bold;
+                color: var(--cor-destaque);
+            }
+            .acoes-btn { justify-content: flex-end; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="titulo-secao" style="margin-bottom: 0;">Gerenciar Produtos</h1>
+            <button id="btn-adicionar-novo" class="btn-admin btn-adicionar">Adicionar Novo Produto</button>
+        </div>
+        <table class="admin-tabela">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Status</th>
+                    <th>Disponibilidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-estoque-corpo">
+                <tr><td colspan="4">Carregando produtos...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="modal-produto" class="modal-admin-container">
+        <div class="modal-admin">
+            <button id="modal-fechar" class="modal-fechar-btn">&times;</button>
+            <h2 id="modal-titulo-form" class="titulo-secao" style="text-align: left; margin-bottom: 25px;">Adicionar Produto</h2>
+            <form id="form-produto">
+                <input type="hidden" id="produto-id">
+                <div class="form-campo">
+                    <label for="produto-nome">Nome do Produto</label>
+                    <input type="text" id="produto-nome" required>
+                </div>
+                <div class="form-campo">
+                    <label for="produto-preco">Preço (Ex: 750.00)</label>
+                    <input type="number" step="0.01" id="produto-preco" required>
+                </div>
+                <div class="form-campo">
+                    <label for="produto-descricao">Descrição</label>
+                    <textarea id="produto-descricao" required></textarea>
+                </div>
+                <div class="form-campo">
+                    <label for="produto-imagens-upload">Novas Imagens (selecione uma ou várias)</label>
+                    <input type="file" id="produto-imagens-upload" multiple accept="image/*">
+                    <small>Ao editar, o envio de novas imagens substituirá TODAS as antigas. Se não selecionar nenhuma, as imagens atuais serão mantidas.</small>
+                </div>
+                <div class="form-campo">
+                    <label>Imagens Atuais</label>
+                    <div id="imagens-atuais-preview"></div>
+                </div>
+                <div class="form-botoes">
+                    <button type="button" id="btn-cancelar" class="btn-admin btn-excluir">Cancelar</button>
+                    <button type="submit" id="btn-salvar" class="btn-admin btn-adicionar">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js" defer></script>
+</body>
+</html>
