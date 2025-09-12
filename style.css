@@ -166,6 +166,7 @@ main {
     width: 100%;
     height: 280px;
     position: relative;
+    background-color: #000; /* Fundo preto para o container */
 }
 
 .card-imagem {
@@ -178,6 +179,14 @@ main {
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
 }
+
+/* --- ESTILO ADICIONADO PARA O VÍDEO NO CARD --- */
+.card-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Faz o vídeo cobrir a área, cortando o excesso */
+}
+
 
 .card-imagem.visivel {
     opacity: 1;
@@ -627,6 +636,13 @@ main {
     border-radius: 8px;
     cursor: crosshair;
 }
+
+/* --- ESTILO ADICIONADO PARA O VÍDEO NA PÁGINA DO PRODUTO --- */
+.video-principal {
+    width: 100%;
+    border-radius: 8px;
+}
+
 
 .produto-seta {
     position: absolute;
