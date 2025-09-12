@@ -1,4 +1,4 @@
-// server.js (VERSÃO FINAL COM VÍDEOS MUDOS E OTIMIZAÇÃO DE IMAGEM)
+// server.js (VERSÃO FINAL COM TRATAMENTO DE ERRO ROBUSTO)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -17,27 +17,21 @@ cloudinary.config({
     api_secret: 'PSqjve6rLVaEIAMlmOau9Ak5UQY'
 });
 
-// Configura o multer para usar o Cloudinary com transformações otimizadas
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'gringa-style-produtos',
-        resource_type: 'auto', // Detecta automaticamente se é imagem ou vídeo
+        resource_type: 'auto',
         public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
-
-        // *** A MÁGICA DA OTIMIZAÇÃO ACONTECE AQUI ***
         transformation: [
-            // 1. Otimização para vídeos
             {
                 if: "resource_type:video",
                 width: 800,
                 quality: "auto:good",
                 crop: "limit",
                 fetch_format: "auto",
-                // *** ALTERAÇÃO PRINCIPAL AQUI: Remove o áudio do vídeo ***
                 audio_codec: "none"
             },
-            // 2. Otimização para imagens
             {
                 if: "resource_type:image",
                 width: 800,
@@ -50,22 +44,17 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage: storage });
 
-
 // --- MIDDLEWARES ---
 app.use(express.json());
-
 const netlifyURL = 'https://gringa-style.netlify.app';
 app.use(cors({
     origin: [netlifyURL, 'http://localhost:3000', 'http://127.0.0.1:5500']
 }));
-
 app.use('/imagens', express.static(path.join(__dirname, 'imagens')));
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
 
-
 const produtosFilePath = path.join(__dirname, 'produtos.json');
 
-// --- FUNÇÕES DE LEITURA/ESCRITA DO JSON ---
 const lerProdutos = () => {
     try {
         const data = fs.readFileSync(produtosFilePath, 'utf8');
@@ -81,21 +70,40 @@ const escreverProdutos = (produtos) => {
         fs.writeFileSync(produtosFilePath, JSON.stringify(produtos, null, 4), 'utf8');
     } catch (error) {
         console.error("ERRO AO ESCREVER NO ARQUIVO produtos.json:", error);
-        throw new Error("Não foi possível salvar na base de dados. Verifique as permissões do arquivo.");
+        throw new Error("Não foi possível salvar na base de dados.");
     }
 };
 
 // --- ROTAS DA API ---
 
-app.post('/api/upload', upload.array('media', 10), (req, res) => {
-    if (!req.files || req.files.length === 0) {
-        return res.status(400).send('Nenhum arquivo foi enviado.');
-    }
-    const filesInfo = req.files.map(file => ({
-        url: file.path,
-        type: file.mimetype.split('/')[0]
-    }));
-    res.status(200).json(filesInfo);
+// *** MUDANÇA PRINCIPAL AQUI: ROTA DE UPLOAD COM ERROR HANDLING DETALHADO ***
+app.post('/api/upload', (req, res) => {
+    const uploader = upload.array('media', 10);
+
+    uploader(req, res, function (err) {
+        if (err) {
+            // Se o 'err' for um erro do multer ou do cloudinary, ele será capturado aqui
+            console.error("Erro no upload para o Cloudinary:", err.message);
+            // Retorna uma resposta de erro estruturada em JSON
+            return res.status(500).json({
+                success: false,
+                message: 'Falha no upload para o Cloudinary.',
+                error: err.message
+            });
+        }
+
+        // Se o upload foi bem-sucedido, processa a resposta
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: 'Nenhum arquivo foi enviado.' });
+        }
+
+        const filesInfo = req.files.map(file => ({
+            url: file.path,
+            type: file.mimetype.split('/')[0]
+        }));
+
+        res.status(200).json(filesInfo);
+    });
 });
 
 
@@ -174,7 +182,6 @@ app.post('/api/produtos/:id/estoque', (req, res) => {
         res.status(500).send(error.message);
     }
 });
-
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);

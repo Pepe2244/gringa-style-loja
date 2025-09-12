@@ -1,4 +1,4 @@
-// admin.js (VERSÃO FINAL COM CORREÇÃO DE UPLOAD)
+// admin.js (VERSÃO FINAL COM CORREÇÃO DE UPLOAD E ERRO DETALHADO)
 document.addEventListener('DOMContentLoaded', () => {
     const API_URL = 'https://gringa-style-backend.onrender.com';
 
@@ -62,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('imagens-atuais-preview').innerHTML = '';
         document.getElementById('video-atual-preview').innerHTML = '';
 
-
         if (produto) {
             modalTitulo.textContent = 'Editar Produto';
             document.getElementById('produto-id').value = produto.id;
@@ -108,8 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputMedia.files.length > 0) {
             const formData = new FormData();
             for (const file of inputMedia.files) {
-                // *** CORREÇÃO PRINCIPAL AQUI ***
-                // Enviando os arquivos no campo 'media' que o servidor espera
                 formData.append('media', file);
             }
             try {
@@ -117,21 +114,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     body: formData
                 });
-                if (!responseUpload.ok) throw new Error('Falha no upload dos arquivos.');
+
+                // Tenta ler a resposta como JSON, mesmo se for um erro
+                const responseData = await responseUpload.json();
+
+                if (!responseUpload.ok) {
+                    // Se a resposta não foi OK, lança um erro com a mensagem do servidor
+                    throw new Error(responseData.error || 'Falha no upload dos arquivos.');
+                }
 
                 // Processa a resposta para separar imagens e vídeos
-                const uploadedFiles = await responseUpload.json();
-                uploadedFiles.forEach(file => {
+                responseData.forEach(file => {
                     if (file.type === 'image') {
                         newImages.push(file.url);
                     } else if (file.type === 'video') {
-                        newVideo = file.url; // Pega o primeiro vídeo, assumindo um por produto
+                        newVideo = file.url;
                     }
                 });
 
             } catch (error) {
+                // *** MUDANÇA PRINCIPAL AQUI: EXIBE O ERRO DETALHADO ***
                 console.error('Erro no upload:', error);
-                alert('Não foi possível fazer o upload das imagens.');
+                alert(`Não foi possível fazer o upload.\n\nDetalhes do erro: ${error.message}`);
                 return;
             }
         }
@@ -141,18 +145,13 @@ document.addEventListener('DOMContentLoaded', () => {
             nome: document.getElementById('produto-nome').value,
             preco: parseFloat(document.getElementById('produto-preco').value),
             descricao: document.getElementById('produto-descricao').value,
-            // Inicializa com arrays vazios ou nulos
             imagens: [],
             video: null
         };
 
         // 3. LÓGICA PARA MANTER OU SUBSTITUIR MÍDIAS
         const produtoExistente = id ? todosOsProdutos.find(p => p.id == id) : null;
-
-        // Se enviou novas imagens, elas substituem as antigas. Senão, mantém as existentes.
         produtoData.imagens = newImages.length > 0 ? newImages : (produtoExistente ? produtoExistente.imagens : []);
-
-        // Se enviou um novo vídeo, ele substitui o antigo. Senão, mantém o existente.
         produtoData.video = newVideo ? newVideo : (produtoExistente ? produtoExistente.video : null);
 
         // 4. ENVIA OS DADOS PARA O SERVIDOR (CRIAR OU ATUALIZAR)
