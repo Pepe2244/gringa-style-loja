@@ -1,4 +1,4 @@
-// admin.js (VERSÃO FINAL COM CORREÇÃO DE UPLOAD E ERRO DETALHADO)
+// admin.js (VERSÃO FINAL COM DIAGNÓSTICO DE ERRO AVANÇADO)
 document.addEventListener('DOMContentLoaded', () => {
     const API_URL = 'https://gringa-style-backend.onrender.com';
 
@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let newImages = [];
         let newVideo = null;
 
-        // 1. FAZ O UPLOAD DOS NOVOS ARQUIVOS (SE HOUVER)
         if (inputMedia.files.length > 0) {
             const formData = new FormData();
             for (const file of inputMedia.files) {
@@ -115,16 +114,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: formData
                 });
 
-                // Tenta ler a resposta como JSON, mesmo se for um erro
-                const responseData = await responseUpload.json();
-
+                // *** MUDANÇA PRINCIPAL AQUI: LÓGICA DE CAPTURA DE ERRO MELHORADA ***
                 if (!responseUpload.ok) {
-                    // Se a resposta não foi OK, lança um erro com a mensagem do servidor
-                    throw new Error(responseData.error || 'Falha no upload dos arquivos.');
+                    let errorMessage = `Falha no upload com status: ${responseUpload.status}`;
+                    try {
+                        // Tenta primeiro ler a resposta como JSON (o formato esperado)
+                        const errorData = await responseUpload.json();
+                        errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+                    } catch (e) {
+                        // Se não for JSON, lê como texto. Isso captura qualquer erro inesperado.
+                        errorMessage = await responseUpload.text();
+                    }
+                    throw new Error(errorMessage);
                 }
 
-                // Processa a resposta para separar imagens e vídeos
-                responseData.forEach(file => {
+                const uploadedFiles = await responseUpload.json();
+
+                uploadedFiles.forEach(file => {
                     if (file.type === 'image') {
                         newImages.push(file.url);
                     } else if (file.type === 'video') {
@@ -133,14 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
             } catch (error) {
-                // *** MUDANÇA PRINCIPAL AQUI: EXIBE O ERRO DETALHADO ***
-                console.error('Erro no upload:', error);
-                alert(`Não foi possível fazer o upload.\n\nDetalhes do erro: ${error.message}`);
+                console.error('Erro detalhado no upload:', error);
+                alert(`Não foi possível fazer o upload.\n\nMotivo: ${error.message}`);
                 return;
             }
         }
 
-        // 2. MONTA O OBJETO DO PRODUTO PARA SALVAR
         const produtoData = {
             nome: document.getElementById('produto-nome').value,
             preco: parseFloat(document.getElementById('produto-preco').value),
@@ -149,12 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
             video: null
         };
 
-        // 3. LÓGICA PARA MANTER OU SUBSTITUIR MÍDIAS
         const produtoExistente = id ? todosOsProdutos.find(p => p.id == id) : null;
         produtoData.imagens = newImages.length > 0 ? newImages : (produtoExistente ? produtoExistente.imagens : []);
         produtoData.video = newVideo ? newVideo : (produtoExistente ? produtoExistente.video : null);
 
-        // 4. ENVIA OS DADOS PARA O SERVIDOR (CRIAR OU ATUALIZAR)
         const url = id ? `${API_URL}/api/produtos/${id}` : `${API_URL}/api/produtos`;
         const method = id ? 'PUT' : 'POST';
 
