@@ -1,6 +1,5 @@
-// script.js (VERSÃO FINAL COM URL DO RENDER)
+// script.js (VERSÃO FINAL COM SUPORTE A VÍDEO)
 
-// ATUALIZADO COM A URL REAL DO SEU BACKEND!
 const API_URL = 'https://gringa-style-backend.onrender.com';
 
 // --- LÓGICA DO MENU HAMBÚRGUER ---
@@ -57,9 +56,22 @@ async function carregarProdutos() {
 function renderizarVitrine() {
     vitrineProdutos.innerHTML = '';
     todosOsProdutos.forEach(produto => {
-        const imagensHTML = produto.imagens.map((imagem, index) =>
-            `<img src="${imagem}" alt="${produto.nome}" class="card-imagem ${index === 0 ? 'visivel' : ''}">`
-        ).join('');
+        let mediaHTML = '';
+        // SE TIVER VÍDEO, MOSTRA O VÍDEO
+        if (produto.video) {
+            mediaHTML = `<video src="${produto.video}" class="card-video" loop muted autoplay playsinline></video>`;
+        }
+        // SENÃO, MOSTRA O CARROSSEL DE IMAGENS
+        else if (produto.imagens && produto.imagens.length > 0) {
+            mediaHTML = produto.imagens.map((imagem, index) =>
+                `<img src="${imagem}" alt="${produto.nome}" class="card-imagem ${index === 0 ? 'visivel' : ''}">`
+            ).join('');
+        }
+        // SENÃO, IMAGEM PADRÃO
+        else {
+            mediaHTML = `<img src="imagens/placeholder.png" alt="${produto.nome}" class="card-imagem visivel">`;
+        }
+
 
         const statusEstoqueHTML = produto.emEstoque
             ? '<span class="status-estoque em-estoque">Em Estoque</span>'
@@ -72,7 +84,7 @@ function renderizarVitrine() {
             <div class="produto-card" data-produto-id="${produto.id}">
                 ${statusEstoqueHTML}
                 <div class="card-imagem-container">
-                    ${imagensHTML}
+                    ${mediaHTML}
                 </div>
                 <div class="produto-info">
                     <h3>${produto.nome}</h3>
@@ -89,11 +101,14 @@ function renderizarVitrine() {
     iniciarCarrosseis();
 }
 
+
 function iniciarCarrosseis() {
     const cards = document.querySelectorAll('.produto-card');
     cards.forEach(card => {
+        // Só inicia o carrossel se houver imagens e não houver vídeo
         const imagens = card.querySelectorAll('.card-imagem');
-        if (imagens.length <= 1) return;
+        const video = card.querySelector('.card-video');
+        if (video || imagens.length <= 1) return;
 
         let indiceAtual = 0;
         let intervalId = setInterval(() => {
@@ -365,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 clickCount = 0;
             }, 2000);
 
-            if (clickCount === 5) {
+            if (clickCount === 2) {
                 window.location.href = 'admin.html';
             }
         });

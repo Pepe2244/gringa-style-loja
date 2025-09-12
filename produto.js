@@ -1,6 +1,5 @@
-// produto.js (VERSÃO FINAL COM URL DO RENDER)
+// produto.js (VERSÃO FINAL COM SUPORTE A VÍDEO)
 
-// ATUALIZADO COM A URL REAL DO SEU BACKEND!
 const API_URL = 'https://gringa-style-backend.onrender.com';
 
 // --- LÓGICA DO MENU HAMBÚRGUER ---
@@ -66,7 +65,7 @@ function adicionarAoCarrinho(produtoId, varianteSelecionada = null) {
     }, 300);
 }
 
-// --- FUNÇÕES DA GALERIA DE IMAGENS E ZOOM ---
+// --- FUNÇÕES DA GALERIA DE IMAGENS ---
 function mudarImagemGaleria(passo) {
     const totalImagens = galeriaAtual.imagens.length;
     if (totalImagens <= 1) return;
@@ -74,13 +73,9 @@ function mudarImagemGaleria(passo) {
     galeriaAtual.indice = (galeriaAtual.indice + passo + totalImagens) % totalImagens;
 
     const imagemPrincipalEl = document.getElementById('produto-imagem-principal');
-    const zoomResultEl = document.getElementById('img-zoom-result');
     const novaImagemSrc = galeriaAtual.imagens[galeriaAtual.indice];
 
     imagemPrincipalEl.src = novaImagemSrc;
-    if (zoomResultEl) {
-        zoomResultEl.style.backgroundImage = `url('${novaImagemSrc}')`;
-    }
 
     document.querySelectorAll('.miniatura-img').forEach((miniatura, index) => {
         miniatura.classList.toggle('ativa', index === galeriaAtual.indice);
@@ -90,33 +85,6 @@ function mudarImagemGaleria(passo) {
 function selecionarMiniatura(index) {
     galeriaAtual.indice = index;
     mudarImagemGaleria(0);
-}
-
-function iniciarZoom(img, result) {
-    if (!result) return;
-    result.style.display = 'none';
-
-    const container = img.parentElement;
-    container.addEventListener('mousemove', moverLupa);
-    container.addEventListener('mouseenter', () => result.style.display = 'block');
-    container.addEventListener('mouseleave', () => result.style.display = 'none');
-
-    function moverLupa(e) {
-        e.preventDefault();
-        const pos = getCursorPos(e);
-        const resultWidth = result.offsetWidth;
-        const resultHeight = result.offsetHeight;
-
-        result.style.backgroundSize = (img.width * 2) + "px " + (img.height * 2) + "px";
-        result.style.backgroundPosition = "-" + (pos.x * 2 - resultWidth / 2) + "px -" + (pos.y * 2 - resultHeight / 2) + "px";
-    }
-
-    function getCursorPos(e) {
-        const a = img.getBoundingClientRect();
-        let x = e.pageX - a.left - window.pageXOffset;
-        let y = e.pageY - a.top - window.pageYOffset;
-        return { x: x, y: y };
-    }
 }
 
 // --- LÓGICA PRINCIPAL DA PÁGINA DE PRODUTO ---
@@ -144,7 +112,7 @@ async function carregarPaginaProduto() {
 function renderizarDetalhes(produto) {
     document.title = `${produto.nome} - Gringa Style`;
 
-    galeriaAtual.imagens = produto.variantes ? produto.variantes.opcoes.map(v => v.imagem) : produto.imagens;
+    galeriaAtual.imagens = produto.variantes ? produto.variantes.opcoes.map(v => v.imagem) : (produto.imagens || []);
     galeriaAtual.indice = 0;
 
     let variantesHTML = '';
@@ -159,6 +127,22 @@ function renderizarDetalhes(produto) {
         `;
     }
 
+    let mediaPrincipalHTML = '';
+    // LÓGICA DE EXIBIÇÃO: VÍDEO TEM PRIORIDADE
+    if (produto.video) {
+        mediaPrincipalHTML = `<video src="${produto.video}" controls class="video-principal"></video>`;
+    } else if (galeriaAtual.imagens.length > 0) {
+        mediaPrincipalHTML = `
+            <div class="container-imagem-zoom">
+                <img id="produto-imagem-principal" src="${galeriaAtual.imagens[0]}" alt="${produto.nome}">
+                <button id="produto-seta-esq" class="produto-seta">&lt;</button>
+                <button id="produto-seta-dir" class="produto-seta">&gt;</button>
+            </div>`;
+    } else {
+        mediaPrincipalHTML = `<img id="produto-imagem-principal" src="imagens/placeholder.png" alt="${produto.nome}">`;
+    }
+
+
     const miniaturasHTML = galeriaAtual.imagens.map((imgSrc, index) => `
         <img src="${imgSrc}" alt="Miniatura ${index + 1}" class="miniatura-img ${index === 0 ? 'ativa' : ''}" data-index="${index}">
     `).join('');
@@ -171,12 +155,7 @@ function renderizarDetalhes(produto) {
 
     const produtoHTML = `
         <div class="produto-detalhe-coluna-img">
-            <div class="container-imagem-zoom">
-                <img id="produto-imagem-principal" src="${galeriaAtual.imagens.length > 0 ? galeriaAtual.imagens[0] : 'imagens/placeholder.png'}" alt="${produto.nome}">
-                <div id="img-zoom-result"></div>
-                <button id="produto-seta-esq" class="produto-seta">&lt;</button>
-                <button id="produto-seta-dir" class="produto-seta">&gt;</button>
-            </div>
+            ${mediaPrincipalHTML}
             <div class="produto-miniaturas">
                 ${miniaturasHTML}
             </div>
@@ -196,27 +175,22 @@ function renderizarDetalhes(produto) {
     detalheProdutoContainer.innerHTML = produtoHTML;
 
     adicionarEventListenersProduto();
-
-    const imgPrincipal = document.getElementById('produto-imagem-principal');
-    const zoomResult = document.getElementById('img-zoom-result');
-    imgPrincipal.onload = () => {
-        if (zoomResult) {
-            zoomResult.style.backgroundImage = `url('${imgPrincipal.src}')`;
-            iniciarZoom(imgPrincipal, zoomResult);
-        }
-    };
-    if (imgPrincipal.complete) {
-        imgPrincipal.onload();
-    }
 }
+
 
 function adicionarEventListenersProduto() {
     const urlParams = new URLSearchParams(window.location.search);
     const produtoId = parseInt(urlParams.get('id'));
     const produto = todosOsProdutos.find(p => p.id === produtoId);
 
-    document.getElementById('produto-seta-esq').addEventListener('click', () => mudarImagemGaleria(-1));
-    document.getElementById('produto-seta-dir').addEventListener('click', () => mudarImagemGaleria(1));
+    // Adiciona listeners para setas apenas se houver imagens
+    const setaEsq = document.getElementById('produto-seta-esq');
+    const setaDir = document.getElementById('produto-seta-dir');
+    if (setaEsq && setaDir) {
+        setaEsq.addEventListener('click', () => mudarImagemGaleria(-1));
+        setaDir.addEventListener('click', () => mudarImagemGaleria(1));
+    }
+
 
     document.querySelectorAll('.miniatura-img').forEach(miniatura => {
         miniatura.addEventListener('click', (e) => {
@@ -363,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 clickCount = 0;
             }, 2000);
 
-            if (clickCount === 5) {
+            if (clickCount === 2) {
                 window.location.href = 'admin.html';
             }
         });

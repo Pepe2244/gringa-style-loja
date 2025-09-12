@@ -1,30 +1,30 @@
-// server.js (VERSÃO FINAL PARA HOSPEDAGEM)
+// server.js (VERSÃO FINAL COM SUPORTE A VÍDEO)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors'); // Importamos o cors
+const cors = require('cors');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // O Render vai nos dar a porta, ou usamos a 3000 localmente
+const PORT = process.env.PORT || 3000;
 
 // --- CONFIGURAÇÃO DO CLOUDINARY ---
-// Coloque aqui as credenciais que você pegou no painel do Cloudinary.
 cloudinary.config({
     cloud_name: 'dvkyqex1r',
     api_key: '739538816326296',
     api_secret: 'PSqjve6rLVaEIAMlmOau9Ak5UQY'
 });
 
-// Configura o multer para usar o Cloudinary como nosso "disco rígido" na nuvem
+// Configura o multer para usar o Cloudinary
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'gringa-style-produtos', // Nome da pasta que será criada no Cloudinary
-        format: async (req, file) => 'jpg', // Formato padrão das imagens
-        public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0], // Cria um nome de arquivo único
+        folder: 'gringa-style-produtos',
+        // A MUDANÇA ESTÁ AQUI! 'auto' permite que o Cloudinary detecte se é imagem ou vídeo
+        resource_type: 'auto',
+        public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
     },
 });
 const upload = multer({ storage: storage });
@@ -33,15 +33,15 @@ const upload = multer({ storage: storage });
 // --- MIDDLEWARES ---
 app.use(express.json());
 
-// ATENÇÃO: Deixe esta variável como um placeholder por enquanto.
-// Vamos preenchê-la com a URL do seu site no Netlify mais tarde.
 const netlifyURL = 'https://gringa-style.netlify.app';
 app.use(cors({
-    origin: [netlifyURL, 'http://localhost:3000', 'http://127.0.0.1:5500'] // Permite acesso do seu futuro site, localmente e via Live Server
+    origin: [netlifyURL, 'http://localhost:3000', 'http://127.0.0.1:5500']
 }));
 
-// Serve os arquivos estáticos (imagens que já estavam na pasta /imagens)
 app.use('/imagens', express.static(path.join(__dirname, 'imagens')));
+// Adicionamos uma rota para servir vídeos também, caso você os coloque localmente
+app.use('/videos', express.static(path.join(__dirname, 'videos')));
+
 
 const produtosFilePath = path.join(__dirname, 'produtos.json');
 
@@ -66,15 +66,19 @@ const escreverProdutos = (produtos) => {
 
 // --- ROTAS DA API ---
 
-// ROTA DE UPLOAD AGORA ENVIA PARA O CLOUDINARY
-app.post('/api/upload', upload.array('imagens', 10), (req, res) => {
+// ROTA DE UPLOAD AGORA ENVIA PARA O CLOUDINARY (aceita imagens e vídeos)
+// O campo no form-data deve ser 'media'
+app.post('/api/upload', upload.array('media', 10), (req, res) => {
     if (!req.files || req.files.length === 0) {
         return res.status(400).send('Nenhum arquivo foi enviado.');
     }
-    // Retorna as URLs seguras das imagens no Cloudinary
-    const filePaths = req.files.map(file => file.path);
-    res.status(200).json(filePaths);
+    const filesInfo = req.files.map(file => ({
+        url: file.path,
+        type: file.mimetype.split('/')[0] // 'image' ou 'video'
+    }));
+    res.status(200).json(filesInfo);
 });
+
 
 // ROTA GET: Fornece a lista completa de produtos
 app.get('/api/produtos', (req, res) => {

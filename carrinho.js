@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 clickCount = 0;
             }, 2000);
 
-            if (clickCount === 5) {
+            if (clickCount === 2) {
                 window.location.href = 'admin.html';
             }
         });
