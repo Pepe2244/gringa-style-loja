@@ -1,4 +1,4 @@
-// server.js (VERSÃO FINAL COM TRATAMENTO DE ERRO ROBUSTO)
+// server.js (VERSÃO FINAL COM TRATAMENTO DE ERRO ROBUSTO E CORREÇÃO NA TRANSFORMAÇÃO)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -10,7 +10,6 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- CONFIGURAÇÃO DO CLOUDINARY ---
 cloudinary.config({
     cloud_name: 'dvkyqex1r',
     api_key: '739538816326296',
@@ -25,7 +24,7 @@ const storage = new CloudinaryStorage({
         public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
         transformation: [
             {
-                if: "resource_type:video",
+                if: "resource_type = 'video'",
                 width: 800,
                 quality: "auto:good",
                 crop: "limit",
@@ -33,7 +32,7 @@ const storage = new CloudinaryStorage({
                 audio_codec: "none"
             },
             {
-                if: "resource_type:image",
+                if: "resource_type = 'image'",
                 width: 800,
                 quality: "auto",
                 fetch_format: "auto",
@@ -44,7 +43,6 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- MIDDLEWARES ---
 app.use(express.json());
 const netlifyURL = 'https://gringa-style.netlify.app';
 app.use(cors({
@@ -74,17 +72,12 @@ const escreverProdutos = (produtos) => {
     }
 };
 
-// --- ROTAS DA API ---
-
-// *** MUDANÇA PRINCIPAL AQUI: ROTA DE UPLOAD COM ERROR HANDLING DETALHADO ***
 app.post('/api/upload', (req, res) => {
     const uploader = upload.array('media', 10);
 
     uploader(req, res, function (err) {
         if (err) {
-            // Se o 'err' for um erro do multer ou do cloudinary, ele será capturado aqui
             console.error("Erro no upload para o Cloudinary:", err.message);
-            // Retorna uma resposta de erro estruturada em JSON
             return res.status(500).json({
                 success: false,
                 message: 'Falha no upload para o Cloudinary.',
@@ -92,7 +85,6 @@ app.post('/api/upload', (req, res) => {
             });
         }
 
-        // Se o upload foi bem-sucedido, processa a resposta
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ success: false, message: 'Nenhum arquivo foi enviado.' });
         }
@@ -105,7 +97,6 @@ app.post('/api/upload', (req, res) => {
         res.status(200).json(filesInfo);
     });
 });
-
 
 app.get('/api/produtos', (req, res) => {
     try {
