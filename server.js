@@ -1,4 +1,4 @@
-// server.js (VERSÃO FINAL COM OTIMIZAÇÃO DE VÍDEO)
+// server.js (VERSÃO FINAL COM VÍDEOS MUDOS E OTIMIZAÇÃO DE IMAGEM)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -17,24 +17,33 @@ cloudinary.config({
     api_secret: 'PSqjve6rLVaEIAMlmOau9Ak5UQY'
 });
 
-// Configura o multer para usar o Cloudinary
+// Configura o multer para usar o Cloudinary com transformações otimizadas
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'gringa-style-produtos',
-        resource_type: 'auto',
+        resource_type: 'auto', // Detecta automaticamente se é imagem ou vídeo
         public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
 
-        // *** MÁGICA DA OTIMIZAÇÃO ACONTECE AQUI ***
-        // Estas são as instruções para o Cloudinary
+        // *** A MÁGICA DA OTIMIZAÇÃO ACONTECE AQUI ***
         transformation: [
-            // Se o arquivo for um vídeo (if: "resource_type:video")...
+            // 1. Otimização para vídeos
             {
                 if: "resource_type:video",
-                // ...aplique estas transformações:
-                width: 600, // Largura máxima de 600px
-                quality: "auto:good", // Qualidade boa, com boa compressão
-                crop: "limit" // Redimensiona sem cortar o vídeo
+                width: 800,
+                quality: "auto:good",
+                crop: "limit",
+                fetch_format: "auto",
+                // *** ALTERAÇÃO PRINCIPAL AQUI: Remove o áudio do vídeo ***
+                audio_codec: "none"
+            },
+            // 2. Otimização para imagens
+            {
+                if: "resource_type:image",
+                width: 800,
+                quality: "auto",
+                fetch_format: "auto",
+                crop: "limit"
             }
         ]
     },
@@ -56,6 +65,7 @@ app.use('/videos', express.static(path.join(__dirname, 'videos')));
 
 const produtosFilePath = path.join(__dirname, 'produtos.json');
 
+// --- FUNÇÕES DE LEITURA/ESCRITA DO JSON ---
 const lerProdutos = () => {
     try {
         const data = fs.readFileSync(produtosFilePath, 'utf8');
