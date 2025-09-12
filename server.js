@@ -1,4 +1,4 @@
-// server.js (VERSÃO FINAL COM SUPORTE A VÍDEO)
+// server.js (VERSÃO FINAL COM OTIMIZAÇÃO DE VÍDEO)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -22,9 +22,21 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'gringa-style-produtos',
-        // A MUDANÇA ESTÁ AQUI! 'auto' permite que o Cloudinary detecte se é imagem ou vídeo
         resource_type: 'auto',
         public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
+
+        // *** MÁGICA DA OTIMIZAÇÃO ACONTECE AQUI ***
+        // Estas são as instruções para o Cloudinary
+        transformation: [
+            // Se o arquivo for um vídeo (if: "resource_type:video")...
+            {
+                if: "resource_type:video",
+                // ...aplique estas transformações:
+                width: 600, // Largura máxima de 600px
+                quality: "auto:good", // Qualidade boa, com boa compressão
+                crop: "limit" // Redimensiona sem cortar o vídeo
+            }
+        ]
     },
 });
 const upload = multer({ storage: storage });
@@ -39,7 +51,6 @@ app.use(cors({
 }));
 
 app.use('/imagens', express.static(path.join(__dirname, 'imagens')));
-// Adicionamos uma rota para servir vídeos também, caso você os coloque localmente
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
 
 
@@ -66,21 +77,18 @@ const escreverProdutos = (produtos) => {
 
 // --- ROTAS DA API ---
 
-// ROTA DE UPLOAD AGORA ENVIA PARA O CLOUDINARY (aceita imagens e vídeos)
-// O campo no form-data deve ser 'media'
 app.post('/api/upload', upload.array('media', 10), (req, res) => {
     if (!req.files || req.files.length === 0) {
         return res.status(400).send('Nenhum arquivo foi enviado.');
     }
     const filesInfo = req.files.map(file => ({
         url: file.path,
-        type: file.mimetype.split('/')[0] // 'image' ou 'video'
+        type: file.mimetype.split('/')[0]
     }));
     res.status(200).json(filesInfo);
 });
 
 
-// ROTA GET: Fornece a lista completa de produtos
 app.get('/api/produtos', (req, res) => {
     try {
         const produtos = lerProdutos();
@@ -90,7 +98,6 @@ app.get('/api/produtos', (req, res) => {
     }
 });
 
-// ROTA POST: Adiciona um novo produto
 app.post('/api/produtos', (req, res) => {
     try {
         const produtos = lerProdutos();
@@ -106,7 +113,6 @@ app.post('/api/produtos', (req, res) => {
     }
 });
 
-// ROTA PUT: Edita um produto existente
 app.put('/api/produtos/:id', (req, res) => {
     try {
         const produtoId = parseInt(req.params.id);
@@ -125,7 +131,6 @@ app.put('/api/produtos/:id', (req, res) => {
     }
 });
 
-// ROTA DELETE: Remove um produto
 app.delete('/api/produtos/:id', (req, res) => {
     try {
         const produtoId = parseInt(req.params.id);
@@ -142,7 +147,6 @@ app.delete('/api/produtos/:id', (req, res) => {
     }
 });
 
-// ROTA POST: Atualiza o status de estoque
 app.post('/api/produtos/:id/estoque', (req, res) => {
     try {
         const produtoId = parseInt(req.params.id);

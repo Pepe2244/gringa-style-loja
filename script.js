@@ -1,4 +1,4 @@
-// script.js (VERSÃO FINAL COM SUPORTE A VÍDEO)
+// script.js (VERSÃO FINAL COM OTIMIZAÇÃO DE VÍDEO)
 
 const API_URL = 'https://gringa-style-backend.onrender.com';
 
@@ -57,21 +57,18 @@ function renderizarVitrine() {
     vitrineProdutos.innerHTML = '';
     todosOsProdutos.forEach(produto => {
         let mediaHTML = '';
-        // SE TIVER VÍDEO, MOSTRA O VÍDEO
         if (produto.video) {
-            mediaHTML = `<video src="${produto.video}" class="card-video" loop muted autoplay playsinline></video>`;
+            // *** AJUSTE AQUI *** Adicionamos preload="metadata"
+            mediaHTML = `<video src="${produto.video}" class="card-video" loop muted autoplay playsinline preload="metadata"></video>`;
         }
-        // SENÃO, MOSTRA O CARROSSEL DE IMAGENS
         else if (produto.imagens && produto.imagens.length > 0) {
             mediaHTML = produto.imagens.map((imagem, index) =>
                 `<img src="${imagem}" alt="${produto.nome}" class="card-imagem ${index === 0 ? 'visivel' : ''}">`
             ).join('');
         }
-        // SENÃO, IMAGEM PADRÃO
         else {
             mediaHTML = `<img src="imagens/placeholder.png" alt="${produto.nome}" class="card-imagem visivel">`;
         }
-
 
         const statusEstoqueHTML = produto.emEstoque
             ? '<span class="status-estoque em-estoque">Em Estoque</span>'
@@ -105,7 +102,6 @@ function renderizarVitrine() {
 function iniciarCarrosseis() {
     const cards = document.querySelectorAll('.produto-card');
     cards.forEach(card => {
-        // Só inicia o carrossel se houver imagens e não houver vídeo
         const imagens = card.querySelectorAll('.card-imagem');
         const video = card.querySelector('.card-video');
         if (video || imagens.length <= 1) return;

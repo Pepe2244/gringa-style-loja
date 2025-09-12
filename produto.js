@@ -1,4 +1,4 @@
-// produto.js (VERSÃO FINAL COM SUPORTE A VÍDEO)
+// produto.js (VERSÃO FINAL COM OTIMIZAÇÃO DE VÍDEO)
 
 const API_URL = 'https://gringa-style-backend.onrender.com';
 
@@ -128,9 +128,9 @@ function renderizarDetalhes(produto) {
     }
 
     let mediaPrincipalHTML = '';
-    // LÓGICA DE EXIBIÇÃO: VÍDEO TEM PRIORIDADE
     if (produto.video) {
-        mediaPrincipalHTML = `<video src="${produto.video}" controls class="video-principal"></video>`;
+        // *** AJUSTE AQUI *** Adicionamos preload="metadata"
+        mediaPrincipalHTML = `<video src="${produto.video}" controls class="video-principal" preload="metadata"></video>`;
     } else if (galeriaAtual.imagens.length > 0) {
         mediaPrincipalHTML = `
             <div class="container-imagem-zoom">
@@ -183,14 +183,12 @@ function adicionarEventListenersProduto() {
     const produtoId = parseInt(urlParams.get('id'));
     const produto = todosOsProdutos.find(p => p.id === produtoId);
 
-    // Adiciona listeners para setas apenas se houver imagens
     const setaEsq = document.getElementById('produto-seta-esq');
     const setaDir = document.getElementById('produto-seta-dir');
     if (setaEsq && setaDir) {
         setaEsq.addEventListener('click', () => mudarImagemGaleria(-1));
         setaDir.addEventListener('click', () => mudarImagemGaleria(1));
     }
-
 
     document.querySelectorAll('.miniatura-img').forEach(miniatura => {
         miniatura.addEventListener('click', (e) => {
