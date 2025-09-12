@@ -1,7 +1,7 @@
-// script.js (VERSÃO FINAL PARA HOSPEDAGEM)
+// script.js (VERSÃO FINAL COM URL DO RENDER)
 
-// IMPORTANTE: Quando você hospedar o backend no Render, cole a URL dele aqui!
-const API_URL = 'http://localhost:3000'; // DEPOIS, TROCAR POR: 'URL_DO_SEU_BACKEND_NO_RENDER'
+// ATUALIZADO COM A URL REAL DO SEU BACKEND!
+const API_URL = 'https://gringa-style-backend.onrender.com';
 
 // --- LÓGICA DO MENU HAMBÚRGUER ---
 const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -41,7 +41,7 @@ const modalOpcoesParcelamento = document.getElementById('modal-opcoes-parcelamen
 // --- FUNÇÃO PARA BUSCAR OS PRODUTOS DA API ---
 async function carregarProdutos() {
     try {
-        const response = await fetch(`${API_URL}/api/produtos`); // <<< MUDANÇA AQUI
+        const response = await fetch(`${API_URL}/api/produtos`);
         if (!response.ok) {
             throw new Error('Não foi possível buscar os produtos do servidor.');
         }
@@ -57,7 +57,6 @@ async function carregarProdutos() {
 function renderizarVitrine() {
     vitrineProdutos.innerHTML = '';
     todosOsProdutos.forEach(produto => {
-        // As imagens agora podem vir do Cloudinary (URL completa) ou locais
         const imagensHTML = produto.imagens.map((imagem, index) =>
             `<img src="${imagem}" alt="${produto.nome}" class="card-imagem ${index === 0 ? 'visivel' : ''}">`
         ).join('');

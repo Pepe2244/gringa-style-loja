@@ -1,7 +1,7 @@
-// carrinho.js (VERSÃO FINAL PARA HOSPEDAGEM)
+// carrinho.js (VERSÃO FINAL COM URL DO RENDER)
 
-// IMPORTANTE: Quando você hospedar o backend no Render, cole a URL dele aqui!
-const API_URL = 'http://localhost:3000'; // DEPOIS, TROCAR POR: 'URL_DO_SEU_BACKEND_NO_RENDER'
+// ATUALIZADO COM A URL REAL DO SEU BACKEND!
+const API_URL = 'https://gringa-style-backend.onrender.com';
 
 // --- LÓGICA DO MENU HAMBÚRGUER ---
 const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -47,7 +47,7 @@ function atualizarContadorCarrinho() {
 async function carregarPaginaCarrinho() {
     carregarCarrinho();
     try {
-        const response = await fetch(`${API_URL}/api/produtos`); // <<< MUDANÇA AQUI
+        const response = await fetch(`${API_URL}/api/produtos`);
         if (!response.ok) throw new Error('Falha ao buscar produtos.');
         todosOsProdutos = await response.json();
 

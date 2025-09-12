@@ -1,8 +1,7 @@
-// admin.js (VERSÃO FINAL PARA HOSPEDAGEM)
+// admin.js (VERSÃO FINAL COM URL DO RENDER)
 document.addEventListener('DOMContentLoaded', () => {
-    // IMPORTANTE: Quando você hospedar o backend no Render, cole a URL dele aqui!
-    // Por enquanto, podemos deixar o endereço local para continuar testando.
-    const API_URL = 'http://localhost:3000'; // DEPOIS, TROCAR POR: 'URL_DO_SEU_BACKEND_NO_RENDER'
+    // ATUALIZADO COM A URL REAL DO SEU BACKEND!
+    const API_URL = 'https://gringa-style-backend.onrender.com';
 
     const senhaCorreta = "gringa123";
     let senha = prompt("Digite a senha de administrador para acessar o painel:");
@@ -24,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function carregarProdutos() {
         try {
-            const response = await fetch(`${API_URL}/api/produtos`); // <<< MUDANÇA AQUI
+            const response = await fetch(`${API_URL}/api/produtos`);
             if (!response.ok) throw new Error('Falha ao buscar produtos.');
             todosOsProdutos = await response.json();
             renderizarTabela(todosOsProdutos);
@@ -101,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('imagens', file);
             }
             try {
-                const responseUpload = await fetch(`${API_URL}/api/upload`, { // <<< MUDANÇA AQUI
+                const responseUpload = await fetch(`${API_URL}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -126,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
             produtoData.imagens = produtoExistente ? produtoExistente.imagens : [];
         }
 
-        const url = id ? `${API_URL}/api/produtos/${id}` : `${API_URL}/api/produtos`; // <<< MUDANÇA AQUI
+        const url = id ? `${API_URL}/api/produtos/${id}` : `${API_URL}/api/produtos`;
         const method = id ? 'PUT' : 'POST';
 
         let response;
@@ -155,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         try {
-            const response = await fetch(`${API_URL}/api/produtos/${id}`, { method: 'DELETE' }); // <<< MUDANÇA AQUI
+            const response = await fetch(`${API_URL}/api/produtos/${id}`, { method: 'DELETE' });
             if (!response.ok) throw new Error('Falha ao excluir o produto.');
             carregarProdutos();
         } catch (error) {
@@ -166,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function atualizarEstoque(id, novoStatus) {
         try {
-            const response = await fetch(`${API_URL}/api/produtos/${id}/estoque`, { // <<< MUDANÇA AQUI
+            const response = await fetch(`${API_URL}/api/produtos/${id}/estoque`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ emEstoque: novoStatus }),
