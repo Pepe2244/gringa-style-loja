@@ -1,4 +1,4 @@
-// server.js (VERSÃO FINAL COM TRATAMENTO DE ERRO ROBUSTO E CORREÇÃO FINAL NA TRANSFORMAÇÃO)
+// server.js (VERSÃO FINAL COM CORREÇÃO DEFINITIVA NA TRANSFORMAÇÃO)
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -22,24 +22,26 @@ const storage = new CloudinaryStorage({
         folder: 'gringa-style-produtos',
         resource_type: 'auto',
         public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0],
-        transformation: [
-            {
-                if: "resource_type = video",
+    },
+    // A LÓGICA DE TRANSFORMAÇÃO FOI MOVIDA PARA FORA DO 'PARAMS'
+    transformation: function (req, file) {
+        if (file.mimetype.startsWith('video')) {
+            return {
                 width: 800,
                 quality: "auto:good",
                 crop: "limit",
                 fetch_format: "auto",
                 audio_codec: "none"
-            },
-            {
-                if: "resource_type = image",
+            };
+        } else if (file.mimetype.startsWith('image')) {
+            return {
                 width: 800,
                 quality: "auto",
                 fetch_format: "auto",
                 crop: "limit"
-            }
-        ]
-    },
+            };
+        }
+    }
 });
 const upload = multer({ storage: storage });
 
