@@ -1,9 +1,3 @@
-// carrinho.js (VERSÃO FINAL COM URL DO RENDER)
-
-// ATUALIZADO COM A URL REAL DO SEU BACKEND!
-const API_URL = 'https://gringa-style-backend.onrender.com';
-
-// --- LÓGICA DO MENU HAMBÚRGUER ---
 const hamburgerBtn = document.getElementById('hamburger-btn');
 const navMenu = document.getElementById('nav-menu');
 
@@ -14,7 +8,6 @@ hamburgerBtn.addEventListener('click', () => {
 let todosOsProdutos = [];
 let carrinho = [];
 
-// --- ELEMENTOS DO DOM ---
 const listaItensCarrinho = document.getElementById('lista-itens-carrinho');
 const subtotalEl = document.getElementById('subtotal-valor');
 const totalEl = document.getElementById('total-valor');
@@ -26,7 +19,6 @@ const opcoesParcelamentoDiv = document.getElementById('opcoes-parcelamento');
 const numeroParcelasSelect = document.getElementById('numero-parcelas');
 const nomeClienteInput = document.getElementById('nome-cliente');
 
-// --- FUNÇÕES DE MANIPULAÇÃO DO CARRINHO (LocalStorage) ---
 function salvarCarrinho() {
     localStorage.setItem('carrinhoGringaStyle', JSON.stringify(carrinho));
 }
@@ -43,14 +35,16 @@ function atualizarContadorCarrinho() {
     carrinhoContador.textContent = totalItens;
 }
 
-// --- LÓGICA PRINCIPAL DA PÁGINA DO CARRINHO ---
 async function carregarPaginaCarrinho() {
     carregarCarrinho();
     try {
-        const response = await fetch(`${API_URL}/api/produtos`);
-        if (!response.ok) throw new Error('Falha ao buscar produtos.');
-        todosOsProdutos = await response.json();
+        const { data, error } = await supabase
+            .from('produtos')
+            .select('*');
 
+        if (error) throw error;
+
+        todosOsProdutos = data;
         renderizarItensCarrinho();
 
     } catch (error) {
@@ -85,7 +79,7 @@ function renderizarItensCarrinho() {
 
             const subtotalItem = item.quantidade * produto.preco;
             let nomeProdutoExibido = produto.nome;
-            let imagemExibida = produto.imagens.length > 0 ? produto.imagens[0] : 'imagens/placeholder.png';
+            let imagemExibida = (produto.imagens && produto.imagens.length > 0) ? produto.imagens[0] : 'imagens/placeholder.png';
 
             if (item.variante && produto.variantes) {
                 nomeProdutoExibido += ` <span class="variante-carrinho">(${produto.variantes.titulo}: ${item.variante.nome})</span>`;
@@ -180,7 +174,6 @@ function gerarMensagemWhatsApp() {
     window.open(linkWhatsapp, '_blank');
 }
 
-// --- EVENT LISTENERS ---
 listaItensCarrinho.addEventListener('click', (e) => {
     const itemCarrinhoEl = e.target.closest('.item-carrinho');
     if (!itemCarrinhoEl) return;
@@ -219,10 +212,8 @@ formaPagamentoSelect.addEventListener('change', () => {
 
 finalizarPedidoBtn.addEventListener('click', gerarMensagemWhatsApp);
 
-// --- INICIALIZAÇÃO ---
 carregarPaginaCarrinho();
 
-// --- ATALHO SECRETO PARA O PAINEL DE ADMIN ---
 document.addEventListener('DOMContentLoaded', () => {
     const atalhoAdmin = document.getElementById('ano-rodape');
     if (atalhoAdmin) {

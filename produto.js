@@ -1,8 +1,3 @@
-// produto.js (VERSÃO FINAL COM OTIMIZAÇÃO DE VÍDEO)
-
-const API_URL = 'https://gringa-style-backend.onrender.com';
-
-// --- LÓGICA DO MENU HAMBÚRGUER ---
 const hamburgerBtn = document.getElementById('hamburger-btn');
 const navMenu = document.getElementById('nav-menu');
 
@@ -17,7 +12,6 @@ let galeriaAtual = {
     indice: 0
 };
 
-// --- ELEMENTOS DO DOM ---
 const carrinhoContador = document.querySelector('.carrinho-contador');
 const detalheProdutoContainer = document.getElementById('detalhe-produto');
 const modalCompraContainer = document.getElementById('modal-compra-container');
@@ -26,7 +20,6 @@ const modalConfirmarCompraBtn = document.getElementById('modal-confirmar-compra-
 const modalFormaPagamento = document.getElementById('modal-forma-pagamento');
 const modalOpcoesParcelamento = document.getElementById('modal-opcoes-parcelamento');
 
-// --- FUNÇÕES DO CARRINHO ---
 function salvarCarrinho() {
     localStorage.setItem('carrinhoGringaStyle', JSON.stringify(carrinho));
 }
@@ -65,7 +58,6 @@ function adicionarAoCarrinho(produtoId, varianteSelecionada = null) {
     }, 300);
 }
 
-// --- FUNÇÕES DA GALERIA DE IMAGENS ---
 function mudarImagemGaleria(passo) {
     const totalImagens = galeriaAtual.imagens.length;
     if (totalImagens <= 1) return;
@@ -87,13 +79,15 @@ function selecionarMiniatura(index) {
     mudarImagemGaleria(0);
 }
 
-// --- LÓGICA PRINCIPAL DA PÁGINA DE PRODUTO ---
 async function carregarPaginaProduto() {
     try {
-        const response = await fetch(`${API_URL}/api/produtos`);
-        if (!response.ok) throw new Error('Falha ao buscar produtos.');
-        todosOsProdutos = await response.json();
+        const { data, error } = await supabase
+            .from('produtos')
+            .select('*');
 
+        if (error) throw error;
+
+        todosOsProdutos = data;
         const urlParams = new URLSearchParams(window.location.search);
         const produtoId = parseInt(urlParams.get('id'));
         const produto = todosOsProdutos.find(p => p.id === produtoId);
@@ -129,7 +123,6 @@ function renderizarDetalhes(produto) {
 
     let mediaPrincipalHTML = '';
     if (produto.video) {
-        // *** AJUSTE AQUI *** Adicionamos preload="metadata"
         mediaPrincipalHTML = `<video src="${produto.video}" controls class="video-principal" preload="metadata"></video>`;
     } else if (galeriaAtual.imagens.length > 0) {
         mediaPrincipalHTML = `
@@ -141,7 +134,6 @@ function renderizarDetalhes(produto) {
     } else {
         mediaPrincipalHTML = `<img id="produto-imagem-principal" src="imagens/placeholder.png" alt="${produto.nome}">`;
     }
-
 
     const miniaturasHTML = galeriaAtual.imagens.map((imgSrc, index) => `
         <img src="${imgSrc}" alt="Miniatura ${index + 1}" class="miniatura-img ${index === 0 ? 'ativa' : ''}" data-index="${index}">
@@ -177,7 +169,6 @@ function renderizarDetalhes(produto) {
     adicionarEventListenersProduto();
 }
 
-
 function adicionarEventListenersProduto() {
     const urlParams = new URLSearchParams(window.location.search);
     const produtoId = parseInt(urlParams.get('id'));
@@ -204,8 +195,6 @@ function adicionarEventListenersProduto() {
     }
 }
 
-
-// --- FUNÇÕES DO MODAL DE COMPRA DIRETA ---
 function abrirModalCompraDireta(produto, varianteSelecionada = null) {
     const resumoProdutoEl = document.getElementById('modal-compra-resumo-produto');
     let nomeProdutoExibido = produto.nome;
@@ -272,7 +261,6 @@ function gerarMensagemWhatsAppProdutoUnico() {
     fecharModalCompraDireta();
 }
 
-// --- EVENT LISTENERS GLOBAIS ---
 detalheProdutoContainer.addEventListener('click', (e) => {
     if (!e.target.dataset.id) return;
     const produtoId = parseInt(e.target.dataset.id);
@@ -314,13 +302,10 @@ modalFormaPagamento.addEventListener('change', () => {
 });
 modalConfirmarCompraBtn.addEventListener('click', gerarMensagemWhatsAppProdutoUnico);
 
-
-// --- INICIALIZAÇÃO ---
 carregarCarrinho();
 atualizarContadorCarrinho();
 carregarPaginaProduto();
 
-// --- ATALHO SECRETO PARA O PAINEL DE ADMIN ---
 document.addEventListener('DOMContentLoaded', () => {
     const atalhoAdmin = document.getElementById('ano-rodape');
     if (atalhoAdmin) {
