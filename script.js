@@ -1,8 +1,3 @@
-// script.js (VERSÃO FINAL COM OTIMIZAÇÃO DE VÍDEO)
-
-const API_URL = 'https://gringa-style-backend.onrender.com';
-
-// --- LÓGICA DO MENU HAMBÚRGUER ---
 const hamburgerBtn = document.getElementById('hamburger-btn');
 const navMenu = document.getElementById('nav-menu');
 
@@ -17,7 +12,6 @@ let galeriaModal = {
     indiceAtual: 0
 };
 
-// --- SELETORES DE ELEMENTOS DO DOM ---
 const vitrineProdutos = document.getElementById('vitrine-produtos');
 const modalContainer = document.getElementById('modal-container');
 const modalFecharBtn = document.getElementById('modal-fechar');
@@ -37,28 +31,30 @@ const modalConfirmarCompraBtn = document.getElementById('modal-confirmar-compra-
 const modalFormaPagamento = document.getElementById('modal-forma-pagamento');
 const modalOpcoesParcelamento = document.getElementById('modal-opcoes-parcelamento');
 
-// --- FUNÇÃO PARA BUSCAR OS PRODUTOS DA API ---
 async function carregarProdutos() {
     try {
-        const response = await fetch(`${API_URL}/api/produtos`);
-        if (!response.ok) {
-            throw new Error('Não foi possível buscar os produtos do servidor.');
+        const { data, error } = await supabase
+            .from('produtos')
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (error) {
+            throw error;
         }
-        todosOsProdutos = await response.json();
+
+        todosOsProdutos = data;
         renderizarVitrine();
     } catch (error) {
-        console.error("Erro ao carregar produtos:", error);
+        console.error("Erro ao carregar produtos do Supabase:", error);
         vitrineProdutos.innerHTML = "<p style='color: white; text-align: center;'>Não foi possível carregar os produtos. Tente novamente mais tarde.</p>";
     }
 }
 
-// --- FUNÇÃO RENDERIZAR VITRINE ATUALIZADA ---
 function renderizarVitrine() {
     vitrineProdutos.innerHTML = '';
     todosOsProdutos.forEach(produto => {
         let mediaHTML = '';
         if (produto.video) {
-            // *** AJUSTE AQUI *** Adicionamos preload="metadata"
             mediaHTML = `<video src="${produto.video}" class="card-video" loop muted autoplay playsinline preload="metadata"></video>`;
         }
         else if (produto.imagens && produto.imagens.length > 0) {
@@ -97,7 +93,6 @@ function renderizarVitrine() {
     });
     iniciarCarrosseis();
 }
-
 
 function iniciarCarrosseis() {
     const cards = document.querySelectorAll('.produto-card');
@@ -301,7 +296,6 @@ function gerarMensagemWhatsAppProdutoUnico() {
     fecharModalCompraDireta();
 }
 
-// --- EVENT LISTENERS ---
 vitrineProdutos.addEventListener('click', (event) => {
     if (event.target.classList.contains('btn-quick-view')) {
         const produtoId = parseInt(event.target.dataset.id);
@@ -356,12 +350,10 @@ modalFormaPagamento.addEventListener('change', () => {
 });
 modalConfirmarCompraBtn.addEventListener('click', gerarMensagemWhatsAppProdutoUnico);
 
-// --- INICIALIZAÇÃO DO SCRIPT ---
 carregarCarrinho();
 atualizarContadorCarrinho();
 carregarProdutos();
 
-// --- ATALHO SECRETO PARA O PAINEL DE ADMIN ---
 document.addEventListener('DOMContentLoaded', () => {
     const atalhoAdmin = document.getElementById('ano-rodape');
     if (atalhoAdmin) {

@@ -1,7 +1,4 @@
-// admin.js (VERSÃO FINAL COM DIAGNÓSTICO DE ERRO AVANÇADO)
 document.addEventListener('DOMContentLoaded', () => {
-    const API_URL = 'https://gringa-style-backend.onrender.com';
-
     const senhaCorreta = "gringa123";
     let senha = prompt("Digite a senha de administrador para acessar o painel:");
 
@@ -19,16 +16,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAdicionarNovo = document.getElementById('btn-adicionar-novo');
     const btnCancelar = document.getElementById('btn-cancelar');
     const btnFecharModal = document.getElementById('modal-fechar');
+    const btnSalvar = document.getElementById('btn-salvar');
 
     async function carregarProdutos() {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar';
         try {
-            const response = await fetch(`${API_URL}/api/produtos`);
-            if (!response.ok) throw new Error('Falha ao buscar produtos.');
-            todosOsProdutos = await response.json();
+            const { data, error } = await supabase.from('produtos').select('*').order('id');
+            if (error) throw error;
+            todosOsProdutos = data;
             renderizarTabela(todosOsProdutos);
         } catch (error) {
             console.error('Erro ao carregar produtos:', error);
-            tabelaCorpo.innerHTML = '<tr><td colspan="4">Erro ao carregar produtos. Verifique se o servidor está rodando.</td></tr>';
+            tabelaCorpo.innerHTML = '<tr><td colspan="4">Erro ao carregar produtos. Verifique o console.</td></tr>';
         }
     }
 
@@ -72,21 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (produto.imagens && produto.imagens.length > 0) {
                 const previewHTML = produto.imagens.map(img => `<img src="${img}" width="70" style="margin-right: 5px; border-radius: 4px;">`).join('');
                 document.getElementById('imagens-atuais-preview').innerHTML = previewHTML;
-            } else {
-                document.getElementById('imagens-atuais-preview').textContent = 'Nenhuma imagem cadastrada.';
             }
-
             if (produto.video) {
                 document.getElementById('video-atual-preview').innerHTML = `<video src="${produto.video}" width="150" controls style="border-radius: 4px;"></video>`;
-            } else {
-                document.getElementById('video-atual-preview').textContent = 'Nenhum vídeo cadastrado.';
             }
-
         } else {
             modalTitulo.textContent = 'Adicionar Novo Produto';
             document.getElementById('produto-id').value = '';
-            document.getElementById('imagens-atuais-preview').textContent = 'Nenhuma imagem cadastrada.';
-            document.getElementById('video-atual-preview').textContent = 'Nenhum vídeo cadastrado.';
         }
         modalContainer.classList.add('visivel');
     }
@@ -97,51 +89,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function salvarProduto(event) {
         event.preventDefault();
+        btnSalvar.disabled = true;
+        btnSalvar.textContent = 'Salvando...';
 
         const id = document.getElementById('produto-id').value;
         const inputMedia = document.getElementById('produto-media-upload');
-        let newImages = [];
-        let newVideo = null;
+        let newImageUrls = [];
+        let newVideoUrl = null;
 
         if (inputMedia.files.length > 0) {
-            const formData = new FormData();
             for (const file of inputMedia.files) {
-                formData.append('media', file);
-            }
-            try {
-                const responseUpload = await fetch(`${API_URL}/api/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const filePath = `${fileName}`;
 
-                // *** MUDANÇA PRINCIPAL AQUI: LÓGICA DE CAPTURA DE ERRO MELHORADA ***
-                if (!responseUpload.ok) {
-                    let errorMessage = `Falha no upload com status: ${responseUpload.status}`;
-                    try {
-                        // Tenta primeiro ler a resposta como JSON (o formato esperado)
-                        const errorData = await responseUpload.json();
-                        errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
-                    } catch (e) {
-                        // Se não for JSON, lê como texto. Isso captura qualquer erro inesperado.
-                        errorMessage = await responseUpload.text();
-                    }
-                    throw new Error(errorMessage);
+                const { error: uploadError } = await supabase.storage
+                    .from('gringa-style-produtos')
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    alert(`Erro no upload: ${uploadError.message}`);
+                    console.error('Erro no upload:', uploadError);
+                    btnSalvar.disabled = false;
+                    btnSalvar.textContent = 'Salvar';
+                    return;
                 }
 
-                const uploadedFiles = await responseUpload.json();
+                const { data } = supabase.storage
+                    .from('gringa-style-produtos')
+                    .getPublicUrl(filePath);
 
-                uploadedFiles.forEach(file => {
-                    if (file.type === 'image') {
-                        newImages.push(file.url);
-                    } else if (file.type === 'video') {
-                        newVideo = file.url;
-                    }
-                });
+                const publicUrl = data.publicUrl;
 
-            } catch (error) {
-                console.error('Erro detalhado no upload:', error);
-                alert(`Não foi possível fazer o upload.\n\nMotivo: ${error.message}`);
-                return;
+                if (file.type.startsWith('image/')) {
+                    newImageUrls.push(publicUrl);
+                } else if (file.type.startsWith('video/')) {
+                    newVideoUrl = publicUrl;
+                }
             }
         }
 
@@ -149,44 +133,54 @@ document.addEventListener('DOMContentLoaded', () => {
             nome: document.getElementById('produto-nome').value,
             preco: parseFloat(document.getElementById('produto-preco').value),
             descricao: document.getElementById('produto-descricao').value,
-            imagens: [],
-            video: null
         };
 
         const produtoExistente = id ? todosOsProdutos.find(p => p.id == id) : null;
-        produtoData.imagens = newImages.length > 0 ? newImages : (produtoExistente ? produtoExistente.imagens : []);
-        produtoData.video = newVideo ? newVideo : (produtoExistente ? produtoExistente.video : null);
 
-        const url = id ? `${API_URL}/api/produtos/${id}` : `${API_URL}/api/produtos`;
-        const method = id ? 'PUT' : 'POST';
+        if (newImageUrls.length > 0 || newVideoUrl) {
+            produtoData.imagens = newImageUrls;
+            produtoData.video = newVideoUrl;
+        } else if (produtoExistente) {
+            produtoData.imagens = produtoExistente.imagens;
+            produtoData.video = produtoExistente.video;
+        } else {
+            produtoData.imagens = [];
+            produtoData.video = null;
+        }
 
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(produtoData)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || `Falha na requisição com status ${response.status}`);
+            let error;
+            if (id) {
+                const { error: updateError } = await supabase
+                    .from('produtos')
+                    .update(produtoData)
+                    .eq('id', id);
+                error = updateError;
+            } else {
+                const { error: insertError } = await supabase
+                    .from('produtos')
+                    .insert([produtoData]);
+                error = insertError;
             }
+
+            if (error) throw error;
 
             fecharModal();
             carregarProdutos();
+
         } catch (error) {
             console.error('Erro ao salvar produto:', error);
             alert(`Não foi possível salvar o produto.\n\nDetalhes: ${error.message}`);
+            btnSalvar.disabled = false;
+            btnSalvar.textContent = 'Salvar';
         }
     }
 
     async function excluirProduto(id) {
-        if (!confirm('Tem certeza de que deseja excluir este produto? A ação não pode ser desfeita.')) {
-            return;
-        }
+        if (!confirm('Tem certeza de que deseja excluir este produto?')) return;
         try {
-            const response = await fetch(`${API_URL}/api/produtos/${id}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error('Falha ao excluir o produto.');
+            const { error } = await supabase.from('produtos').delete().eq('id', id);
+            if (error) throw error;
             carregarProdutos();
         } catch (error) {
             console.error('Erro ao excluir produto:', error);
@@ -196,16 +190,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function atualizarEstoque(id, novoStatus) {
         try {
-            const response = await fetch(`${API_URL}/api/produtos/${id}/estoque`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emEstoque: novoStatus }),
-            });
-            if (!response.ok) throw new Error('Falha ao atualizar o estoque.');
-            carregarProdutos();
+            const { error } = await supabase
+                .from('produtos')
+                .update({ emEstoque: novoStatus })
+                .eq('id', id);
+            if (error) throw error;
+            const linha = tabelaCorpo.querySelector(`tr[data-id="${id}"]`);
+            if (linha) {
+                linha.querySelector('td[data-label="Status"]').textContent = novoStatus ? "Em Estoque" : "Fora de Estoque";
+            }
         } catch (error) {
             console.error('Erro ao atualizar estoque:', error);
             alert('Ocorreu um erro na comunicação com o servidor.');
+            carregarProdutos();
         }
     }
 
@@ -219,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!linha) return;
         const id = parseInt(linha.dataset.id);
         const produto = todosOsProdutos.find(p => p.id === id);
+
         if (event.target.classList.contains('btn-editar')) {
             abrirModal(produto);
         }
