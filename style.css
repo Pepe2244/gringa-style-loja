@@ -473,7 +473,7 @@ main {
     margin-bottom: 15px;
 }
 
-.item-carrinho-img {
+.item-carrinho-img, .item-carrinho-video {
     width: 80px;
     height: 80px;
     object-fit: cover;
@@ -796,7 +796,7 @@ main {
         padding: 15px;
     }
 
-    .item-carrinho-img { grid-area: img; width: 70px; height: 70px; }
+    .item-carrinho-img, .item-carrinho-video { grid-area: img; width: 70px; height: 70px; }
     .item-carrinho-info { grid-area: info; }
     .item-carrinho-quantidade { grid-area: qty; justify-self: start; }
     .item-carrinho-subtotal { grid-area: subtotal; justify-self: end; }

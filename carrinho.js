@@ -79,16 +79,25 @@ function renderizarItensCarrinho() {
 
             const subtotalItem = item.quantidade * produto.preco;
             let nomeProdutoExibido = produto.nome;
-            let imagemExibida = (produto.imagens && produto.imagens.length > 0) ? produto.imagens[0] : 'imagens/placeholder.png';
+            let mediaHTML;
+
+            if (produto.video) {
+                mediaHTML = `<video class="item-carrinho-video" src="${produto.video}" autoplay loop muted playsinline></video>`;
+            } else {
+                let imagemExibida = (produto.imagens && produto.imagens.length > 0) ? produto.imagens[0] : 'imagens/placeholder.png';
+                if (item.variante && produto.variantes) {
+                    imagemExibida = item.variante.imagem;
+                }
+                mediaHTML = `<img src="${imagemExibida}" alt="${produto.nome}" class="item-carrinho-img">`;
+            }
 
             if (item.variante && produto.variantes) {
                 nomeProdutoExibido += ` <span class="variante-carrinho">(${produto.variantes.titulo}: ${item.variante.nome})</span>`;
-                imagemExibida = item.variante.imagem;
             }
 
             const itemHTML = `
                 <div class="item-carrinho" data-item-id="${item.idUnico}">
-                    <img src="${imagemExibida}" alt="${produto.nome}" class="item-carrinho-img">
+                    ${mediaHTML}
                     <div class="item-carrinho-info">
                         <h3>${nomeProdutoExibido}</h3>
                         <p>Preço: R$ ${produto.preco.toFixed(2).replace('.', ',')}</p>
@@ -164,10 +173,10 @@ function gerarMensagemWhatsApp() {
         const parcelas = numeroParcelasSelect.value;
         mensagem += `*Valor dos Produtos:* R$ ${totalPedido.toFixed(2).replace('.', ',')}\n`;
         mensagem += `*Pagamento:* ${formaPagamento} em ${parcelas}\n\n`;
-        mensagem += `*Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)*`;
+        mensagem += `_Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)_`;
     } else {
         mensagem += `*Valor Total (PIX):* R$ ${totalPedido.toFixed(2).replace('.', ',')}\n\n`;
-        mensagem += `*Aguardo a chave PIX para o pagamento. Obrigado!*`;
+        mensagem += `_Aguardo a chave PIX para o pagamento. Obrigado!_`;
     }
 
     const linkWhatsapp = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensagem)}`;
