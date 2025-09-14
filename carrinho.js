@@ -164,10 +164,10 @@ function gerarMensagemWhatsApp() {
         const parcelas = numeroParcelasSelect.value;
         mensagem += `*Valor dos Produtos:* R$ ${totalPedido.toFixed(2).replace('.', ',')}\n`;
         mensagem += `*Pagamento:* ${formaPagamento} em ${parcelas}\n\n`;
-        mensagem += `_Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)_`;
+        mensagem += `*Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)*`;
     } else {
         mensagem += `*Valor Total (PIX):* R$ ${totalPedido.toFixed(2).replace('.', ',')}\n\n`;
-        mensagem += `_Aguardo a chave PIX para o pagamento. Obrigado!_`;
+        mensagem += `*Aguardo a chave PIX para o pagamento. Obrigado!*`;
     }
 
     const linkWhatsapp = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensagem)}`;
