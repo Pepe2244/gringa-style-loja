@@ -97,9 +97,19 @@ function renderizarVitrine() {
 function iniciarCarrosseis() {
     const cards = document.querySelectorAll('.produto-card');
     cards.forEach(card => {
-        const imagens = card.querySelectorAll('.card-imagem');
         const video = card.querySelector('.card-video');
-        if (video || imagens.length <= 1) return;
+        if (video) {
+            // Garante que o vídeo tente tocar
+            video.play().catch(error => {
+                // Erro pode acontecer se o usuário não interagiu com a página ainda.
+                // O atributo 'muted' geralmente resolve isso, mas é uma boa prática ter o catch.
+                console.log("Falha ao tocar o vídeo automaticamente. O navegador pode exigir interação do usuário.", error);
+            });
+            return; // Pula para o próximo card
+        }
+
+        const imagens = card.querySelectorAll('.card-imagem');
+        if (imagens.length <= 1) return;
 
         let indiceAtual = 0;
         let intervalId = setInterval(() => {
@@ -119,6 +129,7 @@ function iniciarCarrosseis() {
         });
     });
 }
+
 
 function abrirModal(produtoId) {
     const produto = todosOsProdutos.find(p => p.id === produtoId);
