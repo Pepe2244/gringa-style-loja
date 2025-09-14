@@ -146,7 +146,7 @@ function abrirModal(produtoId) {
     modalComprarWhatsappBtn.dataset.id = produto.id;
 
     if (produto.video) {
-        modalMediaContainer.innerHTML = `<video src="${produto.video}" class="card-video" controls autoplay loop muted playsinline preload="metadata"></video>`;
+        modalMediaContainer.innerHTML = `<video src="${produto.video}" class="card-video" autoplay loop muted playsinline preload="metadata"></video>`;
         modalSetaEsq.style.display = 'none';
         modalSetaDir.style.display = 'none';
     } else {
