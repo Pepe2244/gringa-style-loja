@@ -137,7 +137,7 @@ function abrirModal(produtoId) {
 
     galeriaModal.imagens = [];
     modalVariantesContainer.innerHTML = '';
-    modalMediaContainer.innerHTML = ''; 
+    modalMediaContainer.innerHTML = '';
 
     modalTitulo.textContent = produto.nome;
     modalDescricao.textContent = produto.descricao;
@@ -192,9 +192,9 @@ function mudarImagemModal(direcao) {
         modalMediaContainer.innerHTML = `<img id="modal-img" src="imagens/placeholder.png" alt="Imagem do Produto">`;
         return;
     }
-    
+
     galeriaModal.indiceAtual = (galeriaModal.indiceAtual + direcao + totalImagens) % totalImagens;
-    
+
     modalMediaContainer.innerHTML = `<img id="modal-img" src="${galeriaModal.imagens[galeriaModal.indiceAtual]}" alt="Imagem do Produto">`;
 
     const varianteSelect = document.getElementById('modal-variante-select');
@@ -305,10 +305,10 @@ function gerarMensagemWhatsAppProdutoUnico() {
     if (formaPagamento === 'Cartão de Crédito') {
         const parcelas = document.getElementById('modal-numero-parcelas').value;
         mensagem += `*Pagamento:* ${formaPagamento} em ${parcelas}\n\n`;
-        mensagem += `_Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)_`;
+        mensagem += `Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)`;
     } else {
         mensagem += `*Pagamento:* ${formaPagamento}\n\n`;
-        mensagem += `_Aguardo a chave PIX para o pagamento. Obrigado!_`;
+        mensagem += `Aguardo a chave PIX para o pagamento. Obrigado!`;
     }
 
     const linkWhatsapp = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensagem)}`;
