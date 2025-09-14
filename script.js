@@ -15,7 +15,7 @@ let galeriaModal = {
 const vitrineProdutos = document.getElementById('vitrine-produtos');
 const modalContainer = document.getElementById('modal-container');
 const modalFecharBtn = document.getElementById('modal-fechar');
-const modalImg = document.getElementById('modal-img');
+const modalMediaContainer = document.getElementById('modal-media-container');
 const modalTitulo = document.getElementById('modal-titulo');
 const modalDescricao = document.getElementById('modal-descricao');
 const modalPreco = document.getElementById('modal-preco');
@@ -126,6 +126,7 @@ function abrirModal(produtoId) {
 
     galeriaModal.imagens = [];
     modalVariantesContainer.innerHTML = '';
+    modalMediaContainer.innerHTML = ''; 
 
     modalTitulo.textContent = produto.nome;
     modalDescricao.textContent = produto.descricao;
@@ -133,36 +134,42 @@ function abrirModal(produtoId) {
     modalAdicionarCarrinhoBtn.dataset.id = produto.id;
     modalComprarWhatsappBtn.dataset.id = produto.id;
 
-    if (produto.variantes) {
-        galeriaModal.imagens = produto.variantes.opcoes.map(v => v.imagem);
-
-        let variantesHTML = `<label for="modal-variante-select">${produto.variantes.titulo}</label>`;
-        variantesHTML += `<select id="modal-variante-select" class="select-variante">`;
-        produto.variantes.opcoes.forEach((opcao, index) => {
-            variantesHTML += `<option value="${index}">${opcao.nome}</option>`;
-        });
-        variantesHTML += `</select>`;
-        modalVariantesContainer.innerHTML = variantesHTML;
-
-        document.getElementById('modal-variante-select').addEventListener('change', (e) => {
-            const novoIndice = parseInt(e.target.value);
-            galeriaModal.indiceAtual = novoIndice;
-            mudarImagemModal(0);
-        });
-
-    } else {
-        galeriaModal.imagens = produto.imagens;
-    }
-
-    galeriaModal.indiceAtual = 0;
-    mudarImagemModal(0);
-
-    if (galeriaModal.imagens.length > 1) {
-        modalSetaEsq.style.display = 'block';
-        modalSetaDir.style.display = 'block';
-    } else {
+    if (produto.video) {
+        modalMediaContainer.innerHTML = `<video src="${produto.video}" class="card-video" controls autoplay loop muted playsinline preload="metadata"></video>`;
         modalSetaEsq.style.display = 'none';
         modalSetaDir.style.display = 'none';
+    } else {
+        if (produto.variantes) {
+            galeriaModal.imagens = produto.variantes.opcoes.map(v => v.imagem);
+
+            let variantesHTML = `<label for="modal-variante-select">${produto.variantes.titulo}</label>`;
+            variantesHTML += `<select id="modal-variante-select" class="select-variante">`;
+            produto.variantes.opcoes.forEach((opcao, index) => {
+                variantesHTML += `<option value="${index}">${opcao.nome}</option>`;
+            });
+            variantesHTML += `</select>`;
+            modalVariantesContainer.innerHTML = variantesHTML;
+
+            document.getElementById('modal-variante-select').addEventListener('change', (e) => {
+                const novoIndice = parseInt(e.target.value);
+                galeriaModal.indiceAtual = novoIndice;
+                mudarImagemModal(0);
+            });
+
+        } else {
+            galeriaModal.imagens = produto.imagens || [];
+        }
+
+        galeriaModal.indiceAtual = 0;
+        mudarImagemModal(0);
+
+        if (galeriaModal.imagens.length > 1) {
+            modalSetaEsq.style.display = 'block';
+            modalSetaDir.style.display = 'block';
+        } else {
+            modalSetaEsq.style.display = 'none';
+            modalSetaDir.style.display = 'none';
+        }
     }
 
     modalContainer.classList.add('visivel');
@@ -171,18 +178,20 @@ function abrirModal(produtoId) {
 function mudarImagemModal(direcao) {
     const totalImagens = galeriaModal.imagens.length;
     if (totalImagens === 0) {
-        modalImg.src = 'imagens/placeholder.png';
+        modalMediaContainer.innerHTML = `<img id="modal-img" src="imagens/placeholder.png" alt="Imagem do Produto">`;
         return;
     }
-
+    
     galeriaModal.indiceAtual = (galeriaModal.indiceAtual + direcao + totalImagens) % totalImagens;
-    modalImg.src = galeriaModal.imagens[galeriaModal.indiceAtual];
+    
+    modalMediaContainer.innerHTML = `<img id="modal-img" src="${galeriaModal.imagens[galeriaModal.indiceAtual]}" alt="Imagem do Produto">`;
 
     const varianteSelect = document.getElementById('modal-variante-select');
     if (varianteSelect) {
         varianteSelect.value = galeriaModal.indiceAtual;
     }
 }
+
 
 function fecharModal() {
     modalContainer.classList.remove('visivel');
