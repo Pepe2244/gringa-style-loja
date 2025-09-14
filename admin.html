@@ -128,7 +128,7 @@
         }
         .form-campo textarea { min-height: 120px; resize: vertical; }
         .form-campo small { color: #888; margin-top: 5px; display: block; }
-        #imagens-atuais-preview {
+        #imagens-atuais-preview, #novas-midias-preview {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -243,6 +243,7 @@
                     <label for="produto-media-upload">Novas Mídias (imagens ou vídeo)</label>
                     <input type="file" id="produto-media-upload" multiple accept="image/*,video/*">
                     <small>Ao editar, o envio de novas mídias substituirá TODAS as antigas.</small>
+                    <div id="novas-midias-preview"></div>
                 </div>
                 <div class="form-campo">
                     <label>Imagens Atuais</label>

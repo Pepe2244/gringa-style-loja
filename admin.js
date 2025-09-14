@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCancelar = document.getElementById('btn-cancelar');
     const btnFecharModal = document.getElementById('modal-fechar');
     const btnSalvar = document.getElementById('btn-salvar');
+    const inputMediaUpload = document.getElementById('produto-media-upload');
+    const novasMidiasPreview = document.getElementById('novas-midias-preview');
 
     async function carregarProdutos() {
         btnSalvar.disabled = false;
@@ -61,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formProduto.reset();
         document.getElementById('imagens-atuais-preview').innerHTML = '';
         document.getElementById('video-atual-preview').innerHTML = '';
+        novasMidiasPreview.innerHTML = '';
 
         if (produto) {
             modalTitulo.textContent = 'Editar Produto';
@@ -136,17 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const produtoExistente = id ? todosOsProdutos.find(p => p.id == id) : null;
-
-        if (newImageUrls.length > 0 || newVideoUrl) {
+        
+        if (newImageUrls.length > 0) {
             produtoData.imagens = newImageUrls;
-            produtoData.video = newVideoUrl;
-        } else if (produtoExistente) {
+        } else if (produtoExistente && !newVideoUrl) {
             produtoData.imagens = produtoExistente.imagens;
-            produtoData.video = produtoExistente.video;
         } else {
             produtoData.imagens = [];
+        }
+
+        if (newVideoUrl) {
+            produtoData.video = newVideoUrl;
+        } else if (produtoExistente && newImageUrls.length === 0) {
+            produtoData.video = produtoExistente.video;
+        } else {
             produtoData.video = null;
         }
+
 
         try {
             let error;
@@ -205,6 +214,35 @@ document.addEventListener('DOMContentLoaded', () => {
             carregarProdutos();
         }
     }
+    
+    inputMediaUpload.addEventListener('change', (event) => {
+        novasMidiasPreview.innerHTML = ''; 
+        const files = event.target.files;
+
+        for (const file of files) {
+            const previewUrl = URL.createObjectURL(file);
+            let previewElement;
+
+            if (file.type.startsWith('image/')) {
+                previewElement = document.createElement('img');
+                previewElement.src = previewUrl;
+                previewElement.style.width = '70px';
+                previewElement.style.height = '70px';
+                previewElement.style.objectFit = 'cover';
+                previewElement.style.borderRadius = '4px';
+            } else if (file.type.startsWith('video/')) {
+                previewElement = document.createElement('video');
+                previewElement.src = previewUrl;
+                previewElement.controls = true;
+                previewElement.style.width = '150px';
+                previewElement.style.borderRadius = '4px';
+            }
+
+            if (previewElement) {
+                novasMidiasPreview.appendChild(previewElement);
+            }
+        }
+    });
 
     btnAdicionarNovo.addEventListener('click', () => abrirModal());
     btnCancelar.addEventListener('click', fecharModal);
