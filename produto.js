@@ -123,7 +123,7 @@ function renderizarDetalhes(produto) {
 
     let mediaPrincipalHTML = '';
     if (produto.video) {
-        mediaPrincipalHTML = `<video src="${produto.video}" controls class="video-principal" preload="metadata"></video>`;
+        mediaPrincipalHTML = `<video src="${produto.video}" controls loop muted autoplay playsinline class="video-principal" preload="metadata"></video>`;
     } else if (galeriaAtual.imagens.length > 0) {
         mediaPrincipalHTML = `
             <div class="container-imagem-zoom">
