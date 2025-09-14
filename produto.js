@@ -250,10 +250,10 @@ function gerarMensagemWhatsAppProdutoUnico() {
     if (formaPagamento === 'Cartão de Crédito') {
         const parcelas = document.getElementById('modal-numero-parcelas').value;
         mensagem += `*Pagamento:* ${formaPagamento} em ${parcelas}\n\n`;
-        mensagem += `_Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)_`;
+        mensagem += `*Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)*`;
     } else {
         mensagem += `*Pagamento:* ${formaPagamento}\n\n`;
-        mensagem += `_Aguardo a chave PIX para o pagamento. Obrigado!_`;
+        mensagem += `*Aguardo a chave PIX para o pagamento. Obrigado!*`;
     }
 
     const linkWhatsapp = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensagem)}`;
