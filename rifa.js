@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .select('id')
                 .eq('status', 'ativa')
                 .limit(1)
-                .maybeSingle(); // CORREÇÃO: Alterado de .single() para .maybeSingle()
+                .maybeSingle(); 
 
             if (data && !error) {
                 link.href = `acompanhar_rifa.html?id=${data.id}`;
@@ -83,14 +83,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             // 1. Busca a rifa ativa
+            // CORREÇÃO AQUI: Alterado de .single() para .maybeSingle() para evitar o erro 406
             const { data: rifa, error: rifaError } = await window.supabase
                 .from('rifas')
                 .select('*')
                 .eq('status', 'ativa')
                 .limit(1)
-                .single();
+                .maybeSingle(); 
 
-            if (rifaError || !rifa) {
+            if (rifaError) {
+                throw rifaError;
+            }
+
+            if (!rifa) {
+                // Se não houver rifa, lançamos um erro "controlado" para cair no catch e mostrar a UI de "sem rifa"
                 throw new Error("Nenhuma rifa ativa encontrada.");
             }
 
@@ -111,11 +117,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderizarRifa(rifaAtiva, premios);
 
         } catch (error) {
-            console.error('Erro ao buscar rifa ativa:', error.message);
+            // Se o erro for "Nenhuma rifa ativa", mostramos a mensagem amigável
+            // Se for outro erro técnico, mostramos no console
+            if (error.message !== "Nenhuma rifa ativa encontrada.") {
+                console.error('Erro técnico ao buscar rifa:', error);
+            }
+            
             rifaContainer.innerHTML = `
                 <div class="rifa-card" style="text-align: center;">
                     <h1 class="titulo-secao">Nenhuma Rifa Ativa no Momento</h1>
                     <p style="font-size: 1.1em;">Fique de olho! Em breve teremos novidades e mais prêmios incríveis por aqui.</p>
+                    <br>
+                    <a href="historico.html" class="btn btn-secundario">Ver Ganhadores Anteriores</a>
                 </div>`;
         }
     }
