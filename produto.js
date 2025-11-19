@@ -75,7 +75,7 @@ async function configurarLinkAcompanharRifa() {
             .select('id')
             .eq('status', 'ativa')
             .limit(1)
-            .single();
+            .maybeSingle(); // CORREÇÃO: Alterado de .single() para .maybeSingle()
 
         if (data && !error) {
             link.href = `acompanhar_rifa.html?id=${data.id}`;
@@ -356,7 +356,7 @@ function renderizarDetalhes(produto) {
             </div>
         `;
     } else {
-        precoHTML = `<div class="produto-detalhe-preco">R$ ${precoFinal.toFixed(2).replace('.', ',')}</div>`;
+        precoHTML = `<div class="produto-detalhe-preco">R$ ${precoFinal.toFixed(2).replace('.', ',')}</p>`;
     }
 
     const botoesDesabilitados = !produto.emEstoque ? 'disabled' : '';

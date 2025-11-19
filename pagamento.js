@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .select('id')
                 .eq('status', 'ativa')
                 .limit(1)
-                .single();
+                .maybeSingle(); // CORREÇÃO: Alterado de .single() para .maybeSingle()
 
             if (data && !error) {
                 link.href = `acompanhar_rifa.html?id=${data.id}`;
