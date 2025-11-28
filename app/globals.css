@@ -746,13 +746,20 @@ body.modal-aberto {
     width: 120px;
     height: 120px;
     flex-shrink: 0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.item-carrinho-img-container a {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .item-carrinho-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 5px;
 }
 
 .item-carrinho-info {
@@ -900,12 +907,13 @@ body.modal-aberto {
         .item-carrinho-img-container {
             width: 100px;
             height: 100px;
+            flex-shrink: 0;
         }
 
         .item-carrinho-img {
             width: 100%;
             height: 100%;
-            aspect-ratio: 1/1;
+            object-fit: cover;
         }
 
         .item-carrinho-info {
