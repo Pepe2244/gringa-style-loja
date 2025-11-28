@@ -147,7 +147,7 @@ export default function ProductManager() {
                     await supabase.from('notificacoes_push_queue').insert({
                         titulo: '🔥 PROMOÇÃO ATIVADA!',
                         mensagem: `O produto "${nome}" está em promoção por R$${productData.preco_promocional.toFixed(2).replace('.', ',')}!`,
-                        link_url: `/produto?id=${editingProduct.id}`,
+                        link_url: `/produto/${editingProduct.id}`,
                         status: 'rascunho'
                     });
                 }

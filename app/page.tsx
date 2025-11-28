@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
-import ProductCard from '@/components/ProductCard';
-import Modal from '@/components/Modal';
-import Image from 'next/image';
-import { Search, X } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import ProductFilters from '@/components/home/ProductFilters';
+import ProductGrid from '@/components/home/ProductGrid';
+import ProductDetailsModal from '@/components/modals/ProductDetailsModal';
+import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 
 export default function Home() {
   const { showToast } = useToast();
@@ -25,14 +25,6 @@ export default function Home() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
-
-  // Purchase Modal State
-  const [clientName, setClientName] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('PIX');
-  const [installments, setInstallments] = useState('1x');
-
-  // Details Modal Gallery State
-  const [currentModalImageIndex, setCurrentModalImageIndex] = useState(0);
 
   useEffect(() => {
     fetchInitialData();
@@ -111,7 +103,6 @@ export default function Home() {
   const handleQuickView = (product: Product) => {
     setSelectedProduct(product);
     setSelectedVariant(null);
-    setCurrentModalImageIndex(0);
 
     if (product.variants) {
       setIsDetailsModalOpen(true);
@@ -120,40 +111,20 @@ export default function Home() {
     }
   };
 
-  const addToCart = () => {
-    if (!selectedProduct) return;
-
-    let variantToAdd = null;
-    if (selectedProduct.variants && selectedProduct.variants.opcoes.length > 0) {
-      // If variants exist, we need to check if one is selected.
-      // For simplicity in this migration, we'll assume the first one if not set, 
-      // or we should have a state for it in the modal.
-      // The original script reads from the DOM select element.
-      // We need to bind this to state.
-      if (!selectedVariant) {
-        // Default to first option if not selected
-        variantToAdd = {
-          tipo: selectedProduct.variants.tipo,
-          opcao: selectedProduct.variants.opcoes[0]
-        };
-      } else {
-        variantToAdd = selectedVariant;
-      }
-    }
-
+  const addToCart = (product: Product, variant: { tipo: string; opcao: string } | null) => {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     const itemIndex = carrinho.findIndex((item: any) =>
-      item.produto_id === selectedProduct.id &&
-      JSON.stringify(item.variante) === JSON.stringify(variantToAdd)
+      item.produto_id === product.id &&
+      JSON.stringify(item.variante) === JSON.stringify(variant)
     );
 
     if (itemIndex > -1) {
       carrinho[itemIndex].quantidade++;
     } else {
       carrinho.push({
-        produto_id: selectedProduct.id,
+        produto_id: product.id,
         quantidade: 1,
-        variante: variantToAdd
+        variante: variant
       });
     }
 
@@ -163,110 +134,34 @@ export default function Home() {
     showToast('Produto adicionado ao carrinho!', 'success');
   };
 
-  const handleDirectPurchase = () => {
-    if (!selectedProduct || !clientName.trim()) {
-      showToast('Por favor, preencha seu nome.', 'error');
-      return;
-    }
-
-    const precoFinal = getPrecoFinal(selectedProduct);
-    let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
-    message += `*Produto:* ${selectedProduct.nome}`;
-    if (selectedVariant) {
-      message += ` (${selectedVariant.tipo}: ${selectedVariant.opcao})`;
-    }
-    message += `\n*Valor:* R$ ${precoFinal.toFixed(2).replace('.', ',')}\n\n`;
-
-    if (precoFinal < selectedProduct.preco) {
-      message += `_(Valor promocional)_\n\n`;
-    }
-
-    if (paymentMethod === 'Cartão de Crédito') {
-      message += `*Pagamento:* ${paymentMethod} em ${installments}\n\nAguardo o link para pagamento.`;
-    } else {
-      message += `*Pagamento:* ${paymentMethod}\n\nAguardo a chave PIX.`;
-    }
-
-    window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
-    setIsPurchaseModalOpen(false);
+  const handleBuyNowFromModal = (product: Product, variant: { tipo: string; opcao: string } | null) => {
+    setSelectedProduct(product);
+    setSelectedVariant(variant);
+    setIsDetailsModalOpen(false);
+    setIsPurchaseModalOpen(true);
   };
-
-  // Modal Image Navigation
-  const getModalImages = () => {
-    if (!selectedProduct) return [];
-    const mediaUrls = selectedProduct.media_urls || selectedProduct.imagens || [];
-    return mediaUrls.filter(url => !url.includes('.mp4') && !url.includes('.webm'));
-  };
-
-  const modalImages = getModalImages();
 
   return (
     <main>
       <div className="container">
         <h1 className="titulo-secao">Nossos Produtos</h1>
 
-        <div className="search-container">
-          <div style={{ position: 'relative', flex: 1 }}>
-            <input
-              type="search"
-              id="search-input"
-              placeholder="Buscar por máscara, tocha, lente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                className="search-clear-btn"
-                style={{ display: 'block' }}
-                onClick={() => setSearchTerm('')}
-              >
-                <X size={20} />
-              </button>
-            )}
-          </div>
+        <ProductFilters
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          sortType={sortType}
+          setSortType={setSortType}
+          categories={categories}
+        />
 
-          <select
-            id="categoria-select"
-            value={selectedCategory || ''}
-            onChange={(e) => setSelectedCategory(e.target.value ? parseInt(e.target.value) : null)}
-            style={{ padding: '10px', borderRadius: '25px', border: 'none', background: '#333', color: 'white', marginLeft: '10px', cursor: 'pointer' }}
-          >
-            <option value="">Todas as Categorias</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.nome}</option>
-            ))}
-          </select>
-
-          <select
-            id="sort-select"
-            value={sortType}
-            onChange={(e) => setSortType(e.target.value)}
-            style={{ padding: '10px', borderRadius: '25px', border: 'none', background: '#333', color: 'white', marginLeft: '10px', cursor: 'pointer' }}
-          >
-            <option value="padrao">Ordenar por</option>
-            <option value="menor-preco">Menor Preço</option>
-            <option value="maior-preco">Maior Preço</option>
-            <option value="az">Nome (A-Z)</option>
-            <option value="za">Nome (Z-A)</option>
-          </select>
-        </div>
-
-        <div id="vitrine-produtos" className="vitrine" style={{ minHeight: '300px' }}>
-          {loading ? (
-            <p style={{ color: 'white', textAlign: 'center' }}>Carregando produtos...</p>
-          ) : filteredProducts.length === 0 ? (
-            <p style={{ color: 'white', textAlign: 'center', fontSize: '1.2em' }}>Nenhum produto encontrado para sua busca.</p>
-          ) : (
-            filteredProducts.map(product => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                diasNovo={diasNovo}
-                onQuickView={handleQuickView}
-              />
-            ))
-          )}
-        </div>
+        <ProductGrid
+          products={filteredProducts}
+          loading={loading}
+          diasNovo={diasNovo}
+          onQuickView={handleQuickView}
+        />
 
         <section id="sobre" className="secao-info">
           <h2 className="titulo-secao">Sobre a Gringa Style</h2>
@@ -286,161 +181,20 @@ export default function Home() {
         </section>
       </div>
 
-      {/* Product Details Modal */}
-      <Modal isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)}>
-        {selectedProduct && (
-          <>
-            <div className="modal-imagem">
-              {(() => {
-                const mediaUrls = selectedProduct.media_urls || selectedProduct.imagens || [];
-                const videoUrl = selectedProduct.video || mediaUrls.find(url => url.includes('.mp4') || url.includes('.webm'));
+      <ProductDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        product={selectedProduct}
+        addToCart={addToCart}
+        onBuyNow={handleBuyNowFromModal}
+      />
 
-                if (videoUrl) {
-                  return <video src={videoUrl} className="card-video" autoPlay loop muted playsInline />;
-                }
-
-                const images = getModalImages();
-                const currentImage = images.length > 0 ? images[currentModalImageIndex] : '/imagens/gringa_style_logo.png';
-
-                return (
-                  <div style={{ position: 'relative' }}>
-                    <img src={currentImage} alt={selectedProduct.nome} style={{ width: '100%', borderRadius: '5px' }} />
-                    {images.length > 1 && (
-                      <>
-                        <button
-                          className="modal-seta"
-                          id="modal-seta-esq"
-                          style={{ display: 'block' }}
-                          onClick={() => setCurrentModalImageIndex((prev) => (prev - 1 + images.length) % images.length)}
-                        >
-                          &lt;
-                        </button>
-                        <button
-                          className="modal-seta"
-                          id="modal-seta-dir"
-                          style={{ display: 'block' }}
-                          onClick={() => setCurrentModalImageIndex((prev) => (prev + 1) % images.length)}
-                        >
-                          &gt;
-                        </button>
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-            <div className="modal-conteudo">
-              <h2 className="modal-titulo">{selectedProduct.nome}</h2>
-              <p>{selectedProduct.descricao}</p>
-
-              {selectedProduct.variants && selectedProduct.variants.opcoes.length > 0 && (
-                <div className="variantes-container">
-                  <label>{selectedProduct.variants.tipo}:</label>
-                  <select
-                    className="select-variante"
-                    onChange={(e) => setSelectedVariant({ tipo: selectedProduct.variants!.tipo, opcao: e.target.value })}
-                    value={selectedVariant?.opcao || selectedProduct.variants.opcoes[0]}
-                  >
-                    {selectedProduct.variants.opcoes.map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <p className="modal-preco">
-                {getPrecoFinal(selectedProduct) < selectedProduct.preco ? (
-                  <>
-                    <span className="preco-antigo">De R$ {selectedProduct.preco.toFixed(2).replace('.', ',')}</span>{' '}
-                    <span className="preco-novo">Por R$ {getPrecoFinal(selectedProduct).toFixed(2).replace('.', ',')}</span>
-                  </>
-                ) : (
-                  `R$ ${selectedProduct.preco.toFixed(2).replace('.', ',')}`
-                )}
-              </p>
-
-              <div className="produto-botoes">
-                <button className="btn" onClick={addToCart}>Adicionar ao Carrinho</button>
-                <button className="btn btn-secundario" onClick={() => {
-                  setIsDetailsModalOpen(false);
-                  setIsPurchaseModalOpen(true);
-                }}>Comprar via WhatsApp</button>
-              </div>
-            </div>
-          </>
-        )}
-      </Modal>
-
-      {/* Direct Purchase Modal */}
-      <Modal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} className="modal-compra-direta">
-        {selectedProduct && (
-          <>
-            <h2 className="modal-titulo">Finalizar Pedido</h2>
-            <div id="modal-compra-resumo-produto">
-              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                {/* Simplified image preview for purchase modal */}
-                <img
-                  src={(selectedProduct.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/gringa_style_logo.png')}
-                  style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '5px' }}
-                  alt={selectedProduct.nome}
-                />
-                <div>
-                  <h3>{selectedProduct.nome}</h3>
-                  {selectedVariant && <p style={{ fontSize: '0.9rem', color: '#ccc' }}>{selectedVariant.tipo}: {selectedVariant.opcao}</p>}
-                  <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--cor-destaque)' }}>
-                    R$ {getPrecoFinal(selectedProduct).toFixed(2).replace('.', ',')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="campo-cliente">
-              <label htmlFor="modal-nome-cliente">Seu Nome Completo</label>
-              <input
-                type="text"
-                id="modal-nome-cliente"
-                className="input-cliente"
-                placeholder="Digite seu nome"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="resumo-pagamento">
-              <label htmlFor="modal-forma-pagamento">Forma de Pagamento</label>
-              <select
-                id="modal-forma-pagamento"
-                className="select-pagamento"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              >
-                <option value="PIX">PIX</option>
-                <option value="Cartão de Crédito">Cartão de Crédito</option>
-              </select>
-            </div>
-
-            {paymentMethod === 'Cartão de Crédito' && (
-              <div className="resumo-pagamento">
-                <label htmlFor="modal-numero-parcelas">Parcelas</label>
-                <select
-                  id="modal-numero-parcelas"
-                  className="select-pagamento"
-                  value={installments}
-                  onChange={(e) => setInstallments(e.target.value)}
-                >
-                  <option value="1x">1x sem juros</option>
-                  <option value="2x">2x</option>
-                  <option value="3x">3x</option>
-                  <option value="12x">12x</option>
-                </select>
-              </div>
-            )}
-
-            <button className="btn btn-finalizar" onClick={handleDirectPurchase}>Confirmar Pedido no WhatsApp</button>
-          </>
-        )}
-      </Modal>
+      <DirectPurchaseModal
+        isOpen={isPurchaseModalOpen}
+        onClose={() => setIsPurchaseModalOpen(false)}
+        product={selectedProduct}
+        variant={selectedVariant}
+      />
     </main>
   );
 }

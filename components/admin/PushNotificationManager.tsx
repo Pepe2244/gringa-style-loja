@@ -169,7 +169,7 @@ export default function PushNotificationManager() {
                             </div>
                             <div className="form-campo">
                                 <label>Link (Opcional)</label>
-                                <input type="text" value={link} onChange={e => setLink(e.target.value)} placeholder="Ex: /produto?id=1" />
+                                <input type="text" value={link} onChange={e => setLink(e.target.value)} placeholder="Ex: /produto/1" />
                                 <small>Deixe em branco para abrir a página inicial.</small>
                             </div>
                             <button type="submit" className="btn-admin btn-adicionar" disabled={loading} style={{ width: '100%' }}>

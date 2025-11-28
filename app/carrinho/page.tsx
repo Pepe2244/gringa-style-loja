@@ -26,6 +26,8 @@ export default function CartPage() {
     const [installments, setInstallments] = useState('1x');
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
+    const [validatedTotal, setValidatedTotal] = useState<number | null>(null);
+
     useEffect(() => {
         loadCart();
     }, []);
@@ -43,8 +45,25 @@ export default function CartPage() {
                 .in('id', productIds);
 
             if (data) setProducts(data);
+            validateTotal(savedCart);
         }
         setLoading(false);
+    };
+
+    const validateTotal = async (items: CartItem[]) => {
+        try {
+            const response = await fetch('/api/calculate-total', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itens: items })
+            });
+            const data = await response.json();
+            if (data.total !== undefined) {
+                setValidatedTotal(data.total);
+            }
+        } catch (error) {
+            console.error('Error validating total:', error);
+        }
     };
 
     const updateQuantity = (index: number, newQuantity: number) => {
@@ -57,7 +76,24 @@ export default function CartPage() {
         setCartItems(newCart);
         localStorage.setItem('carrinho', JSON.stringify(newCart));
         window.dispatchEvent(new Event('cart-updated'));
+        validateTotal(newCart);
 
+        // Reset coupon if cart changes
+        if (appliedCoupon) {
+            setAppliedCoupon(null);
+            setCouponMessage({ text: 'Carrinho alterado. Aplique o cupom novamente.', type: 'error' });
+        }
+    };
+
+    const confirmDelete = () => {
+        if (itemToDelete === null) return;
+
+        const newCart = cartItems.filter((_, index) => index !== itemToDelete);
+        localStorage.setItem('carrinho', JSON.stringify(newCart));
+        setCartItems(newCart);
+        window.dispatchEvent(new Event('cart-updated'));
+        setItemToDelete(null);
+        validateTotal(newCart);
         // Reset coupon if cart changes
         if (appliedCoupon) {
             setAppliedCoupon(null);
@@ -144,40 +180,41 @@ export default function CartPage() {
             return;
         }
 
-        const subtotal = calculateSubtotal();
-        const total = calculateTotal();
-        const discount = appliedCoupon ? appliedCoupon.desconto_calculado : 0;
+        const totalToUse = validatedTotal !== null ? validatedTotal : calculateTotal();
+        const discountAmount = appliedCoupon ? (totalToUse * appliedCoupon.desconto) / 100 : 0;
+        const finalTotal = totalToUse - discountAmount;
 
-        let message = `Olá Gringa Style!\n\Meu nome é *${clientName}* e gostaria de confirmar meu pedido:\n\n`;
+        let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
 
         cartItems.forEach(item => {
             const product = products.find(p => p.id === item.produto_id);
             if (product) {
-                const price = getPrecoFinal(product);
-                const variantInfo = item.variante ? ` (${item.variante.tipo}: ${item.variante.opcao})` : '';
+                const price = (product.preco_promocional && product.preco_promocional < product.preco)
+                    ? product.preco_promocional
+                    : product.preco;
 
-                message += `*Produto:* ${product.nome}${variantInfo}\n`;
-                message += `*Quantidade:* ${item.quantidade}\n`;
-                message += `*Valor:* R$ ${(price * item.quantidade).toFixed(2).replace('.', ',')}\n\n`;
+                const variantInfo = item.variante ? ` (${item.variante.tipo}: ${item.variante.opcao})` : '';
+                message += `• ${item.quantidade}x ${product.nome}${variantInfo} - R$ ${(price * item.quantidade).toFixed(2).replace('.', ',')}\n`;
             }
         });
 
-        message += `*Subtotal:* R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
-
+        message += `\n*Total:* R$ ${finalTotal.toFixed(2).replace('.', ',')}`;
         if (appliedCoupon) {
-            message += `*Desconto (${appliedCoupon.codigo}):* - R$ ${discount.toFixed(2).replace('.', ',')}\n`;
+            message += ` (Desconto: ${appliedCoupon.codigo} - ${appliedCoupon.desconto}%)`;
         }
+        message += `\n\n`;
 
+        message += `*Pagamento:* ${paymentMethod}`;
         if (paymentMethod === 'Cartão de Crédito') {
-            message += `*Total (Cartão):* R$ ${total.toFixed(2).replace('.', ',')}\n`;
-            message += `*Pagamento:* ${paymentMethod} em ${installments}\n\n`;
-            message += `_Aguardo o link para pagamento. (Sei que as taxas serão calculadas na próxima etapa)_`;
-        } else {
-            message += `*Total (PIX):* R$ ${total.toFixed(2).replace('.', ',')}\n\n`;
-            message += `_Aguardo a chave PIX para o pagamento. Obrigado!_`;
+            message += ` em ${installments}`;
         }
+        message += `\n\n*Aguardo o retorno!*`;
 
         window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
+        // setShowCheckoutModal(false); // Assuming this is a state setter for a modal
+        localStorage.removeItem('carrinho');
+        setCartItems([]);
+        window.dispatchEvent(new Event('cart-updated'));
     };
 
     if (loading) {
@@ -219,7 +256,7 @@ export default function CartPage() {
                             return (
                                 <div key={`${item.produto_id}-${index}`} className="item-carrinho">
                                     <div className="item-carrinho-img-container">
-                                        <Link href={`/produto?id=${item.produto_id}`}>
+                                        <Link href={`/produto/${item.produto_id}`}>
                                             <Image
                                                 src={imageUrl}
                                                 alt={product.nome}
@@ -232,7 +269,7 @@ export default function CartPage() {
 
                                     <div className="item-carrinho-info">
                                         <div className="item-carrinho-header">
-                                            <Link href={`/produto?id=${item.produto_id}`} className="item-carrinho-nome">
+                                            <Link href={`/produto/${item.produto_id}`} className="item-carrinho-nome">
                                                 {product.nome}
                                             </Link>
                                         </div>

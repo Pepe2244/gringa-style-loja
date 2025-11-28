@@ -113,7 +113,7 @@ export default function ProductCard({ product, diasNovo, onQuickView }: ProductC
                             {product.variants ? 'Ver Opções' : 'Compra Rápida'}
                         </button>
                     )}
-                    <Link href={`/produto?id=${product.id}`} className="btn btn-secundario">
+                    <Link href={`/produto/${product.id}`} className="btn btn-secundario">
                         Ver Detalhes
                     </Link>
                 </div>

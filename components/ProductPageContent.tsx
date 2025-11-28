@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem } from '@/types';
 import Link from 'next/link';
@@ -9,10 +8,12 @@ import Image from 'next/image';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 
-function ProductContent() {
+interface ProductPageContentProps {
+    id: number;
+}
+
+export default function ProductPageContent({ id }: ProductPageContentProps) {
     const { showToast } = useToast();
-    const searchParams = useSearchParams();
-    const id = searchParams.get('id');
 
     const [product, setProduct] = useState<Product | null>(null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -28,14 +29,16 @@ function ProductContent() {
 
     useEffect(() => {
         if (id) {
-            fetchProduct(parseInt(id));
+            fetchProduct(id);
         }
     }, [id]);
 
     const fetchProduct = async (productId: number) => {
+        console.log('Fetching product with ID:', productId);
         setLoading(true);
         try {
             const { data, error } = await supabase.from('produtos').select('*').eq('id', productId).single();
+            console.log('Fetch result:', { data, error });
             if (error) throw error;
             setProduct(data);
             if (data.variants && data.variants.opcoes && data.variants.opcoes.length > 0) {
@@ -231,7 +234,7 @@ function ProductContent() {
                             const finalVideoUrl = rel.video || (isVideo ? mediaUrl : null);
 
                             return (
-                                <Link key={rel.id} href={`/produto?id=${rel.id}`} className="related-product-card">
+                                <Link key={rel.id} href={`/produto/${rel.id}`} className="related-product-card">
                                     {finalVideoUrl ? (
                                         <video
                                             src={finalVideoUrl}
@@ -318,13 +321,5 @@ function ProductContent() {
                 </button>
             </Modal>
         </div>
-    );
-}
-
-export default function ProductPage() {
-    return (
-        <Suspense fallback={<div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando...</div>}>
-            <ProductContent />
-        </Suspense>
     );
 }
