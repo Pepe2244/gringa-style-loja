@@ -27,12 +27,20 @@ export default function CouponManager() {
     }, []);
 
     const fetchCoupons = async () => {
-        const { data } = await supabase.from('cupons').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('cupons').select('*').order('created_at', { ascending: false });
+        if (error) {
+            console.error('Erro ao buscar cupons:', error);
+            alert('Erro ao buscar cupons: ' + error.message);
+        }
         if (data) setCoupons(data);
     };
 
     const fetchProducts = async () => {
-        const { data } = await supabase.from('produtos').select('id, nome').order('nome');
+        const { data, error } = await supabase.from('produtos').select('id, nome').order('nome');
+        if (error) {
+            console.error('Erro ao buscar produtos para cupons:', error);
+            alert('Erro ao buscar produtos: ' + error.message);
+        }
         if (data) setProducts(data);
     };
 
@@ -157,6 +165,33 @@ export default function CouponManager() {
                     ))}
                 </tbody>
             </table>
+
+            <div className="admin-mobile-list">
+                {coupons.map(coupon => (
+                    <div key={coupon.id} className="admin-mobile-card">
+                        <div className="admin-mobile-card-header">
+                            <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.2rem' }}>{coupon.codigo}</h3>
+                            <label className="switch" style={{ transform: 'scale(0.8)' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={coupon.ativo}
+                                    onChange={() => toggleStatus(coupon.id, coupon.ativo)}
+                                />
+                                <span className="slider"></span>
+                            </label>
+                        </div>
+                        <div className="admin-mobile-card-body">
+                            <p><strong>Tipo:</strong> {coupon.tipo_desconto === 'percentual' ? 'Percentual (%)' : 'Fixo (R$)'}</p>
+                            <p><strong>Valor:</strong> {coupon.valor_desconto}</p>
+                            <p><strong>Status:</strong> {coupon.ativo ? 'Ativo' : 'Inativo'}</p>
+                        </div>
+                        <div className="admin-mobile-card-actions">
+                            <button className="btn-admin-acao btn-editar" onClick={() => openModal(coupon)} style={{ flex: 1 }}>Editar</button>
+                            <button className="btn-admin-acao btn-excluir" onClick={() => handleDelete(coupon.id)} style={{ flex: 1 }}>Excluir</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             {showModal && (
                 <div className="modal-admin-container visivel">

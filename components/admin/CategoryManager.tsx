@@ -15,7 +15,11 @@ export default function CategoryManager() {
     }, []);
 
     const fetchCategories = async () => {
-        const { data } = await supabase.from('categorias').select('*').order('nome');
+        const { data, error } = await supabase.from('categorias').select('*').order('nome');
+        if (error) {
+            console.error('Erro ao buscar categorias:', error);
+            alert('Erro ao buscar categorias: ' + error.message);
+        }
         if (data) setCategories(data);
     };
 
@@ -91,6 +95,21 @@ export default function CategoryManager() {
                     ))}
                 </tbody>
             </table>
+
+            <div className="admin-mobile-list">
+                {categories.map(cat => (
+                    <div key={cat.id} className="admin-mobile-card">
+                        <div className="admin-mobile-card-header">
+                            <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.2rem' }}>{cat.nome}</h3>
+                        </div>
+                        <div className="admin-mobile-card-actions">
+                            <button className="btn-admin-acao btn-excluir" onClick={() => handleDeleteCategory(cat.id)} style={{ flex: 1 }}>
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

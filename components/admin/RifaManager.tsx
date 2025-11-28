@@ -39,7 +39,11 @@ export default function RifaManager() {
     }, []);
 
     const fetchRifas = async () => {
-        const { data } = await supabase.from('rifas').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('rifas').select('*').order('created_at', { ascending: false });
+        if (error) {
+            console.error('Erro ao buscar rifas:', error);
+            alert('Erro ao buscar rifas: ' + error.message);
+        }
         if (data) setRifas(data);
     };
 
@@ -403,6 +407,40 @@ export default function RifaManager() {
                     })}
                 </tbody>
             </table>
+
+            <div className="admin-mobile-list">
+                {rifas.map(rifa => {
+                    const sold = rifa.numeros_vendidos ? rifa.numeros_vendidos.length : 0;
+                    const percent = (sold / rifa.total_numeros) * 100;
+                    return (
+                        <div key={rifa.id} className="admin-mobile-card">
+                            <div className="admin-mobile-card-header">
+                                <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.2rem' }}>{rifa.nome_premio}</h3>
+                                <label className="switch" style={{ transform: 'scale(0.8)' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={rifa.status === 'ativa'}
+                                        onChange={() => toggleStatus(rifa.id, rifa.status)}
+                                    />
+                                    <span className="slider"></span>
+                                </label>
+                            </div>
+                            <div className="admin-mobile-card-body">
+                                <p><strong>Progresso:</strong> {sold} / {rifa.total_numeros} ({percent.toFixed(1)}%)</p>
+                                <div style={{ width: '100%', height: '10px', background: '#333', borderRadius: '5px', marginTop: '5px' }}>
+                                    <div style={{ width: `${percent}%`, height: '100%', background: 'var(--cor-destaque)', borderRadius: '5px' }}></div>
+                                </div>
+                            </div>
+                            <div className="admin-mobile-card-actions" style={{ flexWrap: 'wrap' }}>
+                                <button className="btn-admin-acao btn-sortear" onClick={() => openDrawModal(rifa)} style={{ flex: '1 1 45%' }}>Sortear</button>
+                                <button className="btn-admin-acao btn-participantes" onClick={() => openManageModal(rifa.id)} style={{ flex: '1 1 45%' }}>Participantes</button>
+                                <button className="btn-admin-acao btn-editar" onClick={() => openModal(rifa)} style={{ flex: '1 1 45%' }}>Editar</button>
+                                <button className="btn-admin-acao btn-excluir" onClick={() => handleDelete(rifa.id)} style={{ flex: '1 1 45%' }}>Excluir</button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
 
             {/* Edit/Create Modal */}
             {showModal && (

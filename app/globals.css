@@ -3374,4 +3374,45 @@ main,
     .admin-mobile-card-actions button {
         flex: 1;
     }
+
+    .lista-notificacoes {
+        display: none;
+    }
+
+    /* Product Details Page Fixes */
+    .detalhe-produto-container {
+        flex-direction: column;
+    }
+
+    .produto-detalhe-coluna-img {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .produto-detalhe-coluna-info {
+        width: 100%;
+        padding-left: 0;
+    }
+
+    .container-imagem-zoom {
+        height: auto;
+        aspect-ratio: 1/1;
+    }
+
+    #produto-imagem-principal {
+        position: relative;
+        /* Reset absolute positioning if any */
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .produto-miniaturas {
+        justify-content: center;
+    }
+
+    .related-list {
+        grid-template-columns: 1fr 1fr;
+        /* 2 columns for related items on mobile */
+    }
 }

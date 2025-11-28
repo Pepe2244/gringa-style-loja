@@ -33,12 +33,20 @@ export default function ProductManager() {
     }, []);
 
     const fetchProducts = async () => {
-        const { data } = await supabase.from('produtos').select('*').order('id');
+        const { data, error } = await supabase.from('produtos').select('*').order('id');
+        if (error) {
+            console.error('Erro ao buscar produtos:', error);
+            alert('Erro ao buscar produtos: ' + error.message);
+        }
         if (data) setProducts(data);
     };
 
     const fetchCategories = async () => {
-        const { data } = await supabase.from('categorias').select('*').order('nome');
+        const { data, error } = await supabase.from('categorias').select('*').order('nome');
+        if (error) {
+            console.error('Erro ao buscar categorias:', error);
+            alert('Erro ao buscar categorias: ' + error.message);
+        }
         if (data) setCategories(data);
     };
 

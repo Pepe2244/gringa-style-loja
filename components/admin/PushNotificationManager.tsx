@@ -16,12 +16,16 @@ export default function PushNotificationManager() {
     }, []);
 
     const fetchDrafts = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('notificacoes_push_queue')
             .select('*')
             .eq('status', 'rascunho')
             .order('created_at', { ascending: false });
 
+        if (error) {
+            console.error('Erro ao buscar notificações:', error);
+            alert('Erro ao buscar notificações: ' + error.message);
+        }
         if (data) setDrafts(data);
     };
 
@@ -107,6 +111,28 @@ export default function PushNotificationManager() {
                             ))}
                         </ul>
                     )}
+
+                    <div className="admin-mobile-list">
+                        {drafts.map(draft => (
+                            <div key={draft.id} className="admin-mobile-card">
+                                <div className="admin-mobile-card-header">
+                                    <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.2rem' }}>{draft.titulo}</h3>
+                                </div>
+                                <div className="admin-mobile-card-body">
+                                    <p>{draft.mensagem}</p>
+                                    <small style={{ color: '#888', fontStyle: 'italic', display: 'block', marginBottom: '10px' }}>Link: {draft.link_url}</small>
+                                </div>
+                                <div className="admin-mobile-card-actions">
+                                    <button className="btn-admin btn-adicionar" onClick={() => handleApprove(draft.id)} style={{ flex: 1, fontSize: '0.8em', padding: '10px' }}>
+                                        <CheckCircle size={14} style={{ marginRight: '5px' }} /> Aprovar
+                                    </button>
+                                    <button className="btn-admin btn-excluir" onClick={() => handleDelete(draft.id)} style={{ flex: 1, fontSize: '0.8em', padding: '10px' }}>
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="notificacao-coluna" style={{ flex: 1, minWidth: '300px' }}>

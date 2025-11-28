@@ -25,10 +25,18 @@ export default function CampaignManager() {
     }, []);
 
     const fetchCampaigns = async () => {
-        const { data: config } = await supabase.from('configuracoes_site').select('campanha_ativa_id').limit(1).maybeSingle();
+        const { data: config, error: configError } = await supabase.from('configuracoes_site').select('campanha_ativa_id').limit(1).maybeSingle();
+        if (configError) {
+            console.error('Erro ao buscar configurações:', configError);
+            // alert('Erro ao buscar configurações: ' + configError.message); // Optional, maybe not critical
+        }
         if (config) setActiveCampaignId(config.campanha_ativa_id);
 
-        const { data } = await supabase.from('campanhas').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('campanhas').select('*').order('created_at', { ascending: false });
+        if (error) {
+            console.error('Erro ao buscar campanhas:', error);
+            alert('Erro ao buscar campanhas: ' + error.message);
+        }
         if (data) setCampaigns(data);
     };
 
@@ -185,6 +193,38 @@ export default function CampaignManager() {
                     ))}
                 </tbody>
             </table>
+
+            <div className="admin-mobile-list">
+                {campaigns.map(camp => (
+                    <div key={camp.id} className="admin-mobile-card">
+                        <div className="admin-mobile-card-header">
+                            <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.2rem' }}>{camp.nome_campanha}</h3>
+                            {activeCampaignId === camp.id ? (
+                                <span style={{ color: '#00ff88', fontWeight: 'bold' }}>Ativa</span>
+                            ) : (
+                                <span style={{ color: '#ccc' }}>Inativa</span>
+                            )}
+                        </div>
+                        <div className="admin-mobile-card-body">
+                            {camp.banner_url && (
+                                <img src={camp.banner_url} alt="Banner" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px', marginBottom: '10px' }} />
+                            )}
+                            <p><strong>Aviso:</strong> {camp.aviso_deslizante_texto || 'Nenhum'}</p>
+                        </div>
+                        <div className="admin-mobile-card-actions">
+                            <button
+                                className={`btn-admin-acao ${activeCampaignId === camp.id ? 'btn-desativar' : 'btn-adicionar'}`}
+                                onClick={() => toggleActive(camp.id)}
+                                style={{ flex: 1 }}
+                            >
+                                {activeCampaignId === camp.id ? 'Desativar' : 'Ativar'}
+                            </button>
+                            <button className="btn-admin-acao btn-editar" onClick={() => openModal(camp)} style={{ flex: 1 }}>Editar</button>
+                            <button className="btn-admin-acao btn-excluir" onClick={() => handleDelete(camp.id)} style={{ flex: 1 }}>Excluir</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             {showModal && (
                 <div className="modal-admin-container visivel">
