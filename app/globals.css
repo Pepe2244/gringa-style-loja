@@ -66,17 +66,14 @@ a {
     background-color: var(--cor-fundo-secundaria);
     height: 70px;
     /* Explicit height to prevent it from being "enormous" */
-    padding: 57px;
+    padding: 0;
+    /* Reset padding */
     border-bottom: 2px solid var(--cor-destaque);
     position: sticky;
     top: 0;
     z-index: 1000;
     display: flex;
-    /* Ensure centering */
-
-    /* Vertically center content */
-    /* Otimização: Dica para o navegador otimizar a renderização fixa */
-
+    align-items: center;
 }
 
 .cabecalho .container {
@@ -85,6 +82,8 @@ a {
     align-items: center;
     flex-wrap: nowrap;
     /* Prevent wrapping */
+    width: 100%;
+    height: 100%;
 }
 
 .logo {
@@ -93,15 +92,13 @@ a {
     flex-shrink: 0;
     /* Prevent logo shrinking */
     position: relative;
-    top: 10px;
-    /* Push logo down to prevent top cutoff in 70px header */
     z-index: 1001;
     /* Ensure it stays on top */
 }
 
 .logo img {
-    height: 90px;
-    /* Reverted to 90px */
+    height: 60px;
+    /* Altura fixa razoável para o header */
     width: auto;
     /* Otimização: Reserva espaço para evitar CLS */
     aspect-ratio: 1/1;
@@ -829,161 +826,8 @@ body.modal-aberto {
     height: 30px;
     text-align: center;
     border: 1px solid #555;
-
-    /* --- Mobile Responsiveness --- */
-    @media (max-width: 768px) {
-
-        /* Header Fixes */
-        .cabecalho {
-            height: auto;
-            padding: 10px 0;
-        }
-
-        .cabecalho .container {
-            padding: 0 15px;
-        }
-
-        .logo {
-            top: 0;
-        }
-
-        .logo img {
-            height: 50px;
-            width: 50px;
-        }
-
-        .header-direita {
-            gap: 15px;
-        }
-
-        .navegacao {
-            display: none;
-            /* Hide menu items on mobile by default */
-        }
-
-        .navegacao.menu-aberto {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 70px;
-            left: 0;
-            width: 100%;
-            background-color: var(--cor-fundo-secundaria);
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .hamburger-btn {
-            display: block;
-        }
-
-        /* Product Grid Fixes */
-        .vitrine {
-            grid-template-columns: 1fr;
-            /* Single column for products */
-            gap: 20px;
-        }
-
-        .produto-card {
-            max-width: 100%;
-        }
-
-        .card-imagem-container {
-            height: auto;
-            aspect-ratio: 1/1;
-            /* Ensure square aspect ratio */
-        }
-
-        /* Cart Fixes */
-        .carrinho-grid {
-            grid-template-columns: 1fr !important;
-        }
-
-        .item-carrinho {
-            display: grid;
-            grid-template-columns: 100px 1fr;
-            gap: 15px;
-            align-items: start;
-        }
-
-        .item-carrinho-img-container {
-            width: 100%;
-            height: 100px;
-            border-radius: 5px;
-            overflow: hidden;
-            background-color: #333;
-            position: relative;
-            /* Ensure it stays in flow */
-        }
-
-        .item-carrinho-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .item-carrinho-info {
-            min-height: 100px;
-        }
-
-        .item-carrinho-acoes-bottom {
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        /* Admin Fixes */
-        .admin-tabs {
-            flex-direction: column;
-        }
-
-        .admin-tabs .btn {
-            width: 100%;
-        }
-
-        /* Hide table on mobile */
-        .admin-tabela {
-            display: none;
-        }
-
-        /* Mobile Admin Card View */
-        .admin-mobile-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .admin-mobile-card {
-            background-color: var(--cor-fundo-secundaria);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-        }
-
-        .admin-mobile-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 10px;
-        }
-
-        .admin-mobile-card-body p {
-            margin-bottom: 5px;
-            color: #ccc;
-        }
-
-        .admin-mobile-card-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .admin-mobile-card-actions button {
-            flex: 1;
-        }
-    }
-
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
     -moz-appearance: textfield;
     appearance: textfield;
 }
@@ -993,14 +837,6 @@ body.modal-aberto {
     -webkit-appearance: none;
     appearance: none;
     margin: 0;
-}
-
-.btn-remover {
-    background: none;
-    border: none;
-    color: #ff4d4d;
-    font-size: 24px;
-    cursor: pointer;
 }
 
 .resumo-carrinho {
@@ -1120,152 +956,6 @@ body.modal-aberto {
     background-color: #218838;
 }
 
-/* --- Mobile Responsiveness --- */
-@media (max-width: 768px) {
-
-    /* Header Fixes */
-    .cabecalho {
-        height: auto;
-        padding: 10px 0;
-    }
-
-    .cabecalho .container {
-        padding: 0 15px;
-    }
-
-    .logo {
-        top: 0;
-    }
-
-    .logo img {
-        height: 50px;
-        width: 50px;
-    }
-
-    .header-direita {
-        gap: 15px;
-    }
-
-    .navegacao {
-        display: none;
-        /* Hide menu items on mobile by default */
-    }
-
-    .navegacao.menu-aberto {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 70px;
-        left: 0;
-        width: 100%;
-        background-color: var(--cor-fundo-secundaria);
-        padding: 20px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-    }
-
-    .hamburger-btn {
-        display: block;
-    }
-
-    /* Product Grid Fixes */
-    .vitrine {
-        grid-template-columns: 1fr;
-        /* Single column for products */
-        gap: 20px;
-    }
-
-    .produto-card {
-        max-width: 100%;
-    }
-
-    .card-imagem-container {
-        height: auto;
-        aspect-ratio: 1/1;
-        /* Ensure square aspect ratio */
-    }
-
-    /* Cart Fixes */
-    .carrinho-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .item-carrinho {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .item-carrinho-img {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16/9;
-        object-fit: cover;
-    }
-
-    .item-carrinho-detalhes {
-        width: 100%;
-    }
-
-    .item-carrinho-acoes {
-        flex-direction: row;
-        width: 100%;
-        justify-content: space-between;
-        margin-top: 15px;
-    }
-
-    /* Admin Fixes */
-    .admin-tabs {
-        flex-direction: column;
-    }
-
-    .admin-tabs .btn {
-        width: 100%;
-    }
-
-    /* Hide table on mobile */
-    .admin-tabela {
-        display: none;
-    }
-
-    /* Mobile Admin Card View */
-    .admin-mobile-list {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .admin-mobile-card {
-        background-color: var(--cor-fundo-secundaria);
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #444;
-    }
-
-    .admin-mobile-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #555;
-        padding-bottom: 10px;
-    }
-
-    .admin-mobile-card-body p {
-        margin-bottom: 5px;
-        color: #ccc;
-    }
-
-    .admin-mobile-card-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .admin-mobile-card-actions button {
-        flex: 1;
-    }
-}
-
-
 
 .resumo-linha.total {
     font-weight: bold;
@@ -1273,13 +963,6 @@ body.modal-aberto {
     margin-top: 20px;
     padding-top: 15px;
     border-top: 1px solid #444;
-}
-
-.btn-finalizar {
-    width: 100%;
-    padding: 15px;
-    font-size: 18px;
-    margin-top: 10px;
 }
 
 .btn-finalizar:disabled {
@@ -1469,152 +1152,6 @@ body.modal-aberto {
 .select-variante {
     width: 100%;
     padding: 10px;
-
-    /* --- Mobile Responsiveness --- */
-    @media (max-width: 768px) {
-
-        /* Header Fixes */
-        .cabecalho {
-            height: auto;
-            padding: 10px 0;
-        }
-
-        .cabecalho .container {
-            padding: 0 15px;
-        }
-
-        .logo {
-            top: 0;
-        }
-
-        .logo img {
-            height: 50px;
-            width: 50px;
-        }
-
-        .header-direita {
-            gap: 15px;
-        }
-
-        .navegacao {
-            display: none;
-            /* Hide menu items on mobile by default */
-        }
-
-        .navegacao.menu-aberto {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 70px;
-            left: 0;
-            width: 100%;
-            background-color: var(--cor-fundo-secundaria);
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .hamburger-btn {
-            display: block;
-        }
-
-        /* Product Grid Fixes */
-        .vitrine {
-            grid-template-columns: 1fr;
-            /* Single column for products */
-            gap: 20px;
-        }
-
-        .produto-card {
-            max-width: 100%;
-        }
-
-        .card-imagem-container {
-            height: auto;
-            aspect-ratio: 1/1;
-            /* Ensure square aspect ratio */
-        }
-
-        /* Cart Fixes */
-        .carrinho-grid {
-            grid-template-columns: 1fr !important;
-        }
-
-        .item-carrinho {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .item-carrinho-img {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-        }
-
-        .item-carrinho-detalhes {
-            width: 100%;
-        }
-
-        .item-carrinho-acoes {
-            flex-direction: row;
-            width: 100%;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-
-        /* Admin Fixes */
-        .admin-tabs {
-            flex-direction: column;
-        }
-
-        .admin-tabs .btn {
-            width: 100%;
-        }
-
-        /* Hide table on mobile */
-        .admin-tabela {
-            display: none;
-        }
-
-        /* Mobile Admin Card View */
-        .admin-mobile-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .admin-mobile-card {
-            background-color: var(--cor-fundo-secundaria);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-        }
-
-        .admin-mobile-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 10px;
-        }
-
-        .admin-mobile-card-body p {
-            margin-bottom: 5px;
-            color: #ccc;
-        }
-
-        .admin-mobile-card-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .admin-mobile-card-actions button {
-            flex: 1;
-        }
-    }
-
     border: 1px solid #555;
     border-radius: 5px;
     font-size: 16px;
@@ -1640,152 +1177,6 @@ body.modal-aberto {
 .input-cliente {
     width: 100%;
     padding: 10px;
-
-    /* --- Mobile Responsiveness --- */
-    @media (max-width: 768px) {
-
-        /* Header Fixes */
-        .cabecalho {
-            height: auto;
-            padding: 10px 0;
-        }
-
-        .cabecalho .container {
-            padding: 0 15px;
-        }
-
-        .logo {
-            top: 0;
-        }
-
-        .logo img {
-            height: 50px;
-            width: 50px;
-        }
-
-        .header-direita {
-            gap: 15px;
-        }
-
-        .navegacao {
-            display: none;
-            /* Hide menu items on mobile by default */
-        }
-
-        .navegacao.menu-aberto {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 70px;
-            left: 0;
-            width: 100%;
-            background-color: var(--cor-fundo-secundaria);
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .hamburger-btn {
-            display: block;
-        }
-
-        /* Product Grid Fixes */
-        .vitrine {
-            grid-template-columns: 1fr;
-            /* Single column for products */
-            gap: 20px;
-        }
-
-        .produto-card {
-            max-width: 100%;
-        }
-
-        .card-imagem-container {
-            height: auto;
-            aspect-ratio: 1/1;
-            /* Ensure square aspect ratio */
-        }
-
-        /* Cart Fixes */
-        .carrinho-grid {
-            grid-template-columns: 1fr !important;
-        }
-
-        .item-carrinho {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .item-carrinho-img {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-        }
-
-        .item-carrinho-detalhes {
-            width: 100%;
-        }
-
-        .item-carrinho-acoes {
-            flex-direction: row;
-            width: 100%;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-
-        /* Admin Fixes */
-        .admin-tabs {
-            flex-direction: column;
-        }
-
-        .admin-tabs .btn {
-            width: 100%;
-        }
-
-        /* Hide table on mobile */
-        .admin-tabela {
-            display: none;
-        }
-
-        /* Mobile Admin Card View */
-        .admin-mobile-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .admin-mobile-card {
-            background-color: var(--cor-fundo-secundaria);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-        }
-
-        .admin-mobile-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 10px;
-        }
-
-        .admin-mobile-card-body p {
-            margin-bottom: 5px;
-            color: #ccc;
-        }
-
-        .admin-mobile-card-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .admin-mobile-card-actions button {
-            flex: 1;
-        }
-    }
-
     border: 1px solid #555;
     border-radius: 5px;
     font-size: 16px;
@@ -2127,109 +1518,6 @@ textarea:focus {
     border-radius: 5px;
 }
 
-/* --- Barra de Progresso --- */
-.progress-bar-container {
-    width: 100%;
-    background-color: #333;
-    border-radius: 5px;
-    overflow: hidden;
-    height: 20px;
-    min-width: 100px;
-}
-
-.progress-bar {
-    height: 100%;
-    background-color: var(--cor-destaque);
-    color: var(--cor-fundo);
-    font-weight: bold;
-    font-size: 12px;
-    line-height: 20px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    transition: width 0.5s ease;
-}
-
-.progress-bar.full {
-    background-color: #28a745;
-}
-
-/* --- Banner e Avisos --- */
-#top-banner-container {
-    width: 100%;
-    display: none;
-    background-color: var(--cor-fundo-secundaria);
-}
-
-#top-banner-container img {
-    width: 100%;
-    height: auto;
-    display: block;
-    object-fit: cover;
-    max-height: 150px;
-}
-
-#aviso-deslizante-container {
-    width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-    padding: 8px 0;
-    background-color: var(--cor-destaque);
-    color: var(--cor-fundo);
-    font-weight: bold;
-    font-family: var(--fonte-titulos);
-    font-size: 20px;
-    display: none;
-}
-
-.aviso-texto {
-    display: inline-block;
-    padding-left: 100%;
-    animation: texto-deslizando 25s linear infinite;
-    will-change: transform;
-    /* Otimização */
-}
-
-@keyframes texto-deslizando {
-    0% {
-        transform: translate(0, 0);
-    }
-
-    100% {
-        transform: translate(-100%, 0);
-    }
-}
-
-.push-subscribe-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 15px;
-}
-
-#push-subscribe-button {
-    background: transparent;
-    border: 1px solid #555;
-    color: #aaa;
-    padding: 8px 15px;
-    border-radius: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-}
-
-#push-subscribe-button:hover {
-    border-color: var(--cor-destaque);
-    color: var(--cor-destaque);
-}
-
-#push-subscribe-button.inscrito {
-    border-color: #28a745;
-    color: #28a745;
-}
-
 /* --- Cupom --- */
 .cupom-container {
     margin-bottom: 20px;
@@ -2252,173 +1540,12 @@ textarea:focus {
     flex: 1;
     margin: 0;
     padding: 10px;
-
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
     border: 1px solid #555;
     border-radius: 5px;
     font-size: 16px;
     width: auto;
-}
-
-/* --- Mobile Responsiveness --- */
-@media (max-width: 768px) {
-
-    /* Header Fixes */
-    .cabecalho {
-        height: 130px !important;
-        padding: 0 !important;
-        overflow: visible !important;
-    }
-
-    .cabecalho .container {
-        padding: 0 10px !important;
-        align-items: center;
-        height: 100% !important;
-        min-height: 0 !important;
-    }
-
-    .logo {
-        top: 0;
-        display: flex;
-        align-items: flex-start !important;
-        height: 100px !important;
-        margin-top: 5px !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .logo img {
-        height: 100px !important;
-        width: 100px !important;
-        max-width: none;
-        object-fit: contain;
-    }
-
-    .header-direita {
-        gap: 20px;
-        align-items: center;
-    }
-
-    .carrinho {
-        font-size: 28px;
-    }
-
-    .hamburger-btn {
-        display: block;
-        font-size: 32px;
-    }
-
-    .navegacao {
-        display: none;
-    }
-
-    .navegacao.menu-aberto {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 90px;
-        left: 0;
-        width: 100%;
-        background-color: var(--cor-fundo-secundaria);
-        padding: 20px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-    }
-
-    /* Product Grid Fixes */
-    .vitrine {
-        grid-template-columns: 1fr;
-        /* Single column for products */
-        gap: 20px;
-    }
-
-    .produto-card {
-        max-width: 100%;
-    }
-
-    .card-imagem-container {
-        height: auto;
-        aspect-ratio: 1/1;
-        /* Ensure square aspect ratio */
-    }
-
-    /* Cart Fixes */
-    .carrinho-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .item-carrinho {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .item-carrinho-img {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16/9;
-        object-fit: cover;
-    }
-
-    .item-carrinho-detalhes {
-        width: 100%;
-    }
-
-    .item-carrinho-acoes {
-        flex-direction: row;
-        width: 100%;
-        justify-content: space-between;
-        margin-top: 15px;
-    }
-
-    /* Admin Fixes */
-    .admin-tabs {
-        flex-direction: column;
-    }
-
-    .admin-tabs .btn {
-        width: 100%;
-    }
-
-    /* Hide table on mobile */
-    .admin-tabela {
-        display: none;
-    }
-
-    /* Mobile Admin Card View */
-    .admin-mobile-list {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .admin-mobile-card {
-        background-color: var(--cor-fundo-secundaria);
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #444;
-    }
-
-    .admin-mobile-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #555;
-        padding-bottom: 10px;
-    }
-
-    .admin-mobile-card-body p {
-        margin-bottom: 5px;
-        color: #ccc;
-    }
-
-    .admin-mobile-card-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .admin-mobile-card-actions button {
-        flex: 1;
-    }
 }
 
 .cupom-input-grupo button {
@@ -2458,976 +1585,7 @@ textarea:focus {
     color: #dc3545;
 }
 
-/* --- Media Queries (Responsividade Mobile) --- */
-@media (max-width: 992px) {
-    #img-zoom-result {
-        display: none !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .navegacao {
-        display: none;
-        position: absolute;
-        top: 83px;
-        left: 0;
-        width: 100%;
-        background-color: var(--cor-fundo-secundaria);
-        flex-direction: column;
-        text-align: center;
-        border-top: 1px solid #444;
-        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
-        /* Sombra para dar profundidade */
-    }
-
-    .navegacao.menu-aberto {
-        display: flex;
-    }
-
-    .nav-item {
-        padding: 15px 0;
-        border-bottom: 1px solid #444;
-        margin: 0 !important;
-        font-size: 18px;
-        /* Texto maior para toque */
-    }
-
-    .hamburger-btn {
-        display: block;
-        padding: 10px;
-        /* Área de toque maior */
-    }
-
-    /* Grid de Produtos no Mobile (1 coluna para destaque) */
-    .vitrine {
-        grid-template-columns: 1fr;
-    }
-
-    .pagina-carrinho,
-    .detalhe-produto-container,
-    .modal {
-        flex-direction: column;
-    }
-
-    .resumo-carrinho,
-    .produto-detalhe-coluna-img {
-        position: static;
-        width: 100%;
-    }
-
-    .item-carrinho {
-        display: grid;
-        grid-template-columns: 70px 1fr auto;
-        grid-template-areas:
-            "img info   remove"
-            "img qty    subtotal";
-        gap: 5px 15px;
-        align-items: center;
-        padding: 15px;
-    }
-
-    .item-carrinho-img,
-    .item-carrinho-video {
-        grid-area: img;
-        width: 70px;
-        height: 70px;
-    }
-
-    .item-carrinho-info {
-        grid-area: info;
-    }
-
-    .item-carrinho-quantidade {
-        grid-area: qty;
-        justify-self: start;
-    }
-
-    .item-carrinho-subtotal {
-        grid-area: subtotal;
-        justify-self: end;
-    }
-
-    .btn-remover {
-        grid-area: remove;
-        justify-self: end;
-        padding: 10px;
-    }
-
-    .item-carrinho-info h3 {
-        font-size: 16px;
-        margin-bottom: 0;
-    }
-
-    .item-carrinho-info p {
-        margin-bottom: 0;
-    }
-
-    .titulo-secao {
-        font-size: 36px;
-        margin-bottom: 20px;
-    }
-
-    .produto-detalhe-coluna-info h1 {
-        font-size: 32px;
-        margin-top: 20px;
-    }
-
-    .produto-detalhe-botoes {
-        flex-direction: column;
-    }
-
-    .btn-adicionar-pagina-produto,
-    .produto-detalhe-botoes .btn-secundario {
-        font-size: 14px;
-        padding: 15px;
-    }
-
-    .modal {
-        max-height: 80vh;
-        overflow-y: auto;
-        width: 95%;
-        padding: 20px;
-    }
-
-    .modal-titulo {
-        font-size: 28px;
-    }
-
-    .rodape {
-        padding-top: 25px;
-    }
-
-    .rodape .container {
-        gap: 20px 15px;
-    }
-
-    .rodape-coluna {
-        flex-basis: calc(50% - 10px);
-        min-width: 150px;
-        text-align: left;
-        overflow-wrap: break-word;
-    }
-
-    .rodape-coluna h3 {
-        font-size: 19px;
-        margin-bottom: 8px;
-    }
-
-    .rodape-coluna p,
-    .rodape-coluna a {
-        font-size: 13px;
-        margin-bottom: 6px;
-    }
-
-    .rodape-coluna .pagamento-item i {
-        font-size: 18px;
-    }
-
-    .rodape-base {
-        padding: 15px 0;
-        margin-top: 15px;
-    }
-}
-
-/* --- Categorias e Filtros --- */
-.btn-categoria {
-    background-color: #333;
-    color: #ccc;
-    border: 1px solid #555;
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
-.btn-categoria:hover {
-    background-color: #444;
-    color: white;
-}
-
-.btn-categoria.ativo {
-    background-color: var(--cor-destaque);
-    color: var(--cor-fundo);
-    border-color: var(--cor-destaque);
-    font-weight: bold;
-}
-
-/* --- Badge Novo --- */
-.badge-novo {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background-color: var(--cor-destaque);
-    color: var(--cor-fundo);
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 12px;
-    z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-/* --- Search Container Alignment --- */
-.search-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-
-#search-input {
-    flex: 1;
-    min-width: 200px;
-    padding: 12px;
-    border-radius: 25px;
-    border: 1px solid #555;
-    background-color: #333;
-    color: white;
-    outline: none;
-}
-
-#sort-select {
-    padding: 12px;
-    border-radius: 25px;
-    border: 1px solid #555;
-    background-color: #333;
-    color: white;
-    cursor: pointer;
-    outline: none;
-}
-
-#categorias-container {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    margin-bottom: 30px;
-    white-space: nowrap;
-    justify-content: center;
-    /* Centraliza no desktop */
-}
-
-/* Mobile Alignment Fixes */
-@media (max-width: 768px) {
-    .search-container {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    #sort-select {
-        width: 100%;
-        margin-left: 0 !important;
-        /* Override inline style */
-        text-align: center;
-    }
-
-    #categorias-container {
-        justify-content: flex-start;
-        /* Alinha a esquerda no mobile para scroll */
-        padding-left: 10px;
-        padding-right: 10px;
-    }
-}
-
-/* Toast Notifications */
-.toast-container {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 90%;
-    max-width: 400px;
-}
-
-.toast-notification {
-    background: #222;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 300px;
-    transform: translateX(120%);
-    transition: transform 0.3s ease;
-    border-left: 4px solid #00ff88;
-}
-
-.toast-notification.show {
-    transform: translateX(0);
-}
-
-.toast-notification.error {
-    border-left-color: #ff4444;
-}
-
-.toast-notification.info {
-    border-left-color: #0088ff;
-}
-
-.toast-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.toast-notification.success .toast-icon {
-    color: #00ff88;
-}
-
-.toast-notification.error .toast-icon {
-    color: #ff4444;
-}
-
-.toast-notification.info .toast-icon {
-    color: #0088ff;
-}
-
-.toast-close {
-    background: none;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    margin-left: auto;
-    padding: 0;
-    display: flex;
-    align-items: center;
-}
-
-.toast-close:hover {
-    color: white;
-}
-
-/* Privacy Policy Styles */
-.privacy-container {
-    padding: 40px 20px;
-    max-width: 800px;
-    margin: 0 auto;
-    color: var(--cor-texto);
-}
-
-.privacy-container h1 {
-    font-family: var(--fonte-titulos);
-    font-size: 48px;
-    color: var(--cor-destaque);
-    margin-bottom: 30px;
-}
-
-.privacy-container h2 {
-    font-family: var(--fonte-titulos);
-    font-size: 32px;
-    color: var(--cor-destaque);
-    margin-top: 40px;
-    margin-bottom: 15px;
-}
-
-.privacy-container p {
-    font-size: 18px;
-    line-height: 1.8;
-    margin-bottom: 15px;
-}
-
-.privacy-container ul {
-    list-style-type: disc;
-    padding-left: 20px;
-    margin-bottom: 20px;
-}
-
-.privacy-container li {
-    margin-bottom: 10px;
-    font-size: 18px;
-}
-
-.privacy-container strong {
-    color: #fff;
-}
-
-/* --- Push Notification Button --- */
-.push-subscribe-container {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-}
-
-#push-subscribe-button {
-    background-color: transparent;
-    border: 2px solid var(--cor-destaque);
-    color: var(--cor-texto);
-    padding: 10px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-}
-
-#push-subscribe-button:hover {
-    background-color: var(--cor-destaque);
-    color: var(--cor-fundo);
-}
-
-#push-subscribe-button.inscrito {
-    border-color: #00ff88;
-    color: #00ff88;
-    cursor: default;
-}
-
-
-/* --- Legacy Admin Styles --- */
-.admin-container {
-    padding: 40px 20px;
-    max-width: 900px;
-    margin: auto;
-    background-color: #2c2c2c;
-    border-radius: 8px;
-    margin-top: 40px;
-    margin-bottom: 40px;
-}
-
-.admin-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.admin-tabela {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    color: var(--cor-texto);
-}
-
-.admin-tabela th,
-.admin-tabela td {
-    border: 1px solid #555;
-    padding: 12px;
-    text-align: left;
-    vertical-align: middle;
-}
-
-.admin-tabela th {
-    background-color: var(--cor-fundo-secundaria);
-    font-family: 'Teko', sans-serif;
-    font-size: 20px;
-    color: var(--cor-destaque);
-}
-
-.acoes-btn {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.btn-admin {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: filter 0.2s ease;
-    text-align: center;
-}
-
-.btn-admin:hover {
-    filter: brightness(1.15);
-}
-
-.btn-gerenciar {
-    background-color: #17a2b8;
-    color: white;
-}
-
-.btn-editar {
-    background-color: #ffc107;
-    color: black;
-}
-
-.btn-excluir {
-    background-color: #dc3545;
-    color: white;
-}
-
-.btn-adicionar {
-    background-color: #28a745;
-    color: white;
-    padding: 10px 15px;
-}
-
-.btn-sortear {
-    background-color: #9c27b0;
-    color: white;
-}
-
-.btn-cancelar {
-    background-color: #6c757d;
-    color: white;
-}
-
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 34px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #555;
-    transition: .4s;
-    border-radius: 34px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked+.slider {
-    background-color: #28a745;
-}
-
-input:checked+.slider:before {
-    transform: translateX(26px);
-}
-
-.modal-admin-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 3000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.modal-admin-container.visivel {
-    display: flex;
-    opacity: 1;
-    visibility: visible;
-}
-
-.modal-admin {
-    background-color: #2c2c2c;
-    padding: 30px 40px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
-    transform: scale(0.95);
-    transition: transform 0.3s ease;
-}
-
-.modal-admin-container.visivel .modal-admin {
-    transform: scale(1);
-}
-
-.modal-fechar-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    color: #aaa;
-    font-size: 30px;
-    cursor: pointer;
-    transition: color 0.2s ease;
-}
-
-.modal-fechar-btn:hover {
-    color: var(--cor-destaque);
-}
-
-.form-campo {
-    margin-bottom: 20px;
-}
-
-.form-campo label {
-    display: block;
-    color: #ccc;
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-
-.form-campo input,
-.form-campo textarea,
-.form-campo select {
-    width: 100%;
-    padding: 12px;
-
-    /* --- Mobile Responsiveness --- */
-    @media (max-width: 768px) {
-
-        /* Header Fixes */
-        .cabecalho {
-            height: auto;
-            padding: 10px 0;
-        }
-
-        .cabecalho .container {
-            padding: 0 15px;
-        }
-
-        .logo {
-            top: 0;
-        }
-
-        .logo img {
-            height: 50px;
-            width: 50px;
-        }
-
-        .header-direita {
-            gap: 15px;
-        }
-
-        .navegacao {
-            display: none;
-            /* Hide menu items on mobile by default */
-        }
-
-        .navegacao.menu-aberto {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 70px;
-            left: 0;
-            width: 100%;
-            background-color: var(--cor-fundo-secundaria);
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .hamburger-btn {
-            display: block;
-        }
-
-        /* Product Grid Fixes */
-        .vitrine {
-            grid-template-columns: 1fr;
-            /* Single column for products */
-            gap: 20px;
-        }
-
-        .produto-card {
-            max-width: 100%;
-        }
-
-        .card-imagem-container {
-            height: auto;
-            aspect-ratio: 1/1;
-            /* Ensure square aspect ratio */
-        }
-
-        /* Cart Fixes */
-        .carrinho-grid {
-            grid-template-columns: 1fr !important;
-        }
-
-        .item-carrinho {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .item-carrinho-img {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-        }
-
-        .item-carrinho-detalhes {
-            width: 100%;
-        }
-
-        .item-carrinho-acoes {
-            flex-direction: row;
-            width: 100%;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-
-        /* Admin Fixes */
-        .admin-tabs {
-            flex-direction: column;
-        }
-
-        .admin-tabs .btn {
-            width: 100%;
-        }
-
-        /* Hide table on mobile */
-        .admin-tabela {
-            display: none;
-        }
-
-        /* Mobile Admin Card View */
-        .admin-mobile-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .admin-mobile-card {
-            background-color: var(--cor-fundo-secundaria);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-        }
-
-        .admin-mobile-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 10px;
-        }
-
-        .admin-mobile-card-body p {
-            margin-bottom: 5px;
-            color: #ccc;
-        }
-
-        .admin-mobile-card-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .admin-mobile-card-actions button {
-            flex: 1;
-        }
-    }
-
-    border: 2px solid #555;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-.form-campo small {
-    color: #888;
-    margin-top: 5px;
-    display: block;
-}
-
-.notificacao-container {
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
-}
-
-.notificacao-coluna {
-    flex: 1;
-    min-width: 300px;
-}
-
-.notificacao-coluna h3 {
-    color: var(--cor-destaque);
-    margin-bottom: 15px;
-    border-bottom: 1px solid #555;
-    padding-bottom: 5px;
-}
-
-.lista-notificacoes {
-    list-style: none;
-    padding: 0;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.notificacao-item {
-    background-color: var(--cor-fundo);
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    border-left: 3px solid var(--cor-destaque);
-}
-
-.notificacao-item h4 {
-    color: #eee;
-    margin-bottom: 5px;
-}
-
-.notificacao-item p {
-    color: #ccc;
-    font-size: 0.9em;
-    margin-bottom: 10px;
-}
-
-.notificacao-item small {
-    color: #888;
-    font-style: italic;
-}
-
-/* --- Admin Action Buttons (Original Design) --- */
-.acoes-btn {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
-
-.btn-admin-acao {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    text-transform: capitalize;
-    /* Or uppercase depending on exact look, screenshots look mixed/normal */
-    transition: opacity 0.2s;
-    color: white;
-}
-
-.btn-admin-acao:hover {
-    opacity: 0.9;
-}
-
-.btn-editar {
-    background-color: #FFC107;
-    /* Yellow/Orange */
-    color: #000;
-    /* Black text for yellow button */
-}
-
-.btn-excluir {
-    background-color: #DC3545;
-    /* Red */
-    color: white;
-}
-
-.btn-sortear {
-    background-color: #9C27B0;
-    /* Purple */
-    color: white;
-}
-
-.btn-participantes {
-    background-color: #17A2B8;
-    /* Cyan/Blue */
-    color: white;
-}
-
-.btn-adicionar {
-    background-color: #28A745;
-    /* Green */
-    color: white;
-    padding: 10px 20px;
-    font-size: 16px;
-}
-
-.btn-desativar {
-    background-color: #DC3545;
-    color: white;
-}
-
-/* --- Animations & Marquee --- */
-@keyframes marquee {
-    0% {
-        transform: translateX(100%);
-    }
-
-    100% {
-        transform: translateX(-100%);
-    }
-}
-
-.marquee-container {
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.marquee-content {
-    display: inline-block;
-    animation: marquee 20s linear infinite;
-    font-weight: bold;
-    font-size: 1.1em;
-}
-
-/* Smooth Actions Animations */
-.btn,
-.btn-admin,
-.btn-icon,
-.btn-icon-delete,
-.related-product-card,
-.product-card {
-    transition: all 0.2s ease-in-out;
-}
-
-.btn:active,
-.btn-admin:active {
-    transform: scale(0.95);
-}
-
-.product-card:hover,
-.related-product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-/* Fade In Animation for Pages */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-main,
-.container {
-    animation: fadeIn 0.5s ease-out;
-}
-
-.admin-mobile-list {
-    display: none;
-}
-
-/* --- Mobile Responsiveness --- */
+/* --- Mobile Responsiveness (CRITICAL FIX FOR CART) --- */
 @media (max-width: 768px) {
 
     /* Header Fixes */
@@ -3440,48 +1598,29 @@ main,
         padding: 0 15px;
     }
 
-    .logo {
-        top: 0;
-    }
-
     .logo img {
         height: 50px;
         width: 50px;
     }
 
     .header-direita {
-        gap: 10px;
-        /* Reduced gap */
-        align-items: center;
-    }
-
-    #push-subscribe-button span {
-        display: none;
-        /* Hide text on mobile */
-    }
-
-    #push-subscribe-button {
-        padding: 5px;
+        gap: 15px;
     }
 
     .navegacao {
         display: none;
-        /* Hide menu items on mobile by default */
     }
 
     .navegacao.menu-aberto {
         display: flex;
         flex-direction: column;
         position: absolute;
-        top: 100%;
-        /* Align exactly below header */
+        top: 70px;
         left: 0;
         width: 100%;
         background-color: var(--cor-fundo-secundaria);
         padding: 20px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        z-index: 1002;
-        /* Ensure it's on top */
     }
 
     .hamburger-btn {
@@ -3491,47 +1630,115 @@ main,
     /* Product Grid Fixes */
     .vitrine {
         grid-template-columns: 1fr;
-        /* Single column for products */
         gap: 20px;
     }
 
-    .produto-card {
-        max-width: 100%;
-    }
-
-    .card-imagem-container {
-        height: auto;
-        aspect-ratio: 1/1;
-        /* Ensure square aspect ratio */
-    }
-
-    /* Cart Fixes */
+    /* --- Cart Fix (Imagem quadrada e layout travado) --- */
     .carrinho-grid {
         grid-template-columns: 1fr !important;
+        gap: 20px !important;
     }
 
     .item-carrinho {
-        flex-direction: column;
-        align-items: flex-start;
+        display: grid !important;
+        /* Define columns: Image | Content | Actions (Delete) */
+        grid-template-columns: 90px 1fr 40px !important;
+        grid-template-rows: auto auto;
+        gap: 15px;
+        align-items: center;
+        /* Alinhar verticalmente ao centro */
+        padding: 15px;
+        position: relative;
+        height: auto;
+    }
+
+    .item-carrinho-img-container {
+        /* Force Square and Fixed Size */
+        width: 90px !important;
+        height: 90px !important;
+        aspect-ratio: 1 / 1;
+        border-radius: 8px;
+        overflow: hidden;
+        grid-row: 1 / 3;
+        /* Imagem ocupa as duas linhas se necessário */
+        background-color: #333;
+        /* Placeholder bg */
+        flex-shrink: 0;
+        /* Não deixa a imagem encolher */
     }
 
     .item-carrinho-img {
         width: 100%;
-        height: auto;
-        aspect-ratio: 16/9;
-        object-fit: cover;
+        height: 100%;
+        object-fit: cover !important;
+        /* Cobre o quadrado perfeitamente */
+        object-position: center;
+        display: block;
     }
 
-    .item-carrinho-detalhes {
-        width: 100%;
+    .item-carrinho-info {
+        grid-column: 2 / 3;
+        /* Texto na coluna do meio */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 90px;
+        /* Garante altura mínima igual a imagem */
     }
 
-    .item-carrinho-acoes {
-        flex-direction: row;
-        width: 100%;
+    .item-carrinho-header {
+        margin-bottom: 5px;
+    }
+
+    .item-carrinho-nome {
+        font-size: 16px;
+        line-height: 1.3;
+        display: block;
+        margin-bottom: 5px;
+        word-wrap: break-word;
+        /* Quebra texto longo */
+    }
+
+    .item-carrinho-specs {
+        font-size: 12px;
+        margin-bottom: 5px;
+    }
+
+    .item-carrinho-preco {
+        font-size: 16px;
+    }
+
+    .item-carrinho-acoes-bottom {
+        grid-column: 2 / 4;
+        /* Ações ocupam colunas 2 e 3 na linha de baixo se quebrar, ou ajustar layout */
+        display: flex;
         justify-content: space-between;
-        margin-top: 15px;
+        align-items: center;
+        margin-top: 0;
+        /* Reset margin */
     }
+
+    /* Botão de remover posicionado estrategicamente */
+    .btn-remover {
+        grid-column: 3 / 4;
+        grid-row: 1 / 2;
+        align-self: start;
+        /* Alinha ao topo */
+        justify-self: end;
+        margin-top: -5px;
+        margin-right: -5px;
+        padding: 10px;
+        /* Aumenta área de toque */
+    }
+
+    /* Quantidade input adjustment */
+    .quantidade-container .input-quantidade {
+        width: 40px;
+        height: 30px;
+        font-size: 14px;
+    }
+
+    /* --- End Cart Fix --- */
 
     /* Admin Fixes */
     .admin-tabs {
@@ -3542,12 +1749,10 @@ main,
         width: 100%;
     }
 
-    /* Hide table on mobile */
     .admin-tabela {
         display: none;
     }
 
-    /* Mobile Admin Card View */
     .admin-mobile-list {
         display: flex;
         flex-direction: column;
@@ -3559,94 +1764,5 @@ main,
         padding: 15px;
         border-radius: 8px;
         border: 1px solid #444;
-    }
-
-    .admin-mobile-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #555;
-        padding-bottom: 10px;
-    }
-
-    .admin-mobile-card-body p {
-        margin-bottom: 5px;
-        color: #ccc;
-    }
-
-    .admin-mobile-card-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .admin-mobile-card-actions button {
-        flex: 1;
-    }
-
-    .lista-notificacoes {
-        display: none;
-    }
-
-    /* Product Details Page Fixes */
-    .detalhe-produto-container {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    .produto-detalhe-coluna-img {
-        width: 100% !important;
-        margin-bottom: 20px;
-        max-width: none !important;
-    }
-
-    .produto-detalhe-coluna-info {
-        width: 100% !important;
-        padding-left: 0 !important;
-    }
-
-    .container-imagem-zoom {
-        height: auto;
-        aspect-ratio: 1/1;
-        width: 100%;
-        position: relative;
-        overflow: hidden;
-        border-radius: 8px;
-    }
-
-    #produto-imagem-principal {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .produto-miniaturas {
-        justify-content: center;
-        margin-top: 10px;
-    }
-
-    .produto-detalhe-botoes {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        width: 100%;
-        margin-top: 20px;
-    }
-
-    .produto-detalhe-botoes .btn {
-        width: 100%;
-        padding: 15px;
-        font-size: 18px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .related-list {
-        grid-template-columns: 1fr 1fr;
     }
 }
