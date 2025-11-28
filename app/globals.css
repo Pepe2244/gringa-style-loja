@@ -156,6 +156,29 @@ a {
     cursor: pointer;
 }
 
+/* --- Push Notification Button --- */
+#push-subscribe-button {
+    background: none;
+    border: none;
+    color: var(--cor-texto);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+#push-subscribe-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#push-subscribe-button.inscrito {
+    color: var(--cor-destaque);
+}
+
 /* --- Conteúdo Principal --- */
 main {
     padding: 0 0 100px 0;
@@ -3271,7 +3294,18 @@ main,
     }
 
     .header-direita {
-        gap: 15px;
+        gap: 10px;
+        /* Reduced gap */
+        align-items: center;
+    }
+
+    #push-subscribe-button span {
+        display: none;
+        /* Hide text on mobile */
+    }
+
+    #push-subscribe-button {
+        padding: 5px;
     }
 
     .navegacao {
@@ -3283,12 +3317,15 @@ main,
         display: flex;
         flex-direction: column;
         position: absolute;
-        top: 70px;
+        top: 100%;
+        /* Align exactly below header */
         left: 0;
         width: 100%;
         background-color: var(--cor-fundo-secundaria);
         padding: 20px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        z-index: 1002;
+        /* Ensure it's on top */
     }
 
     .hamburger-btn {
