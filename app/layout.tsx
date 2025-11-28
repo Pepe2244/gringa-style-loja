@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto, Teko } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -39,6 +40,19 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${teko.variable} antialiased`}
       >
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-2L2F9CY9JN');
+          `}
+        </Script>
         <ToastProvider>
           <Header />
           <CampaignBanner />

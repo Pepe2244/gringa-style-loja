@@ -1,27 +1,38 @@
-// Service Worker for Push Notifications
 self.addEventListener('push', function (event) {
-    if (event.data) {
-        const data = event.data.json();
-        const options = {
-            body: data.body,
-            icon: data.icon || '/icon-192x192.png',
-            badge: data.badge || '/badge-72x72.png',
-            vibrate: [100, 50, 100],
-            data: {
-                dateOfArrival: Date.now(),
-                primaryKey: '2',
-                url: data.url || '/'
-            }
-        };
-        event.waitUntil(
-            self.registration.showNotification(data.title, options)
-        );
-    }
+    const data = event.data.json();
+    const title = data.titulo || "Gringa Style";
+    const options = {
+        body: data.mensagem,
+        icon: '/apple-touch-icon.png',
+        badge: '/favicon-96x96.png',
+        data: {
+            url: data.link || '/'
+        }
+    };
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
 });
 
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
+    const urlToOpen = event.notification.data.url;
+
     event.waitUntil(
-        clients.openWindow(event.notification.data.url)
+        clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true
+        }).then((clientList) => {
+            if (clientList.length > 0) {
+                let client = clientList[0];
+                for (let i = 0; i < clientList.length; i++) {
+                    if (clientList[i].focused) {
+                        client = clientList[i];
+                    }
+                }
+                return client.focus().then(client => client.navigate(urlToOpen));
+            }
+            return clients.openWindow(urlToOpen);
+        })
     );
 });

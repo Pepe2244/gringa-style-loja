@@ -44,6 +44,10 @@ export default function Footer() {
                 <p style={{ marginTop: '10px' }}>
                     &copy; <span onClick={handleSecretClick} style={{ cursor: 'default', userSelect: 'none' }}>2025</span> Gringa Style. Todos os direitos reservados.
                 </p>
+
+                <div id="push-subscribe-container" className="push-subscribe-container">
+                    <PushNotificationButton />
+                </div>
             </div>
         </footer>
     );
