@@ -24,6 +24,7 @@ export default function CartPage() {
     const [clientName, setClientName] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
+    const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         loadCart();
@@ -216,46 +217,56 @@ export default function CartPage() {
                             const imageUrl = mediaUrls.find(url => !url.includes('.mp4')) || '/imagens/gringa_style_logo.png';
 
                             return (
-                                <div key={`${item.produto_id}-${index}`} className="item-carrinho" style={{ background: '#222', padding: '15px', borderRadius: '8px', marginBottom: '15px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                    <Link href={`/produto?id=${item.produto_id}`}>
-                                        <Image
-                                            src={imageUrl}
-                                            alt={product.nome}
-                                            width={80}
-                                            height={80}
-                                            className="item-carrinho-img"
-                                            style={{ objectFit: 'cover', borderRadius: '5px' }}
-                                        />
-                                    </Link>
-                                    <div className="item-carrinho-detalhes" style={{ flex: 1 }}>
-                                        <Link href={`/produto?id=${item.produto_id}`} style={{ textDecoration: 'none', color: 'var(--cor-destaque)' }}>
-                                            <h3 style={{ fontSize: '1.1rem', margin: '0 0 5px 0' }}>{product.nome}</h3>
+                                <div key={`${item.produto_id}-${index}`} className="item-carrinho">
+                                    <div className="item-carrinho-img-container">
+                                        <Link href={`/produto?id=${item.produto_id}`}>
+                                            <Image
+                                                src={imageUrl}
+                                                alt={product.nome}
+                                                width={120}
+                                                height={120}
+                                                className="item-carrinho-img"
+                                            />
                                         </Link>
-                                        {item.variante && (
-                                            <p className="variante-carrinho" style={{ fontSize: '0.9em', color: '#ccc', margin: 0 }}>
-                                                {item.variante.tipo}: {item.variante.opcao}
-                                            </p>
-                                        )}
-                                        <p style={{ fontWeight: 'bold', marginTop: '5px' }}>R$ {getPrecoFinal(product).toFixed(2).replace('.', ',')}</p>
                                     </div>
 
-                                    <div className="item-carrinho-acoes" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                                        <input
-                                            type="number"
-                                            className="input-quantidade"
-                                            value={item.quantidade}
-                                            min="1"
-                                            onChange={(e) => updateQuantity(index, parseInt(e.target.value))}
-                                            style={{ width: '50px', textAlign: 'center', background: '#333', border: '1px solid #555', color: 'white', borderRadius: '4px', padding: '5px' }}
-                                        />
-                                        <button
-                                            className="btn-remover"
-                                            onClick={() => updateQuantity(index, 0)}
-                                            style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer' }}
-                                            title="Remover item"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                                    <div className="item-carrinho-info">
+                                        <div className="item-carrinho-header">
+                                            <Link href={`/produto?id=${item.produto_id}`} className="item-carrinho-nome">
+                                                {product.nome}
+                                            </Link>
+                                        </div>
+
+                                        <div className="item-carrinho-specs">
+                                            {item.variante && (
+                                                <p className="spec-item">
+                                                    {item.variante.tipo}: {item.variante.opcao}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="item-carrinho-preco">
+                                            R$ {getPrecoFinal(product).toFixed(2).replace('.', ',')}
+                                        </div>
+
+                                        <div className="item-carrinho-acoes-bottom">
+                                            <div className="quantidade-container">
+                                                <input
+                                                    type="number"
+                                                    className="input-quantidade"
+                                                    value={item.quantidade}
+                                                    min="1"
+                                                    onChange={(e) => updateQuantity(index, parseInt(e.target.value))}
+                                                />
+                                            </div>
+                                            <button
+                                                className="btn-remover"
+                                                onClick={() => setItemToDelete(index)}
+                                                title="Remover item"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -388,6 +399,71 @@ export default function CartPage() {
                         >
                             FINALIZAR PEDIDO VIA WHATSAPP
                         </button>
+                    </div>
+                </div>
+            )}
+            {/* Delete Confirmation Modal */}
+            {itemToDelete !== null && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div className="modal-content" style={{
+                        backgroundColor: '#222',
+                        padding: '25px',
+                        borderRadius: '10px',
+                        maxWidth: '400px',
+                        width: '90%',
+                        textAlign: 'center',
+                        border: '1px solid #444',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+                    }}>
+                        <h3 style={{ marginBottom: '15px', color: 'white' }}>Remover Item?</h3>
+                        <p style={{ marginBottom: '25px', color: '#ccc' }}>Tem certeza que deseja apagar este item do carrinho?</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                            <button
+                                onClick={() => {
+                                    if (itemToDelete !== null) {
+                                        updateQuantity(itemToDelete, 0);
+                                        setItemToDelete(null);
+                                    }
+                                }}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '5px',
+                                    border: 'none',
+                                    backgroundColor: '#444',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                Sim
+                            </button>
+                            <button
+                                onClick={() => setItemToDelete(null)}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '5px',
+                                    border: 'none',
+                                    backgroundColor: '#dc3545',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    boxShadow: '0 0 10px rgba(220, 53, 69, 0.5)'
+                                }}
+                            >
+                                Não
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
