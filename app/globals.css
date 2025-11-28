@@ -2089,19 +2089,23 @@ textarea:focus {
     /* Header Fixes */
     .cabecalho {
         height: auto !important;
-        padding: 2px 0 !important;
-        /* Minimal padding */
+        padding: 0 !important;
+        /* Zero padding */
     }
 
     .cabecalho .container {
         padding: 0 10px !important;
         align-items: center;
+        height: auto !important;
+        min-height: 0 !important;
     }
 
     .logo {
         top: 0;
         display: flex;
         align-items: center;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     .logo img {
