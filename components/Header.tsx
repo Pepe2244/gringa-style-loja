@@ -99,11 +99,11 @@ export default function Header() {
                     />
                 </Link>
                 <nav id="nav-menu" className={`navegacao ${menuAberto ? 'menu-aberto' : ''}`}>
-                    <Link href="/" className={`nav-item ${pathname === '/' && activeSection === 'home' ? 'ativo' : ''}`}>Produtos</Link>
-                    <Link href="/rifa" className={`nav-item ${pathname === '/rifa' ? 'ativo' : ''}`}>Rifa</Link>
-                    <Link href="/historico" className={`nav-item ${pathname === '/historico' ? 'ativo' : ''}`}>Histórico</Link>
-                    <Link href="/#sobre" className={`nav-item ${activeSection === 'sobre' ? 'ativo' : ''}`}>Sobre</Link>
-                    <Link href="/#contato" className={`nav-item ${activeSection === 'contato' ? 'ativo' : ''}`}>Contato</Link>
+                    <Link href="/" className={`nav-item ${pathname === '/' && activeSection === 'home' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Produtos</Link>
+                    <Link href="/rifa" className={`nav-item ${pathname === '/rifa' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Rifa</Link>
+                    <Link href="/historico" className={`nav-item ${pathname === '/historico' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Histórico</Link>
+                    <Link href="/#sobre" className={`nav-item ${activeSection === 'sobre' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Sobre</Link>
+                    <Link href="/#contato" className={`nav-item ${activeSection === 'contato' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Contato</Link>
                 </nav>
                 <div className="header-direita">
                     <PushNotificationButton />

@@ -930,18 +930,22 @@ body.modal-aberto {
 
 .resumo-carrinho {
     flex: 1;
-    background-color: var(--cor-fundo-secundaria);
-    padding: 20px;
-    border-radius: 8px;
+    background-color: #2a2a2a;
+    padding: 25px;
+    border-radius: 10px;
     position: sticky;
     top: 120px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .resumo-carrinho h2 {
     font-family: var(--fonte-titulos);
-    font-size: 28px;
-    margin-bottom: 20px;
+    font-size: 32px;
+    margin-bottom: 25px;
     text-align: center;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+    color: white;
 }
 
 .resumo-linha {
@@ -949,171 +953,244 @@ body.modal-aberto {
     justify-content: space-between;
     margin-bottom: 15px;
     font-size: 18px;
-}
-
-.resumo-pagamento {
-    margin-bottom: 15px;
-}
-
-.resumo-pagamento label {
-    display: block;
-    margin-bottom: 5px;
     color: #ccc;
 }
 
-.select-pagamento {
+.resumo-linha.total-final {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    margin-top: 20px;
+    margin-bottom: 25px;
+    border-top: 1px solid #444;
+    padding-top: 20px;
+}
+
+.resumo-pagamento {
+    margin-bottom: 20px;
+}
+
+.resumo-pagamento label,
+.campo-cliente label {
+    display: block;
+    margin-bottom: 8px;
+    color: #ccc;
+    font-size: 14px;
+}
+
+.select-pagamento,
+.input-cliente,
+#cupom-input {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: white;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
 
-    /* --- Mobile Responsiveness --- */
-    @media (max-width: 768px) {
+.select-pagamento:focus,
+.input-cliente:focus,
+#cupom-input:focus {
+    border-color: var(--cor-destaque);
+}
 
-        /* Header Fixes */
-        .cabecalho {
-            height: auto;
-            padding: 10px 0;
-        }
+.btn-finalizar {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--cor-destaque);
+    color: black;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: transform 0.2s, background-color 0.2s;
+}
 
-        .cabecalho .container {
-            padding: 0 15px;
-        }
+.btn-finalizar:hover {
+    background-color: #ffb733;
+    transform: scale(1.02);
+}
 
-        .logo {
-            top: 0;
-        }
+.cupom-area {
+    margin: 20px 0;
+}
 
-        .logo img {
-            height: 50px;
-            width: 50px;
-        }
+.cupom-input-group {
+    display: flex;
+    gap: 10px;
+}
 
-        .header-direita {
-            gap: 15px;
-        }
+#btn-aplicar-cupom {
+    padding: 0 20px;
+    border-radius: 5px;
+    border: none;
+    background-color: #28a745;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
 
-        .navegacao {
-            display: none;
-            /* Hide menu items on mobile by default */
-        }
+#btn-aplicar-cupom:hover {
+    background-color: #218838;
+}
 
-        .navegacao.menu-aberto {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 70px;
-            left: 0;
-            width: 100%;
-            background-color: var(--cor-fundo-secundaria);
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        }
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
 
-        .hamburger-btn {
-            display: block;
-        }
-
-        /* Product Grid Fixes */
-        .vitrine {
-            grid-template-columns: 1fr;
-            /* Single column for products */
-            gap: 20px;
-        }
-
-        .produto-card {
-            max-width: 100%;
-        }
-
-        .card-imagem-container {
-            height: auto;
-            aspect-ratio: 1/1;
-            /* Ensure square aspect ratio */
-        }
-
-        /* Cart Fixes */
-        .carrinho-grid {
-            grid-template-columns: 1fr !important;
-        }
-
-        .item-carrinho {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .item-carrinho-img {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-        }
-
-        .item-carrinho-detalhes {
-            width: 100%;
-        }
-
-        .item-carrinho-acoes {
-            flex-direction: row;
-            width: 100%;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-
-        /* Admin Fixes */
-        .admin-tabs {
-            flex-direction: column;
-        }
-
-        .admin-tabs .btn {
-            width: 100%;
-        }
-
-        /* Hide table on mobile */
-        .admin-tabela {
-            display: none;
-        }
-
-        /* Mobile Admin Card View */
-        .admin-mobile-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .admin-mobile-card {
-            background-color: var(--cor-fundo-secundaria);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-        }
-
-        .admin-mobile-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 10px;
-        }
-
-        .admin-mobile-card-body p {
-            margin-bottom: 5px;
-            color: #ccc;
-        }
-
-        .admin-mobile-card-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .admin-mobile-card-actions button {
-            flex: 1;
-        }
+    /* Header Fixes */
+    .cabecalho {
+        height: auto;
+        padding: 10px 0;
     }
 
-    border: 1px solid #555;
-    border-radius: 5px;
-    font-size: 16px;
+    .cabecalho .container {
+        padding: 0 15px;
+    }
+
+    .logo {
+        top: 0;
+    }
+
+    .logo img {
+        height: 50px;
+        width: 50px;
+    }
+
+    .header-direita {
+        gap: 15px;
+    }
+
+    .navegacao {
+        display: none;
+        /* Hide menu items on mobile by default */
+    }
+
+    .navegacao.menu-aberto {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        width: 100%;
+        background-color: var(--cor-fundo-secundaria);
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .hamburger-btn {
+        display: block;
+    }
+
+    /* Product Grid Fixes */
+    .vitrine {
+        grid-template-columns: 1fr;
+        /* Single column for products */
+        gap: 20px;
+    }
+
+    .produto-card {
+        max-width: 100%;
+    }
+
+    .card-imagem-container {
+        height: auto;
+        aspect-ratio: 1/1;
+        /* Ensure square aspect ratio */
+    }
+
+    /* Cart Fixes */
+    .carrinho-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .item-carrinho {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .item-carrinho-img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+    }
+
+    .item-carrinho-detalhes {
+        width: 100%;
+    }
+
+    .item-carrinho-acoes {
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 15px;
+    }
+
+    /* Admin Fixes */
+    .admin-tabs {
+        flex-direction: column;
+    }
+
+    .admin-tabs .btn {
+        width: 100%;
+    }
+
+    /* Hide table on mobile */
+    .admin-tabela {
+        display: none;
+    }
+
+    /* Mobile Admin Card View */
+    .admin-mobile-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .admin-mobile-card {
+        background-color: var(--cor-fundo-secundaria);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #444;
+    }
+
+    .admin-mobile-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #555;
+        padding-bottom: 10px;
+    }
+
+    .admin-mobile-card-body p {
+        margin-bottom: 5px;
+        color: #ccc;
+    }
+
+    .admin-mobile-card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .admin-mobile-card-actions button {
+        flex: 1;
+    }
 }
+
+
 
 .resumo-linha.total {
     font-weight: bold;
