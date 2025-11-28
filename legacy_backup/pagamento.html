@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-2L2F9CY9JN');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento da Rifa - Gringa Style</title>
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#FFA500">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Teko:wght@700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Teko:wght@700&display=swap">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+    </noscript>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://lijsjlkgydlszdhmsppt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_euV1pDAaO_nv3b3i6Sls-w_cfoAYbbh';
+        const supabaseLib = window.supabase;
+        const client = supabaseLib.createClient(SUPABASE_URL, SUPABASE_KEY);
+        window.supabase = client;
+    </script>
+</head>
+<body>
+
+    <header class="cabecalho">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="imagens/gringa_style_logo.png" alt="Logo Gringa Style" width="90" height="90">
+            </a>
+            <nav id="nav-menu" class="navegacao">
+                <a href="index.html" class="nav-item">Produtos</a>
+                <a href="rifa.html" class="nav-item">Rifa</a>
+                <a id="header-link-acompanhar" href="#" class="nav-item" style="display: none;">Acompanhar Rifa</a>
+                <a href="index.html#sobre" class="nav-item">Sobre</a>
+                <a href="index.html#contato" class="nav-item">Contato</a>
+            </nav>
+            <div class="header-direita">
+                <a href="carrinho.html" class="carrinho">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="carrinho-contador">0</span>
+                </a>
+                <button id="hamburger-btn" class="hamburger-btn" aria-label="Abrir menu de navegação">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 
+      CORREÇÃO: O contêiner do banner foi movido para DEPOIS do header.
+    -->
+    <div id="top-banner-container"></div>
+
+    <main>
+        <div class="container">
+            <div id="loading-pagamento"><p style="text-align: center;">Carregando dados da sua reserva...</p></div>
+
+            <div id="conteudo-pagamento" class="pagamento-container" style="display: none;">
+                <h1 class="titulo-secao">Quase lá! Finalize seu Pagamento</h1>
+
+                <div class="resumo-pedido">
+                    <h2>Resumo da sua Reserva</h2>
+                    <p><strong>Nome:</strong> <span id="cliente-nome"></span></p>
+                    <p><strong>Números Reservados:</strong> <span id="numeros-reservados"></span></p>
+                    <p><strong>Total a Pagar:</strong> <span id="total-pagar"></span></p>
+                    <p>Para garantir sua participação, utilize o seu ID do Pedido ao confirmar o pagamento.</p>
+                    <div id="pedido-id" style="font-weight: bold;"></div>
+                </div>
+
+                <div class="instrucoes-pagamento">
+                    <h2>1. Pague com PIX</h2>
+                    <p>Você pode usar o QR Code ou a chave Copia e Cola abaixo.</p>
+
+                    <img id="pix-qrcode" src="imagens/pix-qrcode-placeholder.png" alt="PIX QR Code">
+
+                    <input id="pix-copia-cola" type="text" value="nalesso_gtaw015@jim.com" readonly>
+                </div>
+
+                <div class="confirmacao-pagamento">
+                    <h2>2. Confirme sua Compra (Obrigatório!)</h2>
+                    <ol>
+                        <li>Após realizar o PIX, tire um print ou salve o comprovante.</li>
+                        <li>Clique no botão abaixo para abrir o WhatsApp.</li>
+                        <li>Envie o comprovante junto com o seu <strong>ID do Pedido</strong>.</li>
+                    </ol>
+                    <a id="btn-whatsapp" href="#" class="btn btn-finalizar" target="_blank" style="width:100%; text-align:center; display:block;">
+                        <i class="fab fa-whatsapp"></i> Enviar Comprovante no WhatsApp
+                    </a>
+                </div>
+
+                <div class="acompanhamento">
+                    <p style="text-align: center; margin-top: 20px;">Após a confirmação, seu nome aparecerá na página de acompanhamento.</p>
+                     <a id="link-acompanhar" href="#" class="btn btn-secundario" style="width:100%; text-align:center; display:block;">Acompanhar Rifa</a>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="rodape">
+        <div class="container">
+            <div class="rodape-coluna">
+                <h4>Gringa Style</h4>
+                <p>Equipamentos e acessórios para solda com a mais alta qualidade e estilo.</p>
+            </div>
+            <div class="rodape-coluna">
+                <h4>Contato</h4>
+                <p><a href="https://wa.me/5515998608170" target="_blank"><i class="fab fa-whatsapp"></i> (15) 99860-8170</a></p>
+                <p><i class="fas fa-envelope"></i> nalessogtaw015@gmail.com</p>
+                <p><i class="fas fa-map-marker-alt"></i> Itapetininga - SP (Loja Online)</p>
+            </div>
+            <div class="rodape-coluna">
+                <h4>Siga-nos</h4>
+                <a href="https://www.instagram.com/gringastyle_br" target="_blank" class="social-link">
+                    <i class="fab fa-instagram"></i> Instagram
+                </a>
+            </div>
+             <div class="rodape-coluna">
+                <h4>Pagamento</h4>
+                <p class="pagamento-item"><i class="fa-brands fa-pix"></i> PIX</p>
+                <p class="pagamento-item"><i class="far fa-credit-card"></i> Cartão em até 12x</p>
+            </div>
+        </div>
+        <div class="rodape-base">
+            <p>&copy; <span id="ano-rodape">2025</span> Gringa Style. Todos os direitos reservados.</p>
+
+            <div id="push-subscribe-container" class="push-subscribe-container">
+                <button id="push-subscribe-button">
+                    <i class="fas fa-bell"></i>
+                    <span>Ativar Notificações</span>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script src="pagamento.js" defer></script>
+    <script src="app.js" defer></script>
+</body>
+</html>

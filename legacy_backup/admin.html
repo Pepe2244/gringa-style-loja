@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-2L2F9CY9JN');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Controle Gringa Style</title>
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#FFA500">
+
+    <style>
+        :root {
+            --cor-fundo: #1A1A1A;
+            --cor-fundo-secundaria: #404040;
+            --cor-texto: #F5F5F5;
+            --cor-destaque: #FFA500;
+            --cor-sucesso: #28a745;
+            --cor-erro: #dc3545;
+        }
+        body {
+            background-color: var(--cor-fundo);
+        }
+        .admin-container {
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: auto;
+            background-color: #2c2c2c;
+            border-radius: 8px;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap; 
+            gap: 15px;
+        }
+        .admin-tabela {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            color: var(--cor-texto);
+        }
+        .admin-tabela th, .admin-tabela td {
+            border: 1px solid #555;
+            padding: 12px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .admin-tabela th {
+            background-color: var(--cor-fundo-secundaria);
+            font-family: 'Teko', sans-serif;
+            font-size: 20px;
+            color: var(--cor-destaque);
+        }
+        .acoes-btn { display: flex; flex-wrap: wrap; gap: 10px; }
+        .btn-admin {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: filter 0.2s ease;
+            text-align: center;
+        }
+        .btn-admin:hover { filter: brightness(1.15); }
+        .btn-gerenciar { background-color: #17a2b8; color: white; }
+        .btn-editar { background-color: #ffc107; color: black; }
+        .btn-excluir { background-color: var(--cor-erro); color: white; }
+        .btn-adicionar { background-color: var(--cor-sucesso); color: white; padding: 10px 15px; }
+        .btn-sortear { background-color: #9c27b0; color: white; }
+        .btn-cancelar { background-color: #6c757d; color: white; }
+
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--cor-sucesso); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .modal-admin-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center; align-items: center; z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-admin-container.visivel {
+            display: flex;
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-admin {
+            background-color: #2c2c2c;
+            padding: 30px 40px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-admin-container.visivel .modal-admin {
+            transform: scale(1);
+        }
+        .modal-fechar-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            background: none; border: none;
+            color: #aaa;
+            font-size: 30px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-fechar-btn:hover { color: var(--cor-destaque); }
+
+        .form-campo { margin-bottom: 20px; }
+        .form-campo label { display: block; color: #ccc; margin-bottom: 8px; font-weight: bold; }
+        .form-campo input, .form-campo textarea, .form-campo select {
+            width: 100%; padding: 12px;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+            border: 2px solid #555;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .form-campo small { color: #888; margin-top: 5px; display: block; }
+        .lista-participantes { list-style: none; padding: 0; }
+        .participante-item { background-color: var(--cor-fundo); padding: 10px; border-radius: 5px; margin-bottom: 8px; }
+
+        .sorteio-body { text-align: center; }
+        #sorteio-animacao {
+            font-size: 5em;
+            font-weight: bold;
+            color: var(--cor-destaque);
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #111;
+            border-radius: 8px;
+            min-height: 100px;
+            display: none; 
+        }
+
+        #sorteio-lista-premios {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+        .premio-sorteio-item {
+            background-color: var(--cor-fundo);
+            border: 1px solid #555;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .premio-sorteio-info {
+            text-align: left;
+            flex: 1;
+        }
+        .premio-sorteio-info strong {
+            font-size: 1.2em;
+            color: var(--cor-destaque);
+        }
+        .vencedor-destaque {
+            background-color: var(--cor-sucesso);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            text-align: left;
+        }
+
+        .premio-item {
+            background-color: var(--cor-fundo-secundaria);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #555;
+        }
+        .premio-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .premio-item-header label {
+            font-size: 1.2em;
+            color: var(--cor-destaque);
+            margin-bottom: 0;
+        }
+        .premio-item-body {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .premio-campo-descricao {
+            flex: 1;
+            min-width: 200px;
+        }
+        .premio-campo-imagem {
+            flex: 1;
+            min-width: 150px;
+        }
+        .premio-imagem-preview {
+            width: 100%;
+            height: 100px;
+            background-color: var(--cor-fundo);
+            border-radius: 5px;
+            border: 2px dashed #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 8px;
+            overflow: hidden;
+            color: #888;
+        }
+        .premio-imagem-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .form-campo select[multiple] {
+            height: 150px; 
+            padding: 10px; 
+        }
+        .form-campo select[multiple] option {
+            padding: 8px;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+        }
+        .form-campo select[multiple] option:checked {
+            background-color: var(--cor-destaque);
+            color: var(--cor-fundo);
+            font-weight: bold;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .color-picker-wrapper input[type="color"] {
+            width: 50px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .color-picker-wrapper input[type="text"] {
+            flex: 1;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .notificacao-container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .notificacao-coluna {
+            flex: 1;
+            min-width: 300px;
+        }
+        .notificacao-coluna h3 {
+            color: var(--cor-destaque);
+            margin-bottom: 15px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+        .lista-notificacoes {
+            list-style: none;
+            padding: 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .notificacao-item {
+            background-color: var(--cor-fundo);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--cor-destaque);
+        }
+        .notificacao-item h4 {
+            color: #eee;
+            margin-bottom: 5px;
+        }
+        .notificacao-item p {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .notificacao-item small {
+            color: #888;
+            font-style: italic;
+        }
+
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px; 
+            z-index: 4000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast-notification {
+            background-color: var(--cor-sucesso);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .toast-notification.erro {
+            background-color: var(--cor-erro);
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #confirm-modal {
+            z-index: 5000; 
+        }
+        .modal-confirm {
+            background-color: #2c2c2c;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            border-top: 4px solid var(--cor-destaque);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-admin-container.visivel .modal-confirm {
+            transform: scale(1);
+        }
+        #confirm-modal-message {
+            font-size: 1.2em;
+            color: var(--cor-texto);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .confirm-modal-botoes {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .confirm-modal-botoes .btn-admin {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+        }
+
+
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 20px 10px;
+            }
+            .admin-tabela thead {
+                display: none;
+            }
+            .admin-tabela,
+            .admin-tabela tbody,
+            .admin-tabela tr {
+                display: block;
+                width: 100%;
+            }
+            .admin-tabela tr {
+                background-color: var(--cor-fundo-secundaria);
+                border-radius: 8px;
+                margin-bottom: 15px;
+                border: 1px solid #555;
+                overflow: hidden;
+            }
+            .admin-tabela td {
+                display: block;
+                width: 100%;
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+                border: none;
+                border-bottom: 1px solid #444;
+            }
+            .admin-tabela tr td:last-child {
+                border-bottom: none;
+            }
+            .admin-tabela td:before {
+                content: attr(data-label);
+                position: absolute;
+                left: 15px;
+                width: calc(50% - 30px);
+                padding-right: 10px;
+                text-align: left;
+                font-weight: bold;
+                color: var(--cor-destaque);
+            }
+            .admin-tabela td[data-label="Ações"] {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            .acoes-btn {
+                flex-direction: column; 
+                align-items: stretch;
+                width: 100%;
+            }
+            .acoes-btn .btn-admin {
+                width: 100%;
+            }
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://lijsjlkgydlszdhmsppt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_euV1pDAaO_nv3b3i6Sls-w_cfoAYbbh';
+        const supabaseLib = window.supabase;
+        const client = supabaseLib.createClient(SUPABASE_URL, SUPABASE_KEY);
+        window.supabase = client;
+    </script>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="confirm-modal" class="modal-admin-container">
+        <div class="modal-confirm">
+            <h2 id="confirm-modal-message">Tem certeza?</h2>
+            <div class="confirm-modal-botoes">
+                <button id="confirm-btn-cancelar" class="btn-admin btn-cancelar">Cancelar</button>
+                <button id="confirm-btn-ok" class="btn-admin btn-adicionar">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="titulo-secao" style="margin-bottom: 0;">Gerenciar Produtos</h1>
+            <button id="btn-adicionar-novo" class="btn-admin btn-adicionar">Adicionar Novo Produto</button>
+        </div>
+        <table class="admin-tabela">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Status</th>
+                    <th>Disponibilidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-estoque-corpo"></tbody>
+        </table>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="titulo-secao" style="margin-bottom: 0;">Gerenciar Rifas</h1>
+            <button id="btn-criar-rifa" class="btn-admin btn-adicionar">Criar Nova Rifa</button>
+        </div>
+        <table class="admin-tabela">
+            <thead>
+                <tr>
+                    <th>Rifa</th>
+                    <th>Progresso</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-rifas-corpo"></tbody>
+        </table>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="titulo-secao" style="margin-bottom: 0;">Gerenciar Cupons</h1>
+            <button id="btn-adicionar-cupom" class="btn-admin btn-adicionar">Adicionar Novo Cupom</button>
+        </div>
+        <table class="admin-tabela">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Uso</th>
+                    <th>Ativo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-cupons-corpo">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="titulo-secao" style="margin-bottom: 0;">Centro de Campanhas</h1>
+            <button id="btn-nova-campanha" class="btn-admin btn-adicionar">Criar Nova Campanha</button>
+        </div>
+        <table class="admin-tabela">
+            <thead>
+                <tr>
+                    <th>Nome da Campanha</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-campanhas-corpo">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="titulo-secao" style="margin-bottom: 0;">Gerenciar Categorias</h1>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="nova-categoria-nome" placeholder="Nome da Categoria" style="padding: 8px; border-radius: 5px; border: 1px solid #555; background: #333; color: white;">
+                <button id="btn-adicionar-categoria" class="btn-admin btn-adicionar">Adicionar</button>
+            </div>
+        </div>
+        <table class="admin-tabela">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-categorias-corpo">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="admin-container">
+        <h1 class="titulo-secao" style="margin-bottom: 20px;">Configurações da Loja</h1>
+        <div class="form-campo">
+            <label for="config-dias-novo">Dias de Destaque "NOVO"</label>
+            <input type="number" id="config-dias-novo" placeholder="Ex: 7" style="max-width: 150px;">
+            <small>Produtos criados há menos de X dias receberão o selo "NOVO".</small>
+        </div>
+        <button id="btn-salvar-config" class="btn-admin btn-adicionar">Salvar Configurações</button>
+    </div>
+
+    <div class="admin-container">
+        <h1 class="titulo-secao" style="margin-bottom: 20px;">Centro de Notificações Push</h1>
+        <div class="notificacao-container">
+            <div class="notificacao-coluna">
+                <h3>Rascunhos (Automáticos)</h3>
+                <ul id="lista-rascunhos" class="lista-notificacoes">
+                </ul>
+            </div>
+            <div class="notificacao-coluna">
+                <h3>Criar Notificação Manual</h3>
+                <form id="form-notificacao-manual">
+                    <div class="form-campo">
+                        <label for="notificacao-titulo">Título</label>
+                        <input type="text" id="notificacao-titulo" placeholder="Ex: 🔥 PROMOÇÃO RELÂMPAGO!" required>
+                    </div>
+                    <div class="form-campo">
+                        <label for="notificacao-mensagem">Mensagem</label>
+                        <textarea id="notificacao-mensagem" placeholder="Ex: A Máscara Gringa Style com 20% OFF. Só hoje!" required></textarea>
+                    </div>
+                    <div class="form-campo">
+                        <label for="notificacao-link">Link (Opcional)</label>
+                        <input type="text" id="notificacao-link" placeholder="Ex: /produto.html?id=1">
+                        <small>Deixe em branco para abrir a página inicial.</small>
+                    </div>
+                    <button type="submit" id="btn-enviar-notificacao" class="btn-admin btn-adicionar" style="width: 100%;">Enviar para Todos Assinantes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-produto" class="modal-admin-container">
+        <div class="modal-admin">
+            <button id="modal-fechar" class="modal-fechar-btn">&times;</button>
+            <h2 id="modal-titulo-form" class="titulo-secao" style="text-align: left; margin-bottom: 25px;">Adicionar Produto</h2>
+            <form id="form-produto">
+                <input type="hidden" id="produto-id">
+                <div class="form-campo">
+                    <label for="produto-nome">Nome do Produto</label>
+                    <input type="text" id="produto-nome" required>
+                </div>
+                <div class="form-campo">
+                    <label for="produto-preco">Preço (Ex: 750.00)</label>
+                    <input type="number" step="0.01" id="produto-preco">
+                </div>
+
+                <div class="form-campo">
+                    <label for="produto-preco-promocional">Preço Promocional (Opcional)</label>
+                    <input type="number" step="0.01" id="produto-preco-promocional">
+                    <small>Deixe em branco ou 0 se não houver promoção.</small>
+                </div>
+                <div class="form-campo">
+                    <label for="produto-descricao">Descrição</label>
+                    <textarea id="produto-descricao" required></textarea>
+                </div>
+
+                <div class="form-campo">
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="produto-estoque" style="width: auto;" checked>
+                        Em Estoque
+                    </label>
+                </div>
+
+                <div class="form-campo">
+                    <label for="produto-categoria">Categoria</label>
+                    <select id="produto-categoria" required>
+                        <option value="">Selecione uma categoria...</option>
+                    </select>
+                </div>
+
+                <div class="form-campo">
+                    <label for="produto-tags">Tags (separadas por vírgula)</label>
+                    <input type="text" id="produto-tags" placeholder="Ex: mascara, tig, alta performance">
+                </div>
+
+                <div class="form-campo">
+                    <label for="produto-variant-tipo">Tipo da Variante (Opcional)</label>
+                    <input type="text" id="produto-variant-tipo" placeholder="Ex: Cor">
+                    <small>Deixe em branco se não houver variantes.</small>
+                </div>
+                <div class="form-campo">
+                    <label for="produto-variant-opcoes">Opções (separadas por vírgula)</label>
+                    <input type="text" id="produto-variant-opcoes" placeholder="Ex: Azul, Verde, Vermelho">
+                </div>
+
+                <div class="form-campo">
+                    <label for="produto-media-upload">Novas Mídias (imagens ou vídeo)</label>
+                    <input type="file" id="produto-media-upload" multiple accept="image/*,video/*">
+                    <small>Ao editar, o envio de novas mídias substituirá TODAS as antigas.</small>
+                    <div id="novas-midias-preview"></div>
+                </div>
+                <div class="form-campo">
+                    <label>Mídias Atuais</label>
+                    <div id="midias-atuais-preview"></div>
+                </div>
+
+                <div class="form-botoes" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" id="btn-cancelar" class="btn-admin btn-cancelar">Cancelar</button>
+                    <button type="submit" id="btn-salvar" class="btn-admin btn-adicionar">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-rifa" class="modal-admin-container">
+        <div class="modal-admin">
+            <button id="modal-rifa-fechar" class="modal-fechar-btn">&times;</button>
+            <h2 id="modal-rifa-titulo" class="titulo-secao" style="text-align: left; margin-bottom: 25px;">Criar Nova Rifa</h2>
+            <form id="form-rifa">
+                <input type="hidden" id="rifa-id">
+
+                <div class="form-campo">
+                    <label for="rifa-nome-premio">Título da Rifa (Ex: Rifa de Natal)</label>
+                    <input type="text" id="rifa-nome-premio" required>
+                </div>
+                <div class="form-campo">
+                    <label for="rifa-descricao">Descrição (Regulamento, etc)</label>
+                    <textarea id="rifa-descricao"></textarea>
+                </div>
+                <div class="form-campo">
+                    <label for="rifa-preco-numero">Preço por Número (Ex: 5.00)</label>
+                    <input type="number" step="0.01" id="rifa-preco-numero" required>
+                </div>
+                <div class="form-campo">
+                    <label for="rifa-total-numeros">Total de Números (Ex: 100)</label>
+                    <input type="number" id="rifa-total-numeros" required>
+                </div>
+                <div class="form-campo">
+                    <label for="rifa-imagem-upload">Imagem de CAPA da Rifa</label>
+                    <input type="file" id="rifa-imagem-upload" accept="image/*">
+                    <small>Essa é a imagem principal que aparecerá no topo da página da rifa.</small>
+
+                    <label style="margin-top: 10px;">Imagem Atual</label>
+                    <div id="rifa-imagem-atual-preview"></div>
+                </div>
+
+                <hr style="border-color: #555; margin: 25px 0;">
+                <h3 style="color: var(--cor-destaque); margin-bottom: 15px;">Gerenciar Prêmios</h3>
+                <div id="lista-premios-dinamica">
+                    </div>
+                <button type="button" id="btn-adicionar-premio" class="btn-admin btn-editar" style="color: black; width: 100%; margin-top: 10px;">+ Adicionar Prêmio</button>
+                <small style="display: block; text-align: center; margin-top: 8px;">A ordem dos prêmios aqui define a ordem do sorteio.</small>
+                <div class="form-botoes" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
+                    <button type="button" id="btn-rifa-cancelar" class="btn-admin btn-cancelar">Cancelar</button>
+                    <button type="submit" id="btn-rifa-salvar" class="btn-admin btn-adicionar">Salvar Rifa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-gerenciar-rifa" class="modal-admin-container">
+        <div class="modal-admin" style="max-width: 800px;">
+            <button id="modal-gerenciar-fechar" class="modal-fechar-btn">&times;</button>
+            <h2 id="modal-gerenciar-titulo" class="titulo-secao" style="text-align: left; margin-bottom: 25px;">Gerenciar Rifa</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h3>Pagamentos Pendentes</h3>
+                    <ul id="lista-pendentes" class="lista-participantes"></ul>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <h3>Pagamentos Confirmados</h3>
+                    <ul id="lista-confirmados" class="lista-participantes"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-sorteio" class="modal-admin-container">
+        <div class="modal-admin">
+            <button id="modal-sorteio-fechar" class="modal-fechar-btn">&times;</button>
+            <h2 id="modal-sorteio-titulo" class="titulo-secao" style="text-align: left; margin-bottom: 25px;">Sorteador</h2>
+            <div class="sorteio-body">
+                <p>Pronto para descobrir os vencedores da rifa <strong id="sorteio-nome-premio"></strong>?</p>
+                <p><small>O sorteio será realizado entre todos os números com pagamento confirmado. Números já sorteados não concorrem novamente.</small></p>
+
+                <div id="sorteio-animacao">000</div>
+
+                <ul id="sorteio-lista-premios">
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-cupom" class="modal-admin-container">
+        <div class="modal-admin">
+            <button id="modal-cupom-fechar" class="modal-fechar-btn">&times;</button>
+            <h2 id="modal-cupom-titulo" class="titulo-secao" style="text-align: left; margin-bottom: 25px;">Adicionar Cupom</h2>
+            <form id="form-cupom">
+                <input type="hidden" id="cupom-id">
+
+                <div class="form-campo">
+                    <label for="cupom-codigo">Código do Cupom</label>
+                    <input type="text" id="cupom-codigo" placeholder="Ex: NATAL10" required>
+                    <small>O código que o cliente vai digitar. Use maiúsculas, sem espaços.</small>
+                </div>
+
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div class="form-campo" style="flex: 1; min-width: 150px;">
+                        <label for="cupom-tipo-desconto">Tipo de Desconto</label>
+                        <select id="cupom-tipo-desconto" required>
+                            <option value="percentual">Percentual (%)</option>
+                            <option value="fixo">Valor Fixo (R$)</option>
+                        </select>
+                    </div>
+                    <div class="form-campo" style="flex: 1; min-width: 150px;">
+                        <label for="cupom-valor-desconto">Valor</label>
+                        <input type="number" step="0.01" id="cupom-valor-desconto" placeholder="Ex: 10 ou 50.00" required>
+                    </div>
+                </div>
+
+                <div class="form-campo">
+                    <label for="cupom-tipo-aplicacao">Onde aplicar o desconto?</label>
+                    <select id="cupom-tipo-aplicacao" required>
+                        <option value="carrinho">No carrinho inteiro</option>
+                        <option value="produto">Apenas em produtos específicos</option>
+                    </select>
+                </div>
+
+                <div class="form-campo" id="campo-produtos-aplicaveis" style="display: none;">
+                    <label for="cupom-produtos-aplicaveis">Produtos Específicos</label>
+                    <select id="cupom-produtos-aplicaveis" multiple>
+                        </select>
+                    <small>Segure Ctrl (ou Cmd no Mac) para selecionar vários.</small>
+                </div>
+
+                <hr style="border-color: #555; margin: 25px 0;">
+                <h3 style="color: var(--cor-destaque); margin-bottom: 15px;">Regras Opcionais</h3>
+
+                <div class="form-campo">
+                    <label for="cupom-data-validade">Data de Validade (Opcional)</label>
+                    <input type="datetime-local" id="cupom-data-validade">
+                    <small>Deixe em branco para o cupom não expirar.</small>
+                </div>
+
+                <div class="form-campo">
+                    <label for="cupom-limite-uso">Limite de Usos (Opcional)</label>
+                    <input type="number" id="cupom-limite-uso" placeholder="Ex: 100">
+                    <small>Deixe em branco para usos ilimitados.</small>
+                </div>
+
+                <div class="form-botoes" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
+                    <button type="button" id="btn-cupom-cancelar" class="btn-admin btn-cancelar">Cancelar</button>
+                    <button type="submit" id="btn-cupom-salvar" class="btn-admin btn-adicionar">Salvar Cupom</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-campanha" class="modal-admin-container">
+        <div class="modal-admin">
+            <button id="modal-campanha-fechar" class="modal-fechar-btn">&times;</button>
+            <h2 id="modal-campanha-titulo" class="titulo-secao" style="text-align: left; margin-bottom: 25px;">Nova Campanha</h2>
+            <form id="form-campanha">
+                <input type="hidden" id="campanha-id">
+                <div class="form-campo">
+                    <label for="campanha-nome">Nome da Campanha (Ex: Black Friday 2025)</label>
+                    <input type="text" id="campanha-nome" required>
+                </div>
+                <div class="form-campo">
+                    <label for="campanha-banner-upload">Banner do Topo (Upload)</label>
+                    <input type="file" id="campanha-banner-upload" accept="image/*">
+                    <small>Faça upload de uma nova imagem para o banner. Deixe em branco para manter a atual (se houver).</small>
+                    <div id="campanha-banner-preview" class="premio-imagem-preview" style="height: auto; min-height: 50px;"></div>
+                </div>
+                <div class="form-campo">
+                    <label for="campanha-aviso-deslizante">Texto da Faixa Deslizante (Opcional)</label>
+                    <input type="text" id="campanha-aviso-deslizante" placeholder="Ex: 🚚 FRETE GRÁTIS EM TODO O SITE!">
+                </div>
+                <div class="form-campo">
+                    <label for="campanha-cor-fundo">Cor de Fundo (do Banner)</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="campanha-cor-fundo" value="#1A1A1A">
+                        <input type="text" id="campanha-cor-fundo-hex" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-campo">
+                    <label for="campanha-cor-texto">Cor do Texto (da Faixa)</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="campanha-cor-texto" value="#1A1A1A">
+                        <input type="text" id="campanha-cor-texto-hex" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-campo">
+                    <label for="campanha-cor-destaque">Cor de Destaque (Fundo da Faixa)</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="campanha-cor-destaque" value="#FFA500">
+                        <input type="text" id="campanha-cor-destaque-hex" maxlength="7">
+                    </div>
+                    <small id="validacao-contraste" style="font-weight: bold;"></small>
+                </div>
+                <div class="form-botoes" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
+                    <button type="button" id="btn-campanha-cancelar" class="btn-admin btn-cancelar">Cancelar</button>
+                    <button type="submit" id="btn-campanha-salvar" class="btn-admin btn-adicionar">Salvar Campanha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js" defer></script>
+</body>
+</html>

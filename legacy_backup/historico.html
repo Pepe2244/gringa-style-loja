@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-2L2F9CY9JN');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico de Rifas - Gringa Style</title>
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#FFA500">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Teko:wght@700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'"/>
+
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Teko:wght@700&display=swap">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+    </noscript>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://lijsjlkgydlszdhmsppt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_euV1pDAaO_nv3b3i6Sls-w_cfoAYbbh';
+        const supabaseLib = window.supabase;
+        const client = supabaseLib.createClient(SUPABASE_URL, SUPABASE_KEY);
+        window.supabase = client;
+    </script>
+</head>
+<body>
+
+    <header class="cabecalho">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="imagens/gringa_style_logo.png" alt="Logo Gringa Style" width="90" height="90">
+            </a>
+            <nav id="nav-menu" class="navegacao">
+                <a href="index.html" class="nav-item">Produtos</a>
+                <a href="rifa.html" class="nav-item">Rifa</a>
+                <a id="header-link-acompanhar" href="#" class="nav-item" style="display: none;">Acompanhar Rifa</a>
+                <a href="index.html#sobre" class="nav-item">Sobre</a>
+                <a href="index.html#contato" class="nav-item">Contato</a>
+            </nav>
+            <div class="header-direita">
+                <a href="carrinho.html" class="carrinho">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="carrinho-contador">0</span>
+                </a>
+                <button id="hamburger-btn" class="hamburger-btn" aria-label="Abrir menu de navegação">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 
+      CORREÇÃO: O contêiner do banner foi movido para DEPOIS do header.
+    -->
+    <div id="top-banner-container"></div>
+
+    <main>
+        <div class="container historico-container">
+            <h1 class="titulo-secao">Histórico de Rifas</h1>
+            <div id="historico-lista">
+                <p style="text-align: center;">Carregando histórico...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="rodape">
+        <div class="container">
+            <div class="rodape-coluna">
+                <h4>Gringa Style</h4>
+                <p>Equipamentos e acessórios para solda com a mais alta qualidade e estilo.</p>
+            </div>
+            <div class="rodape-coluna">
+                <h4>Navegação</h4>
+                <p><a href="index.html">Produtos</a></p>
+                <p><a href="rifa.html">Rifa Ativa</a></p>
+                <p><a href="historico.html">Histórico de Rifas</a></p>
+                <p><a href="privacidade.html">Política de Privacidade</a></p>
+            </div>
+            <div class="rodape-coluna">
+                <h4>Contato</h4>
+                <p><a href="https://wa.me/5515998608170" target="_blank"><i class="fab fa-whatsapp"></i> (15) 99860-8170</a></p>
+                <p><i class="fas fa-envelope"></i> nalessogtaw015@gmail.com</p>
+                <p><i class="fas fa-map-marker-alt"></i> Itapetininga - SP (Loja Online)</p>
+            </div>
+            <div class="rodape-coluna">
+                <h4>Siga-nos</h4>
+                <a href="https://www.instagram.com/gringastyle_br" target="_blank" class="social-link">
+                    <i class="fab fa-instagram"></i> Instagram
+                </a>
+            </div>
+        </div>
+        <div class="rodape-base">
+            <p>Usamos armazenamento local para salvar seu carrinho. Ao navegar, você concorda com nossa <a href="privacidade.html" style="text-decoration: underline; color: var(--cor-destaque);">Política de Privacidade</a>.</p>
+            <p style="margin-top: 10px;">&copy; <span id="ano-rodape">2025</span> Gringa Style. Todos os direitos reservados.</p>
+
+            <div id="push-subscribe-container" class="push-subscribe-container">
+                <button id="push-subscribe-button">
+                    <i class="fas fa-bell"></i>
+                    <span>Ativar Notificações</span>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script src="historico.js" defer></script>
+    <script src="app.js" defer></script>
+</body>
+</html>

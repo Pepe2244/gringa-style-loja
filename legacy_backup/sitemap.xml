@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+    <!-- 1. Páginas Principais -->
+    <url>
+        <loc>https://www.gringastyle.com.br/index.html</loc>
+        <priority>1.00</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/rifa.html</loc>
+        <priority>0.90</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/historico.html</loc>
+        <priority>0.80</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/privacidade.html</loc>
+        <priority>0.50</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/carrinho.html</loc>
+        <priority>0.70</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/acompanhar_rifa.html</loc>
+        <priority>0.80</priority>
+    </url>
+
+    <!-- 
+      2. Páginas de Produto
+      AVISO: Baseado nos produtos que analisamos (IDs 1-6).
+      Se você adicionar novos produtos no Admin, lembre-se de 
+      adicionar novas <url>...</url> aqui! 
+    -->
+    <url>
+        <loc>https://www.gringastyle.com.br/produto.html?id=1</loc>
+        <priority>0.90</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/produto.html?id=2</loc>
+        <priority>0.90</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/produto.html?id=3</loc>
+        <priority>0.90</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/produto.html?id=4</loc>
+        <priority>0.90</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/produto.html?id=5</loc>
+        <priority>0.90</priority>
+    </url>
+    <url>
+        <loc>https://www.gringastyle.com.br/produto.html?id=6</loc>
+        <priority>0.90</priority>
+    </url>
+
+</urlset>
