@@ -2088,22 +2088,27 @@ textarea:focus {
 
     /* Header Fixes */
     .cabecalho {
-        height: auto;
-        padding: 5px 0;
+        height: auto !important;
+        padding: 5px 0 !important;
+        /* Force small padding */
     }
 
     .cabecalho .container {
-        padding: 0 10px;
+        padding: 0 10px !important;
         align-items: center;
     }
 
     .logo {
         top: 0;
+        display: flex;
+        align-items: center;
     }
 
     .logo img {
-        height: 80px;
-        width: 80px;
+        height: 120px !important;
+        /* Increased by 50% */
+        width: 120px !important;
+        max-width: none;
     }
 
     .header-direita {
