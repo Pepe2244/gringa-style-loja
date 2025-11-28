@@ -7,9 +7,10 @@ interface ProductCardProps {
     product: Product;
     diasNovo: number;
     onQuickView: (product: Product) => void;
+    priority?: boolean;
 }
 
-export default function ProductCard({ product, diasNovo, onQuickView }: ProductCardProps) {
+export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
 
@@ -81,6 +82,7 @@ export default function ProductCard({ product, diasNovo, onQuickView }: ProductC
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className={`card-imagem visivel`}
                         style={{ objectFit: 'cover' }}
+                        priority={priority}
                     />
                 )}
             </div>
