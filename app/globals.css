@@ -2089,8 +2089,8 @@ textarea:focus {
     /* Header Fixes */
     .cabecalho {
         height: auto !important;
-        padding: 5px 0 !important;
-        /* Force small padding */
+        padding: 2px 0 !important;
+        /* Minimal padding */
     }
 
     .cabecalho .container {
@@ -2105,9 +2105,9 @@ textarea:focus {
     }
 
     .logo img {
-        height: 120px !important;
-        /* Increased by 50% */
-        width: 120px !important;
+        height: 100px !important;
+        /* Exact requested size */
+        width: 100px !important;
         max-width: none;
     }
 
