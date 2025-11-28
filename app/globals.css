@@ -2088,31 +2088,33 @@ textarea:focus {
 
     /* Header Fixes */
     .cabecalho {
-        height: auto !important;
+        height: 60px !important;
         padding: 0 !important;
-        /* Zero padding */
+        overflow: visible !important;
     }
 
     .cabecalho .container {
         padding: 0 10px !important;
         align-items: center;
-        height: auto !important;
+        height: 100% !important;
         min-height: 0 !important;
     }
 
     .logo {
         top: 0;
         display: flex;
-        align-items: center;
+        align-items: flex-start !important;
+        height: 100px !important;
+        margin-top: 5px !important;
         margin: 0 !important;
         padding: 0 !important;
     }
 
     .logo img {
         height: 100px !important;
-        /* Exact requested size */
         width: 100px !important;
         max-width: none;
+        object-fit: contain;
     }
 
     .header-direita {
