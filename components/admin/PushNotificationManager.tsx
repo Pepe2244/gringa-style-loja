@@ -100,10 +100,20 @@ export default function PushNotificationManager() {
                                     <p style={{ color: '#ccc', fontSize: '0.9em', marginBottom: '10px' }}>{draft.mensagem}</p>
                                     <small style={{ color: '#888', fontStyle: 'italic', display: 'block', marginBottom: '10px' }}>Link: {draft.link_url}</small>
                                     <div className="acoes-btn" style={{ display: 'flex', gap: '10px' }}>
-                                        <button className="btn-admin btn-adicionar" onClick={() => handleApprove(draft.id)} style={{ fontSize: '0.8em', padding: '5px 10px' }}>
+                                        <button
+                                            type="button"
+                                            className="btn-admin btn-adicionar"
+                                            onClick={(e) => { e.stopPropagation(); handleApprove(draft.id); }}
+                                            style={{ fontSize: '0.8em', padding: '5px 10px' }}
+                                        >
                                             <CheckCircle size={14} style={{ marginRight: '5px' }} /> Aprovar
                                         </button>
-                                        <button className="btn-admin btn-excluir" onClick={() => handleDelete(draft.id)} style={{ fontSize: '0.8em', padding: '5px 10px' }}>
+                                        <button
+                                            type="button"
+                                            className="btn-admin btn-excluir"
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(draft.id); }}
+                                            style={{ fontSize: '0.8em', padding: '5px 10px' }}
+                                        >
                                             <Trash2 size={14} />
                                         </button>
                                     </div>
@@ -123,10 +133,20 @@ export default function PushNotificationManager() {
                                     <small style={{ color: '#888', fontStyle: 'italic', display: 'block', marginBottom: '10px' }}>Link: {draft.link_url}</small>
                                 </div>
                                 <div className="admin-mobile-card-actions">
-                                    <button className="btn-admin btn-adicionar" onClick={() => handleApprove(draft.id)} style={{ flex: 1, fontSize: '0.8em', padding: '10px' }}>
+                                    <button
+                                        type="button"
+                                        className="btn-admin btn-adicionar"
+                                        onClick={(e) => { e.stopPropagation(); handleApprove(draft.id); }}
+                                        style={{ flex: 1, fontSize: '0.8em', padding: '10px' }}
+                                    >
                                         <CheckCircle size={14} style={{ marginRight: '5px' }} /> Aprovar
                                     </button>
-                                    <button className="btn-admin btn-excluir" onClick={() => handleDelete(draft.id)} style={{ flex: 1, fontSize: '0.8em', padding: '10px' }}>
+                                    <button
+                                        type="button"
+                                        className="btn-admin btn-excluir"
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(draft.id); }}
+                                        style={{ flex: 1, fontSize: '0.8em', padding: '10px' }}
+                                    >
                                         <Trash2 size={14} />
                                     </button>
                                 </div>

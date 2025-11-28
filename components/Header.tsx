@@ -33,6 +33,58 @@ export default function Header() {
         setMenuAberto(!menuAberto);
     };
 
+    const [activeSection, setActiveSection] = useState('');
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const sections = ['sobre', 'contato'];
+            let current = '';
+
+            // Check if we are at the top of the page
+            if (window.scrollY < 100) {
+                if (pathname === '/' || pathname === '') current = 'home';
+            } else {
+                // Check sections
+                for (const section of sections) {
+                    const element = document.getElementById(section);
+                    if (element) {
+                        const rect = element.getBoundingClientRect();
+                        if (rect.top >= 0 && rect.top <= 300) {
+                            current = section;
+                        }
+                    }
+                }
+            }
+
+            // If no section matches and we are on a specific page, use pathname
+            if (!current) {
+                if (pathname === '/rifa') current = 'rifa';
+                else if (pathname === '/historico') current = 'historico';
+                else if (pathname === '/' && window.scrollY < 100) current = 'home';
+            }
+
+            setActiveSection(current);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        // Initial check
+        handleScroll();
+
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [pathname]);
+
+    // Helper to determine if a link is active
+    const isActive = (path: string, section?: string) => {
+        if (typeof window === 'undefined') return false;
+        const currentPath = window.location.pathname;
+
+        if (section) {
+            return activeSection === section;
+        }
+        return currentPath === path && !activeSection; // Only active if no specific section is active (for pages like /rifa)
+    };
+
     return (
         <header className="cabecalho">
             <div className="container">
@@ -47,11 +99,11 @@ export default function Header() {
                     />
                 </Link>
                 <nav id="nav-menu" className={`navegacao ${menuAberto ? 'menu-aberto' : ''}`}>
-                    <Link href="/" className="nav-item">Produtos</Link>
-                    <Link href="/rifa" className="nav-item">Rifa</Link>
-                    <Link href="/historico" className="nav-item">Histórico</Link>
-                    <Link href="/#sobre" className="nav-item">Sobre</Link>
-                    <Link href="/#contato" className="nav-item">Contato</Link>
+                    <Link href="/" className={`nav-item ${pathname === '/' && activeSection === 'home' ? 'ativo' : ''}`}>Produtos</Link>
+                    <Link href="/rifa" className={`nav-item ${pathname === '/rifa' ? 'ativo' : ''}`}>Rifa</Link>
+                    <Link href="/historico" className={`nav-item ${pathname === '/historico' ? 'ativo' : ''}`}>Histórico</Link>
+                    <Link href="/#sobre" className={`nav-item ${activeSection === 'sobre' ? 'ativo' : ''}`}>Sobre</Link>
+                    <Link href="/#contato" className={`nav-item ${activeSection === 'contato' ? 'ativo' : ''}`}>Contato</Link>
                 </nav>
                 <div className="header-direita">
                     <PushNotificationButton />
