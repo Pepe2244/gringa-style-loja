@@ -3651,11 +3651,7 @@ main,
     }
 }
 
-/* --------------------------------------------------------------
-   PATCH DE CORREÇÃO MOBILE - CARRINHO
-   Instrução: Cole este bloco no FINAL do seu arquivo globals.css
-   --------------------------------------------------------------
-*/
+
 
 @media (max-width: 768px) {
 
@@ -3781,3 +3777,5 @@ main,
         font-size: 1.2rem;
         padding: 10px;
         cursor: pointer;
+    }
+}
