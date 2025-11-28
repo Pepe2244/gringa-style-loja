@@ -2088,7 +2088,7 @@ textarea:focus {
 
     /* Header Fixes */
     .cabecalho {
-        height: 120px !important;
+        height: 130px !important;
         padding: 0 !important;
         overflow: visible !important;
     }
