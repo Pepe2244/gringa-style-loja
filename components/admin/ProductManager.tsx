@@ -158,10 +158,11 @@ export default function ProductManager() {
                 if (error) throw error;
 
                 // Push Notification for New Product
+                const slug = nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
                 await supabase.from('notificacoes_push_queue').insert({
                     titulo: '🔥 Novidade na Loja!',
                     mensagem: `O produto "${nome}" já está disponível. Venha conferir!`,
-                    link_url: `/produto?id=${data.id}`,
+                    link_url: `/produto/${data.id}-${slug}`,
                     status: 'rascunho'
                 });
 
@@ -196,10 +197,11 @@ export default function ProductManager() {
             if (!currentStatus) { // Was false, now true -> Back in stock
                 const prod = products.find(p => p.id === id);
                 if (prod) {
+                    const slug = prod.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
                     await supabase.from('notificacoes_push_queue').insert({
                         titulo: '🛍️ De volta ao estoque!',
                         mensagem: `O produto "${prod.nome}" está disponível novamente!`,
-                        link_url: `/produto?id=${id}`,
+                        link_url: `/produto/${id}-${slug}`,
                         status: 'rascunho'
                     });
                 }

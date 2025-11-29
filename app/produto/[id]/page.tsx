@@ -8,7 +8,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { id } = await params;
-    const productId = parseInt(id);
+    const productId = parseInt(id.split('-')[0]);
 
     const { data: product, error } = await supabase
         .from('produtos')
@@ -48,5 +48,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
     const { id } = await params;
-    return <ProductPageContent id={parseInt(id)} />;
+    const productId = parseInt(id.split('-')[0]);
+    return <ProductPageContent id={productId} />;
 }

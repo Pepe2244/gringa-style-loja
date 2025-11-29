@@ -115,7 +115,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             {product.variants ? 'Ver Opções' : 'Compra Rápida'}
                         </button>
                     )}
-                    <Link href={`/produto/${product.id}`} className="btn btn-secundario">
+                    <Link href={`/produto/${product.id}-${product.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`} className="btn btn-secundario">
                         Ver Detalhes
                     </Link>
                 </div>

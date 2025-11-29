@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
+import { Share2 } from 'lucide-react';
 
 interface ProductPageContentProps {
     id: number;
@@ -20,6 +21,10 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
     const [loading, setLoading] = useState(true);
     const [selectedVariant, setSelectedVariant] = useState<string>('');
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    // Swipe State
+    const touchStartX = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
 
     // Purchase Modal State
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -117,6 +122,51 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
         setShowPurchaseModal(false);
     };
 
+    const handleShare = async () => {
+        if (!product) return;
+        const url = window.location.href;
+        const title = `${product.nome} | Gringa Style`;
+        const text = `Confira ${product.nome} na Gringa Style!`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title, text, url });
+            } catch (error) {
+                console.log('Error sharing:', error);
+            }
+        } else {
+            navigator.clipboard.writeText(url);
+            showToast('Link copiado para a área de transferência!', 'success');
+        }
+    };
+
+    // Swipe Logic
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchEndX.current = null;
+        touchStartX.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStartX.current || !touchEndX.current) return;
+        const distance = touchStartX.current - touchEndX.current;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        const mediaUrls = product?.media_urls || product?.imagens || [];
+        if (mediaUrls.length <= 1) return;
+
+        if (isLeftSwipe) {
+            setCurrentImageIndex((prev) => (prev + 1) % mediaUrls.length);
+        }
+        if (isRightSwipe) {
+            setCurrentImageIndex((prev) => (prev - 1 + mediaUrls.length) % mediaUrls.length);
+        }
+    };
+
     if (loading) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando produto...</div>;
     if (!product) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Produto não encontrado.</div>;
 
@@ -128,7 +178,12 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
     return (
         <div className="container produto-page-container">
             <div className="detalhe-produto-container">
-                <div className="produto-detalhe-coluna-img">
+                <div
+                    className="produto-detalhe-coluna-img"
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                >
                     {videoUrl && currentImageIndex === 0 && product.video ? (
                         <video src={videoUrl} controls autoPlay muted loop className="video-principal" />
                     ) : (
@@ -137,6 +192,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
                                 id="produto-imagem-principal"
                                 src={currentMedia ? `${currentMedia}?format=webp&width=600&quality=80` : '/imagens/placeholder.png'}
                                 alt={product.nome}
+                                draggable={false}
                             />
                             {mediaUrls.length > 1 && (
                                 <>
@@ -161,7 +217,13 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
                 </div>
 
                 <div className="produto-detalhe-coluna-info">
-                    <h1>{product.nome}</h1>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                        <h1>{product.nome}</h1>
+                        <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                            <Share2 size={24} />
+                        </button>
+                    </div>
+
                     {product.emEstoque ? (
                         <p className="status-estoque-detalhe em-estoque">Disponível em estoque</p>
                     ) : (

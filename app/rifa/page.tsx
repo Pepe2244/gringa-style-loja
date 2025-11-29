@@ -145,6 +145,26 @@ export default function RifaPage() {
                     Ver Participantes
                 </Link>
 
+                <div className="rifa-progresso-container" style={{ margin: '20px 0', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                        <span>Progresso:</span>
+                        <span>{Math.round((soldSet.size / rifa.total_numeros) * 100)}% vendido</span>
+                    </div>
+                    <div style={{ width: '100%', height: '20px', backgroundColor: '#333', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div
+                            style={{
+                                width: `${(soldSet.size / rifa.total_numeros) * 100}%`,
+                                height: '100%',
+                                backgroundColor: 'var(--cor-destaque)',
+                                transition: 'width 0.5s ease-in-out'
+                            }}
+                        />
+                    </div>
+                    <p style={{ fontSize: '0.9em', color: '#ccc', marginTop: '5px' }}>
+                        {rifa.total_numeros - soldSet.size} números restantes!
+                    </p>
+                </div>
+
                 {isSoldOut ? (
                     <div className="aviso-esgotado">RIFA ESGOTADA! Obrigado a todos que participaram. O sorteio será realizado em breve!</div>
                 ) : (

@@ -222,6 +222,20 @@ export default function RifaManager() {
         try {
             const { error } = await supabase.from('rifas').update({ status: newStatus }).eq('id', id);
             if (error) throw error;
+
+            // Notification for Finalization
+            if (newStatus === 'finalizada') {
+                const rifa = rifas.find(r => r.id === id);
+                if (rifa) {
+                    await supabase.from('notificacoes_push_queue').insert({
+                        titulo: '🏆 Sorteio Realizado!',
+                        mensagem: `O sorteio da rifa "${rifa.nome_premio}" foi realizado. Confira os ganhadores!`,
+                        link_url: `/acompanhar-rifa?id=${id}`,
+                        status: 'rascunho'
+                    });
+                }
+            }
+
             fetchRifas();
         } catch (error: any) {
             alert('Erro ao atualizar status: ' + error.message);

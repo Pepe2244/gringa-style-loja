@@ -6,9 +6,12 @@ import { useState, useEffect } from 'react';
 import { ShoppingCart, Menu } from 'lucide-react';
 import PushNotificationButton from './PushNotificationButton';
 
+import { usePathname } from 'next/navigation';
+
 export default function Header() {
     const [menuAberto, setMenuAberto] = useState(false);
     const [cartCount, setCartCount] = useState(0);
+    const pathname = usePathname();
 
     useEffect(() => {
         // Placeholder for cart count logic - reading from localStorage if available
@@ -34,7 +37,6 @@ export default function Header() {
     };
 
     const [activeSection, setActiveSection] = useState('');
-    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 
     useEffect(() => {
         const handleScroll = () => {

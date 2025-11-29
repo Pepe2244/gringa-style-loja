@@ -1,74 +1,64 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ProductManager from '../../components/admin/ProductManager';
-import RifaManager from '../../components/admin/RifaManager';
-import CouponManager from '../../components/admin/CouponManager';
-import CampaignManager from '../../components/admin/CampaignManager';
-import PushNotificationManager from '../../components/admin/PushNotificationManager';
-import CategoryManager from '../../components/admin/CategoryManager';
-import ConfigManager from '../../components/admin/ConfigManager';
+import { loginAction, checkAuth, logoutAction } from '@/app/actions/auth';
+import { supabase } from '@/lib/supabase';
+import ProductManager from '@/components/admin/ProductManager';
+import RifaManager from '@/components/admin/RifaManager';
+import CouponManager from '@/components/admin/CouponManager';
+import CampaignManager from '@/components/admin/CampaignManager';
+import PushNotificationManager from '@/components/admin/PushNotificationManager';
+import CategoryManager from '@/components/admin/CategoryManager';
+import ConfigManager from '@/components/admin/ConfigManager';
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [activeTab, setActiveTab] = useState('produtos');
-
+    const [loading, setLoading] = useState(true);
     const [passwordInput, setPasswordInput] = useState('');
     const [error, setError] = useState('');
+    const [activeTab, setActiveTab] = useState('produtos');
 
     useEffect(() => {
-        const sessionAuth = sessionStorage.getItem('adminAuth');
-        if (sessionAuth === 'true') {
-            setIsAuthenticated(true);
-        }
+        checkAuth().then(isAuth => {
+            setIsAuthenticated(isAuth);
+            setLoading(false);
+        });
     }, []);
 
-    const [showPassword, setShowPassword] = useState(false);
+    const handleLogin = async (e?: React.FormEvent) => {
+        e?.preventDefault();
 
-    const handleLogin = () => {
-        if (passwordInput.toLowerCase() === "gringa123") {
+        const formData = new FormData();
+        formData.append('password', passwordInput);
+
+        const result = await loginAction(formData);
+
+        if (result.success) {
             setIsAuthenticated(true);
-            sessionStorage.setItem('adminAuth', 'true');
             setError('');
         } else {
-            setError("Senha incorreta!");
+            setError(result.message || 'Erro ao entrar');
         }
     };
+
+    if (loading) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando...</div>;
 
     if (!isAuthenticated) {
         return (
             <div className="container" style={{ textAlign: 'center', padding: '100px 0', color: 'white' }}>
                 <h1 className="titulo-secao">Acesso Administrativo</h1>
-                <div style={{ maxWidth: '300px', margin: '0 auto', position: 'relative' }}>
-                    <div style={{ position: 'relative' }}>
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Senha"
-                            value={passwordInput}
-                            onChange={(e) => setPasswordInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                            style={{ width: '100%', padding: '10px', paddingRight: '40px', marginBottom: '10px', borderRadius: '5px', border: 'none' }}
-                        />
-                        <button
-                            onClick={() => setShowPassword(!showPassword)}
-                            style={{
-                                position: 'absolute',
-                                right: '10px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'none',
-                                border: 'none',
-                                color: '#555',
-                                cursor: 'pointer',
-                                fontSize: '18px'
-                            }}
-                        >
-                            {showPassword ? '👁️' : '🔒'}
-                        </button>
-                    </div>
-                    <button onClick={handleLogin} className="btn" style={{ width: '100%' }}>Entrar</button>
+                <form onSubmit={handleLogin} style={{ maxWidth: '300px', margin: '0 auto' }}>
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="Senha"
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '5px' }}
+                    />
+                    <button type="submit" className="btn" style={{ width: '100%' }}>Entrar</button>
                     {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-                </div>
+                </form>
             </div>
         );
     }
