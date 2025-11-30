@@ -17,6 +17,7 @@ export default function AdminPage() {
     const [passwordInput, setPasswordInput] = useState('');
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('produtos');
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         checkAuth().then(isAuth => {
@@ -41,6 +42,12 @@ export default function AdminPage() {
         }
     };
 
+    const handleLogout = async () => {
+        await logoutAction();
+        setIsAuthenticated(false);
+        setPasswordInput('');
+    };
+
     if (loading) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando...</div>;
 
     if (!isAuthenticated) {
@@ -48,14 +55,32 @@ export default function AdminPage() {
             <div className="container" style={{ textAlign: 'center', padding: '100px 0', color: 'white' }}>
                 <h1 className="titulo-secao">Acesso Administrativo</h1>
                 <form onSubmit={handleLogin} style={{ maxWidth: '300px', margin: '0 auto' }}>
-                    <input
-                        type="password"
-                        name="password"
-                        placeholder="Senha"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '5px' }}
-                    />
+                    <div style={{ position: 'relative', marginBottom: '10px' }}>
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            placeholder="Senha"
+                            value={passwordInput}
+                            onChange={(e) => setPasswordInput(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '5px' }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#333'
+                            }}
+                        >
+                            {showPassword ? '👁️' : '👁️‍🗨️'}
+                        </button>
+                    </div>
                     <button type="submit" className="btn" style={{ width: '100%' }}>Entrar</button>
                     {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
                 </form>
@@ -65,7 +90,12 @@ export default function AdminPage() {
 
     return (
         <div className="container admin-painel">
-            <h1 className="titulo-secao">Painel Administrativo</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h1 className="titulo-secao" style={{ margin: 0 }}>Painel Administrativo</h1>
+                <button onClick={handleLogout} className="btn btn-secundario" style={{ padding: '5px 15px' }}>
+                    Sair
+                </button>
+            </div>
 
             <div className="admin-tabs" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <button

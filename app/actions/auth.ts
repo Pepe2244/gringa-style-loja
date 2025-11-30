@@ -3,21 +3,16 @@
 import { cookies } from 'next/headers'
 
 export async function loginAction(formData: FormData) {
-    const password = formData.get('password')
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const password = formData.get('password') as string;
+    // TODO: Move back to env var when backend issue is resolved
+    const adminPassword = 'gringa123';
 
-    console.log('Login attempt:', {
-        receivedPassword: password,
-        envPasswordExists: !!adminPassword,
-        match: password === adminPassword
-    });
-
-    if (password === adminPassword) {
+    if (adminPassword && password && password.trim() === adminPassword.trim()) {
         const cookieStore = await cookies()
         cookieStore.set('admin_session', 'authenticated', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 7, // 1 week
+            maxAge: 60 * 60 * 24 * 7,
             path: '/',
         })
         return { success: true }
