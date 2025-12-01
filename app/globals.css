@@ -109,6 +109,13 @@ a {
     object-fit: contain;
 }
 
+.navegacao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+}
+
 .navegacao .nav-item {
     color: var(--cor-texto);
     text-decoration: none;

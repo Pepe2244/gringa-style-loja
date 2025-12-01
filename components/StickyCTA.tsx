@@ -51,7 +51,7 @@ export default function StickyCTA({ product }: { product: Product }) {
                     right: 0;
                     background: #222;
                     border-top: 1px solid #444;
-                    padding: 10px 20px;
+                    padding: 10px 15px;
                     display: flex;
                     justifyContent: space-between;
                     alignItems: center;
@@ -78,6 +78,7 @@ export default function StickyCTA({ product }: { product: Product }) {
                 }
                 .btn-sticky-buy {
                     background: var(--cor-destaque);
+                    margin-left: auto;
                     color: black;
                     border: none;
                     padding: 10px 20px;

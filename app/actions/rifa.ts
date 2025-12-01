@@ -3,11 +3,11 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!; // Use Service Role Key for backend actions if available, or Anon if RLS allows. 
-// Ideally, we should use a Service Role client for admin tasks, but for user actions, RLS should handle it.
-// However, the user asked to move logic to Server Action for security/auditability.
-// Using standard client with anon key is fine if RLS is set, but "auditability" implies we might want to log it securely.
-// Let's use the standard client for now, but running on server.
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('AVISO: SUPABASE_SERVICE_ROLE_KEY não definida. Usando chave anônima. Algumas ações administrativas podem falhar se não houver permissão RLS.');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

@@ -51,9 +51,7 @@ export default function Header() {
                     <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
                     <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
                     <Link href="/historico" className={`nav-item ${isActive('/historico')}`} onClick={closeMenu}>Ganhadores</Link>
-                    {hasActiveRaffles && (
-                        <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={closeMenu}>Meus Números</Link>
-                    )}
+                    <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={closeMenu}>Meus Números</Link>
                 </nav>
 
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
