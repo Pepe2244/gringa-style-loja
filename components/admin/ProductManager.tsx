@@ -52,11 +52,6 @@ export default function ProductManager() {
         if (data) setCategories(data);
     };
 
-    interface ProductVariant {
-        tipo: string;
-        opcoes: string[];
-    }
-
     const openModal = (product: Product | null = null) => {
         setEditingProduct(product);
         if (product) {
@@ -152,7 +147,7 @@ export default function ProductManager() {
             tags: tags.split(',').map(s => s.trim()).filter(Boolean),
             em_estoque,
             media_urls: finalMediaUrls,
-            variants: variants as unknown as Json // Supabase expects Json type
+            variants: variants as unknown as Json
         };
 
         try {
@@ -160,7 +155,7 @@ export default function ProductManager() {
                 const { error } = await supabase.from('produtos').update(productData).eq('id', editingProduct.id);
                 if (error) throw error;
 
-                // Push Notification Logic (Simplified)
+                // Push Notification Logic
                 if (productData.preco_promocional && (!editingProduct.preco_promocional || productData.preco_promocional !== editingProduct.preco_promocional)) {
                     await supabase.from('notificacoes_push_queue').insert({
                         titulo: '🔥 PROMOÇÃO ATIVADA!',
@@ -175,7 +170,7 @@ export default function ProductManager() {
                 const { data, error } = await supabase.from('produtos').insert([productData]).select().single();
                 if (error) throw error;
 
-                // Push Notification for New Product
+                // Push Notification
                 const slug = nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
                 await supabase.from('notificacoes_push_queue').insert({
                     titulo: '🔥 Novidade na Loja!',
@@ -213,8 +208,7 @@ export default function ProductManager() {
             const { error } = await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
             if (error) throw error;
 
-            // Stock Notification
-            if (!currentStatus) { // Was false, now true -> Back in stock
+            if (!currentStatus) { // Was false, now true
                 const prod = products.find(p => p.id === id);
                 if (prod) {
                     const slug = prod.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
@@ -281,6 +275,7 @@ export default function ProductManager() {
                 </tbody>
             </table>
 
+            {/* Mobile View */}
             <div className="admin-mobile-list">
                 {products.map(prod => (
                     <div key={prod.id} className="admin-mobile-card">
@@ -321,155 +316,43 @@ export default function ProductManager() {
                         <form onSubmit={handleSave}>
                             <div className="form-campo">
                                 <label>Nome do Produto</label>
-                                <input
-                                    type="text"
-                                    value={nome}
-                                    onChange={e => setNome(e.target.value)}
-                                    required
-                                />
+                                <input type="text" value={nome} onChange={e => setNome(e.target.value)} required />
                             </div>
-
                             <div className="form-campo">
                                 <label>Preço</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={preco}
-                                    onChange={e => setPreco(e.target.value)}
-                                    required
-                                />
+                                <input type="number" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} required />
                             </div>
-
                             <div className="form-campo">
                                 <label>Preço Promocional (Opcional)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={precoPromocional}
-                                    onChange={e => setPrecoPromocional(e.target.value)}
-                                />
-                                <small>Deixe em branco ou 0 se não houver promoção.</small>
+                                <input type="number" step="0.01" value={precoPromocional} onChange={e => setPrecoPromocional(e.target.value)} />
                             </div>
-
                             <div className="form-campo">
                                 <label>Descrição</label>
-                                <textarea
-                                    value={descricao}
-                                    onChange={e => setDescricao(e.target.value)}
-                                    required
-                                    rows={4}
-                                />
+                                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={4} />
                             </div>
-
-                            <div className="form-campo">
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={em_estoque}
-                                        onChange={e => setEmEstoque(e.target.checked)}
-                                        style={{ width: 'auto' }}
-                                    />
-                                    Em Estoque
-                                </label>
-                            </div>
-
                             <div className="form-campo">
                                 <label>Categoria</label>
-                                <select
-                                    value={categoriaId}
-                                    onChange={e => setCategoriaId(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Selecione uma categoria...</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.nome}</option>
-                                    ))}
+                                <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} required>
+                                    <option value="">Selecione...</option>
+                                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.nome}</option>)}
                                 </select>
                             </div>
-
                             <div className="form-campo">
-                                <label>Tags (separadas por vírgula)</label>
-                                <input
-                                    type="text"
-                                    value={tags}
-                                    onChange={e => setTags(e.target.value)}
-                                    placeholder="Ex: mascara, tig, alta performance"
-                                />
+                                <label>Tipo da Variante</label>
+                                <input type="text" value={variantTipo} onChange={e => setVariantTipo(e.target.value)} placeholder="Ex: Cor" />
                             </div>
-
-                            <div className="form-campo">
-                                <label>Tipo da Variante (Opcional)</label>
-                                <input
-                                    type="text"
-                                    value={variantTipo}
-                                    onChange={e => setVariantTipo(e.target.value)}
-                                    placeholder="Ex: Cor"
-                                />
-                            </div>
-
                             <div className="form-campo">
                                 <label>Opções (separadas por vírgula)</label>
-                                <input
-                                    type="text"
-                                    value={variantOpcoes}
-                                    onChange={e => setVariantOpcoes(e.target.value)}
-                                    placeholder="Ex: Azul, Verde, Vermelho"
-                                />
+                                <input type="text" value={variantOpcoes} onChange={e => setVariantOpcoes(e.target.value)} placeholder="Ex: Azul, Verde" />
                             </div>
-
                             <div className="form-campo">
-                                <label>Mídias (imagens ou vídeo)</label>
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*,video/*"
-                                    onChange={handleFileChange}
-                                />
-                                <small>Ao editar, o envio de novas mídias substituirá TODAS as antigas.</small>
-
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
-                                    {existingMedia.map((url, idx) => (
-                                        <div key={`exist-${idx}`} style={{ position: 'relative' }}>
-                                            {url.includes('.mp4') || url.includes('.webm') ? (
-                                                <video src={url} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
-                                            ) : (
-                                                <img src={url} alt="Media" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => removeExistingMedia(url)}
-                                                style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                            >
-                                                &times;
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {mediaPreviews.map((url, idx) => (
-                                        <div key={`new-${idx}`} style={{ position: 'relative' }}>
-                                            {mediaFiles[idx].type.startsWith('video/') ? (
-                                                <video src={url} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
-                                            ) : (
-                                                <img src={url} alt="New Media" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => removeNewMedia(idx)}
-                                                style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                            >
-                                                &times;
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
+                                <label>Mídias</label>
+                                <input type="file" multiple accept="image/*,video/*" onChange={handleFileChange} />
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-admin btn-cancelar">
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>
-                                    {loading ? 'Salvando...' : 'Salvar'}
-                                </button>
+                                <button type="button" onClick={() => setShowModal(false)} className="btn-admin btn-cancelar">Cancelar</button>
+                                <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
                             </div>
                         </form>
                     </div>

@@ -1,11 +1,10 @@
 'use client';
-// Force update
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
-import Image from 'next/image';
+// import Image from 'next/image'; // Unused in this file version, relying on <img> for gallery logic provided
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import { Share2 } from 'lucide-react';
@@ -48,8 +47,8 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
             if (error) throw error;
             setProduct(data);
 
-            // Handle variants safely
-            const variants = data.variants as unknown as ProductVariant;
+            // Handle variants safely with Type Casting
+            const variants = data.variants as unknown as ProductVariant | null;
             if (variants && variants.opcoes && variants.opcoes.length > 0) {
                 setSelectedVariant(variants.opcoes[0]);
             }
@@ -77,8 +76,6 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
             if (currentProduct.produtos_relacionados_ids && currentProduct.produtos_relacionados_ids.length > 0) {
                 setRelatedProducts(data);
             } else {
-                // Smart Cross-Selling: Prioritize newest items (higher ID or created_at)
-                // Assuming ID is auto-incrementing, higher ID = newer
                 const sorted = data.sort((a, b) => b.id - a.id).slice(0, 4);
                 setRelatedProducts(sorted);
             }
@@ -90,7 +87,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
     const addToCart = () => {
         if (!product) return;
 
-        const variants = product.variants as unknown as ProductVariant;
+        const variants = product.variants as unknown as ProductVariant | null;
         if (variants && !selectedVariant) {
             showToast(`Por favor, selecione uma opção de ${variants.tipo}`, 'error');
             return;
@@ -114,7 +111,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
         }
 
         const price = product.preco_promocional || product.preco;
-        const variants = product.variants as unknown as ProductVariant;
+        const variants = product.variants as unknown as ProductVariant | null;
         const variantInfo = variants ? ` (${variants.tipo}: ${selectedVariant})` : '';
 
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
@@ -187,7 +184,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
     const currentMedia = mediaUrls[currentImageIndex];
     const isVideo = currentMedia?.includes('.mp4') || currentMedia?.includes('.webm') || !!product.video;
     const videoUrl = product.video || (isVideo ? currentMedia : null);
-    const variants = product.variants as unknown as ProductVariant;
+    const variants = product.variants as unknown as ProductVariant | null;
 
     return (
         <div className="container produto-page-container">

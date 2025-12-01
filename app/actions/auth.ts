@@ -4,15 +4,21 @@ import { cookies } from 'next/headers'
 
 export async function loginAction(formData: FormData) {
     const password = formData.get('password') as string;
-    // TODO: Move back to env var when backend issue is resolved
-    const adminPassword = 'gringa123';
 
-    if (adminPassword && password && password.trim() === adminPassword.trim()) {
+    // A senha agora vem EXCLUSIVAMENTE da variável de ambiente do servidor
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword) {
+        console.error("ERRO CRÍTICO DE SEGURANÇA: A variável ADMIN_PASSWORD não está configurada no painel do servidor.");
+        return { success: false, message: 'Erro de configuração no servidor. Contate o suporte.' };
+    }
+
+    if (password && password.trim() === adminPassword.trim()) {
         const cookieStore = await cookies()
         cookieStore.set('admin_session', 'authenticated', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 7,
+            maxAge: 60 * 60 * 24 * 7, // 1 semana
             path: '/',
         })
         return { success: true }

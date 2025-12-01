@@ -1,5 +1,4 @@
 'use client';
-// Force update
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -16,6 +15,10 @@ function PaymentContent() {
     const [participante, setParticipante] = useState<any>(null);
     const [rifa, setRifa] = useState<Rifa | null>(null);
     const [copiado, setCopiado] = useState(false);
+
+    // Busca a chave das variáveis públicas. Se não existir, retorna string vazia.
+    // NUNCA escreva a chave diretamente aqui.
+    const pixKey = process.env.NEXT_PUBLIC_PIX_KEY || "";
 
     useEffect(() => {
         if (participanteId) {
@@ -54,12 +57,11 @@ function PaymentContent() {
     };
 
     const copiarChavePix = () => {
-        const chavePix = process.env.NEXT_PUBLIC_PIX_KEY || "";
-        if (!chavePix) {
-            alert("Erro: Chave PIX não configurada.");
+        if (!pixKey) {
+            alert("Erro: A Chave PIX não foi configurada no painel administrativo/env.");
             return;
         }
-        navigator.clipboard.writeText(chavePix).then(() => {
+        navigator.clipboard.writeText(pixKey).then(() => {
             setCopiado(true);
             setTimeout(() => setCopiado(false), 2000);
         });
@@ -113,19 +115,20 @@ function PaymentContent() {
                     <div className="chave-pix-container">
                         <input
                             type="text"
-                            value={process.env.NEXT_PUBLIC_PIX_KEY || ""}
+                            value={pixKey}
                             readOnly
+                            placeholder={pixKey ? "" : "Chave PIX não configurada"}
                             id="chave-pix-input"
                         />
-                        <button className="btn-copiar" onClick={copiarChavePix}>
+                        <button className="btn-copiar" onClick={copiarChavePix} disabled={!pixKey}>
                             {copiado ? 'Copiado!' : 'Copiar'}
                         </button>
                     </div>
 
                     <div className="qr-code-container">
                         {/* Placeholder for QR Code - In a real app, generate this dynamically */}
-                        <Image src="/imagens/qrcode-pix.png" alt="QR Code Pix" width={200} height={200} style={{ margin: '20px auto' }} />
-                        <p style={{ fontSize: '0.9em', color: '#ccc' }}>(QR Code ilustrativo, use a chave acima se preferir)</p>
+                        <Image src="/imagens/pix-qrcode-placeholder.png" alt="QR Code Pix" width={200} height={200} style={{ margin: '20px auto' }} />
+                        <p style={{ fontSize: '0.9em', color: '#ccc' }}>(QR Code ilustrativo, use a chave acima)</p>
                     </div>
                 </div>
 
