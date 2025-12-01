@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: ['/admin/', '/carrinho/', '/pagamento/'],
         },
-        sitemap: 'https://gringastyle.com.br/sitemap.xml',
+        sitemap: 'https://gringa-style.netlify.app/sitemap.xml',
     };
 }

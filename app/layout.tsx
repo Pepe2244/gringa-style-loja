@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Gringa Style | Máscaras de Solda Personalizadas",
     description: "Estilo e proteção para soldadores profissionais.",
-    url: "https://gringastyle.com.br",
+    url: "https://gringa-style.netlify.app",
     siteName: "Gringa Style",
     images: [
       {
