@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
-// import Image from 'next/image'; // Unused in this file version, relying on <img> for gallery logic provided
+// import Image from 'next/image'; 
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import { Share2 } from 'lucide-react';
@@ -186,6 +186,9 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
     const videoUrl = product.video || (isVideo ? currentMedia : null);
     const variants = product.variants as unknown as ProductVariant | null;
 
+    // CORREÇÃO: Fallback correto
+    const fallbackImage = '/imagens/gringa_style_logo.png';
+
     return (
         <div className="container produto-page-container">
             <div className="detalhe-produto-container">
@@ -201,7 +204,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
                         <div className="container-imagem-zoom">
                             <img
                                 id="produto-imagem-principal"
-                                src={currentMedia ? `${currentMedia}?format=webp&width=600&quality=80` : '/imagens/placeholder.png'}
+                                src={currentMedia ? `${currentMedia}?format=webp&width=600&quality=80` : fallbackImage}
                                 alt={product.nome}
                                 draggable={false}
                             />
@@ -302,7 +305,8 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
                     <h2 className="related-title">Você também pode gostar</h2>
                     <div className="related-list">
                         {relatedProducts.map(rel => {
-                            const mediaUrl = rel.media_urls?.[0] || rel.imagens?.[0] || '/imagens/placeholder.png';
+                            // CORREÇÃO: Fallback correto
+                            const mediaUrl = rel.media_urls?.[0] || rel.imagens?.[0] || fallbackImage;
                             const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || !!rel.video;
                             const finalVideoUrl = rel.video || (isVideo ? mediaUrl : null);
 
@@ -338,7 +342,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
             <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido">
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                     <img
-                        src={mediaUrls[0] || '/imagens/placeholder.png'}
+                        src={mediaUrls[0] || fallbackImage}
                         alt={product.nome}
                         style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '5px' }}
                     />
