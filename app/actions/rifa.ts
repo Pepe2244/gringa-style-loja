@@ -31,9 +31,6 @@ export async function reservarNumerosRifa(
     nome: string,
     telefone: string
 ) {
-    // Usa cliente público/anon para respeitar regras do banco se houver, 
-    // mas aqui estamos chamando uma RPC 'security definer', então tanto faz.
-    // Usaremos o Admin para garantir que a conexão funcione independente de RLS na tabela.
     const supabase = getAdminClient();
 
     try {
@@ -98,7 +95,7 @@ export async function manageRaffle(rifaData: any, premios: any[]) {
 
         return { success: true, rifaId };
     } catch (error: any) {
-        console.error('Erro em manageRaffle:', error);
+        console.error('Erro ao gerenciar rifa (Server Action):', error);
         return { success: false, error: error.message };
     }
 }
@@ -106,8 +103,18 @@ export async function manageRaffle(rifaData: any, premios: any[]) {
 export async function deleteRaffle(id: number) {
     const supabase = getAdminClient();
     try {
+        // 1. Excluir participantes (dependência FK)
+        const { error: partError } = await supabase.from('participantes_rifa').delete().eq('rifa_id', id);
+        if (partError) throw new Error('Erro ao excluir participantes: ' + partError.message);
+
+        // 2. Excluir prêmios (dependência FK)
+        const { error: prizeError } = await supabase.from('premios').delete().eq('rifa_id', id);
+        if (prizeError) throw new Error('Erro ao excluir prêmios: ' + prizeError.message);
+
+        // 3. Excluir a rifa
         const { error } = await supabase.from('rifas').delete().eq('id', id);
         if (error) throw error;
+
         return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };

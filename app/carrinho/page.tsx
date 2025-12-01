@@ -172,9 +172,9 @@ export default function CartPage() {
             return;
         }
 
-        const totalToUse = validatedTotal !== null ? validatedTotal : calculateTotal();
-        const discountAmount = appliedCoupon ? (totalToUse * appliedCoupon.desconto) / 100 : 0;
-        const finalTotal = totalToUse - discountAmount;
+        const subtotal = validatedTotal !== null ? validatedTotal : calculateSubtotal();
+        const discountAmount = appliedCoupon ? appliedCoupon.desconto_calculado : 0;
+        const finalTotal = subtotal - discountAmount;
 
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
 

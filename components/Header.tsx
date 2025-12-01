@@ -50,7 +50,7 @@ export default function Header() {
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
                     <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
                     <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
-                    <Link href="/historico" className={`nav-item ${isActive('/historico')}`} onClick={closeMenu}>Ganhadores</Link>
+                    <Link href="#contato" className="nav-item" onClick={closeMenu}>Contato</Link>
 
                     {hasActiveRaffles && (
                         <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={closeMenu}>

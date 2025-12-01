@@ -97,7 +97,7 @@ export default function AdminPage() {
                 </button>
             </div>
 
-            <div className="admin-tabs" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div className="admin-tabs" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', justifyContent: 'center', zIndex: 10 }}>
                 <button
                     className={`btn ${activeTab === 'produtos' ? '' : 'btn-secundario'}`}
                     onClick={() => setActiveTab('produtos')}

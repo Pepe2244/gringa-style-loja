@@ -199,7 +199,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
                     onTouchEnd={onTouchEnd}
                 >
                     {videoUrl && currentImageIndex === 0 && product.video ? (
-                        <video src={videoUrl} controls autoPlay muted loop className="video-principal" />
+                        <video src={videoUrl} controls muted loop className="video-principal" />
                     ) : (
                         <div className="container-imagem-zoom">
                             <img

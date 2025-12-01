@@ -18,6 +18,22 @@ const teko = Teko({
 export const metadata: Metadata = {
   title: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
   description: "Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!",
+  keywords: ["máscara de solda", "solda tig", "personalizada", "gringa style", "acessórios solda"],
+  openGraph: {
+    title: "Gringa Style | Máscaras de Solda Personalizadas",
+    description: "Estilo e proteção para soldadores profissionais.",
+    url: "https://gringastyle.com.br",
+    siteName: "Gringa Style",
+    images: [
+      {
+        url: "/imagens/logo_gringa_style.png",
+        width: 800,
+        height: 600,
+      },
+    ],
+    locale: "pt_BR",
+    type: "website",
+  },
 };
 
 import Header from "@/components/Header";

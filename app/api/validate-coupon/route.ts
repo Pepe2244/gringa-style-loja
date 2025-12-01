@@ -14,7 +14,7 @@ export async function POST(request: Request) {
         const { data: cupom, error: cupomError } = await supabase
             .from('cupons') // Assuming table name 'cupons'
             .select('*')
-            .eq('codigo', codigo_cupom)
+            .ilike('codigo', codigo_cupom) // Case insensitive check
             .single();
 
         if (cupomError || !cupom) {
@@ -52,10 +52,10 @@ export async function POST(request: Request) {
 
         // 3. Calculate Discount
         let discountValue = 0;
-        if (cupom.tipo === 'porcentagem') {
-            discountValue = (subtotal * cupom.valor) / 100;
-        } else if (cupom.tipo === 'fixo') {
-            discountValue = cupom.valor;
+        if (cupom.tipo_desconto === 'percentual' || cupom.tipo === 'percentual' || cupom.tipo === 'porcentagem') {
+            discountValue = (subtotal * (cupom.valor_desconto || cupom.valor)) / 100;
+        } else if (cupom.tipo_desconto === 'fixo' || cupom.tipo === 'fixo') {
+            discountValue = (cupom.valor_desconto || cupom.valor);
         }
 
         // Ensure discount doesn't exceed subtotal
@@ -66,8 +66,8 @@ export async function POST(request: Request) {
             mensagem: 'Cupom aplicado com sucesso!',
             cupom: {
                 codigo: cupom.codigo,
-                desconto: cupom.valor, // Assuming 'valor' is the percentage or amount
-                tipo: cupom.tipo,
+                desconto: cupom.valor_desconto || cupom.valor,
+                tipo: cupom.tipo_desconto || cupom.tipo,
                 desconto_calculado: discountValue
             },
             total_recalculado: subtotal - discountValue
