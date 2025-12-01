@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import { Trash2, Edit, Plus, X, Trophy, Users, PlayCircle } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
+// Importamos as novas server actions
+import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
 
 export default function RifaManager() {
     const [rifas, setRifas] = useState<Rifa[]>([]);
@@ -112,61 +114,37 @@ export default function RifaManager() {
         e.preventDefault();
         setLoading(true);
 
-        let capaUrl = editingRifa ? editingRifa.imagem_premio_url : null;
-
-        if (imagemCapaFile) {
-            let fileToUpload = imagemCapaFile;
-            try {
-                fileToUpload = await compressImage(imagemCapaFile);
-            } catch (err) {
-                console.error('Erro compressão capa:', err);
-            }
-
-            const fileName = `capa-${Date.now()}-${fileToUpload.name}`;
-            const { error: uploadError } = await supabase.storage.from('imagens-rifas').upload(fileName, fileToUpload);
-            if (uploadError) {
-                alert('Erro upload capa: ' + uploadError.message);
-                setLoading(false);
-                return;
-            }
-            const { data } = supabase.storage.from('imagens-rifas').getPublicUrl(fileName);
-            capaUrl = data.publicUrl;
-        }
-
-        const rifaData = {
-            nome_premio: nomePremio,
-            descricao,
-            preco_numero: parseFloat(precoNumero),
-            total_numeros: parseInt(totalNumeros),
-            imagem_premio_url: capaUrl,
-            status: editingRifa ? editingRifa.status : 'ativa'
-        };
-
         try {
-            let rifaId;
-            if (editingRifa) {
-                const { error } = await supabase.from('rifas').update(rifaData).eq('id', editingRifa.id);
-                if (error) throw error;
-                rifaId = editingRifa.id;
-                alert('Rifa atualizada!');
-            } else {
-                const { data, error } = await supabase.from('rifas').insert([rifaData]).select().single();
-                if (error) throw error;
-                rifaId = data.id;
+            let capaUrl = editingRifa ? editingRifa.imagem_premio_url : null;
 
-                // Notification
-                await supabase.from('notificacoes_push_queue').insert({
-                    titulo: '🍀 Nova Rifa no Ar!',
-                    mensagem: `A rifa "${nomePremio}" já começou. Garanta seus números!`,
-                    link_url: `/rifa`,
-                    status: 'rascunho'
-                });
+            // 1. Upload Capa (Client-side upload is fine for public buckets usually)
+            if (imagemCapaFile) {
+                let fileToUpload = imagemCapaFile;
+                try {
+                    fileToUpload = await compressImage(imagemCapaFile);
+                } catch (err) {
+                    console.error('Erro compressão capa:', err);
+                }
 
-                alert('Rifa criada!');
+                const fileName = `capa-${Date.now()}-${fileToUpload.name}`;
+                const { error: uploadError } = await supabase.storage.from('imagens-rifas').upload(fileName, fileToUpload);
+                if (uploadError) throw new Error('Erro upload capa: ' + uploadError.message);
+
+                const { data } = supabase.storage.from('imagens-rifas').getPublicUrl(fileName);
+                capaUrl = data.publicUrl;
             }
 
-            // Handle Prizes
-            // 1. Upload images for prizes
+            const rifaData = {
+                id: editingRifa?.id, // Pass ID if editing
+                nome_premio: nomePremio,
+                descricao,
+                preco_numero: parseFloat(precoNumero),
+                total_numeros: parseInt(totalNumeros),
+                imagem_premio_url: capaUrl,
+                status: editingRifa ? editingRifa.status : 'ativa'
+            };
+
+            // 2. Upload Prize Images & Prepare Data
             const finalPrizes = [];
             for (let i = 0; i < premios.length; i++) {
                 let pUrl = premios[i].imagemUrl;
@@ -177,41 +155,45 @@ export default function RifaManager() {
                     } catch (err) {
                         console.error('Erro compressão premio:', err);
                     }
-                    const pName = `premio-${rifaId}-${Date.now()}-${i}-${pFile.name}`;
+                    // Use a temp ID for filename if rifa doesn't exist yet, safe enough
+                    const pName = `premio-${Date.now()}-${i}-${pFile.name}`;
                     const { error: pUpErr } = await supabase.storage.from('imagens-premios').upload(pName, pFile);
-                    if (!pUpErr) {
-                        const { data } = supabase.storage.from('imagens-premios').getPublicUrl(pName);
-                        pUrl = data.publicUrl;
-                    }
+                    if (pUpErr) throw new Error('Erro upload prêmio: ' + pUpErr.message);
+
+                    const { data } = supabase.storage.from('imagens-premios').getPublicUrl(pName);
+                    pUrl = data.publicUrl;
                 }
+
                 if (premios[i].descricao.trim()) {
                     finalPrizes.push({
-                        id: premios[i].id, // Keep ID if exists to update
-                        rifa_id: rifaId,
+                        id: premios[i].id,
                         descricao: premios[i].descricao,
-                        ordem: i + 1,
                         imagem_url: pUrl
                     });
                 }
             }
 
-            // 2. Sync prizes (Upsert/Delete)
-            // Get existing IDs to know what to delete
-            const { data: existingPrizes } = await supabase.from('premios').select('id').eq('rifa_id', rifaId);
-            const existingIds = existingPrizes?.map(p => p.id) || [];
-            const currentIds = finalPrizes.map(p => p.id).filter(Boolean);
-            const toDelete = existingIds.filter(id => !currentIds.includes(id));
+            // 3. Call Server Action to Save to DB
+            const result = await manageRaffle(rifaData, finalPrizes);
 
-            if (toDelete.length > 0) {
-                await supabase.from('premios').delete().in('id', toDelete);
+            if (!result.success) {
+                throw new Error(result.error);
             }
 
-            if (finalPrizes.length > 0) {
-                await supabase.from('premios').upsert(finalPrizes);
+            // 4. Notifications (Optional, keep on client or move to server action)
+            if (!editingRifa) {
+                await supabase.from('notificacoes_push_queue').insert({
+                    titulo: '🍀 Nova Rifa no Ar!',
+                    mensagem: `A rifa "${nomePremio}" já começou. Garanta seus números!`,
+                    link_url: `/rifa`,
+                    status: 'rascunho'
+                });
             }
 
+            alert(editingRifa ? 'Rifa atualizada!' : 'Rifa criada!');
             setShowModal(false);
             fetchRifas();
+
         } catch (error: any) {
             alert('Erro ao salvar: ' + error.message);
         } finally {
@@ -222,8 +204,9 @@ export default function RifaManager() {
     const handleDelete = async (id: number) => {
         if (!confirm('Excluir rifa? Isso apagará participantes e prêmios.')) return;
         try {
-            const { error } = await supabase.from('rifas').delete().eq('id', id);
-            if (error) throw error;
+            const result = await deleteRaffle(id);
+            if (!result.success) throw new Error(result.error);
+
             fetchRifas();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
@@ -231,22 +214,12 @@ export default function RifaManager() {
     };
 
     const toggleStatus = async (id: number, currentStatus: string) => {
-        const newStatus = currentStatus === 'ativa' ? 'finalizada' : 'ativa';
         try {
-            const { error } = await supabase.from('rifas').update({ status: newStatus }).eq('id', id);
-            if (error) throw error;
+            const result = await toggleRaffleStatus(id, currentStatus);
+            if (!result.success) throw new Error(result.error);
 
-            // Notification for Finalization
-            if (newStatus === 'finalizada') {
-                const rifa = rifas.find(r => r.id === id);
-                if (rifa) {
-                    await supabase.from('notificacoes_push_queue').insert({
-                        titulo: '🏆 Sorteio Realizado!',
-                        mensagem: `O sorteio da rifa "${rifa.nome_premio}" foi realizado. Confira os ganhadores!`,
-                        link_url: `/acompanhar-rifa?id=${id}`,
-                        status: 'rascunho'
-                    });
-                }
+            if (result.newStatus === 'finalizada') {
+                // Optionally trigger notification here or in server action
             }
 
             fetchRifas();
@@ -255,7 +228,7 @@ export default function RifaManager() {
         }
     };
 
-    // --- Management Logic ---
+    // --- Management Logic (Keep Client Side Reads for now) ---
     const openManageModal = async (rifaId: number) => {
         setSelectedRifaId(rifaId);
         setShowManageModal(true);
@@ -270,33 +243,14 @@ export default function RifaManager() {
     const confirmPayment = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId) return;
         try {
-            // Use direct update instead of RPC if RPC is tricky or not needed for simple status update
-            // But assuming we want to use RPC for consistency:
-            // Let's try a direct update first to debug permission issues with RPC if any
             const { error } = await supabase
                 .from('participantes_rifa')
                 .update({ status_pagamento: 'pago' })
                 .eq('id', participantId);
 
-            // If RPC is preferred:
-            // const { error } = await supabase.rpc('confirmar_pagamento', {
-            //     participante_id_param: participantId,
-            //     rifa_id_param: selectedRifaId,
-            //     numeros_param: numbers
-            // });
-
             if (error) throw error;
 
-            // Update local state immediately for UI feedback
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'pago' } : p));
-
-            // Also update rifas table to mark numbers as sold?
-            // Assuming there's logic to move numbers from 'reserved' to 'sold' in database
-            // If using direct update, we might need to handle that manually or via trigger
-            // For now, let's stick to updating the status and refreshing
-
-            // Refresh data to be sure
-            fetchParticipants(selectedRifaId);
             alert('Pagamento confirmado!');
         } catch (error: any) {
             console.error("Erro confirmacao:", error);
@@ -309,20 +263,13 @@ export default function RifaManager() {
         try {
             const { error } = await supabase
                 .from('participantes_rifa')
-                .update({ status_pagamento: 'cancelado' }) // Or delete row? usually status update is safer for history
+                .update({ status_pagamento: 'cancelado' })
                 .eq('id', participantId);
-
-            // If you prefer to DELETE the row entirely:
-            // const { error } = await supabase.from('participantes_rifa').delete().eq('id', participantId);
 
             if (error) throw error;
 
-            // Update local state
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'cancelado' } : p));
-            // Or filter out if deleting: setParticipants(prev => prev.filter(p => p.id !== participantId));
-
             alert('Reserva cancelada!');
-            fetchParticipants(selectedRifaId);
         } catch (error: any) {
             console.error("Erro cancelamento:", error);
             alert('Erro: ' + error.message);
@@ -342,12 +289,8 @@ export default function RifaManager() {
         setDrawing(true);
 
         try {
-            // Import dynamically to avoid server-only module issues in client component if not handled by Next.js automatically
-            // But since it's a Server Action, we can import it at the top if we mark the file 'use client' and the action 'use server'.
-            // However, to be safe and clean:
             const { drawWinner } = await import('@/app/actions/raffle');
 
-            // Animation effect (client-side only)
             const interval = setInterval(() => {
                 setDrawAnimation(Math.floor(Math.random() * 1000).toString().padStart(3, '0'));
             }, 50);
@@ -359,7 +302,6 @@ export default function RifaManager() {
             if (result.success && result.winner) {
                 setDrawAnimation(String(result.winner.number).padStart(3, '0'));
 
-                // Refresh prizes
                 const { data } = await supabase.from('premios').select('*').eq('rifa_id', drawRifa.id).order('ordem');
                 if (data) setDrawPrizes(data);
 
@@ -562,7 +504,7 @@ export default function RifaManager() {
                 </div>
             )}
 
-            {/* Participants Modal */}
+            {/* Participants Modal and Draw Modal remain roughly the same but now data operations are more robust */}
             {showManageModal && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin" style={{ maxWidth: '800px' }}>
