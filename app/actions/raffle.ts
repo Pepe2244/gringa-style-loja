@@ -82,40 +82,33 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
 
         console.log(`🏆 VENCEDOR: ${winner.name} (Nº ${winner.number})`);
 
-        // 6. Persistir Vencedor (CORREÇÃO AQUI: Removendo select desnecessário ou garantindo update limpo)
+        // 6. Persistir Vencedor
+        // CORREÇÃO: Removido .select() para evitar erro 400 Bad Request se o retorno falhar
         const { error: updateError } = await supabaseAdmin
             .from('premios')
             .update({
                 vencedor_nome: winner.name,
                 vencedor_numero: winner.number
             })
-            .eq('id', prizeId)
-            .select(); // Adicionando .select() para garantir que o Supabase retorne o objeto atualizado se necessário, mas o erro 400 sugere problema nos parâmetros.
-        // Se o erro persistir, remova o .select() para um update "fire and forget" (retorna 204 No Content).
+            .eq('id', prizeId);
 
         if (updateError) {
             console.error('❌ Erro ao salvar vencedor:', updateError);
-            // Tentar fallback sem select se o erro for relacionado ao retorno
-            const { error: retryError } = await supabaseAdmin
-                .from('premios')
-                .update({
-                    vencedor_nome: winner.name,
-                    vencedor_numero: winner.number
-                })
-                .eq('id', prizeId);
-
-            if (retryError) {
-                return { success: false, message: 'Erro crítico ao salvar o ganhador: ' + retryError.message };
-            }
+            return { success: false, message: 'Erro ao salvar o ganhador: ' + updateError.message };
         }
 
         // 7. Notificação (Opcional)
-        await supabaseAdmin.from('notificacoes_push_queue').insert({
-            titulo: '🏆 Temos um Vencedor!',
-            mensagem: `O prêmio "${prizeDesc}" saiu para ${winner.name} (Nº ${winner.number})!`,
-            link_url: `/acompanhar-rifa?id=${rifaId}`,
-            status: 'rascunho'
-        });
+        // Usando try-catch separado para não falhar o sorteio se a notificação falhar
+        try {
+            await supabaseAdmin.from('notificacoes_push_queue').insert({
+                titulo: '🏆 Temos um Vencedor!',
+                mensagem: `O prêmio "${prizeDesc}" saiu para ${winner.name} (Nº ${winner.number})!`,
+                link_url: `/acompanhar-rifa?id=${rifaId}`,
+                status: 'rascunho'
+            });
+        } catch (notifyError) {
+            console.error('⚠️ Falha ao criar notificação (não crítico):', notifyError);
+        }
 
         return { success: true, winner };
 
