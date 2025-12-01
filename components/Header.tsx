@@ -42,7 +42,7 @@ export default function Header() {
         <header className="cabecalho">
             <div className="container">
                 <Link href="/" className="logo" onClick={closeMenu}>
-                    <img src="/imagens/logo-gringa-style.png" alt="Gringa Style Logo" />
+                    <img src="/imagens/logo_gringa_style.png" alt="Gringa Style Logo" />
                 </Link>
 
                 <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`}>
