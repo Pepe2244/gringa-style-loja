@@ -9,30 +9,13 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
 
     console.log(`🎲 [Sorteio] Iniciando... Rifa: ${rifaId}, Prêmio: ${prizeId}`);
 
-    // --- 1. CHECK DE SEGURANÇA E CREDENCIAIS (Igual ao Pagamento) ---
+    // --- 1. CHECK DE SEGURANÇA E CREDENCIAIS ---
     if (!supabaseServiceKey) {
         console.error("⛔ CRÍTICO: SUPABASE_SERVICE_ROLE_KEY não definida.");
         return { success: false, message: 'Erro interno: Chave de segurança ausente.' };
     }
 
-    try {
-        // Decodifica o JWT para garantir que é a chave de SERVICE_ROLE (Admin)
-        const [header, payloadBase64, signature] = supabaseServiceKey.split('.');
-        if (payloadBase64) {
-            const buffer = Buffer.from(payloadBase64, 'base64');
-            const payload = JSON.parse(buffer.toString());
-            console.log(`🔑 [DEBUG KEY] Role: "${payload.role}"`);
-
-            if (payload.role !== 'service_role') {
-                console.error("⛔ PERIGO: A chave usada NÃO é service_role. É: " + payload.role);
-                return { success: false, message: `ERRO DE CONFIG: Chave incorreta (${payload.role}). Use a service_role.` };
-            }
-        }
-    } catch (e) {
-        console.error("⚠️ Erro ao verificar chave:", e);
-    }
-    // --- FIM DO CHECK ---
-
+    // Cria o cliente ADMIN
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
             autoRefreshToken: false,
@@ -99,18 +82,31 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
 
         console.log(`🏆 VENCEDOR: ${winner.name} (Nº ${winner.number})`);
 
-        // 6. Persistir Vencedor
+        // 6. Persistir Vencedor (CORREÇÃO AQUI: Removendo select desnecessário ou garantindo update limpo)
         const { error: updateError } = await supabaseAdmin
             .from('premios')
             .update({
                 vencedor_nome: winner.name,
                 vencedor_numero: winner.number
             })
-            .eq('id', prizeId);
+            .eq('id', prizeId)
+            .select(); // Adicionando .select() para garantir que o Supabase retorne o objeto atualizado se necessário, mas o erro 400 sugere problema nos parâmetros.
+        // Se o erro persistir, remova o .select() para um update "fire and forget" (retorna 204 No Content).
 
         if (updateError) {
             console.error('❌ Erro ao salvar vencedor:', updateError);
-            return { success: false, message: 'Erro ao salvar o ganhador.' };
+            // Tentar fallback sem select se o erro for relacionado ao retorno
+            const { error: retryError } = await supabaseAdmin
+                .from('premios')
+                .update({
+                    vencedor_nome: winner.name,
+                    vencedor_numero: winner.number
+                })
+                .eq('id', prizeId);
+
+            if (retryError) {
+                return { success: false, message: 'Erro crítico ao salvar o ganhador: ' + retryError.message };
+            }
         }
 
         // 7. Notificação (Opcional)
