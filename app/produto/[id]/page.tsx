@@ -83,6 +83,8 @@ export default async function ProductPage({ params }: Props) {
             priceCurrency: 'BRL',
             price: product.preco_promocional || product.preco,
             availability: product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            // ADICIONE ESTA LINHA: Define a validade para daqui a 1 ano
+            priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
         },
     } : null;
 
