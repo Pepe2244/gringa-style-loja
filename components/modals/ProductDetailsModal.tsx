@@ -38,11 +38,12 @@ export default function ProductDetailsModal({
 
     const handleAddToCart = () => {
         let variantToAdd = null;
-        if (product.variants && product.variants.opcoes.length > 0) {
+        const variants = product.variants as any;
+        if (variants && variants.opcoes && variants.opcoes.length > 0) {
             if (!selectedVariant) {
                 variantToAdd = {
-                    tipo: product.variants.tipo,
-                    opcao: product.variants.opcoes[0]
+                    tipo: variants.tipo,
+                    opcao: variants.opcoes[0]
                 };
             } else {
                 variantToAdd = selectedVariant;
@@ -53,11 +54,12 @@ export default function ProductDetailsModal({
 
     const handleBuyNow = () => {
         let variantToAdd = null;
-        if (product.variants && product.variants.opcoes.length > 0) {
+        const variants = product.variants as any;
+        if (variants && variants.opcoes && variants.opcoes.length > 0) {
             if (!selectedVariant) {
                 variantToAdd = {
-                    tipo: product.variants.tipo,
-                    opcao: product.variants.opcoes[0]
+                    tipo: variants.tipo,
+                    opcao: variants.opcoes[0]
                 };
             } else {
                 variantToAdd = selectedVariant;
@@ -110,20 +112,26 @@ export default function ProductDetailsModal({
                 <h2 className="modal-titulo">{product.nome}</h2>
                 <p>{product.descricao}</p>
 
-                {product.variants && product.variants.opcoes.length > 0 && (
-                    <div className="variantes-container">
-                        <label>{product.variants.tipo}:</label>
-                        <select
-                            className="select-variante"
-                            onChange={(e) => setSelectedVariant({ tipo: product.variants!.tipo, opcao: e.target.value })}
-                            value={selectedVariant?.opcao || product.variants.opcoes[0]}
-                        >
-                            {product.variants.opcoes.map(opt => (
-                                <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
+                {(() => {
+                    const variants = product.variants as any;
+                    if (variants && variants.opcoes && variants.opcoes.length > 0) {
+                        return (
+                            <div className="variantes-container">
+                                <label>{variants.tipo}:</label>
+                                <select
+                                    className="select-variante"
+                                    onChange={(e) => setSelectedVariant({ tipo: variants.tipo, opcao: e.target.value })}
+                                    value={selectedVariant?.opcao || variants.opcoes[0]}
+                                >
+                                    {variants.opcoes.map((opt: string) => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
 
                 <p className="modal-preco">
                     {getPrecoFinal(product) < product.preco ? (
