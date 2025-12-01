@@ -62,7 +62,7 @@ export default function HistoricoPage() {
     return (
         <div className="container historico-container">
             <h1 className="titulo-secao">Histórico de Rifas</h1>
-            <div id="historico-lista">
+            <div id="historico-lista" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {rifas.length === 0 ? (
                     <p style={{ textAlign: 'center', color: '#ccc' }}>Nenhuma rifa foi finalizada ainda.</p>
                 ) : (
@@ -72,27 +72,82 @@ export default function HistoricoPage() {
 
                         const totalDigitos = String(rifa.total_numeros - 1).length;
 
-                        return (
-                            <div key={rifa.id} className="rifa-encerrada-card">
-                                <h3>{rifa.nome_premio}</h3>
-                                <p>Sorteio realizado. Total de {rifa.total_numeros} números concorreram.</p>
+                        // Fallback para logo se não houver imagem da rifa
+                        const rifaImagem = rifa.imagem_premio_url
+                            ? `${rifa.imagem_premio_url}?format=webp&width=150&quality=75`
+                            : '/imagens/gringa_style_logo.png';
 
-                                {premiosDaRifa.map(premio => (
-                                    <div key={premio.id} className="vencedor-info" style={{ marginTop: '10px', overflow: 'hidden', textAlign: 'left' }}>
-                                        {premio.imagem_url && (
-                                            <img
-                                                src={`${premio.imagem_url}?format=webp&width=100&quality=75`}
-                                                alt={premio.descricao}
-                                                style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px', marginRight: '15px', float: 'left' }}
-                                            />
-                                        )}
-                                        <div style={{ overflow: 'hidden' }}>
-                                            <strong style={{ color: '#fff', fontSize: '1.1em' }}>{premio.ordem}º Prêmio:</strong> {premio.descricao} <br />
-                                            <strong>Vencedor(a):</strong> {censurarNome(premio.vencedor_nome || '')} <br />
-                                            <strong>Número:</strong> {censurarNumero(premio.vencedor_numero!, totalDigitos)}
-                                        </div>
+                        return (
+                            <div key={rifa.id} className="historico-card" style={{
+                                backgroundColor: 'var(--cor-fundo-secundaria)',
+                                padding: '20px',
+                                borderRadius: '8px',
+                                border: '1px solid #444',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '15px',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                            }}>
+                                <div className="historico-header" style={{
+                                    display: 'flex',
+                                    gap: '15px',
+                                    alignItems: 'center',
+                                    borderBottom: '1px solid #555',
+                                    paddingBottom: '15px'
+                                }}>
+                                    <img
+                                        src={rifaImagem}
+                                        alt={rifa.nome_premio}
+                                        style={{
+                                            width: '80px',
+                                            height: '80px',
+                                            objectFit: 'cover',
+                                            borderRadius: '5px',
+                                            border: '1px solid #555'
+                                        }}
+                                    />
+                                    <div>
+                                        <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.4rem', fontFamily: 'var(--font-titulos)' }}>
+                                            {rifa.nome_premio}
+                                        </h3>
+                                        <p style={{ margin: '5px 0 0 0', color: '#ccc', fontSize: '0.9rem' }}>
+                                            Sorteio realizado • {rifa.total_numeros} números
+                                        </p>
                                     </div>
-                                ))}
+                                </div>
+
+                                <div className="lista-ganhadores" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {premiosDaRifa.map(premio => (
+                                        <div key={premio.id} className="ganhador-item" style={{
+                                            background: '#333',
+                                            padding: '10px 15px',
+                                            borderRadius: '5px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '15px'
+                                        }}>
+                                            {premio.imagem_url ? (
+                                                <img
+                                                    src={`${premio.imagem_url}?format=webp&width=60&quality=75`}
+                                                    alt={premio.descricao}
+                                                    style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                                />
+                                            ) : (
+                                                <div style={{ width: '50px', height: '50px', background: '#444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🏆</div>
+                                            )}
+
+                                            <div style={{ flex: 1 }}>
+                                                <strong style={{ color: 'white', display: 'block' }}>
+                                                    {premio.ordem}º Prêmio: <span style={{ fontWeight: 'normal', color: '#ddd' }}>{premio.descricao}</span>
+                                                </strong>
+                                                <div style={{ marginTop: '3px', fontSize: '0.95rem' }}>
+                                                    <span style={{ color: '#00ff88', fontWeight: 'bold' }}>Ganhador:</span> {censurarNome(premio.vencedor_nome || '')}
+                                                    <span style={{ color: '#ccc', marginLeft: '8px' }}>(Nº {censurarNumero(premio.vencedor_numero!, totalDigitos)})</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         );
                     })
