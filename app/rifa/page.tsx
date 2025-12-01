@@ -17,6 +17,7 @@ export default function RifaPage() {
     const [clientName, setClientName] = useState('');
     const [clientPhone, setClientPhone] = useState('');
     const [reserving, setReserving] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const router = useRouter();
 
     useEffect(() => {
@@ -74,8 +75,6 @@ export default function RifaPage() {
         }
     };
 
-    const [searchTerm, setSearchTerm] = useState('');
-
     const toggleNumber = (number: number) => {
         if (selectedNumbers.includes(number)) {
             setSelectedNumbers(selectedNumbers.filter(n => n !== number));
@@ -126,15 +125,14 @@ export default function RifaPage() {
 
             if (!result.success) throw new Error(result.error);
 
-            // VERIFICAÇÃO CRÍTICA ADICIONADA
-            // Garante que o retorno do banco de dados contém um ID válido antes de redirecionar
+            // Verificação de segurança: garante que temos um ID válido antes de redirecionar
             if (!result.data || !Array.isArray(result.data) || result.data.length === 0 || !result.data[0].participante_id) {
                 console.error("ERRO GRAVE: RPC retornou sucesso mas sem ID válido", result);
                 throw new Error("Erro interno: Falha ao recuperar ID da reserva. Contate o suporte.");
             }
 
             const participantId = result.data[0].participante_id;
-            console.log("Redirecionando para pagamento com ID:", participantId); // Debug log
+            console.log("Redirecionando para pagamento com ID:", participantId);
 
             router.push(`/pagamento?participante_id=${participantId}`);
         } catch (error: any) {
@@ -146,7 +144,6 @@ export default function RifaPage() {
                 fetchRifa(); // Refresh data
                 setSelectedNumbers([]);
             } else {
-                // Mostra o erro real se disponível, ou uma mensagem genérica
                 showToast(errorMessage || 'Ocorreu um erro ao tentar reservar seus números. Tente novamente.', 'error');
             }
         } finally {
@@ -176,9 +173,10 @@ export default function RifaPage() {
     const reservedSet = new Set(rifa.numeros_reservados || []);
     const isSoldOut = soldSet.size >= rifa.total_numeros;
 
+    // Fallback para logo se não houver imagem da rifa
     const imageUrl = rifa.imagem_premio_url
         ? `${rifa.imagem_premio_url}?format=webp&width=600&quality=80`
-        : '/imagens/placeholder.png';
+        : '/imagens/gringa_style_logo.png';
 
     return (
         <div className="container" id="rifa-container">

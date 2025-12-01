@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 function TrackingContent() {
     const searchParams = useSearchParams();
-    const rifaId = searchParams.get('id');
+    const rifaIdParam = searchParams.get('id');
 
     const [loading, setLoading] = useState(true);
     const [rifa, setRifa] = useState<Rifa | null>(null);
@@ -16,42 +16,51 @@ function TrackingContent() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        if (rifaId) {
-            fetchData();
-        } else {
-            setLoading(false);
-        }
-    }, [rifaId]);
+        fetchData();
+    }, [rifaIdParam]);
 
     const fetchData = async () => {
+        setLoading(true);
         try {
-            const { data: rifaData, error: rifaError } = await supabase
-                .from('rifas')
-                .select('*')
-                .eq('id', rifaId)
-                .single();
+            let rifaData = null;
 
-            if (rifaError) throw rifaError;
-            setRifa(rifaData);
+            // 1. Tenta buscar pelo ID da URL
+            if (rifaIdParam) {
+                const { data, error } = await supabase
+                    .from('rifas')
+                    .select('*')
+                    .eq('id', rifaIdParam)
+                    .single();
+
+                if (!error) rifaData = data;
+            }
+
+            // 2. Se não achou por ID (ou não tem ID), busca a rifa ATIVA
+            if (!rifaData) {
+                const { data, error } = await supabase
+                    .from('rifas')
+                    .select('*')
+                    .eq('status', 'ativa')
+                    .limit(1)
+                    .maybeSingle();
+
+                if (!error) rifaData = data;
+            }
 
             if (rifaData) {
-                const { data: partData, error: partError } = await supabase
-                    .from('participantes_rifa')
-                    .select('nome, numeros_escolhidos, status_pagamento')
-                    .eq('rifa_id', rifaData.id)
-                    .eq('status_pagamento', 'pago'); // Only show paid participants usually, or all? Original script shows all? Let's check.
-                // Original script: .select('nome, numeros_escolhidos, status_pagamento').eq('rifa_id', rifaId).neq('status_pagamento', 'pendente') usually?
-                // Let's assume we want to show confirmed participants. 
-                // Re-reading original script logic if needed. Assuming 'pago' for public list is safer.
+                setRifa(rifaData);
 
-                // Actually, let's fetch all non-cancelled ones to be transparent, or just paid.
-                // Let's fetch all for now and filter in UI if needed.
-                const { data: allPartData } = await supabase
+                // Busca participantes da rifa encontrada
+                const { data: allPartData, error: partError } = await supabase
                     .from('participantes_rifa')
                     .select('nome, numeros_escolhidos, status_pagamento')
                     .eq('rifa_id', rifaData.id);
 
-                if (allPartData) setParticipantes(allPartData);
+                if (allPartData) {
+                    // Opcional: filtrar apenas pagos se quiser esconder pendentes/cancelados do público
+                    // const confirmed = allPartData.filter(p => p.status_pagamento === 'pago');
+                    setParticipantes(allPartData);
+                }
             }
         } catch (error) {
             console.error('Error fetching tracking data:', error);
@@ -83,8 +92,9 @@ function TrackingContent() {
     if (!rifa) {
         return (
             <div className="container" style={{ textAlign: 'center', padding: '50px 0' }}>
-                <h2>Rifa não encontrada</h2>
-                <Link href="/rifa" className="btn">Voltar para Rifa</Link>
+                <h2>Nenhuma rifa encontrada</h2>
+                <p>Não há rifas ativas ou o ID informado é inválido.</p>
+                <Link href="/rifa" className="btn" style={{ marginTop: '20px', display: 'inline-block' }}>Voltar para Rifa</Link>
             </div>
         );
     }
@@ -109,11 +119,19 @@ function TrackingContent() {
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
                         {filteredParticipantes.map((p, index) => (
-                            <div key={index} className="card-participante" style={{ background: '#222', padding: '15px', borderRadius: '8px', borderLeft: p.status_pagamento === 'pago' ? '4px solid #00ff88' : '4px solid #ffcc00' }}>
+                            <div key={index} className="card-participante" style={{
+                                background: '#222',
+                                padding: '15px',
+                                borderRadius: '8px',
+                                borderLeft: p.status_pagamento === 'pago' ? '4px solid #00ff88' : (p.status_pagamento === 'cancelado' ? '4px solid #ff4444' : '4px solid #ffcc00')
+                            }}>
                                 <h4 style={{ margin: '0 0 10px 0', color: 'white' }}>{censurarNome(p.nome)}</h4>
                                 <p style={{ fontSize: '0.9em', color: '#ccc', marginBottom: '5px' }}>
-                                    Status: <span style={{ color: p.status_pagamento === 'pago' ? '#00ff88' : '#ffcc00' }}>
-                                        {p.status_pagamento === 'pago' ? 'Confirmado' : 'Aguardando'}
+                                    Status: <span style={{
+                                        color: p.status_pagamento === 'pago' ? '#00ff88' : (p.status_pagamento === 'cancelado' ? '#ff4444' : '#ffcc00'),
+                                        fontWeight: 'bold'
+                                    }}>
+                                        {p.status_pagamento === 'pago' ? 'Confirmado' : (p.status_pagamento === 'cancelado' ? 'Cancelado' : 'Aguardando')}
                                     </span>
                                 </p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>

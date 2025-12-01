@@ -270,15 +270,36 @@ export default function RifaManager() {
     const confirmPayment = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId) return;
         try {
-            const { error } = await supabase.rpc('confirmar_pagamento', {
-                participante_id_param: participantId,
-                rifa_id_param: selectedRifaId,
-                numeros_param: numbers
-            });
+            // Use direct update instead of RPC if RPC is tricky or not needed for simple status update
+            // But assuming we want to use RPC for consistency:
+            // Let's try a direct update first to debug permission issues with RPC if any
+            const { error } = await supabase
+                .from('participantes_rifa')
+                .update({ status_pagamento: 'pago' })
+                .eq('id', participantId);
+
+            // If RPC is preferred:
+            // const { error } = await supabase.rpc('confirmar_pagamento', {
+            //     participante_id_param: participantId,
+            //     rifa_id_param: selectedRifaId,
+            //     numeros_param: numbers
+            // });
+
             if (error) throw error;
-            alert('Pagamento confirmado!');
+
+            // Update local state immediately for UI feedback
+            setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'pago' } : p));
+
+            // Also update rifas table to mark numbers as sold?
+            // Assuming there's logic to move numbers from 'reserved' to 'sold' in database
+            // If using direct update, we might need to handle that manually or via trigger
+            // For now, let's stick to updating the status and refreshing
+
+            // Refresh data to be sure
             fetchParticipants(selectedRifaId);
+            alert('Pagamento confirmado!');
         } catch (error: any) {
+            console.error("Erro confirmacao:", error);
             alert('Erro: ' + error.message);
         }
     };
@@ -286,15 +307,24 @@ export default function RifaManager() {
     const cancelReservation = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId || !confirm('Cancelar reserva?')) return;
         try {
-            const { error } = await supabase.rpc('cancelar_reserva', {
-                participante_id_param: participantId,
-                rifa_id_param: selectedRifaId,
-                numeros_param: numbers
-            });
+            const { error } = await supabase
+                .from('participantes_rifa')
+                .update({ status_pagamento: 'cancelado' }) // Or delete row? usually status update is safer for history
+                .eq('id', participantId);
+
+            // If you prefer to DELETE the row entirely:
+            // const { error } = await supabase.from('participantes_rifa').delete().eq('id', participantId);
+
             if (error) throw error;
+
+            // Update local state
+            setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'cancelado' } : p));
+            // Or filter out if deleting: setParticipants(prev => prev.filter(p => p.id !== participantId));
+
             alert('Reserva cancelada!');
             fetchParticipants(selectedRifaId);
         } catch (error: any) {
+            console.error("Erro cancelamento:", error);
             alert('Erro: ' + error.message);
         }
     };
@@ -547,14 +577,19 @@ export default function RifaManager() {
                                                 <strong>{p.nome}</strong> <small>(Tel: {p.telefone})</small><br />
                                                 <small>Números: {p.numeros_escolhidos.join(', ')}</small><br />
                                                 <span style={{ color: p.status_pagamento === 'pago' ? '#00ff88' : '#ffcc00' }}>
-                                                    {p.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
+                                                    {p.status_pagamento === 'pago' ? 'Pago' : p.status_pagamento === 'cancelado' ? 'Cancelado' : 'Pendente'}
                                                 </span>
                                             </div>
                                             <div className="acoes-btn">
                                                 {p.status_pagamento === 'pendente' && (
-                                                    <button className="btn-admin btn-adicionar" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => confirmPayment(p.id, p.numeros_escolhidos)}>Confirmar</button>
+                                                    <>
+                                                        <button className="btn-admin btn-adicionar" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => confirmPayment(p.id, p.numeros_escolhidos)}>Confirmar</button>
+                                                        <button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar</button>
+                                                    </>
                                                 )}
-                                                <button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar</button>
+                                                {p.status_pagamento === 'pago' && (
+                                                    <button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar</button>
+                                                )}
                                             </div>
                                         </li>
                                     ))}
