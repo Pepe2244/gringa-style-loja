@@ -126,9 +126,18 @@ export default function RifaPage() {
 
             if (!result.success) throw new Error(result.error);
 
+            // VERIFICAÇÃO CRÍTICA ADICIONADA
+            // Garante que o retorno do banco de dados contém um ID válido antes de redirecionar
+            if (!result.data || !Array.isArray(result.data) || result.data.length === 0 || !result.data[0].participante_id) {
+                console.error("ERRO GRAVE: RPC retornou sucesso mas sem ID válido", result);
+                throw new Error("Erro interno: Falha ao recuperar ID da reserva. Contate o suporte.");
+            }
+
             const participantId = result.data[0].participante_id;
+            console.log("Redirecionando para pagamento com ID:", participantId); // Debug log
+
             router.push(`/pagamento?participante_id=${participantId}`);
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error('Error reserving numbers:', error);
             const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
 
@@ -137,7 +146,8 @@ export default function RifaPage() {
                 fetchRifa(); // Refresh data
                 setSelectedNumbers([]);
             } else {
-                showToast('Ocorreu um erro ao tentar reservar seus números. Tente novamente.', 'error');
+                // Mostra o erro real se disponível, ou uma mensagem genérica
+                showToast(errorMessage || 'Ocorreu um erro ao tentar reservar seus números. Tente novamente.', 'error');
             }
         } finally {
             setReserving(false);
