@@ -396,7 +396,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
                 </button>
             </Modal>
 
-            {product && <StickyCTA product={product} onBuy={() => setShowPurchaseModal(true)} />}
+            {product && <StickyCTA product={product} />}
         </div>
     );
 }
