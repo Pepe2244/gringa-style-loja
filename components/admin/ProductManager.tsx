@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Product, Category } from '@/types';
+import { Product, Category, ProductVariant } from '@/types';
+import { Json } from '@/types/database.types';
 import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
@@ -151,7 +152,7 @@ export default function ProductManager() {
             tags: tags.split(',').map(s => s.trim()).filter(Boolean),
             em_estoque,
             media_urls: finalMediaUrls,
-            variants: variants as any // Casting to any for Supabase Json compatibility if needed, or strict Json
+            variants: variants as unknown as Json // Supabase expects Json type
         };
 
         try {

@@ -18,3 +18,8 @@ export type Rifa = Database['public']['Tables']['rifas']['Row'];
 export type Premio = Database['public']['Tables']['premios']['Row'];
 
 export type ParticipanteRifa = Database['public']['Tables']['participantes_rifa']['Row'];
+
+export interface ProductVariant {
+    tipo: string;
+    opcoes: string[];
+}

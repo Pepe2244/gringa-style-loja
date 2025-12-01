@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Product, CartItem } from '@/types';
+import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import Modal from '@/components/Modal';
@@ -48,7 +48,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
             setProduct(data);
 
             // Handle variants safely
-            const variants = data.variants as any;
+            const variants = data.variants as unknown as ProductVariant;
             if (variants && variants.opcoes && variants.opcoes.length > 0) {
                 setSelectedVariant(variants.opcoes[0]);
             }
