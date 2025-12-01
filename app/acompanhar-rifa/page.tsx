@@ -65,6 +65,17 @@ function TrackingContent() {
         p.numeros_escolhidos.some((n: number) => String(n).includes(searchTerm))
     );
 
+    const censurarNome = (nome: string) => {
+        if (!nome) return '';
+        const partes = nome.trim().split(' ').filter(p => p.length > 0);
+        if (partes.length <= 1) return nome;
+        const primeiroNome = partes[0];
+        const sobrenomesCensurados = partes.slice(1).map(parte => {
+            return parte.charAt(0) + '*'.repeat(parte.length - 1);
+        }).join(' ');
+        return `${primeiroNome} ${sobrenomesCensurados}`;
+    };
+
     if (loading) {
         return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando participantes...</div>;
     }
@@ -99,7 +110,7 @@ function TrackingContent() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
                         {filteredParticipantes.map((p, index) => (
                             <div key={index} className="card-participante" style={{ background: '#222', padding: '15px', borderRadius: '8px', borderLeft: p.status_pagamento === 'pago' ? '4px solid #00ff88' : '4px solid #ffcc00' }}>
-                                <h4 style={{ margin: '0 0 10px 0', color: 'white' }}>{p.nome}</h4>
+                                <h4 style={{ margin: '0 0 10px 0', color: 'white' }}>{censurarNome(p.nome)}</h4>
                                 <p style={{ fontSize: '0.9em', color: '#ccc', marginBottom: '5px' }}>
                                     Status: <span style={{ color: p.status_pagamento === 'pago' ? '#00ff88' : '#ffcc00' }}>
                                         {p.status_pagamento === 'pago' ? 'Confirmado' : 'Aguardando'}

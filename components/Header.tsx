@@ -1,117 +1,55 @@
 'use client';
 
-import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Menu } from 'lucide-react';
-import PushNotificationButton from './PushNotificationButton';
-
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ShoppingCart, Menu, X } from 'lucide-react';
+import { useCartStore } from '@/store/useCartStore';
 
 export default function Header() {
-    const [menuAberto, setMenuAberto] = useState(false);
-    const [cartCount, setCartCount] = useState(0);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const pathname = usePathname();
+    const totalItems = useCartStore(state => state.totalItems());
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // Placeholder for cart count logic - reading from localStorage if available
-        const updateCartCount = () => {
-            const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
-            const count = carrinho.reduce((acc: number, item: any) => acc + (item.quantidade || 1), 0);
-            setCartCount(count);
-        };
-
-        updateCartCount();
-        window.addEventListener('storage', updateCartCount);
-        // Custom event for internal updates
-        window.addEventListener('cart-updated', updateCartCount);
-
-        return () => {
-            window.removeEventListener('storage', updateCartCount);
-            window.removeEventListener('cart-updated', updateCartCount);
-        };
+        setMounted(true);
     }, []);
 
     const toggleMenu = () => {
-        setMenuAberto(!menuAberto);
+        setIsMenuOpen(!isMenuOpen);
     };
 
-    const [activeSection, setActiveSection] = useState('');
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const sections = ['sobre', 'contato'];
-            let current = '';
-
-            // Check if we are at the top of the page
-            if (window.scrollY < 100) {
-                if (pathname === '/' || pathname === '') current = 'home';
-            } else {
-                // Check sections
-                for (const section of sections) {
-                    const element = document.getElementById(section);
-                    if (element) {
-                        const rect = element.getBoundingClientRect();
-                        if (rect.top >= 0 && rect.top <= 300) {
-                            current = section;
-                        }
-                    }
-                }
-            }
-
-            // If no section matches and we are on a specific page, use pathname
-            if (!current) {
-                if (pathname === '/rifa') current = 'rifa';
-                else if (pathname === '/historico') current = 'historico';
-                else if (pathname === '/' && window.scrollY < 100) current = 'home';
-            }
-
-            setActiveSection(current);
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        // Initial check
-        handleScroll();
-
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [pathname]);
-
-    // Helper to determine if a link is active
-    const isActive = (path: string, section?: string) => {
-        if (typeof window === 'undefined') return false;
-        const currentPath = window.location.pathname;
-
-        if (section) {
-            return activeSection === section;
-        }
-        return currentPath === path && !activeSection; // Only active if no specific section is active (for pages like /rifa)
+    const closeMenu = () => {
+        setIsMenuOpen(false);
     };
+
+    const isActive = (path: string) => pathname === path ? 'active' : '';
 
     return (
-        <header className="cabecalho">
-            <div className="container">
-                <Link href="/" className="logo">
-                    <Image
-                        src="/imagens/gringa_style_logo.png"
-                        alt="Logo Gringa Style"
-                        width={90}
-                        height={90}
-                        style={{ aspectRatio: '1/1' }}
-                        priority
-                    />
+        <header className="header">
+            <div className="container header-container">
+                <Link href="/" className="logo-link" onClick={closeMenu}>
+                    <img src="/imagens/logo-gringa-style.png" alt="Gringa Style Logo" className="logo" />
                 </Link>
-                <nav id="nav-menu" className={`navegacao ${menuAberto ? 'menu-aberto' : ''}`}>
-                    <Link href="/" className={`nav-item ${pathname === '/' && activeSection === 'home' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Produtos</Link>
-                    <Link href="/rifa" className={`nav-item ${pathname === '/rifa' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Rifa</Link>
-                    <Link href="/historico" className={`nav-item ${pathname === '/historico' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Histórico</Link>
-                    <Link href="/#sobre" className={`nav-item ${activeSection === 'sobre' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Sobre</Link>
-                    <Link href="/#contato" className={`nav-item ${activeSection === 'contato' ? 'ativo' : ''}`} onClick={() => setMenuAberto(false)}>Contato</Link>
+
+                <nav className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
+                    <button className="fechar-menu-btn" onClick={closeMenu}>
+                        <X size={24} />
+                    </button>
+                    <ul>
+                        <li><Link href="/" className={isActive('/')} onClick={closeMenu}>Início</Link></li>
+                        <li><Link href="/#produtos" onClick={closeMenu}>Produtos</Link></li>
+                        <li><Link href="/rifa" className={isActive('/rifa')} onClick={closeMenu}>Rifa</Link></li>
+                        <li><Link href="/historico" className={isActive('/historico')} onClick={closeMenu}>Ganhadores</Link></li>
+                        <li><Link href="/acompanhar-rifa" className={isActive('/acompanhar-rifa')} onClick={closeMenu}>Meus Números</Link></li>
+                    </ul>
                 </nav>
-                <div className="header-direita">
-                    <PushNotificationButton />
+
+                <div className="header-actions">
                     <Link href="/carrinho" className="carrinho">
-                        <i className="fas fa-shopping-cart"></i>
-                        <span className="carrinho-contador">{cartCount}</span>
+                        <ShoppingCart size={24} />
+                        <span className="carrinho-contador">{mounted ? totalItems : 0}</span>
                     </Link>
                     <button
                         id="hamburger-btn"
@@ -119,10 +57,11 @@ export default function Header() {
                         aria-label="Abrir menu de navegação"
                         onClick={toggleMenu}
                     >
-                        <i className="fas fa-bars"></i>
+                        <Menu size={24} />
                     </button>
                 </div>
             </div>
+            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu}></div>}
         </header>
     );
 }

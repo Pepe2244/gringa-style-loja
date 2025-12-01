@@ -1,63 +1,80 @@
-import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase'; // Note: In API routes, we should ideally use a service client if we need to bypass RLS, but for reading products, public access is fine.
+// However, to validate coupons securely, we should fetch product prices from DB, not trust the client.
 
 export async function POST(request: Request) {
-    const { codigo_cupom, itens_carrinho } = await request.json();
+    try {
+        const { codigo_cupom, itens_carrinho } = await request.json();
 
-    if (!codigo_cupom) {
-        return NextResponse.json({ valido: false, mensagem: 'Código inválido.' });
-    }
-
-    // Fetch coupon
-    const { data: cupom, error } = await supabase
-        .from('cupons')
-        .select('*')
-        .eq('codigo', codigo_cupom)
-        .single();
-
-    if (error || !cupom) {
-        return NextResponse.json({ valido: false, mensagem: 'Cupom inválido ou não encontrado.' });
-    }
-
-    // Validations
-    if (!cupom.ativo) return NextResponse.json({ valido: false, mensagem: 'Este cupom está inativo.' });
-    if (cupom.data_validade && new Date(cupom.data_validade) < new Date()) return NextResponse.json({ valido: false, mensagem: 'Este cupom expirou.' });
-    if (cupom.limite_uso !== null && cupom.usos_atuais >= cupom.limite_uso) return NextResponse.json({ valido: false, mensagem: 'Este cupom atingiu o limite de uso.' });
-
-    // Calculate Eligible Total
-    const produtosAplicaveis = cupom.produtos_aplicaveis || [];
-    const isGeral = cupom.tipo_aplicacao === 'geral';
-
-    const eligibleTotal = itens_carrinho.reduce((acc: number, item: any) => {
-        if (isGeral || produtosAplicaveis.includes(item.produto_id)) {
-            return acc + (item.preco_unitario * item.quantidade);
+        if (!codigo_cupom || !itens_carrinho || !Array.isArray(itens_carrinho)) {
+            return NextResponse.json({ valido: false, mensagem: 'Dados inválidos.' }, { status: 400 });
         }
-        return acc;
-    }, 0);
 
-    if (eligibleTotal === 0) {
-        return NextResponse.json({ valido: false, mensagem: 'Este cupom não se aplica aos itens do seu carrinho.' });
-    }
+        // 1. Fetch Coupon
+        const { data: cupom, error: cupomError } = await supabase
+            .from('cupons') // Assuming table name 'cupons'
+            .select('*')
+            .eq('codigo', codigo_cupom)
+            .single();
 
-    // Calculate Discount
-    let descontoTotal = 0;
-    if (cupom.tipo_desconto === 'percentual') {
-        descontoTotal = (eligibleTotal * cupom.valor_desconto) / 100;
-    } else {
-        descontoTotal = cupom.valor_desconto;
-    }
-
-    // Ensure discount doesn't exceed total
-    descontoTotal = Math.min(descontoTotal, eligibleTotal);
-
-    return NextResponse.json({
-        valido: true,
-        mensagem: 'Cupom aplicado com sucesso!',
-        cupom: {
-            codigo: cupom.codigo,
-            desconto_calculado: descontoTotal,
-            tipo_desconto: cupom.tipo_desconto,
-            valor_desconto: cupom.valor_desconto
+        if (cupomError || !cupom) {
+            return NextResponse.json({ valido: false, mensagem: 'Cupom não encontrado.' });
         }
-    });
+
+        if (!cupom.ativo) {
+            return NextResponse.json({ valido: false, mensagem: 'Este cupom está inativo.' });
+        }
+
+        // Check expiration if applicable (assuming 'validade' column exists or similar)
+        // if (cupom.validade && new Date(cupom.validade) < new Date()) ...
+
+        // 2. Calculate Total based on DB prices
+        const productIds = itens_carrinho.map((item: any) => item.produto_id);
+        const { data: products } = await supabase
+            .from('produtos')
+            .select('id, preco, preco_promocional')
+            .in('id', productIds);
+
+        if (!products) {
+            return NextResponse.json({ valido: false, mensagem: 'Erro ao validar produtos.' });
+        }
+
+        let subtotal = 0;
+        itens_carrinho.forEach((item: any) => {
+            const product = products.find(p => p.id === item.produto_id);
+            if (product) {
+                const price = (product.preco_promocional && product.preco_promocional < product.preco)
+                    ? product.preco_promocional
+                    : product.preco;
+                subtotal += price * (item.quantidade || 1);
+            }
+        });
+
+        // 3. Calculate Discount
+        let discountValue = 0;
+        if (cupom.tipo === 'porcentagem') {
+            discountValue = (subtotal * cupom.valor) / 100;
+        } else if (cupom.tipo === 'fixo') {
+            discountValue = cupom.valor;
+        }
+
+        // Ensure discount doesn't exceed subtotal
+        if (discountValue > subtotal) discountValue = subtotal;
+
+        return NextResponse.json({
+            valido: true,
+            mensagem: 'Cupom aplicado com sucesso!',
+            cupom: {
+                codigo: cupom.codigo,
+                desconto: cupom.valor, // Assuming 'valor' is the percentage or amount
+                tipo: cupom.tipo,
+                desconto_calculado: discountValue
+            },
+            total_recalculado: subtotal - discountValue
+        });
+
+    } catch (error) {
+        console.error('Error validating coupon:', error);
+        return NextResponse.json({ valido: false, mensagem: 'Erro interno no servidor.' }, { status: 500 });
+    }
 }

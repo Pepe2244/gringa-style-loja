@@ -6,6 +6,7 @@ import { Rifa, Premio } from '@/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
+import { reservarNumerosRifa } from '@/app/actions/rifa';
 
 export default function RifaPage() {
     const { showToast } = useToast();
@@ -51,12 +52,43 @@ export default function RifaPage() {
         }
     };
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     const toggleNumber = (number: number) => {
         if (selectedNumbers.includes(number)) {
             setSelectedNumbers(selectedNumbers.filter(n => n !== number));
         } else {
             setSelectedNumbers([...selectedNumbers, number]);
         }
+    };
+
+    const handleSurpresinha = () => {
+        if (!rifa) return;
+        const available = [];
+        const soldSet = new Set(rifa.numeros_vendidos || []);
+        const reservedSet = new Set(rifa.numeros_reservados || []);
+
+        for (let i = 0; i < rifa.total_numeros; i++) {
+            if (!soldSet.has(i) && !reservedSet.has(i) && !selectedNumbers.includes(i)) {
+                available.push(i);
+            }
+        }
+
+        if (available.length === 0) {
+            showToast('Não há números suficientes disponíveis.', 'error');
+            return;
+        }
+
+        const count = Math.min(5, available.length);
+        const randomSelection = [];
+        for (let i = 0; i < count; i++) {
+            const randomIndex = Math.floor(Math.random() * available.length);
+            randomSelection.push(available[randomIndex]);
+            available.splice(randomIndex, 1);
+        }
+
+        setSelectedNumbers([...selectedNumbers, ...randomSelection]);
+        showToast(`${count} números aleatórios selecionados!`, 'success');
     };
 
     const handleReserve = async () => {
@@ -68,20 +100,17 @@ export default function RifaPage() {
 
         setReserving(true);
         try {
-            const { data, error } = await supabase.rpc('reservar_numeros_rifa', {
-                id_rifa_param: rifa.id,
-                numeros_escolhidos_param: selectedNumbers,
-                nome_cliente_param: clientName,
-                telefone_param: clientPhone
-            });
+            const result = await reservarNumerosRifa(rifa.id, selectedNumbers, clientName, clientPhone);
 
-            if (error) throw error;
+            if (!result.success) throw new Error(result.error);
 
-            const participantId = data[0].participante_id;
+            const participantId = result.data[0].participante_id;
             router.push(`/pagamento?participante_id=${participantId}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error reserving numbers:', error);
-            if (error.message && error.message.includes('já foi reservado')) {
+            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+
+            if (errorMessage.includes('já foi reservado')) {
                 showToast('Um dos números escolhidos já foi reservado. Atualize e tente de novo.', 'error');
                 fetchRifa(); // Refresh data
                 setSelectedNumbers([]);
@@ -168,14 +197,36 @@ export default function RifaPage() {
                 {isSoldOut ? (
                     <div className="aviso-esgotado">RIFA ESGOTADA! Obrigado a todos que participaram. O sorteio será realizado em breve!</div>
                 ) : (
-                    <h3>Escolha seus números da sorte:</h3>
+                    <div className="rifa-actions-container" style={{ marginBottom: '20px' }}>
+                        <h3>Escolha seus números da sorte:</h3>
+
+                        <div className="rifa-controls" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '15px' }}>
+                            <input
+                                type="number"
+                                placeholder="Buscar número..."
+                                className="input-busca-rifa"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{ padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: 'white' }}
+                            />
+                            <button
+                                className="btn btn-surpresinha"
+                                onClick={handleSurpresinha}
+                                style={{ background: 'var(--cor-destaque)', color: 'black', border: 'none', padding: '10px 15px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
+                            >
+                                🎲 Surpresinha (5)
+                            </button>
+                        </div>
+                    </div>
                 )}
 
                 <div className={`numeros-grid ${isSoldOut ? 'desabilitado' : ''}`}>
                     {Array.from({ length: rifa.total_numeros }).map((_, i) => {
+                        const numStr = String(i).padStart(totalDigitos, '0');
+                        if (searchTerm && !numStr.includes(searchTerm)) return null;
+
                         const isOccupied = soldSet.has(i) || reservedSet.has(i);
                         const isSelected = selectedNumbers.includes(i);
-                        const numStr = String(i).padStart(totalDigitos, '0');
 
                         return (
                             <div

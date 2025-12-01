@@ -5,12 +5,17 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem } from '@/types';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import { useCartStore, CartState } from '@/store/useCartStore';
 
 export default function CartPage() {
     const { showToast } = useToast();
-    const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const items = useCartStore((state: CartState) => state.items);
+    const updateQuantity = useCartStore((state: CartState) => state.updateQuantity);
+    const removeItem = useCartStore((state: CartState) => state.removeItem);
+    const clearCart = useCartStore((state: CartState) => state.clearCart);
+
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -29,33 +34,32 @@ export default function CartPage() {
     const [validatedTotal, setValidatedTotal] = useState<number | null>(null);
 
     useEffect(() => {
-        loadCart();
-    }, []);
+        const fetchCartData = async () => {
+            setLoading(true);
+            if (items.length > 0) {
+                const productIds = items.map((item) => item.produto_id);
+                const { data } = await supabase
+                    .from('produtos')
+                    .select('*')
+                    .in('id', productIds);
 
-    const loadCart = async () => {
-        setLoading(true);
-        const savedCart = JSON.parse(localStorage.getItem('carrinho') || '[]');
-        setCartItems(savedCart);
+                if (data) setProducts(data);
+                validateTotal(items);
+            } else {
+                setProducts([]);
+            }
+            setLoading(false);
+        };
 
-        if (savedCart.length > 0) {
-            const productIds = savedCart.map((item: CartItem) => item.produto_id);
-            const { data } = await supabase
-                .from('produtos')
-                .select('*')
-                .in('id', productIds);
+        fetchCartData();
+    }, [items]);
 
-            if (data) setProducts(data);
-            validateTotal(savedCart);
-        }
-        setLoading(false);
-    };
-
-    const validateTotal = async (items: CartItem[]) => {
+    const validateTotal = async (cartItems: CartItem[]) => {
         try {
             const response = await fetch('/api/calculate-total', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itens: items })
+                body: JSON.stringify({ itens: cartItems })
             });
             const data = await response.json();
             if (data.total !== undefined) {
@@ -66,17 +70,8 @@ export default function CartPage() {
         }
     };
 
-    const updateQuantity = (index: number, newQuantity: number) => {
-        const newCart = [...cartItems];
-        if (newQuantity <= 0) {
-            newCart.splice(index, 1);
-        } else {
-            newCart[index].quantidade = newQuantity;
-        }
-        setCartItems(newCart);
-        localStorage.setItem('carrinho', JSON.stringify(newCart));
-        window.dispatchEvent(new Event('cart-updated'));
-        validateTotal(newCart);
+    const handleUpdateQuantity = (index: number, newQuantity: number) => {
+        updateQuantity(index, newQuantity);
 
         // Reset coupon if cart changes
         if (appliedCoupon) {
@@ -88,12 +83,9 @@ export default function CartPage() {
     const confirmDelete = () => {
         if (itemToDelete === null) return;
 
-        const newCart = cartItems.filter((_, index) => index !== itemToDelete);
-        localStorage.setItem('carrinho', JSON.stringify(newCart));
-        setCartItems(newCart);
-        window.dispatchEvent(new Event('cart-updated'));
+        removeItem(itemToDelete);
         setItemToDelete(null);
-        validateTotal(newCart);
+
         // Reset coupon if cart changes
         if (appliedCoupon) {
             setAppliedCoupon(null);
@@ -109,7 +101,7 @@ export default function CartPage() {
     };
 
     const calculateSubtotal = () => {
-        return cartItems.reduce((total, item) => {
+        return items.reduce((total, item) => {
             const product = products.find(p => p.id === item.produto_id);
             return product ? total + (getPrecoFinal(product) * item.quantidade) : total;
         }, 0);
@@ -134,7 +126,7 @@ export default function CartPage() {
         setValidatingCoupon(true);
         setCouponMessage(null);
 
-        const itemsToValidate = cartItems.map(item => {
+        const itemsToValidate = items.map(item => {
             const product = products.find(p => p.id === item.produto_id);
             return {
                 produto_id: item.produto_id,
@@ -186,7 +178,7 @@ export default function CartPage() {
 
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
 
-        cartItems.forEach(item => {
+        items.forEach(item => {
             const product = products.find(p => p.id === item.produto_id);
             if (product) {
                 const price = (product.preco_promocional && product.preco_promocional < product.preco)
@@ -211,20 +203,17 @@ export default function CartPage() {
         message += `\n\n*Aguardo o retorno!*`;
 
         window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
-        // setShowCheckoutModal(false); // Assuming this is a state setter for a modal
-        localStorage.removeItem('carrinho');
-        setCartItems([]);
-        window.dispatchEvent(new Event('cart-updated'));
+        clearCart();
     };
 
-    if (loading) {
+    if (loading && items.length > 0 && products.length === 0) {
         return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando carrinho...</div>;
     }
 
-    if (cartItems.length === 0) {
+    if (items.length === 0) {
         return (
             <div className="container" id="carrinho-vazio-container" style={{ textAlign: 'center', padding: '50px 0' }}>
-                <i className="fas fa-shopping-cart" style={{ fontSize: '4rem', color: '#555', marginBottom: '20px' }}></i>
+                <ShoppingCart size={64} style={{ color: '#555', marginBottom: '20px' }} />
                 <h2>Seu carrinho está vazio</h2>
                 <p>Explore nossos produtos e adicione itens ao carrinho.</p>
                 <Link href="/" className="btn" style={{ marginTop: '20px', display: 'inline-block' }}>Ver Produtos</Link>
@@ -236,209 +225,201 @@ export default function CartPage() {
         <div className="container carrinho-container">
             <h1 className="titulo-secao">Seu Carrinho</h1>
 
-            {cartItems.length === 0 ? (
-                <div className="container" id="carrinho-vazio-container" style={{ textAlign: 'center', padding: '50px 0' }}>
-                    <i className="fas fa-shopping-cart" style={{ fontSize: '4rem', color: '#555', marginBottom: '20px' }}></i>
-                    <h2>Seu carrinho está vazio</h2>
-                    <p>Explore nossos produtos e adicione itens ao carrinho.</p>
-                    <Link href="/" className="btn" style={{ marginTop: '20px', display: 'inline-block' }}>Ver Produtos</Link>
-                </div>
-            ) : (
-                <div className="carrinho-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px', alignItems: 'start' }}>
-                    <div className="carrinho-lista">
-                        {cartItems.map((item, index) => {
-                            const product = products.find(p => p.id === item.produto_id);
-                            if (!product) return null;
+            <div className="carrinho-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px', alignItems: 'start' }}>
+                <div className="carrinho-lista">
+                    {items.map((item, index) => {
+                        const product = products.find(p => p.id === item.produto_id);
+                        if (!product) return null;
 
-                            const mediaUrls = product.media_urls || product.imagens || [];
-                            const imageUrl = mediaUrls.find(url => !url.includes('.mp4')) || '/imagens/gringa_style_logo.png';
+                        const mediaUrls = product.media_urls || product.imagens || [];
+                        const imageUrl = mediaUrls.find(url => !url.includes('.mp4')) || '/imagens/gringa_style_logo.png';
 
-                            return (
-                                <div key={`${item.produto_id}-${index}`} className="item-carrinho">
-                                    <div className="item-carrinho-img-container">
-                                        <Link href={`/produto/${item.produto_id}`}>
-                                            <Image
-                                                src={imageUrl}
-                                                alt={product.nome}
-                                                width={120}
-                                                height={120}
-                                                className="item-carrinho-img"
-                                            />
+                        return (
+                            <div key={`${item.produto_id}-${index}`} className="item-carrinho">
+                                <div className="item-carrinho-img-container">
+                                    <Link href={`/produto/${item.produto_id}`}>
+                                        <Image
+                                            src={imageUrl}
+                                            alt={product.nome}
+                                            width={120}
+                                            height={120}
+                                            className="item-carrinho-img"
+                                        />
+                                    </Link>
+                                </div>
+
+                                <div className="item-carrinho-info">
+                                    <div className="item-carrinho-header">
+                                        <Link href={`/produto/${item.produto_id}`} className="item-carrinho-nome">
+                                            {product.nome}
                                         </Link>
                                     </div>
 
-                                    <div className="item-carrinho-info">
-                                        <div className="item-carrinho-header">
-                                            <Link href={`/produto/${item.produto_id}`} className="item-carrinho-nome">
-                                                {product.nome}
-                                            </Link>
-                                        </div>
+                                    <div className="item-carrinho-specs">
+                                        {item.variante && (
+                                            <p className="spec-item">
+                                                {item.variante.tipo}: {item.variante.opcao}
+                                            </p>
+                                        )}
+                                    </div>
 
-                                        <div className="item-carrinho-specs">
-                                            {item.variante && (
-                                                <p className="spec-item">
-                                                    {item.variante.tipo}: {item.variante.opcao}
-                                                </p>
-                                            )}
-                                        </div>
+                                    <div className="item-carrinho-preco">
+                                        R$ {getPrecoFinal(product).toFixed(2).replace('.', ',')}
+                                    </div>
 
-                                        <div className="item-carrinho-preco">
-                                            R$ {getPrecoFinal(product).toFixed(2).replace('.', ',')}
+                                    <div className="item-carrinho-acoes-bottom">
+                                        <div className="quantidade-container">
+                                            <input
+                                                type="number"
+                                                className="input-quantidade"
+                                                value={item.quantidade}
+                                                min="1"
+                                                onChange={(e) => handleUpdateQuantity(index, parseInt(e.target.value))}
+                                            />
                                         </div>
-
-                                        <div className="item-carrinho-acoes-bottom">
-                                            <div className="quantidade-container">
-                                                <input
-                                                    type="number"
-                                                    className="input-quantidade"
-                                                    value={item.quantidade}
-                                                    min="1"
-                                                    onChange={(e) => updateQuantity(index, parseInt(e.target.value))}
-                                                />
-                                            </div>
-                                            <button
-                                                className="btn-remover"
-                                                onClick={() => setItemToDelete(index)}
-                                                title="Remover item"
-                                            >
-                                                <Trash2 size={20} />
-                                            </button>
-                                        </div>
+                                        <button
+                                            className="btn-remover"
+                                            onClick={() => setItemToDelete(index)}
+                                            title="Remover item"
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
                                     </div>
                                 </div>
-                            );
-                        })}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="carrinho-resumo" style={{ background: '#2a2a2a', padding: '25px', borderRadius: '10px', position: 'sticky', top: '20px' }}>
+                    <h2 style={{ fontFamily: 'var(--font-teko)', fontSize: '2rem', marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #444', paddingBottom: '10px' }}>Resumo do Pedido</h2>
+
+                    <div className="linha-total" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
+                        <span>Subtotal</span>
+                        <span id="subtotal-valor">R$ {calculateSubtotal().toFixed(2).replace('.', ',')}</span>
                     </div>
 
-                    <div className="carrinho-resumo" style={{ background: '#2a2a2a', padding: '25px', borderRadius: '10px', position: 'sticky', top: '20px' }}>
-                        <h2 style={{ fontFamily: 'var(--font-teko)', fontSize: '2rem', marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #444', paddingBottom: '10px' }}>Resumo do Pedido</h2>
-
-                        <div className="linha-total" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
-                            <span>Subtotal</span>
-                            <span id="subtotal-valor">R$ {calculateSubtotal().toFixed(2).replace('.', ',')}</span>
+                    {appliedCoupon && (
+                        <div className="linha-total highlight-success" id="cupom-desconto-linha" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#00ff88' }}>
+                            <span>Desconto ({appliedCoupon.codigo})</span>
+                            <span id="cupom-desconto-valor">- R$ {appliedCoupon.desconto_calculado.toFixed(2).replace('.', ',')}</span>
                         </div>
+                    )}
 
-                        {appliedCoupon && (
-                            <div className="linha-total highlight-success" id="cupom-desconto-linha" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#00ff88' }}>
-                                <span>Desconto ({appliedCoupon.codigo})</span>
-                                <span id="cupom-desconto-valor">- R$ {appliedCoupon.desconto_calculado.toFixed(2).replace('.', ',')}</span>
-                            </div>
-                        )}
-
-                        <div className="cupom-area" style={{ margin: '20px 0' }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em', color: '#aaa' }}>Tem um cupom?</label>
-                            <div className="cupom-input-group" style={{ display: 'flex', gap: '5px' }}>
-                                <input
-                                    type="text"
-                                    id="cupom-input"
-                                    placeholder="Código"
-                                    value={couponCode}
-                                    onChange={(e) => setCouponCode(e.target.value)}
-                                    disabled={!!appliedCoupon}
-                                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
-                                />
-                                <button
-                                    id="btn-aplicar-cupom"
-                                    onClick={appliedCoupon ? () => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(null); } : handleApplyCoupon}
-                                    disabled={validatingCoupon}
-                                    style={{
-                                        padding: '8px 15px',
-                                        borderRadius: '4px',
-                                        border: 'none',
-                                        background: appliedCoupon ? '#dc3545' : '#28a745',
-                                        color: 'white',
-                                        cursor: 'pointer',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
-                                    {validatingCoupon ? '...' : (appliedCoupon ? 'X' : 'Aplicar')}
-                                </button>
-                            </div>
-                            {couponMessage && (
-                                <p id="cupom-mensagem" style={{ fontSize: '0.85em', marginTop: '5px', color: couponMessage.type === 'error' ? '#ff4444' : '#00ff88' }}>
-                                    {couponMessage.text}
-                                </p>
-                            )}
-                        </div>
-
-                        <hr style={{ borderColor: '#444', margin: '20px 0' }} />
-
-                        <div className="campo-cliente" style={{ marginBottom: '15px' }}>
-                            <label htmlFor="nome-cliente" style={{ display: 'block', marginBottom: '5px' }}>Seus Dados</label>
+                    <div className="cupom-area" style={{ margin: '20px 0' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em', color: '#aaa' }}>Tem um cupom?</label>
+                        <div className="cupom-input-group" style={{ display: 'flex', gap: '5px' }}>
                             <input
                                 type="text"
-                                id="nome-cliente"
-                                className="input-cliente"
-                                placeholder="Digite seu nome completo"
-                                value={clientName}
-                                onChange={(e) => setClientName(e.target.value)}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
+                                id="cupom-input"
+                                placeholder="Código"
+                                value={couponCode}
+                                onChange={(e) => setCouponCode(e.target.value)}
+                                disabled={!!appliedCoupon}
+                                style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
                             />
+                            <button
+                                id="btn-aplicar-cupom"
+                                onClick={appliedCoupon ? () => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(null); } : handleApplyCoupon}
+                                disabled={validatingCoupon}
+                                style={{
+                                    padding: '8px 15px',
+                                    borderRadius: '4px',
+                                    border: 'none',
+                                    background: appliedCoupon ? '#dc3545' : '#28a745',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                {validatingCoupon ? '...' : (appliedCoupon ? 'X' : 'Aplicar')}
+                            </button>
                         </div>
+                        {couponMessage && (
+                            <p id="cupom-mensagem" style={{ fontSize: '0.85em', marginTop: '5px', color: couponMessage.type === 'error' ? '#ff4444' : '#00ff88' }}>
+                                {couponMessage.text}
+                            </p>
+                        )}
+                    </div>
 
-                        <div className="resumo-pagamento" style={{ marginBottom: '20px' }}>
-                            <label htmlFor="forma-pagamento" style={{ display: 'block', marginBottom: '5px' }}>Forma de Pagamento</label>
+                    <hr style={{ borderColor: '#444', margin: '20px 0' }} />
+
+                    <div className="campo-cliente" style={{ marginBottom: '15px' }}>
+                        <label htmlFor="nome-cliente" style={{ display: 'block', marginBottom: '5px' }}>Seus Dados</label>
+                        <input
+                            type="text"
+                            id="nome-cliente"
+                            className="input-cliente"
+                            placeholder="Digite seu nome completo"
+                            value={clientName}
+                            onChange={(e) => setClientName(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
+                        />
+                    </div>
+
+                    <div className="resumo-pagamento" style={{ marginBottom: '20px' }}>
+                        <label htmlFor="forma-pagamento" style={{ display: 'block', marginBottom: '5px' }}>Forma de Pagamento</label>
+                        <select
+                            id="forma-pagamento"
+                            className="select-pagamento"
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
+                        >
+                            <option value="PIX">PIX</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                        </select>
+                    </div>
+
+                    {paymentMethod === 'Cartão de Crédito' && (
+                        <div className="resumo-pagamento" id="opcoes-parcelamento" style={{ marginBottom: '20px' }}>
+                            <label htmlFor="numero-parcelas" style={{ display: 'block', marginBottom: '5px' }}>Parcelas</label>
                             <select
-                                id="forma-pagamento"
+                                id="numero-parcelas"
                                 className="select-pagamento"
-                                value={paymentMethod}
-                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                value={installments}
+                                onChange={(e) => setInstallments(e.target.value)}
                                 style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
                             >
-                                <option value="PIX">PIX</option>
-                                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                <option value="1x">1x sem juros</option>
+                                <option value="2x">2x</option>
+                                <option value="3x">3x</option>
+                                <option value="12x">12x</option>
                             </select>
                         </div>
+                    )}
 
-                        {paymentMethod === 'Cartão de Crédito' && (
-                            <div className="resumo-pagamento" id="opcoes-parcelamento" style={{ marginBottom: '20px' }}>
-                                <label htmlFor="numero-parcelas" style={{ display: 'block', marginBottom: '5px' }}>Parcelas</label>
-                                <select
-                                    id="numero-parcelas"
-                                    className="select-pagamento"
-                                    value={installments}
-                                    onChange={(e) => setInstallments(e.target.value)}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
-                                >
-                                    <option value="1x">1x sem juros</option>
-                                    <option value="2x">2x</option>
-                                    <option value="3x">3x</option>
-                                    <option value="12x">12x</option>
-                                </select>
-                            </div>
-                        )}
-
-                        <div className="linha-total total-final" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                            <span>Total</span>
-                            <span id="total-valor">R$ {calculateTotal().toFixed(2).replace('.', ',')}</span>
-                        </div>
-
-                        <button
-                            id="finalizar-pedido-btn"
-                            className="btn btn-finalizar"
-                            onClick={handleCheckout}
-                            style={{
-                                width: '100%',
-                                padding: '15px',
-                                background: '#FFA500',
-                                color: 'black',
-                                border: 'none',
-                                borderRadius: '5px',
-                                fontSize: '1.1rem',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                textTransform: 'uppercase',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '10px'
-                            }}
-                        >
-                            FINALIZAR PEDIDO VIA WHATSAPP
-                        </button>
+                    <div className="linha-total total-final" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                        <span>Total</span>
+                        <span id="total-valor">R$ {calculateTotal().toFixed(2).replace('.', ',')}</span>
                     </div>
+
+                    <button
+                        id="finalizar-pedido-btn"
+                        className="btn btn-finalizar"
+                        onClick={handleCheckout}
+                        style={{
+                            width: '100%',
+                            padding: '15px',
+                            background: '#FFA500',
+                            color: 'black',
+                            border: 'none',
+                            borderRadius: '5px',
+                            fontSize: '1.1rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            textTransform: 'uppercase',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '10px'
+                        }}
+                    >
+                        FINALIZAR PEDIDO VIA WHATSAPP
+                    </button>
                 </div>
-            )}
+            </div>
+
             {/* Delete Confirmation Modal */}
             {itemToDelete !== null && (
                 <div className="modal-overlay" style={{
@@ -467,12 +448,7 @@ export default function CartPage() {
                         <p style={{ marginBottom: '25px', color: '#ccc' }}>Tem certeza que deseja apagar este item do carrinho?</p>
                         <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
                             <button
-                                onClick={() => {
-                                    if (itemToDelete !== null) {
-                                        updateQuantity(itemToDelete, 0);
-                                        setItemToDelete(null);
-                                    }
-                                }}
+                                onClick={confirmDelete}
                                 style={{
                                     padding: '10px 20px',
                                     borderRadius: '5px',

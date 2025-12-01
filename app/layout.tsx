@@ -26,6 +26,7 @@ import Footer from "@/components/Footer";
 import { ToastProvider } from '@/context/ToastContext';
 
 import CampaignBanner from "@/components/CampaignBanner";
+import CookieConsent from "@/components/CookieConsent";
 
 export default function RootLayout({
   children,
@@ -35,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
       </head>
       <body
         className={`${roboto.variable} ${teko.variable} antialiased`}
@@ -57,6 +58,7 @@ export default function RootLayout({
           <Header />
           <CampaignBanner />
           {children}
+          <CookieConsent />
           <Footer />
         </ToastProvider>
       </body>

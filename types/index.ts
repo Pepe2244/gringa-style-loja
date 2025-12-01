@@ -1,26 +1,8 @@
-export interface Product {
-    id: number;
-    nome: string;
-    descricao: string;
-    preco: number;
-    preco_promocional?: number;
-    emEstoque: boolean;
-    media_urls?: string[];
-    imagens?: string[]; // Legacy support
-    video?: string;
-    categoria_id?: number;
-    tags?: string[];
-    created_at?: string;
-    variants?: {
-        tipo: string;
-        opcoes: string[];
-    };
-}
+import { Database } from './database.types';
 
-export interface Category {
-    id: number;
-    nome: string;
-}
+export type Product = Database['public']['Tables']['produtos']['Row'];
+
+export type Category = Database['public']['Tables']['categorias']['Row'];
 
 export interface CartItem {
     produto_id: number;
@@ -31,29 +13,8 @@ export interface CartItem {
     } | null;
 }
 
-export interface Rifa {
-    id: number;
-    nome_premio: string;
-    descricao: string;
-    preco_numero: number;
-    total_numeros: number;
-    imagem_premio_url: string;
-    status: 'ativa' | 'finalizada' | 'cancelada';
-    numeros_vendidos: number[];
-    numeros_reservados: number[];
-    data_sorteio?: string;
-    ganhador_numero?: number;
-    ganhador_nome?: string;
-}
+export type Rifa = Database['public']['Tables']['rifas']['Row'];
 
-export interface Premio {
-    id: number;
-    rifa_id: number;
-    ordem: number;
-    descricao: string;
-    imagem_url?: string;
-    vencedor_nome?: string;
-    vencedor_numero?: number;
-    ganhador_nome?: string; // Legacy support
-    ganhador_numero?: number; // Legacy support
-}
+export type Premio = Database['public']['Tables']['premios']['Row'];
+
+export type ParticipanteRifa = Database['public']['Tables']['participantes_rifa']['Row'];

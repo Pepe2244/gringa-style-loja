@@ -46,8 +46,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
+export const revalidate = 3600; // Revalidate every hour
+
+export async function generateStaticParams() {
+    const { data: products } = await supabase
+        .from('produtos')
+        .select('id')
+        .limit(50); // Pre-render top 50 products
+
+    return products?.map((product) => ({
+        id: String(product.id),
+    })) || [];
+}
+
 export default async function ProductPage({ params }: Props) {
     const { id } = await params;
     const productId = parseInt(id.split('-')[0]);
-    return <ProductPageContent id={productId} />;
+
+    const { data: product } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('id', productId)
+        .single();
+
+    const jsonLd = product ? {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.nome,
+        image: product.media_urls?.[0] || product.imagens?.[0],
+        description: product.descricao,
+        sku: String(product.id),
+        offers: {
+            '@type': 'Offer',
+            url: `https://gringastyle.com.br/produto/${product.id}`,
+            priceCurrency: 'BRL',
+            price: product.preco_promocional || product.preco,
+            availability: product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        },
+    } : null;
+
+    return (
+        <>
+            {jsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                />
+            )}
+            <ProductPageContent id={productId} />
+        </>
+    );
 }

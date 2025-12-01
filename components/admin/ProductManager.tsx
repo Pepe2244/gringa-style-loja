@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
 import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video } from 'lucide-react';
+import { compressImage } from '@/utils/imageCompression';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -19,7 +20,7 @@ export default function ProductManager() {
     const [precoPromocional, setPrecoPromocional] = useState('');
     const [categoriaId, setCategoriaId] = useState('');
     const [tags, setTags] = useState('');
-    const [emEstoque, setEmEstoque] = useState(true);
+    const [em_estoque, setEmEstoque] = useState(true);
     const [variantTipo, setVariantTipo] = useState('');
     const [variantOpcoes, setVariantOpcoes] = useState('');
 
@@ -50,6 +51,11 @@ export default function ProductManager() {
         if (data) setCategories(data);
     };
 
+    interface ProductVariant {
+        tipo: string;
+        opcoes: string[];
+    }
+
     const openModal = (product: Product | null = null) => {
         setEditingProduct(product);
         if (product) {
@@ -59,9 +65,11 @@ export default function ProductManager() {
             setPrecoPromocional(product.preco_promocional ? String(product.preco_promocional) : '');
             setCategoriaId(product.categoria_id ? String(product.categoria_id) : '');
             setTags(product.tags ? product.tags.join(', ') : '');
-            setEmEstoque(product.emEstoque);
-            setVariantTipo(product.variants?.tipo || '');
-            setVariantOpcoes(product.variants?.opcoes.join(', ') || '');
+            setEmEstoque(product.em_estoque);
+
+            const variants = product.variants as unknown as ProductVariant | null;
+            setVariantTipo(variants?.tipo || '');
+            setVariantOpcoes(variants?.opcoes.join(', ') || '');
             setExistingMedia(product.media_urls || []);
         } else {
             setNome('');
@@ -107,9 +115,18 @@ export default function ProductManager() {
 
         // Upload new files
         for (const file of mediaFiles) {
-            const fileExt = file.name.split('.').pop();
+            let fileToUpload = file;
+            if (file.type.startsWith('image/')) {
+                try {
+                    fileToUpload = await compressImage(file);
+                } catch (error) {
+                    console.error('Erro na compressão:', error);
+                }
+            }
+
+            const fileExt = fileToUpload.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const { error: uploadError } = await supabase.storage.from('gringa-style-produtos').upload(fileName, file);
+            const { error: uploadError } = await supabase.storage.from('gringa-style-produtos').upload(fileName, fileToUpload);
 
             if (uploadError) {
                 alert(`Erro no upload de ${file.name}: ${uploadError.message}`);
@@ -132,9 +149,9 @@ export default function ProductManager() {
             preco_promocional: precoPromocional ? parseFloat(precoPromocional) : null,
             categoria_id: categoriaId ? parseInt(categoriaId) : null,
             tags: tags.split(',').map(s => s.trim()).filter(Boolean),
-            emEstoque,
+            em_estoque,
             media_urls: finalMediaUrls,
-            variants
+            variants: variants as any // Casting to any for Supabase Json compatibility if needed, or strict Json
         };
 
         try {
@@ -170,8 +187,9 @@ export default function ProductManager() {
             }
             setShowModal(false);
             fetchProducts();
-        } catch (error: any) {
-            alert('Erro ao salvar: ' + error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+            alert('Erro ao salvar: ' + errorMessage);
         } finally {
             setLoading(false);
         }
@@ -183,14 +201,15 @@ export default function ProductManager() {
             const { error } = await supabase.from('produtos').delete().eq('id', id);
             if (error) throw error;
             fetchProducts();
-        } catch (error: any) {
-            alert('Erro ao excluir: ' + error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+            alert('Erro ao excluir: ' + errorMessage);
         }
     };
 
     const toggleStock = async (id: number, currentStatus: boolean) => {
         try {
-            const { error } = await supabase.from('produtos').update({ emEstoque: !currentStatus }).eq('id', id);
+            const { error } = await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
             if (error) throw error;
 
             // Stock Notification
@@ -208,8 +227,9 @@ export default function ProductManager() {
             }
 
             fetchProducts();
-        } catch (error: any) {
-            alert('Erro ao atualizar estoque: ' + error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+            alert('Erro ao atualizar estoque: ' + errorMessage);
         }
     };
 
@@ -243,8 +263,8 @@ export default function ProductManager() {
                                 <label className="switch">
                                     <input
                                         type="checkbox"
-                                        checked={prod.emEstoque}
-                                        onChange={() => toggleStock(prod.id, prod.emEstoque)}
+                                        checked={prod.em_estoque}
+                                        onChange={() => toggleStock(prod.id, prod.em_estoque)}
                                     />
                                     <span className="slider"></span>
                                 </label>
@@ -268,8 +288,8 @@ export default function ProductManager() {
                             <label className="switch" style={{ transform: 'scale(0.8)' }}>
                                 <input
                                     type="checkbox"
-                                    checked={prod.emEstoque}
-                                    onChange={() => toggleStock(prod.id, prod.emEstoque)}
+                                    checked={prod.em_estoque}
+                                    onChange={() => toggleStock(prod.id, prod.em_estoque)}
                                 />
                                 <span className="slider"></span>
                             </label>
@@ -279,7 +299,7 @@ export default function ProductManager() {
                             {prod.preco_promocional && (
                                 <p style={{ color: '#00ff88' }}><strong>Promo:</strong> R$ {prod.preco_promocional.toFixed(2)}</p>
                             )}
-                            <p><strong>Estoque:</strong> {prod.emEstoque ? 'Sim' : 'Não'}</p>
+                            <p><strong>Estoque:</strong> {prod.em_estoque ? 'Sim' : 'Não'}</p>
                         </div>
                         <div className="admin-mobile-card-actions">
                             <button className="btn-admin-acao btn-editar" onClick={() => openModal(prod)} style={{ flex: 1, padding: '10px' }}>Editar</button>
@@ -344,7 +364,7 @@ export default function ProductManager() {
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <input
                                         type="checkbox"
-                                        checked={emEstoque}
+                                        checked={em_estoque}
                                         onChange={e => setEmEstoque(e.target.checked)}
                                         style={{ width: 'auto' }}
                                     />

@@ -58,7 +58,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             onMouseLeave={() => setIsHovered(false)}
         >
             {isNew() && <span className="badge-novo">NOVO</span>}
-            {product.emEstoque ? (
+            {product.em_estoque ? (
                 <span className="status-estoque em-estoque">Em Estoque</span>
             ) : (
                 <span className="status-estoque fora-de-estoque">Fora de Estoque</span>
@@ -99,7 +99,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                 )}
 
                 <div className="produto-botoes">
-                    {!product.emEstoque ? (
+                    {!product.em_estoque ? (
                         <button
                             className="btn btn-avise-me"
                             onClick={() => window.open(`https://wa.me/5515998608170?text=Olá, gostaria de ser avisado quando o produto *${product.nome}* estiver disponível novamente.`, '_blank')}
