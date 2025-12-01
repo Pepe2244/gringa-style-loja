@@ -314,11 +314,11 @@ export default function RifaManager() {
         // Get already drawn numbers
         const { data: drawnPrizes } = await supabase
             .from('premios')
-            .select('ganhador_numero')
+            .select('vencedor_numero')
             .eq('rifa_id', drawRifa.id)
-            .not('ganhador_numero', 'is', null);
+            .not('vencedor_numero', 'is', null);
 
-        const drawnNumbers = new Set(drawnPrizes?.map(p => p.ganhador_numero));
+        const drawnNumbers = new Set(drawnPrizes?.map(p => p.vencedor_numero));
 
         // Build pool
         const pool: { number: number, name: string }[] = [];
@@ -349,8 +349,8 @@ export default function RifaManager() {
 
             // Save winner
             const { error } = await supabase.from('premios').update({
-                ganhador_nome: winner.name,
-                ganhador_numero: winner.number
+                vencedor_nome: winner.name,
+                vencedor_numero: winner.number
             }).eq('id', prizeId);
 
             if (error) {
@@ -607,13 +607,13 @@ export default function RifaManager() {
                                 <li key={prize.id} className="premio-sorteio-item">
                                     <div className="premio-sorteio-info">
                                         <strong>{prize.ordem}º Prêmio:</strong> {prize.descricao}
-                                        {prize.ganhador_nome && (
+                                        {prize.vencedor_nome && (
                                             <div className="vencedor-destaque">
-                                                🏆 Vencedor: {prize.ganhador_nome} (Nº {prize.ganhador_numero})
+                                                🏆 Vencedor: {prize.vencedor_nome} (Nº {prize.vencedor_numero})
                                             </div>
                                         )}
                                     </div>
-                                    {!prize.ganhador_nome && (
+                                    {!prize.vencedor_nome && (
                                         <button
                                             className="btn-admin btn-sortear"
                                             onClick={() => performDraw(prize.id, prize.descricao)}
