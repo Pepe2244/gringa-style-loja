@@ -89,7 +89,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
     const addToCart = () => {
         if (!product) return;
 
-        const variants = product.variants as any;
+        const variants = product.variants as unknown as ProductVariant;
         if (variants && !selectedVariant) {
             showToast(`Por favor, selecione uma opção de ${variants.tipo}`, 'error');
             return;
@@ -113,7 +113,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
         }
 
         const price = product.preco_promocional || product.preco;
-        const variants = product.variants as any;
+        const variants = product.variants as unknown as ProductVariant;
         const variantInfo = variants ? ` (${variants.tipo}: ${selectedVariant})` : '';
 
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
@@ -186,7 +186,7 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
     const currentMedia = mediaUrls[currentImageIndex];
     const isVideo = currentMedia?.includes('.mp4') || currentMedia?.includes('.webm') || !!product.video;
     const videoUrl = product.video || (isVideo ? currentMedia : null);
-    const variants = product.variants as any;
+    const variants = product.variants as unknown as ProductVariant;
 
     return (
         <div className="container produto-page-container">

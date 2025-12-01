@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Product } from '@/types';
+import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 
 interface ProductDetailsModalProps {
@@ -38,7 +38,7 @@ export default function ProductDetailsModal({
 
     const handleAddToCart = () => {
         let variantToAdd = null;
-        const variants = product.variants as any;
+        const variants = product.variants as unknown as ProductVariant;
         if (variants && variants.opcoes && variants.opcoes.length > 0) {
             if (!selectedVariant) {
                 variantToAdd = {
@@ -54,7 +54,7 @@ export default function ProductDetailsModal({
 
     const handleBuyNow = () => {
         let variantToAdd = null;
-        const variants = product.variants as any;
+        const variants = product.variants as unknown as ProductVariant;
         if (variants && variants.opcoes && variants.opcoes.length > 0) {
             if (!selectedVariant) {
                 variantToAdd = {
@@ -113,7 +113,7 @@ export default function ProductDetailsModal({
                 <p>{product.descricao}</p>
 
                 {(() => {
-                    const variants = product.variants as any;
+                    const variants = product.variants as unknown as ProductVariant;
                     if (variants && variants.opcoes && variants.opcoes.length > 0) {
                         return (
                             <div className="variantes-container">
@@ -148,7 +148,7 @@ export default function ProductDetailsModal({
                     <button className="btn" onClick={handleAddToCart}>Adicionar ao Carrinho</button>
                     <button className="btn btn-secundario" onClick={handleBuyNow}>Comprar via WhatsApp</button>
                 </div>
-            </div>
-        </Modal>
+            </div >
+        </Modal >
     );
 }
