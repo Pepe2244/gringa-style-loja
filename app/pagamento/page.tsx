@@ -53,7 +53,11 @@ function PaymentContent() {
     };
 
     const copiarChavePix = () => {
-        const chavePix = process.env.NEXT_PUBLIC_PIX_KEY || "00020126360014BR.GOV.BCB.PIX0114+55159986081705204000053039865802BR5925Gringa Style Equipamentos6012Itapetininga62070503***63041D3D";
+        const chavePix = process.env.NEXT_PUBLIC_PIX_KEY || "";
+        if (!chavePix) {
+            alert("Erro: Chave PIX não configurada.");
+            return;
+        }
         navigator.clipboard.writeText(chavePix).then(() => {
             setCopiado(true);
             setTimeout(() => setCopiado(false), 2000);
@@ -108,7 +112,7 @@ function PaymentContent() {
                     <div className="chave-pix-container">
                         <input
                             type="text"
-                            value={process.env.NEXT_PUBLIC_PIX_KEY || "00020126360014BR.GOV.BCB.PIX0114+55159986081705204000053039865802BR5925Gringa Style Equipamentos6012Itapetininga62070503***63041D3D"}
+                            value={process.env.NEXT_PUBLIC_PIX_KEY || ""}
                             readOnly
                             id="chave-pix-input"
                         />
