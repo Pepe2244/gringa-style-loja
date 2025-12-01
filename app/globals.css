@@ -3772,9 +3772,7 @@ main,
         text-align: center;
     }
 
-    /* BOTÃO DE REMOVER (LIXEIRA)
-       Isolado na direita para não sobrepor nada
-    */
+
     .btn-remover {
         grid-column: 3 / 4;
         /* Última coluna */
