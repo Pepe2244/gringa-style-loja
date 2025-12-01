@@ -37,20 +37,19 @@ export async function getPaymentDetails(participanteId: number) {
             .from('participantes_rifa')
             .select('*')
             .eq('id', participanteId)
-            .single();
+            .maybeSingle();
 
         if (partError) {
             console.error('❌ [Pagamento] Erro ao buscar participante:', JSON.stringify(partError, null, 2));
-
-            // Tratamento específico para RLS ou Não Encontrado
-            if (partError.code === 'PGRST116') {
-                return { success: false, error: 'Reserva não encontrada. Verifique se a chave SERVICE_ROLE está correta.' };
-            }
-            if (partError.code === '42501') {
-                return { success: false, error: 'Erro de Permissão (RLS). Chave incorreta.' };
-            }
-
             return { success: false, error: `Erro no banco: ${partError.message}` };
+        }
+
+        if (!participante) {
+            // Debug: Verificar se conseguimos ver ALGUMA coisa
+            const { count } = await supabaseAdmin.from('participantes_rifa').select('*', { count: 'exact', head: true });
+            console.error(`❌ [Pagamento] Participante ${participanteId} não encontrado. Total de linhas visíveis pelo Admin: ${count}`);
+
+            return { success: false, error: 'Reserva não encontrada. (ID inexistente ou erro de permissão)' };
         }
 
         // 2. Busca Rifa Associada
