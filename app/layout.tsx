@@ -16,6 +16,10 @@ const teko = Teko({
 });
 
 export const metadata: Metadata = {
+  // --- A LINHA MÁGICA QUE FALTAVA ESTÁ AQUI EMBAIXO ---
+  metadataBase: new URL('https://gringa-style.netlify.app'),
+  // ----------------------------------------------------
+
   title: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
   description: "Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!",
   keywords: ["máscara de solda", "solda tig", "personalizada", "gringa style", "acessórios solda"],
@@ -26,7 +30,7 @@ export const metadata: Metadata = {
     siteName: "Gringa Style",
     images: [
       {
-        url: "/imagens/logo_gringa_style.png",
+        url: "/imagens/logo_gringa_style.png", // Agora o Next sabe que isso é https://gringa-style.../imagens/...
         width: 800,
         height: 600,
       },
