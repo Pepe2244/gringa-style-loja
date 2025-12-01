@@ -27,26 +27,24 @@ export default function Header() {
     const isActive = (path: string) => pathname === path ? 'active' : '';
 
     return (
-        <header className="header">
-            <div className="container header-container">
-                <Link href="/" className="logo-link" onClick={closeMenu}>
-                    <img src="/imagens/logo-gringa-style.png" alt="Gringa Style Logo" className="logo" />
+        <header className="cabecalho">
+            <div className="container">
+                <Link href="/" className="logo" onClick={closeMenu}>
+                    <img src="/logo-gringa-style.png" alt="Gringa Style Logo" />
                 </Link>
 
-                <nav className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
+                <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`}>
                     <button className="fechar-menu-btn" onClick={closeMenu}>
                         <X size={24} />
                     </button>
-                    <ul>
-                        <li><Link href="/" className={isActive('/')} onClick={closeMenu}>Início</Link></li>
-                        <li><Link href="/#produtos" onClick={closeMenu}>Produtos</Link></li>
-                        <li><Link href="/rifa" className={isActive('/rifa')} onClick={closeMenu}>Rifa</Link></li>
-                        <li><Link href="/historico" className={isActive('/historico')} onClick={closeMenu}>Ganhadores</Link></li>
-                        <li><Link href="/acompanhar-rifa" className={isActive('/acompanhar-rifa')} onClick={closeMenu}>Meus Números</Link></li>
-                    </ul>
+                    <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
+                    <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
+                    <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
+                    <Link href="/historico" className={`nav-item ${isActive('/historico')}`} onClick={closeMenu}>Ganhadores</Link>
+                    <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={closeMenu}>Meus Números</Link>
                 </nav>
 
-                <div className="header-actions">
+                <div className="header-direita">
                     <Link href="/carrinho" className="carrinho">
                         <ShoppingCart size={24} />
                         <span className="carrinho-contador">{mounted ? totalItems : 0}</span>
