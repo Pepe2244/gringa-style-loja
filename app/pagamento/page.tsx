@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Rifa } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getPaymentDetails } from '@/app/actions/pagamento';
 
 function PaymentContent() {
     const searchParams = useSearchParams();
@@ -30,24 +31,14 @@ function PaymentContent() {
 
     const fetchData = async () => {
         try {
-            const { data: partData, error: partError } = await supabase
-                .from('participantes_rifa')
-                .select('*')
-                .eq('id', participanteId)
-                .single();
+            const result = await getPaymentDetails(Number(participanteId));
 
-            if (partError) throw partError;
-            setParticipante(partData);
-
-            if (partData) {
-                const { data: rifaData, error: rifaError } = await supabase
-                    .from('rifas')
-                    .select('*')
-                    .eq('id', partData.rifa_id)
-                    .single();
-
-                if (rifaError) throw rifaError;
-                setRifa(rifaData);
+            if (result.success) {
+                setParticipante(result.participante);
+                setRifa(result.rifa);
+            } else {
+                console.error('Error loading payment details:', result.error);
+                // Optional: showToast(result.error, 'error');
             }
         } catch (error) {
             console.error('Error fetching payment data:', error);
