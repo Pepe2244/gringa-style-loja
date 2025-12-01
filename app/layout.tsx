@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Roboto, Teko } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { ToastProvider } from '@/context/ToastContext';
+import CampaignBanner from "@/components/CampaignBanner";
+import CookieConsent from "@/components/CookieConsent";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -40,14 +45,6 @@ export const metadata: Metadata = {
   },
 };
 
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-
-import { ToastProvider } from '@/context/ToastContext';
-
-import CampaignBanner from "@/components/CampaignBanner";
-import CookieConsent from "@/components/CookieConsent";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -65,10 +62,11 @@ export default function RootLayout({
           src="https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN"
           strategy="afterInteractive"
         />
+        {/* CORREÇÃO APLICADA AQUI: window.dataLayer */}
         <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
+            function gtag(){window.dataLayer.push(arguments);}
             gtag('js', new Date());
 
             gtag('config', 'G-2L2F9CY9JN');
