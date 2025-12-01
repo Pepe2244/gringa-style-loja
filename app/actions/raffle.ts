@@ -6,22 +6,33 @@ import crypto from 'crypto';
 export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: string) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    console.log(`🎲 [Sorteio] Iniciando sorteio para Rifa ID: ${rifaId}, Prêmio ID: ${prizeId}`);
+    console.log(`🎲 [Sorteio] Iniciando... Rifa: ${rifaId}, Prêmio: ${prizeId}`);
 
-    // --- CHECK DE SEGURANÇA (Igual ao pagamento) ---
+    // --- 1. CHECK DE SEGURANÇA E CREDENCIAIS (Igual ao Pagamento) ---
     if (!supabaseServiceKey) {
-        console.error("⛔ CRÍTICO: SUPABASE_SERVICE_ROLE_KEY não encontrada.");
-        return { success: false, message: 'Erro interno: Chave de segurança não configurada.' };
+        console.error("⛔ CRÍTICO: SUPABASE_SERVICE_ROLE_KEY não definida.");
+        return { success: false, message: 'Erro interno: Chave de segurança ausente.' };
     }
 
-    if (supabaseServiceKey === supabaseAnonKey) {
-        console.error("⛔ PERIGO: A chave SERVICE_ROLE é igual à chave ANON.");
-        return { success: false, message: 'ERRO DE CONFIG: Chave de Admin inválida (está igual à pública).' };
-    }
+    try {
+        // Decodifica o JWT para garantir que é a chave de SERVICE_ROLE (Admin)
+        const [header, payloadBase64, signature] = supabaseServiceKey.split('.');
+        if (payloadBase64) {
+            const buffer = Buffer.from(payloadBase64, 'base64');
+            const payload = JSON.parse(buffer.toString());
+            console.log(`🔑 [DEBUG KEY] Role: "${payload.role}"`);
 
-    // Cria o cliente ADMIN com a chave de serviço para ignorar regras RLS e poder ler participantes
+            if (payload.role !== 'service_role') {
+                console.error("⛔ PERIGO: A chave usada NÃO é service_role. É: " + payload.role);
+                return { success: false, message: `ERRO DE CONFIG: Chave incorreta (${payload.role}). Use a service_role.` };
+            }
+        }
+    } catch (e) {
+        console.error("⚠️ Erro ao verificar chave:", e);
+    }
+    // --- FIM DO CHECK ---
+
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
             autoRefreshToken: false,
@@ -30,7 +41,8 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
     });
 
     try {
-        // 1. Buscar participantes PAGOS
+        // 2. Buscar participantes com status 'pago'
+        console.log("🔍 Buscando participantes pagos...");
         const { data: participants, error: partError } = await supabaseAdmin
             .from('participantes_rifa')
             .select('nome, numeros_escolhidos')
@@ -38,16 +50,18 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
             .eq('status_pagamento', 'pago');
 
         if (partError) {
-            console.error('❌ Erro ao buscar participantes:', partError);
-            return { success: false, message: 'Erro ao buscar participantes no banco.' };
+            console.error('❌ Erro DB (Participantes):', partError);
+            return { success: false, message: 'Erro ao buscar participantes.' };
         }
 
         if (!participants || participants.length === 0) {
-            console.warn('⚠️ Nenhum participante pago encontrado para esta rifa.');
-            return { success: false, message: 'Não há participantes com pagamento confirmado para sortear.' };
+            console.warn('⚠️ Nenhum participante pago encontrado.');
+            return { success: false, message: 'Sem participantes pagos para sortear.' };
         }
 
-        // 2. Buscar números já sorteados (para não repetir ganhador no mesmo número)
+        console.log(`✅ Encontrados ${participants.length} participantes pagos.`);
+
+        // 3. Buscar números já sorteados para excluí-los
         const { data: drawnPrizes, error: drawnError } = await supabaseAdmin
             .from('premios')
             .select('vencedor_numero')
@@ -55,13 +69,13 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
             .not('vencedor_numero', 'is', null);
 
         if (drawnError) {
-            console.error('❌ Erro ao buscar prêmios já sorteados:', drawnError);
-            throw new Error('Erro ao verificar prêmios anteriores.');
+            console.error('❌ Erro DB (Prêmios):', drawnError);
+            return { success: false, message: 'Erro ao verificar sorteios anteriores.' };
         }
 
         const drawnNumbers = new Set(drawnPrizes?.map(p => p.vencedor_numero));
 
-        // 3. Construir pool de números elegíveis (apenas números comprados e não sorteados ainda)
+        // 4. Construir pool de sorteio
         const pool: { number: number, name: string }[] = [];
         participants.forEach(p => {
             if (p.numeros_escolhidos && Array.isArray(p.numeros_escolhidos)) {
@@ -73,19 +87,19 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
             }
         });
 
-        console.log(`📊 Total de números elegíveis para sorteio: ${pool.length}`);
+        console.log(`📊 Pool de sorteio: ${pool.length} números disponíveis.`);
 
         if (pool.length === 0) {
-            return { success: false, message: 'Todos os números pagos já foram sorteados!' };
+            return { success: false, message: 'Todos os números vendidos já foram premiados!' };
         }
 
-        // 4. Seleção Aleatória Segura (Crypto)
+        // 5. Sorteio Seguro
         const randomIndex = crypto.randomInt(0, pool.length);
         const winner = pool[randomIndex];
 
-        console.log(`🎉 Vencedor Sorteado: ${winner.name} (Nº ${winner.number})`);
+        console.log(`🏆 VENCEDOR: ${winner.name} (Nº ${winner.number})`);
 
-        // 5. Salvar vencedor no banco
+        // 6. Persistir Vencedor
         const { error: updateError } = await supabaseAdmin
             .from('premios')
             .update({
@@ -96,25 +110,21 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
 
         if (updateError) {
             console.error('❌ Erro ao salvar vencedor:', updateError);
-            throw new Error('Erro ao salvar o vencedor no banco de dados.');
+            return { success: false, message: 'Erro ao salvar o ganhador.' };
         }
 
-        // 6. Criar Notificação (Não bloqueante)
-        try {
-            await supabaseAdmin.from('notificacoes_push_queue').insert({
-                titulo: '🏆 Temos um Vencedor!',
-                mensagem: `O prêmio "${prizeDesc}" saiu para ${winner.name} (Nº ${winner.number})!`,
-                link_url: `/acompanhar-rifa?id=${rifaId}`,
-                status: 'rascunho'
-            });
-        } catch (notifyError) {
-            console.warn('⚠️ Falha ao criar notificação (não crítico):', notifyError);
-        }
+        // 7. Notificação (Opcional)
+        await supabaseAdmin.from('notificacoes_push_queue').insert({
+            titulo: '🏆 Temos um Vencedor!',
+            mensagem: `O prêmio "${prizeDesc}" saiu para ${winner.name} (Nº ${winner.number})!`,
+            link_url: `/acompanhar-rifa?id=${rifaId}`,
+            status: 'rascunho'
+        });
 
         return { success: true, winner };
 
     } catch (error: any) {
-        console.error('❌ Erro fatal no sorteio:', error);
-        return { success: false, message: error.message || 'Erro desconhecido ao sortear.' };
+        console.error('❌ Erro fatal:', error);
+        return { success: false, message: error.message || 'Erro desconhecido.' };
     }
 }
