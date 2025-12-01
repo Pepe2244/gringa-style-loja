@@ -3,13 +3,18 @@
 import { useState, useEffect } from 'react';
 import { Product } from '@/types';
 
-interface StickyCTAProps {
-    product: Product;
-    onBuy: () => void;
-}
-
-export default function StickyCTA({ product, onBuy }: StickyCTAProps) {
+export default function StickyCTA({ product }: { product: Product }) {
     const [isVisible, setIsVisible] = useState(false);
+
+    const handleBuy = () => {
+        const buyBtn = document.querySelector('.btn-adicionar') as HTMLElement;
+        if (buyBtn) {
+            buyBtn.click();
+        } else {
+            // Fallback if button not found (e.g. scroll to top)
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -35,7 +40,7 @@ export default function StickyCTA({ product, onBuy }: StickyCTAProps) {
                     R$ {(product.preco_promocional || product.preco).toFixed(2).replace('.', ',')}
                 </span>
             </div>
-            <button onClick={onBuy} className="btn-sticky-buy">
+            <button onClick={handleBuy} className="btn-sticky-buy">
                 Comprar
             </button>
             <style jsx>{`

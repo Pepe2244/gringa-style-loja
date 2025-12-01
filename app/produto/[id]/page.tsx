@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
+import StickyCTA from '@/components/StickyCTA';
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -94,6 +95,7 @@ export default async function ProductPage({ params }: Props) {
                 />
             )}
             <ProductPageContent id={productId} />
+            {product && <StickyCTA product={product} />}
         </>
     );
 }

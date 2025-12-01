@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import { Trash2, Edit, Plus, X, Trophy, Users, PlayCircle } from 'lucide-react';
+import { compressImage } from '@/utils/imageCompression';
 
 export default function RifaManager() {
     const [rifas, setRifas] = useState<Rifa[]>([]);
@@ -114,8 +115,15 @@ export default function RifaManager() {
         let capaUrl = editingRifa ? editingRifa.imagem_premio_url : null;
 
         if (imagemCapaFile) {
-            const fileName = `capa-${Date.now()}-${imagemCapaFile.name}`;
-            const { error: uploadError } = await supabase.storage.from('imagens-rifas').upload(fileName, imagemCapaFile);
+            let fileToUpload = imagemCapaFile;
+            try {
+                fileToUpload = await compressImage(imagemCapaFile);
+            } catch (err) {
+                console.error('Erro compressão capa:', err);
+            }
+
+            const fileName = `capa-${Date.now()}-${fileToUpload.name}`;
+            const { error: uploadError } = await supabase.storage.from('imagens-rifas').upload(fileName, fileToUpload);
             if (uploadError) {
                 alert('Erro upload capa: ' + uploadError.message);
                 setLoading(false);
@@ -163,7 +171,12 @@ export default function RifaManager() {
             for (let i = 0; i < premios.length; i++) {
                 let pUrl = premios[i].imagemUrl;
                 if (premios[i].imagemFile) {
-                    const pFile = premios[i].imagemFile!;
+                    let pFile = premios[i].imagemFile!;
+                    try {
+                        pFile = await compressImage(pFile);
+                    } catch (err) {
+                        console.error('Erro compressão premio:', err);
+                    }
                     const pName = `premio-${rifaId}-${Date.now()}-${i}-${pFile.name}`;
                     const { error: pUpErr } = await supabase.storage.from('imagens-premios').upload(pName, pFile);
                     if (!pUpErr) {
@@ -298,78 +311,39 @@ export default function RifaManager() {
         if (!drawRifa) return;
         setDrawing(true);
 
-        // Fetch paid participants
-        const { data: participants } = await supabase
-            .from('participantes_rifa')
-            .select('nome, numeros_escolhidos')
-            .eq('rifa_id', drawRifa.id)
-            .eq('status_pagamento', 'pago');
+        try {
+            // Import dynamically to avoid server-only module issues in client component if not handled by Next.js automatically
+            // But since it's a Server Action, we can import it at the top if we mark the file 'use client' and the action 'use server'.
+            // However, to be safe and clean:
+            const { drawWinner } = await import('@/app/actions/raffle');
 
-        if (!participants || participants.length === 0) {
-            alert('Não há participantes pagos para sortear.');
-            setDrawing(false);
-            return;
-        }
+            // Animation effect (client-side only)
+            const interval = setInterval(() => {
+                setDrawAnimation(Math.floor(Math.random() * 1000).toString().padStart(3, '0'));
+            }, 50);
 
-        // Get already drawn numbers
-        const { data: drawnPrizes } = await supabase
-            .from('premios')
-            .select('vencedor_numero')
-            .eq('rifa_id', drawRifa.id)
-            .not('vencedor_numero', 'is', null);
+            const result = await drawWinner(drawRifa.id, prizeId, prizeDesc);
 
-        const drawnNumbers = new Set(drawnPrizes?.map(p => p.vencedor_numero));
-
-        // Build pool
-        const pool: { number: number, name: string }[] = [];
-        participants.forEach(p => {
-            p.numeros_escolhidos.forEach((n: number) => {
-                if (!drawnNumbers.has(n)) {
-                    pool.push({ number: n, name: p.nome });
-                }
-            });
-        });
-
-        if (pool.length === 0) {
-            alert('Todos os números pagos já foram sorteados!');
-            setDrawing(false);
-            return;
-        }
-
-        // Animation
-        const interval = setInterval(() => {
-            const random = pool[Math.floor(Math.random() * pool.length)];
-            setDrawAnimation(String(random.number).padStart(3, '0'));
-        }, 100);
-
-        setTimeout(async () => {
             clearInterval(interval);
-            const winner = pool[Math.floor(Math.random() * pool.length)];
-            setDrawAnimation(String(winner.number).padStart(3, '0'));
 
-            // Save winner
-            const { error } = await supabase.from('premios').update({
-                vencedor_nome: winner.name,
-                vencedor_numero: winner.number
-            }).eq('id', prizeId);
-
-            if (error) {
-                alert('Erro ao salvar vencedor: ' + error.message);
-            } else {
-                // Notification
-                await supabase.from('notificacoes_push_queue').insert({
-                    titulo: '🎉 Temos um Vencedor!',
-                    mensagem: `Parabéns ${winner.name}! Você ganhou "${prizeDesc}" com o número ${winner.number}.`,
-                    link_url: `/acompanhar-rifa?id=${drawRifa.id}`,
-                    status: 'rascunho'
-                });
+            if (result.success && result.winner) {
+                setDrawAnimation(String(result.winner.number).padStart(3, '0'));
 
                 // Refresh prizes
                 const { data } = await supabase.from('premios').select('*').eq('rifa_id', drawRifa.id).order('ordem');
                 if (data) setDrawPrizes(data);
+
+                alert(`Vencedor: ${result.winner.name} (Nº ${result.winner.number})`);
+            } else {
+                alert(result.message || 'Erro ao realizar sorteio.');
+                setDrawAnimation('ERR');
             }
+
+        } catch (error: any) {
+            alert('Erro inesperado: ' + error.message);
+        } finally {
             setDrawing(false);
-        }, 3000);
+        }
     };
 
     return (

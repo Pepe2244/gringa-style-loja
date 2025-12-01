@@ -76,8 +76,10 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
             if (currentProduct.produtos_relacionados_ids && currentProduct.produtos_relacionados_ids.length > 0) {
                 setRelatedProducts(data);
             } else {
-                const shuffled = data.sort(() => 0.5 - Math.random()).slice(0, 4);
-                setRelatedProducts(shuffled);
+                // Smart Cross-Selling: Prioritize newest items (higher ID or created_at)
+                // Assuming ID is auto-incrementing, higher ID = newer
+                const sorted = data.sort((a, b) => b.id - a.id).slice(0, 4);
+                setRelatedProducts(sorted);
             }
         }
     };

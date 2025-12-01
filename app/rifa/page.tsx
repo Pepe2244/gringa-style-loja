@@ -21,7 +21,29 @@ export default function RifaPage() {
 
     useEffect(() => {
         fetchRifa();
-    }, []);
+
+        // Realtime Subscription
+        const channel = supabase
+            .channel('rifa-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'rifas',
+                    filter: rifa ? `id=eq.${rifa.id}` : undefined
+                },
+                (payload) => {
+                    console.log('Rifa updated:', payload);
+                    fetchRifa();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [rifa?.id]);
 
     const fetchRifa = async () => {
         setLoading(true);

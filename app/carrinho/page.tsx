@@ -212,7 +212,7 @@ export default function CartPage() {
 
     if (items.length === 0) {
         return (
-            <div className="container" id="carrinho-vazio-container" style={{ textAlign: 'center', padding: '50px 0' }}>
+            <div className="container" id="carrinho-vazio-container" style={{ textAlign: 'center', padding: '50px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <ShoppingCart size={64} style={{ color: '#555', marginBottom: '20px' }} />
                 <h2>Seu carrinho está vazio</h2>
                 <p>Explore nossos produtos e adicione itens ao carrinho.</p>
