@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: Props) {
         sku: String(product.id),
         offers: {
             '@type': 'Offer',
-            url: `https://gringastyle.com.br/produto/${product.id}`,
+            url: `https://gringa-style.netlify.app/produto/${product.id}`,
             priceCurrency: 'BRL',
             price: product.preco_promocional || product.preco,
             availability: product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
