@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://gringa-style.netlify.app/sitemap.xml
