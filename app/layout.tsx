@@ -21,9 +21,16 @@ const teko = Teko({
 });
 
 export const metadata: Metadata = {
-  // --- A LINHA MÁGICA QUE FALTAVA ESTÁ AQUI EMBAIXO ---
+  // Define a base para todas as URLs absolutas
   metadataBase: new URL('https://gringa-style.netlify.app'),
-  // ----------------------------------------------------
+
+  // --- AQUI ESTÁ A CORREÇÃO ---
+  // Isso diz ao Next.js: "Gere uma tag canonical para esta página usando a URL atual"
+  // Como definimos o metadataBase acima, o './' resolve para a URL completa da página atual.
+  alternates: {
+    canonical: './',
+  },
+  // ---------------------------
 
   title: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
   description: "Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!",
@@ -35,7 +42,7 @@ export const metadata: Metadata = {
     siteName: "Gringa Style",
     images: [
       {
-        url: "/imagens/logo_gringa_style.png", // Agora o Next sabe que isso é https://gringa-style.../imagens/...
+        url: "/imagens/logo_gringa_style.png",
         width: 800,
         height: 600,
       },
@@ -53,7 +60,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-
+        {/* O Next.js injetará a tag canonical aqui automaticamente */}
       </head>
       <body
         className={`${roboto.variable} ${teko.variable} antialiased`}
@@ -62,7 +69,6 @@ export default function RootLayout({
           src="https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN"
           strategy="afterInteractive"
         />
-        {/* CORREÇÃO APLICADA AQUI: window.dataLayer */}
         <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
