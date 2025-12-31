@@ -37,6 +37,23 @@ export default function DirectPurchaseModal({
         }
 
         const precoFinal = getPrecoFinal(product);
+        
+        // --- INÍCIO DO RASTREAMENTO GA4 ---
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'purchase', {
+                transaction_id: `ZAP-MODAL-${Date.now()}`,
+                value: precoFinal,
+                currency: 'BRL',
+                items: [{
+                    item_id: product.id,
+                    item_name: product.nome,
+                    price: precoFinal,
+                    quantity: 1
+                }]
+            });
+        }
+        // --- FIM DO RASTREAMENTO ---
+
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
         message += `*Produto:* ${product.nome}`;
         if (variant) {
@@ -125,3 +142,4 @@ export default function DirectPurchaseModal({
         </Modal>
     );
 }
+
