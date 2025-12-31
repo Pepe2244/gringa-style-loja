@@ -176,6 +176,27 @@ export default function CartPage() {
         const discountAmount = appliedCoupon ? appliedCoupon.desconto_calculado : 0;
         const finalTotal = subtotal - discountAmount;
 
+        // --- INÍCIO DO RASTREAMENTO GA4 (GROWTH HACK) ---
+        // Dispara o evento de COMPRA para o Google antes de abrir o Zap
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'purchase', {
+                transaction_id: `ZAP-${Date.now()}`, // ID único baseado na hora
+                value: finalTotal,
+                currency: 'BRL',
+                shipping: 0,
+                items: items.map(item => {
+                    const product = products.find(p => p.id === item.produto_id);
+                    return {
+                        item_id: item.produto_id,
+                        item_name: product?.nome || 'Item Desconhecido',
+                        price: product ? ((product.preco_promocional && product.preco_promocional < product.preco) ? product.preco_promocional : product.preco) : 0,
+                        quantity: item.quantidade
+                    };
+                })
+            });
+        }
+        // --- FIM DO RASTREAMENTO ---
+
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
 
         items.forEach(item => {
@@ -483,3 +504,4 @@ export default function CartPage() {
         </div>
     );
 }
+
