@@ -111,6 +111,23 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
         }
 
         const price = product.preco_promocional || product.preco;
+        
+        // --- INÍCIO DO RASTREAMENTO GA4 ---
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'purchase', {
+                transaction_id: `ZAP-DIRECT-${Date.now()}`,
+                value: price,
+                currency: 'BRL',
+                items: [{
+                    item_id: product.id,
+                    item_name: product.nome,
+                    price: price,
+                    quantity: 1
+                }]
+            });
+        }
+        // --- FIM DO RASTREAMENTO ---
+
         const variants = product.variants as unknown as ProductVariant | null;
         const variantInfo = variants ? ` (${variants.tipo}: ${selectedVariant})` : '';
 
@@ -402,3 +419,4 @@ export default function ProductPageContent({ id }: ProductPageContentProps) {
         </div>
     );
 }
+
