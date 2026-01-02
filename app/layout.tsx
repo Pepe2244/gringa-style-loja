@@ -77,7 +77,8 @@ export default function RootLayout({
 
             gtag('config', 'G-2L2F9CY9JN');
           `}
-        </Script>
+        </Script><script src="https://analytics.ahrefs.com/analytics.js" data-key="Sam0BvC3Nm1qohD+XzVeLA" async></script>
+
         <ToastProvider>
           <Header />
           <CampaignBanner />
