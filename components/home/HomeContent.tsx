@@ -5,7 +5,6 @@ import { Product, Category } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
-import ProductDetailsModal from '@/components/modals/ProductDetailsModal';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 
 interface HomeContentProps {
@@ -24,7 +23,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
     // Modals State
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
 
@@ -82,41 +80,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     const handleQuickView = (product: Product) => {
         setSelectedProduct(product);
         setSelectedVariant(null);
-
-        if (product.variants) {
-            setIsDetailsModalOpen(true);
-        } else {
-            setIsPurchaseModalOpen(true);
-        }
-    };
-
-    const addToCart = (product: Product, variant: { tipo: string; opcao: string } | null) => {
-        const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
-        const itemIndex = carrinho.findIndex((item: any) =>
-            item.produto_id === product.id &&
-            JSON.stringify(item.variante) === JSON.stringify(variant)
-        );
-
-        if (itemIndex > -1) {
-            carrinho[itemIndex].quantidade++;
-        } else {
-            carrinho.push({
-                produto_id: product.id,
-                quantidade: 1,
-                variante: variant
-            });
-        }
-
-        localStorage.setItem('carrinho', JSON.stringify(carrinho));
-        window.dispatchEvent(new Event('cart-updated'));
-        setIsDetailsModalOpen(false);
-        showToast('Produto adicionado ao carrinho!', 'success');
-    };
-
-    const handleBuyNowFromModal = (product: Product, variant: { tipo: string; opcao: string } | null) => {
-        setSelectedProduct(product);
-        setSelectedVariant(variant);
-        setIsDetailsModalOpen(false);
         setIsPurchaseModalOpen(true);
     };
 
@@ -158,19 +121,11 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 </p>
             </section>
 
-            <ProductDetailsModal
-                isOpen={isDetailsModalOpen}
-                onClose={() => setIsDetailsModalOpen(false)}
-                product={selectedProduct}
-                addToCart={addToCart}
-                onBuyNow={handleBuyNowFromModal}
-            />
-
             <DirectPurchaseModal
                 isOpen={isPurchaseModalOpen}
                 onClose={() => setIsPurchaseModalOpen(false)}
                 product={selectedProduct}
-                variant={selectedVariant}
+                initialVariant={selectedVariant}
             />
         </div>
     );

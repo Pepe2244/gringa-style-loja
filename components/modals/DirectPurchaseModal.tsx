@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Product } from '@/types';
+import { useState, useEffect } from 'react';
+import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 
@@ -7,19 +7,40 @@ interface DirectPurchaseModalProps {
     isOpen: boolean;
     onClose: () => void;
     product: Product | null;
-    variant: { tipo: string; opcao: string } | null;
+    initialVariant?: { tipo: string; opcao: string } | null;
 }
 
 export default function DirectPurchaseModal({
     isOpen,
     onClose,
     product,
-    variant
+    initialVariant
 }: DirectPurchaseModalProps) {
     const { showToast } = useToast();
     const [clientName, setClientName] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
+    const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
+
+    // Effect to reset state and handle variants when product opens
+    useEffect(() => {
+        if (isOpen && product) {
+            setClientName('');
+            setPaymentMethod('PIX');
+            setInstallments('1x');
+
+            // Handle Variant Logic
+            const variants = product.variants as unknown as ProductVariant;
+            if (initialVariant) {
+                setSelectedVariant(initialVariant);
+            } else if (variants && variants.opcoes && variants.opcoes.length > 0) {
+                // Auto-select first variant if none provided
+                setSelectedVariant({ tipo: variants.tipo, opcao: variants.opcoes[0] });
+            } else {
+                setSelectedVariant(null);
+            }
+        }
+    }, [isOpen, product, initialVariant]);
 
     if (!product) return null;
 
@@ -37,7 +58,7 @@ export default function DirectPurchaseModal({
         }
 
         const precoFinal = getPrecoFinal(product);
-        
+
         // --- INÍCIO DO RASTREAMENTO GA4 ---
         if (typeof window !== 'undefined' && (window as any).gtag) {
             (window as any).gtag('event', 'purchase', {
@@ -48,7 +69,8 @@ export default function DirectPurchaseModal({
                     item_id: product.id,
                     item_name: product.nome,
                     price: precoFinal,
-                    quantity: 1
+                    quantity: 1,
+                    variant: selectedVariant ? `${selectedVariant.tipo}: ${selectedVariant.opcao}` : undefined
                 }]
             });
         }
@@ -56,9 +78,11 @@ export default function DirectPurchaseModal({
 
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
         message += `*Produto:* ${product.nome}`;
-        if (variant) {
-            message += ` (${variant.tipo}: ${variant.opcao})`;
+
+        if (selectedVariant) {
+            message += `\n*Opção:* ${selectedVariant.tipo}: ${selectedVariant.opcao}`;
         }
+
         message += `\n*Valor:* R$ ${precoFinal.toFixed(2).replace('.', ',')}\n\n`;
 
         if (precoFinal < product.preco) {
@@ -75,6 +99,9 @@ export default function DirectPurchaseModal({
         onClose();
     };
 
+    const variants = product.variants as unknown as ProductVariant;
+    const hasVariants = variants && variants.opcoes && variants.opcoes.length > 0;
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} className="modal-compra-direta">
             <h2 className="modal-titulo">Finalizar Pedido</h2>
@@ -87,15 +114,38 @@ export default function DirectPurchaseModal({
                     />
                     <div>
                         <h3>{product.nome}</h3>
-                        {variant && <p style={{ fontSize: '0.9rem', color: '#ccc' }}>{variant.tipo}: {variant.opcao}</p>}
-                        <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--cor-destaque)' }}>
+                        {selectedVariant && (
+                            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '4px' }}>
+                                {selectedVariant.tipo}: {selectedVariant.opcao}
+                            </p>
+                        )}
+                        <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--cor-destaque)', marginTop: '4px' }}>
                             R$ {getPrecoFinal(product).toFixed(2).replace('.', ',')}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="campo-cliente">
+            {hasVariants && (
+                <div className="campo-variante" style={{ marginTop: '15px', marginBottom: '15px' }}>
+                    <label htmlFor="modal-variante-select" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                        Escolha {variants.tipo}:
+                    </label>
+                    <select
+                        id="modal-variante-select"
+                        className="select-pagamento" // Reusing styling
+                        value={selectedVariant?.opcao || ''}
+                        onChange={(e) => setSelectedVariant({ tipo: variants.tipo, opcao: e.target.value })}
+                        style={{ width: '100%' }}
+                    >
+                        {variants.opcoes.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            <div className="campo-cliente" style={{ marginTop: hasVariants ? '0' : '15px' }}>
                 <label htmlFor="modal-nome-cliente">Seu Nome Completo</label>
                 <input
                     type="text"
@@ -138,7 +188,9 @@ export default function DirectPurchaseModal({
                 </div>
             )}
 
-            <button className="btn btn-finalizar" onClick={handleDirectPurchase}>Confirmar Pedido no WhatsApp</button>
+            <button className="btn btn-finalizar" onClick={handleDirectPurchase} style={{ marginTop: '20px' }}>
+                Confirmar Pedido no WhatsApp
+            </button>
         </Modal>
     );
 }

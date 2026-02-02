@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 
@@ -6,7 +6,6 @@ interface ProductDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     product: Product | null;
-    addToCart: (product: Product, variant: { tipo: string; opcao: string } | null) => void;
     onBuyNow: (product: Product, variant: { tipo: string; opcao: string } | null) => void;
 }
 
@@ -14,11 +13,24 @@ export default function ProductDetailsModal({
     isOpen,
     onClose,
     product,
-    addToCart,
     onBuyNow
 }: ProductDetailsModalProps) {
     const [currentModalImageIndex, setCurrentModalImageIndex] = useState(0);
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
+
+    // Reset state when modal opens or product changes
+    useEffect(() => {
+        if (isOpen && product) {
+            setCurrentModalImageIndex(0);
+            const variants = product.variants as unknown as ProductVariant;
+            // Auto-select first variant if available
+            if (variants && variants.opcoes && variants.opcoes.length > 0) {
+                setSelectedVariant({ tipo: variants.tipo, opcao: variants.opcoes[0] });
+            } else {
+                setSelectedVariant(null);
+            }
+        }
+    }, [isOpen, product]);
 
     if (!product) return null;
 
@@ -29,44 +41,28 @@ export default function ProductDetailsModal({
         return p.preco_promocional;
     };
 
-    const getModalImages = () => {
-        const mediaUrls = product.media_urls || product.imagens || [];
-        return mediaUrls.filter(url => !url.includes('.mp4') && !url.includes('.webm'));
-    };
-
-    const modalImages = getModalImages();
-
-    const handleAddToCart = () => {
-        let variantToAdd = null;
-        const variants = product.variants as unknown as ProductVariant;
-        if (variants && variants.opcoes && variants.opcoes.length > 0) {
-            if (!selectedVariant) {
-                variantToAdd = {
-                    tipo: variants.tipo,
-                    opcao: variants.opcoes[0]
-                };
-            } else {
-                variantToAdd = selectedVariant;
-            }
-        }
-        addToCart(product, variantToAdd);
-    };
+    const modalImages = (product.media_urls || product.imagens || []).filter(
+        url => !url.includes('.mp4') && !url.includes('.webm')
+    );
 
     const handleBuyNow = () => {
-        let variantToAdd = null;
+        if (!product.em_estoque) return;
+
+        let variantToBuy = selectedVariant;
+
+        // Safety check: ensure a variant is selected if the product has them
         const variants = product.variants as unknown as ProductVariant;
-        if (variants && variants.opcoes && variants.opcoes.length > 0) {
-            if (!selectedVariant) {
-                variantToAdd = {
-                    tipo: variants.tipo,
-                    opcao: variants.opcoes[0]
-                };
-            } else {
-                variantToAdd = selectedVariant;
-            }
+        if (variants && variants.opcoes && variants.opcoes.length > 0 && !variantToBuy) {
+            variantToBuy = {
+                tipo: variants.tipo,
+                opcao: variants.opcoes[0]
+            };
         }
-        onBuyNow(product, variantToAdd);
+
+        onBuyNow(product, variantToBuy);
     };
+
+    const isOutOfStock = !product.em_estoque;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
@@ -144,9 +140,20 @@ export default function ProductDetailsModal({
                     )}
                 </p>
 
-                <div className="produto-botoes">
-                    <button className="btn" onClick={handleAddToCart}>Adicionar ao Carrinho</button>
-                    <button className="btn btn-secundario" onClick={handleBuyNow}>Comprar via WhatsApp</button>
+                <div className="produto-botoes" style={{ justifyContent: 'center', width: '100%' }}>
+                    {isOutOfStock ? (
+                        <button className="btn" disabled style={{ backgroundColor: '#ccc', cursor: 'not-allowed', width: '100%' }}>
+                            Produto Indisponível
+                        </button>
+                    ) : (
+                        <button
+                            className="btn btn-secundario"
+                            onClick={handleBuyNow}
+                            style={{ width: '100%', maxWidth: '300px' }}
+                        >
+                            Continuar Pedido no WhatsApp
+                        </button>
+                    )}
                 </div>
             </div >
         </Modal >
