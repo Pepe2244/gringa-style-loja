@@ -10,17 +10,32 @@ export async function POST(request: Request) {
         }
 
         const productIds = itens.map((item: any) => item.produto_id);
+
+        // 1. Busca produtos COM O CAMPO ESTOQUE
         const { data: products, error } = await supabase
             .from('produtos')
-            .select('id, preco, preco_promocional')
+            .select('id, preco, preco_promocional, estoque')
             .in('id', productIds);
 
         if (error) throw error;
 
         let total = 0;
-        const validatedItems = itens.map((item: any) => {
+
+        // 2. Validação e Cálculo
+        // Mapeia e valida. Se algum falhar, lançaremos erro.
+        const validatedItems = [];
+
+        for (const item of itens) {
             const product = products.find(p => p.id === item.produto_id);
-            if (!product) return null;
+
+            if (!product) continue; // Ignora se produto não existe (ou poderia dar erro)
+
+            // VALIDAÇÃO DE ESTOQUE
+            if (item.quantidade > product.estoque) {
+                return NextResponse.json({
+                    error: `Estoque insuficiente para o produto. Disponível: ${product.estoque}, Solicitado: ${item.quantidade}`
+                }, { status: 400 });
+            }
 
             const price = (product.preco_promocional && product.preco_promocional < product.preco)
                 ? product.preco_promocional
@@ -28,12 +43,12 @@ export async function POST(request: Request) {
 
             total += price * item.quantidade;
 
-            return {
+            validatedItems.push({
                 ...item,
                 preco_unitario: price,
                 total_item: price * item.quantidade
-            };
-        }).filter(Boolean);
+            });
+        }
 
         return NextResponse.json({
             total,

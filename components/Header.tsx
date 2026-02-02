@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ShoppingCart, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
@@ -41,8 +42,15 @@ export default function Header() {
     return (
         <header className="cabecalho">
             <div className="container">
-                <Link href="/" className="logo" onClick={closeMenu}>
-                    <img src="/imagens/logo_gringa_style.png" alt="Gringa Style Logo" />
+                <Link href="/" className="logo" onClick={closeMenu} style={{ position: 'relative', width: '120px', height: '40px', display: 'block' }}>
+                    <Image
+                        src="/imagens/logo_gringa_style.png"
+                        alt="Gringa Style Logo"
+                        fill
+                        priority
+                        sizes="120px"
+                        style={{ objectFit: 'contain' }}
+                    />
                 </Link>
 
                 <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`}>
@@ -62,7 +70,9 @@ export default function Header() {
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <Link href="/carrinho" className="carrinho" style={{ display: 'flex', alignItems: 'center' }}>
                         <ShoppingCart size={28} />
-                        <span className="carrinho-contador">{mounted ? totalItems : 0}</span>
+                        <span className="carrinho-contador" style={{ minWidth: '20px', display: 'inline-grid', placeItems: 'center' }}>
+                            {mounted ? totalItems : 0}
+                        </span>
                     </Link>
                     <button
                         id="hamburger-btn"

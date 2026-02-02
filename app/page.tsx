@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import HomeContent from '@/components/home/HomeContent';
 
-export const revalidate = 0; // Disable cache for fresh data
+export const revalidate = 3600; // Revalidate every 60 seconds
 
 export default async function Home() {
   const [productsRes, categoriesRes, configRes] = await Promise.all([

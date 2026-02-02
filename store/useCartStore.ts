@@ -16,6 +16,11 @@ export const useCartStore = create<CartState>()(
         (set, get) => ({
             items: [],
             addItem: (item: CartItem) => set((state) => {
+                // Trava de segurança: ignora se quantidade for menor que 1
+                if (!item.quantidade || item.quantidade < 1) {
+                    return { items: state.items };
+                }
+
                 const existingItemIndex = state.items.findIndex((i) =>
                     i.produto_id === item.produto_id &&
                     JSON.stringify(i.variante) === JSON.stringify(item.variante)
@@ -33,7 +38,8 @@ export const useCartStore = create<CartState>()(
             })),
             updateQuantity: (index: number, quantity: number) => set((state) => {
                 const newItems = [...state.items];
-                if (quantity <= 0) {
+                // Se quantidade for inválida ou menor que 1, remove o item
+                if (!quantity || quantity < 1) {
                     newItems.splice(index, 1);
                 } else {
                     newItems[index].quantidade = quantity;
