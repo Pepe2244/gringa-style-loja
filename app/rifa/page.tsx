@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { reservarNumerosRifa } from '@/app/actions/rifa';
@@ -34,8 +35,7 @@ export default function RifaPage() {
                     table: 'rifas',
                     filter: rifa ? `id=eq.${rifa.id}` : undefined
                 },
-                (payload) => {
-                    console.log('Rifa updated:', payload);
+                () => {
                     fetchRifa();
                 }
             )
@@ -60,6 +60,20 @@ export default function RifaPage() {
 
             if (rifaData) {
                 setRifa(rifaData);
+
+                // GA4: View Item
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                    (window as any).gtag('event', 'view_item', {
+                        currency: 'BRL',
+                        value: rifaData.preco_numero,
+                        items: [{
+                            item_id: rifaData.id,
+                            item_name: rifaData.nome_premio,
+                            price: rifaData.preco_numero
+                        }]
+                    });
+                }
+
                 const { data: premiosData } = await supabase
                     .from('premios')
                     .select('*')
@@ -69,18 +83,35 @@ export default function RifaPage() {
                 if (premiosData) setPremios(premiosData);
             }
         } catch (error) {
-            console.error('Error fetching rifa:', error);
+            // Silenced error for production
         } finally {
             setLoading(false);
         }
     };
 
     const toggleNumber = (number: number) => {
+        let newSelection = [];
         if (selectedNumbers.includes(number)) {
-            setSelectedNumbers(selectedNumbers.filter(n => n !== number));
+            newSelection = selectedNumbers.filter(n => n !== number);
         } else {
-            setSelectedNumbers([...selectedNumbers, number]);
+            newSelection = [...selectedNumbers, number];
+
+            // GA4: Add to Cart (Single Number)
+            if (typeof window !== 'undefined' && (window as any).gtag && rifa) {
+                (window as any).gtag('event', 'add_to_cart', {
+                    currency: 'BRL',
+                    value: rifa.preco_numero,
+                    items: [{
+                        item_id: rifa.id,
+                        item_name: rifa.nome_premio,
+                        item_variant: number.toString(),
+                        price: rifa.preco_numero,
+                        quantity: 1
+                    }]
+                });
+            }
         }
+        setSelectedNumbers(newSelection);
     };
 
     const handleSurpresinha = () => {
@@ -110,6 +141,21 @@ export default function RifaPage() {
 
         setSelectedNumbers([...selectedNumbers, ...randomSelection]);
         showToast(`${count} números aleatórios selecionados!`, 'success');
+
+        // GA4: Add to Cart (Surpresinha)
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'add_to_cart', {
+                currency: 'BRL',
+                value: rifa.preco_numero * count,
+                items: randomSelection.map(n => ({
+                    item_id: rifa.id,
+                    item_name: rifa.nome_premio,
+                    item_variant: n.toString(),
+                    price: rifa.preco_numero,
+                    quantity: 1
+                }))
+            });
+        }
     };
 
     const handleReserve = async () => {
@@ -119,24 +165,35 @@ export default function RifaPage() {
             return;
         }
 
+        // GA4: Begin Checkout
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'begin_checkout', {
+                currency: 'BRL',
+                value: selectedNumbers.length * rifa.preco_numero,
+                items: selectedNumbers.map(n => ({
+                    item_id: rifa.id,
+                    item_name: rifa.nome_premio,
+                    item_variant: n.toString(),
+                    price: rifa.preco_numero,
+                    quantity: 1
+                }))
+            });
+        }
+
         setReserving(true);
         try {
             const result = await reservarNumerosRifa(rifa.id, selectedNumbers, clientName, clientPhone);
 
             if (!result.success) throw new Error(result.error);
 
-            // Verificação de segurança: garante que temos um ID válido antes de redirecionar
             if (!result.data || !Array.isArray(result.data) || result.data.length === 0 || !result.data[0].participante_id) {
-                console.error("ERRO GRAVE: RPC retornou sucesso mas sem ID válido", result);
                 throw new Error("Erro interno: Falha ao recuperar ID da reserva. Contate o suporte.");
             }
 
             const participantId = result.data[0].participante_id;
-            console.log("Redirecionando para pagamento com ID:", participantId);
 
             router.push(`/pagamento?participante_id=${participantId}`);
         } catch (error: any) {
-            console.error('Error reserving numbers:', error);
             const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
 
             if (errorMessage.includes('já foi reservado')) {
@@ -175,7 +232,7 @@ export default function RifaPage() {
 
     // Fallback para logo se não houver imagem da rifa
     const imageUrl = rifa.imagem_premio_url
-        ? `${rifa.imagem_premio_url}?format=webp&width=600&quality=80`
+        ? `${rifa.imagem_premio_url}`
         : '/imagens/gringa_style_logo.png';
 
     return (
@@ -183,7 +240,16 @@ export default function RifaPage() {
             <div className="rifa-card">
                 <h1 className="titulo-secao">{rifa.nome_premio}</h1>
 
-                <img src={imageUrl} alt="Prêmio da Rifa" className="rifa-imagem-premio" />
+                <div className="relative w-full max-w-[600px] h-auto aspect-square mx-auto mb-5">
+                    <Image
+                        src={imageUrl}
+                        alt="Prêmio da Rifa"
+                        fill
+                        priority
+                        sizes="(max-width: 768px) 100vw, 600px"
+                        className="rifa-imagem-premio object-cover rounded-lg"
+                    />
+                </div>
 
                 {premios.length > 0 && (
                     <div className="lista-premios-rifa">
