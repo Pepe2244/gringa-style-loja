@@ -5,7 +5,7 @@ import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ToastProvider } from '@/context/ToastContext';
-import CampaignBanner from "@/components/CampaignBanner";
+import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
 
 const roboto = Roboto({
@@ -81,7 +81,7 @@ export default function RootLayout({
 
         <ToastProvider>
           <Header />
-          <CampaignBanner />
+          <CampaignBannerServer />
           {children}
           <CookieConsent />
           <Footer />

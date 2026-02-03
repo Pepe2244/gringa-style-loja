@@ -1,31 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
+import { useState } from 'react';
+import Image from 'next/image';
 
-export default function CampaignBanner() {
-    const [campaign, setCampaign] = useState<any>(null);
+interface Campaign {
+    id: number;
+    nome_campanha: string;
+    banner_url: string;
+    cor_fundo: string;
+    cor_texto: string;
+    cor_destaque: string;
+    aviso_deslizante_texto: string;
+}
+
+interface CampaignBannerClientProps {
+    campaign: Campaign;
+}
+
+export default function CampaignBannerClient({ campaign }: CampaignBannerClientProps) {
     const [visible, setVisible] = useState(true);
 
-    useEffect(() => {
-        fetchActiveCampaign();
-    }, []);
-
-    const fetchActiveCampaign = async () => {
-        try {
-            const { data: config } = await supabase.from('configuracoes_site').select('campanha_ativa_id').limit(1).maybeSingle();
-
-            if (config && config.campanha_ativa_id) {
-                const { data: camp } = await supabase.from('campanhas').select('*').eq('id', config.campanha_ativa_id).single();
-                if (camp) setCampaign(camp);
-            }
-        } catch (error) {
-            console.error('Error fetching campaign:', error);
-        }
-    };
-
-    if (!campaign || !visible) return null;
+    if (!visible || !campaign) return null;
 
     return (
         <div
@@ -35,20 +30,23 @@ export default function CampaignBanner() {
                 color: campaign.cor_texto || '#000000',
                 textAlign: 'center',
                 position: 'relative',
-                overflow: 'hidden',
+                overflow: 'hidden', // Importante para o marquee
                 display: 'flex',
-                flexDirection: 'column', // Stack vertically
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 'bold',
                 textTransform: 'uppercase',
                 fontSize: '18px',
                 letterSpacing: '1px',
-                marginBottom: '0px' // Removed spacing
+                marginBottom: '0px'
             }}
         >
             {campaign.banner_url && (
-                <div style={{ width: '100%', height: 'auto' }}>
+                <div style={{ width: '100%', position: 'relative', height: 'auto', minHeight: '100px' }}>
+                    {/* Usando img normal por enquanto para garantir responsividade fluida baseada na largura, 
+                       ou Image com width/height se soubermos a proporção. 
+                       Como é banner, width 100% é o ideal. */}
                     <img
                         src={campaign.banner_url}
                         alt={campaign.nome_campanha}
@@ -69,11 +67,13 @@ export default function CampaignBanner() {
 
             <button
                 onClick={() => setVisible(false)}
+                aria-label="Fechar banner da campanha"
+                title="Fechar banner"
                 style={{
                     position: 'absolute',
-                    top: '10px', // Move to top right
+                    top: '10px',
                     right: '10px',
-                    background: 'rgba(0,0,0,0.5)', // Semi-transparent background
+                    background: 'rgba(0,0,0,0.5)',
                     borderRadius: '50%',
                     width: '30px',
                     height: '30px',

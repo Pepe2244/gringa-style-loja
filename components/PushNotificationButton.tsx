@@ -93,6 +93,7 @@ export default function PushNotificationButton() {
                 className={isSubscribed ? 'inscrito' : ''}
                 onClick={handleSubscribe}
                 disabled={isSubscribed}
+                aria-label={isSubscribed ? "Notificações ativas" : "Ativar notificações"}
             >
                 {isSubscribed ? (
                     <>

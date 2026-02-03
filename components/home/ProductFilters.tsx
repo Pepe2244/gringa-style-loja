@@ -23,6 +23,7 @@ export default function ProductFilters({
     return (
         <div className="search-container">
             <div style={{ position: 'relative', flex: 1 }}>
+                <label htmlFor="search-input" className="sr-only">Buscar produtos</label>
                 <input
                     type="search"
                     id="search-input"
@@ -35,12 +36,14 @@ export default function ProductFilters({
                         className="search-clear-btn"
                         style={{ display: 'block' }}
                         onClick={() => setSearchTerm('')}
+                        aria-label="Limpar busca"
                     >
                         <X size={20} />
                     </button>
                 )}
             </div>
 
+            <label htmlFor="categoria-select" className="sr-only">Filtrar por Categoria</label>
             <select
                 id="categoria-select"
                 value={selectedCategory || ''}
@@ -53,6 +56,7 @@ export default function ProductFilters({
                 ))}
             </select>
 
+            <label htmlFor="sort-select" className="sr-only">Ordenar por</label>
             <select
                 id="sort-select"
                 value={sortType}

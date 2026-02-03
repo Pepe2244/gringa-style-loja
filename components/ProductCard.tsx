@@ -13,6 +13,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     const mediaUrls = product.media_urls || product.imagens || [];
     const videoUrl = product.video || mediaUrls.find(url => url.includes('.mp4') || url.includes('.webm'));
@@ -22,16 +23,33 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const displayImages = imageUrls.length > 0 ? imageUrls : ['/imagens/gringa_style_logo.png'];
 
     useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
         let interval: NodeJS.Timeout;
-        if (isHovered && displayImages.length > 1 && !videoUrl) {
+        // Only carrousel if hovered, has multiple images, no video playing (desktop), or mobile (no video)
+        // Actually for simplicity: Desktop Hover = Video OR Carousel. Mobile = Static First Image (or maybe carousel later, but start simple for perf).
+        // Let's keep carousel logic for desktop manual hover (if no video)
+
+        const shouldPlayVideo = videoUrl && isHovered && !isMobile;
+
+        if (isHovered && displayImages.length > 1 && !shouldPlayVideo) {
             interval = setInterval(() => {
                 setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
-            }, 2000);
+            }, 2000); // Slower carousel
         } else {
             setCurrentImageIndex(0);
         }
         return () => clearInterval(interval);
-    }, [isHovered, displayImages.length, videoUrl]);
+    }, [isHovered, displayImages.length, videoUrl, isMobile]);
 
     const getPrecoFinal = (p: Product) => {
         if (!p.preco_promocional || p.preco_promocional >= p.preco) {
@@ -51,6 +69,8 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         return date > limitDate;
     };
 
+    const shouldShowVideo = videoUrl && isHovered && !isMobile;
+
     return (
         <div
             className="produto-card"
@@ -65,7 +85,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             )}
 
             <div className="card-imagem-container">
-                {videoUrl ? (
+                {shouldShowVideo ? (
                     <video
                         src={videoUrl}
                         className="card-video"
@@ -83,6 +103,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         className={`card-imagem visivel`}
                         style={{ objectFit: 'cover' }}
                         priority={priority}
+                        quality={80}
                     />
                 )}
             </div>
