@@ -3788,3 +3788,9 @@ main,
         cursor: pointer;
     }
 }
+.status-estoque.em-estoque {
+    background-color: #001a0a !important;
+    color: #00ff88 !important;
+    font-weight: 800;
+    border: 1px solid #00ff88;
+}

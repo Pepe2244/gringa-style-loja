@@ -23,7 +23,7 @@ export default function Footer() {
         <footer className="rodape">
             <div className="container">
                 <div className="rodape-coluna">
-                    <h4>Gringa Style</h4>
+                    <div style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '15px', fontWeight: 'bold' }}>Gringa Style</div>
                     <p>Equipamentos e acessórios para solda com a mais alta qualidade e estilo.</p>
                 </div>
                 <div className="rodape-coluna">

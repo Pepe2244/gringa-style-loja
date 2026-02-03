@@ -60,6 +60,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        <link rel="preconnect" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
+        <link rel="dns-prefetch" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
         {/* O Next.js injetará a tag canonical aqui automaticamente */}
       </head>
       <body

@@ -99,17 +99,19 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         src={displayImages[currentImageIndex]}
                         alt={product.nome}
                         fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 30vw"
                         className={`card-imagem visivel`}
                         style={{ objectFit: 'cover' }}
                         priority={priority}
-                        quality={80}
+                        quality={85}
                     />
                 )}
             </div>
 
             <div className="produto-info">
-                <h3>{product.nome}</h3>
+                <h2 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {product.nome}
+                </h2>
                 {isPromo ? (
                     <p className="preco">
                         <span className="preco-antigo">De R$ {product.preco.toFixed(2).replace('.', ',')}</span>
