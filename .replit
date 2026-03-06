@@ -1,4 +1,4 @@
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "web"]
 
 [[ports]]
 localPort = 3000
@@ -44,3 +44,4 @@ outputType = "webview"
 
 [nix]
 packages = ["psmisc"]
+channel = "stable-25_05"
