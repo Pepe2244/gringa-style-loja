@@ -38,21 +38,7 @@
   ],
   "exclude": [
     "node_modules",
-    "legacy_backup"
-  ]
-}
-{
-  "compilerOptions": {
-    // ... suas opções existentes
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "supabase" // ADICIONE ISSO AQUI
+    "legacy_backup",
+    "supabase"
   ]
 }
