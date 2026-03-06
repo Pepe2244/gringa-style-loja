@@ -136,8 +136,12 @@ export default function ProductManager() {
             opcoes: variantOpcoes.split(',').map(s => s.trim()).filter(Boolean)
         } : null;
 
+        // Geração automática do slug baseada no nome
+        const generatedSlug = nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+
         const productData = {
             nome,
+            slug: generatedSlug, // Inserção do slug para evitar violação de restrição NOT NULL
             descricao,
             preco: parseFloat(preco),
             preco_promocional: precoPromocional ? parseFloat(precoPromocional) : null,
@@ -150,28 +154,28 @@ export default function ProductManager() {
 
         try {
             if (editingProduct) {
-                const { error } = await supabase.from('produtos').update(productData).eq('id', editingProduct.id);
+                // Usando 'as any' temporariamente caso o seu database.types.ts ainda não tenha o 'slug' mapeado
+                const { error } = await supabase.from('produtos').update(productData as any).eq('id', editingProduct.id);
                 if (error) throw error;
 
                 if (productData.preco_promocional && (!editingProduct.preco_promocional || productData.preco_promocional !== editingProduct.preco_promocional)) {
                     await supabase.from('notificacoes_push_queue').insert({
                         titulo: '🔥 PROMOÇÃO ATIVADA!',
                         mensagem: `O produto "${nome}" está em promoção por R$${productData.preco_promocional.toFixed(2).replace('.', ',')}!`,
-                        link_url: `/produto/${editingProduct.id}`,
+                        link_url: `/produto/${editingProduct.id}-${generatedSlug}`,
                         status: 'rascunho'
                     });
                 }
 
                 alert('Produto atualizado!');
             } else {
-                const { data, error } = await supabase.from('produtos').insert([productData]).select().single();
+                const { data, error } = await supabase.from('produtos').insert([productData as any]).select().single();
                 if (error) throw error;
 
-                const slug = nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
                 await supabase.from('notificacoes_push_queue').insert({
                     titulo: '🔥 Novidade na Loja!',
                     mensagem: `O produto "${nome}" já está disponível. Venha conferir!`,
-                    link_url: `/produto/${data.id}-${slug}`,
+                    link_url: `/produto/${data.id}-${generatedSlug}`,
                     status: 'rascunho'
                 });
 

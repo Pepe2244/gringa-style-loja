@@ -14,6 +14,7 @@ export interface Database {
                     id: number
                     created_at: string
                     nome: string
+                    slug: string
                     descricao: string
                     preco: number
                     preco_promocional: number | null
@@ -30,6 +31,7 @@ export interface Database {
                     id?: number
                     created_at?: string
                     nome: string
+                    slug: string
                     descricao: string
                     preco: number
                     preco_promocional?: number | null
@@ -46,6 +48,7 @@ export interface Database {
                     id?: number
                     created_at?: string
                     nome?: string
+                    slug?: string
                     descricao?: string
                     preco?: number
                     preco_promocional?: number | null
@@ -57,6 +60,52 @@ export interface Database {
                     video?: string | null
                     variants?: Json | null
                     produtos_relacionados_ids?: number[] | null
+                }
+            }
+            campanhas: {
+                Row: {
+                    id: number
+                    created_at: string
+                    nome_campanha: string
+                    banner_url: string | null
+                    aviso_deslizante_texto: string | null
+                    cor_fundo: string
+                    cor_texto: string
+                    cor_destaque: string
+                }
+                Insert: {
+                    id?: number
+                    created_at?: string
+                    nome_campanha: string
+                    banner_url?: string | null
+                    aviso_deslizante_texto?: string | null
+                    cor_fundo?: string
+                    cor_texto?: string
+                    cor_destaque?: string
+                }
+                Update: {
+                    id?: number
+                    created_at?: string
+                    nome_campanha?: string
+                    banner_url?: string | null
+                    aviso_deslizante_texto?: string | null
+                    cor_fundo?: string
+                    cor_texto?: string
+                    cor_destaque?: string
+                }
+            }
+            configuracoes_site: {
+                Row: {
+                    id: number
+                    campanha_ativa_id: number | null
+                }
+                Insert: {
+                    id?: number
+                    campanha_ativa_id?: number | null
+                }
+                Update: {
+                    id?: number
+                    campanha_ativa_id?: number | null
                 }
             }
             categorias: {
