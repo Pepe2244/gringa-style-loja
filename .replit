@@ -37,7 +37,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run build"
+args = "npm run dev"
 
 [workflows.workflow.metadata]
 outputType = "webview"
