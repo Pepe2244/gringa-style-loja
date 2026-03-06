@@ -14,7 +14,6 @@ export default function ProductManager() {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Form states
     const [nome, setNome] = useState('');
     const [descricao, setDescricao] = useState('');
     const [preco, setPreco] = useState('');
@@ -109,7 +108,6 @@ export default function ProductManager() {
 
         let finalMediaUrls = [...existingMedia];
 
-        // Upload new files
         for (const file of mediaFiles) {
             let fileToUpload = file;
             if (file.type.startsWith('image/')) {
@@ -155,7 +153,6 @@ export default function ProductManager() {
                 const { error } = await supabase.from('produtos').update(productData).eq('id', editingProduct.id);
                 if (error) throw error;
 
-                // Push Notification Logic
                 if (productData.preco_promocional && (!editingProduct.preco_promocional || productData.preco_promocional !== editingProduct.preco_promocional)) {
                     await supabase.from('notificacoes_push_queue').insert({
                         titulo: '🔥 PROMOÇÃO ATIVADA!',
@@ -170,7 +167,6 @@ export default function ProductManager() {
                 const { data, error } = await supabase.from('produtos').insert([productData]).select().single();
                 if (error) throw error;
 
-                // Push Notification
                 const slug = nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
                 await supabase.from('notificacoes_push_queue').insert({
                     titulo: '🔥 Novidade na Loja!',
@@ -183,9 +179,10 @@ export default function ProductManager() {
             }
             setShowModal(false);
             fetchProducts();
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-            alert('Erro ao salvar: ' + errorMessage);
+        } catch (error: any) {
+            console.error('🔥 ERRO CRU DO SUPABASE:', error);
+            const errorMessage = error?.message || error?.details || JSON.stringify(error);
+            alert(`Erro crítico ao salvar: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
@@ -197,8 +194,9 @@ export default function ProductManager() {
             const { error } = await supabase.from('produtos').delete().eq('id', id);
             if (error) throw error;
             fetchProducts();
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        } catch (error: any) {
+            console.error('ERRO AO EXCLUIR:', error);
+            const errorMessage = error?.message || error?.details || JSON.stringify(error);
             alert('Erro ao excluir: ' + errorMessage);
         }
     };
@@ -208,7 +206,7 @@ export default function ProductManager() {
             const { error } = await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
             if (error) throw error;
 
-            if (!currentStatus) { // Was false, now true
+            if (!currentStatus) { 
                 const prod = products.find(p => p.id === id);
                 if (prod) {
                     const slug = prod.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
@@ -222,8 +220,9 @@ export default function ProductManager() {
             }
 
             fetchProducts();
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        } catch (error: any) {
+            console.error('ERRO AO ALTERAR ESTOQUE:', error);
+            const errorMessage = error?.message || error?.details || JSON.stringify(error);
             alert('Erro ao atualizar estoque: ' + errorMessage);
         }
     };
@@ -275,7 +274,6 @@ export default function ProductManager() {
                 </tbody>
             </table>
 
-            {/* Mobile View */}
             <div className="admin-mobile-list">
                 {products.map(prod => (
                     <div key={prod.id} className="admin-mobile-card">
