@@ -12,9 +12,9 @@ export async function GET() {
 
         if (error) throw error;
 
-        // 2. Definição da URL oficial da sua loja
-        // ATENÇÃO: Se o seu domínio final for outro, mude esta linha imediatamente.
-        const SITE_URL = 'https://gringastyle.com';
+        // 2. Definição da URL oficial da sua loja na Netlify
+        // Esta URL deve ser IDÊNTICA à reivindicada no Google Merchant Center
+        const SITE_URL = 'https://gringa-style.netlify.app';
 
         // 3. Cabeçalho padrão obrigatório exigido pelo Google Merchant
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -83,7 +83,7 @@ export async function GET() {
         return new NextResponse(xml, {
             headers: {
                 'Content-Type': 'application/xml; charset=utf-8',
-                // Mantém em cache no servidor por 1 hora para evitar sobrecarga no banco de dados se o Google fizer muitas requisições
+                // Mantém em cache no servidor por 1 hora para evitar sobrecarga no banco se o Google fizer muitas requisições
                 'Cache-Control': 's-maxage=3600, stale-while-revalidate',
             },
         });
