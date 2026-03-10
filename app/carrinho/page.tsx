@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem } from '@/types';
-import { Trash2, ShoppingCart } from 'lucide-react';
+import { Trash2, ShoppingCart, ShieldCheck, Truck } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useCartStore, CartState } from '@/store/useCartStore';
 
@@ -19,13 +19,11 @@ export default function CartPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Coupon State
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
     const [couponMessage, setCouponMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [validatingCoupon, setValidatingCoupon] = useState(false);
 
-    // Checkout State
     const [clientName, setClientName] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
@@ -54,6 +52,28 @@ export default function CartPage() {
         fetchCartData();
     }, [items]);
 
+    useEffect(() => {
+        if (items.length > 0 && products.length > 0 && typeof window !== 'undefined' && (window as any).gtag) {
+            const currentTotal = calculateTotal();
+            const gtagItems = items.map(item => {
+                const product = products.find(p => p.id === item.produto_id);
+                return {
+                    item_id: item.produto_id,
+                    item_name: product?.nome || 'Produto',
+                    price: product ? getPrecoFinal(product) : 0,
+                    quantity: item.quantidade,
+                    item_variant: item.variante?.opcao
+                };
+            });
+
+            (window as any).gtag('event', 'view_cart', {
+                currency: 'BRL',
+                value: currentTotal,
+                items: gtagItems
+            });
+        }
+    }, [products, items]); 
+
     const validateTotal = async (cartItems: CartItem[]) => {
         try {
             const response = await fetch('/api/calculate-total', {
@@ -73,7 +93,6 @@ export default function CartPage() {
     const handleUpdateQuantity = (index: number, newQuantity: number) => {
         updateQuantity(index, newQuantity);
 
-        // Reset coupon if cart changes
         if (appliedCoupon) {
             setAppliedCoupon(null);
             setCouponMessage({ text: 'Carrinho alterado. Aplique o cupom novamente.', type: 'error' });
@@ -86,7 +105,6 @@ export default function CartPage() {
         removeItem(itemToDelete);
         setItemToDelete(null);
 
-        // Reset coupon if cart changes
         if (appliedCoupon) {
             setAppliedCoupon(null);
             setCouponMessage({ text: 'Carrinho alterado. Aplique o cupom novamente.', type: 'error' });
@@ -116,6 +134,8 @@ export default function CartPage() {
         }
         return subtotal - discount;
     };
+
+    const totalCalculado = calculateTotal();
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) {
@@ -176,36 +196,38 @@ export default function CartPage() {
         const discountAmount = appliedCoupon ? appliedCoupon.desconto_calculado : 0;
         const finalTotal = subtotal - discountAmount;
 
-        // --- INÍCIO DO RASTREAMENTO GA4 (GROWTH HACK) ---
-        // Dispara o evento de COMPRA para o Google antes de abrir o Zap
+        const analyticsItems = items.map(item => {
+            const product = products.find(p => p.id === item.produto_id);
+            return {
+                item_id: item.produto_id,
+                item_name: product?.nome || 'Item Desconhecido',
+                price: product ? getPrecoFinal(product) : 0,
+                quantity: item.quantidade
+            };
+        });
+
         if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'begin_checkout', {
+                currency: 'BRL',
+                value: finalTotal,
+                items: analyticsItems
+            });
+
             (window as any).gtag('event', 'purchase', {
-                transaction_id: `ZAP-${Date.now()}`, // ID único baseado na hora
+                transaction_id: `ZAP-${Date.now()}`,
                 value: finalTotal,
                 currency: 'BRL',
                 shipping: 0,
-                items: items.map(item => {
-                    const product = products.find(p => p.id === item.produto_id);
-                    return {
-                        item_id: item.produto_id,
-                        item_name: product?.nome || 'Item Desconhecido',
-                        price: product ? ((product.preco_promocional && product.preco_promocional < product.preco) ? product.preco_promocional : product.preco) : 0,
-                        quantity: item.quantidade
-                    };
-                })
+                items: analyticsItems
             });
         }
-        // --- FIM DO RASTREAMENTO ---
 
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
 
         items.forEach(item => {
             const product = products.find(p => p.id === item.produto_id);
             if (product) {
-                const price = (product.preco_promocional && product.preco_promocional < product.preco)
-                    ? product.preco_promocional
-                    : product.preco;
-
+                const price = getPrecoFinal(product);
                 const variantInfo = item.variante ? ` (${item.variante.tipo}: ${item.variante.opcao})` : '';
                 message += `• ${item.quantidade}x ${product.nome}${variantInfo} - R$ ${(price * item.quantidade).toFixed(2).replace('.', ',')}\n`;
             }
@@ -233,21 +255,23 @@ export default function CartPage() {
 
     if (items.length === 0) {
         return (
-            <div className="container" id="carrinho-vazio-container" style={{ textAlign: 'center', padding: '50px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <ShoppingCart size={64} style={{ color: '#555', marginBottom: '20px' }} />
-                <h2>Seu carrinho está vazio</h2>
-                <p>Explore nossos produtos e adicione itens ao carrinho.</p>
-                <Link href="/" className="btn" style={{ marginTop: '20px', display: 'inline-block' }}>Ver Produtos</Link>
+            <div className="container" id="carrinho-vazio-container" style={{ textAlign: 'center', padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <ShoppingCart size={80} style={{ color: '#555', marginBottom: '25px' }} />
+                <h2 style={{ fontSize: '2rem', marginBottom: '15px' }}>Seu carrinho está vazio</h2>
+                <p style={{ color: '#aaa', marginBottom: '30px', fontSize: '1.1rem' }}>Sua próxima compra Gringa Style está esperando por você.</p>
+                <Link href="/" className="btn btn-adicionar" style={{ padding: '15px 30px', fontSize: '1.1rem', borderRadius: '6px', textDecoration: 'none' }}>
+                    Explorar Produtos
+                </Link>
             </div>
         );
     }
 
     return (
-        <div className="container carrinho-container">
-            <h1 className="titulo-secao">Seu Carrinho</h1>
+        <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '40px 15px', boxSizing: 'border-box' }}>
+            <h1 className="titulo-secao" style={{ borderBottom: '1px solid #333', paddingBottom: '15px', marginBottom: '30px' }}>Finalizar Compra</h1>
 
-            <div className="carrinho-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px', alignItems: 'start' }}>
-                <div className="carrinho-lista">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', alignItems: 'flex-start', width: '100%' }}>
+                <div style={{ flex: '1 1 60%', minWidth: '300px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {items.map((item, index) => {
                         const product = products.find(p => p.id === item.produto_id);
                         if (!product) return null;
@@ -256,246 +280,214 @@ export default function CartPage() {
                         const imageUrl = mediaUrls.find(url => !url.includes('.mp4')) || '/imagens/gringa_style_logo.png';
 
                         return (
-                            <div key={`${item.produto_id}-${index}`} className="item-carrinho">
-                                <div className="item-carrinho-img-container">
+                            <div key={`${item.produto_id}-${index}`} style={{ display: 'flex', gap: '15px', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #333', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+                                <div style={{ width: '100px', height: '100px', flexShrink: 0 }}>
                                     <Link href={`/produto/${item.produto_id}`}>
                                         <Image
                                             src={imageUrl}
                                             alt={product.nome}
-                                            width={120}
-                                            height={120}
-                                            className="item-carrinho-img"
+                                            width={100}
+                                            height={100}
+                                            style={{ objectFit: 'cover', borderRadius: '6px', width: '100%', height: '100%' }}
                                         />
                                     </Link>
                                 </div>
 
-                                <div className="item-carrinho-info">
-                                    <div className="item-carrinho-header">
-                                        <Link href={`/produto/${item.produto_id}`} className="item-carrinho-nome">
+                                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div style={{ overflow: 'hidden' }}>
+                                        <Link href={`/produto/${item.produto_id}`} style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', textDecoration: 'none', display: 'block', paddingRight: '25px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {product.nome}
                                         </Link>
-                                    </div>
-
-                                    <div className="item-carrinho-specs">
                                         {item.variante && (
-                                            <p className="spec-item">
+                                            <p style={{ fontSize: '0.85rem', color: '#aaa', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                 {item.variante.tipo}: {item.variante.opcao}
                                             </p>
                                         )}
                                     </div>
 
-                                    <div className="item-carrinho-preco">
-                                        R$ {getPrecoFinal(product).toFixed(2).replace('.', ',')}
-                                    </div>
-
-                                    <div className="item-carrinho-acoes-bottom">
-                                        <div className="quantidade-container">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', gap: '10px', flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#000', borderRadius: '4px', border: '1px solid #444', flexShrink: 0 }}>
+                                            <button 
+                                                onClick={() => handleUpdateQuantity(index, Math.max(1, item.quantidade - 1))}
+                                                style={{ background: 'none', border: 'none', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontSize: '1.2rem' }}
+                                            >-</button>
                                             <input
                                                 type="number"
-                                                className="input-quantidade"
                                                 value={item.quantidade}
                                                 min="1"
-                                                onChange={(e) => handleUpdateQuantity(index, parseInt(e.target.value))}
+                                                onChange={(e) => handleUpdateQuantity(index, parseInt(e.target.value) || 1)}
+                                                style={{ width: '30px', textAlign: 'center', background: 'transparent', border: 'none', color: 'white', fontWeight: 'bold', MozAppearance: 'textfield' }}
                                             />
+                                            <button 
+                                                onClick={() => handleUpdateQuantity(index, item.quantidade + 1)}
+                                                style={{ background: 'none', border: 'none', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontSize: '1.2rem' }}
+                                            >+</button>
                                         </div>
-                                        <button
-                                            className="btn-remover"
-                                            onClick={() => setItemToDelete(index)}
-                                            title="Remover item"
-                                        >
-                                            <Trash2 size={20} />
-                                        </button>
+                                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--cor-destaque)', whiteSpace: 'nowrap' }}>
+                                            R$ {(getPrecoFinal(product) * item.quantidade).toFixed(2).replace('.', ',')}
+                                        </div>
                                     </div>
                                 </div>
+                                <button
+                                    onClick={() => setItemToDelete(index)}
+                                    title="Remover item"
+                                    style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}
+                                >
+                                    <Trash2 size={20} />
+                                </button>
                             </div>
                         );
                     })}
                 </div>
 
-                <div className="carrinho-resumo" style={{ background: '#2a2a2a', padding: '25px', borderRadius: '10px', position: 'sticky', top: '20px' }}>
-                    <h2 style={{ fontFamily: 'var(--font-teko)', fontSize: '2rem', marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #444', paddingBottom: '10px' }}>Resumo do Pedido</h2>
+                <div style={{ flex: '1 1 350px', maxWidth: '100%', background: '#111', padding: '25px', borderRadius: '10px', border: '1px solid #333', position: 'sticky', top: '20px', boxSizing: 'border-box' }}>
+                    <h2 style={{ fontSize: '1.5rem', marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>Resumo do Pedido</h2>
 
-                    <div className="linha-total" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
-                        <span>Subtotal</span>
-                        <span id="subtotal-valor">R$ {calculateSubtotal().toFixed(2).replace('.', ',')}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
+                        <span>Subtotal ({items.length} itens)</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>R$ {calculateSubtotal().toFixed(2).replace('.', ',')}</span>
                     </div>
 
                     {appliedCoupon && (
-                        <div className="linha-total highlight-success" id="cupom-desconto-linha" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#00ff88' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#00ff88' }}>
                             <span>Desconto ({appliedCoupon.codigo})</span>
-                            <span id="cupom-desconto-valor">- R$ {appliedCoupon.desconto_calculado.toFixed(2).replace('.', ',')}</span>
+                            <span style={{ whiteSpace: 'nowrap' }}>- R$ {appliedCoupon.desconto_calculado.toFixed(2).replace('.', ',')}</span>
                         </div>
                     )}
 
-                    <div className="cupom-area" style={{ margin: '20px 0' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em', color: '#aaa' }}>Tem um cupom?</label>
-                        <div className="cupom-input-group" style={{ display: 'flex', gap: '5px' }}>
+                    <div style={{ margin: '20px 0' }}>
+                        <div style={{ display: 'flex', gap: '10px' }}>
                             <input
                                 type="text"
-                                id="cupom-input"
-                                placeholder="Código"
+                                placeholder="Tem um cupom?"
                                 value={couponCode}
                                 onChange={(e) => setCouponCode(e.target.value)}
                                 disabled={!!appliedCoupon}
-                                style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
+                                style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
                             />
                             <button
-                                id="btn-aplicar-cupom"
                                 onClick={appliedCoupon ? () => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(null); } : handleApplyCoupon}
                                 disabled={validatingCoupon}
                                 style={{
-                                    padding: '8px 15px',
-                                    borderRadius: '4px',
+                                    padding: '10px 20px',
+                                    borderRadius: '6px',
                                     border: 'none',
-                                    background: appliedCoupon ? '#dc3545' : '#28a745',
+                                    background: appliedCoupon ? '#dc3545' : '#444',
                                     color: 'white',
                                     cursor: 'pointer',
-                                    fontWeight: 'bold'
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap'
                                 }}
                             >
-                                {validatingCoupon ? '...' : (appliedCoupon ? 'X' : 'Aplicar')}
+                                {validatingCoupon ? '...' : (appliedCoupon ? 'Remover' : 'Aplicar')}
                             </button>
                         </div>
                         {couponMessage && (
-                            <p id="cupom-mensagem" style={{ fontSize: '0.85em', marginTop: '5px', color: couponMessage.type === 'error' ? '#ff4444' : '#00ff88' }}>
+                            <p style={{ fontSize: '0.85em', marginTop: '8px', color: couponMessage.type === 'error' ? '#ff4444' : '#00ff88' }}>
                                 {couponMessage.text}
                             </p>
                         )}
                     </div>
 
-                    <hr style={{ borderColor: '#444', margin: '20px 0' }} />
+                    <div style={{ height: '1px', backgroundColor: '#333', margin: '20px 0' }} />
 
-                    <div className="campo-cliente" style={{ marginBottom: '15px' }}>
-                        <label htmlFor="nome-cliente" style={{ display: 'block', marginBottom: '5px' }}>Seus Dados</label>
+                    <div style={{ marginBottom: '15px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', color: '#aaa', fontSize: '0.9rem' }}>Seu Nome Completo</label>
                         <input
                             type="text"
-                            id="nome-cliente"
-                            className="input-cliente"
-                            placeholder="Digite seu nome completo"
+                            placeholder="Para quem será o pedido?"
                             value={clientName}
                             onChange={(e) => setClientName(e.target.value)}
-                            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
+                            style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
                         />
                     </div>
 
-                    <div className="resumo-pagamento" style={{ marginBottom: '20px' }}>
-                        <label htmlFor="forma-pagamento" style={{ display: 'block', marginBottom: '5px' }}>Forma de Pagamento</label>
+                    <div style={{ marginBottom: '15px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', color: '#aaa', fontSize: '0.9rem' }}>Forma de Pagamento</label>
                         <select
-                            id="forma-pagamento"
-                            className="select-pagamento"
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value)}
-                            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
+                            style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
                         >
-                            <option value="PIX">PIX</option>
+                            <option value="PIX">PIX (Aprovação Imediata)</option>
                             <option value="Cartão de Crédito">Cartão de Crédito</option>
                         </select>
                     </div>
 
                     {paymentMethod === 'Cartão de Crédito' && (
-                        <div className="resumo-pagamento" id="opcoes-parcelamento" style={{ marginBottom: '20px' }}>
-                            <label htmlFor="numero-parcelas" style={{ display: 'block', marginBottom: '5px' }}>Parcelas</label>
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', marginBottom: '5px', color: '#aaa', fontSize: '0.9rem' }}>Parcelas</label>
                             <select
-                                id="numero-parcelas"
-                                className="select-pagamento"
                                 value={installments}
                                 onChange={(e) => setInstallments(e.target.value)}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #555', background: '#333', color: 'white' }}
+                                style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
                             >
-                                <option value="1x">1x sem juros</option>
-                                <option value="2x">2x</option>
-                                <option value="3x">3x</option>
-                                <option value="12x">12x</option>
+                                <option value="1x">1x </option>
+                                <option value="2x">2x </option>
+                                <option value="3x">3x </option>
+                                <option value="12x">Em até 12x</option>
                             </select>
                         </div>
                     )}
 
-                    <div className="linha-total total-final" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '25px 0', fontSize: '1.8rem', fontWeight: '900', color: 'white', alignItems: 'center' }}>
                         <span>Total</span>
-                        <span id="total-valor">R$ {calculateTotal().toFixed(2).replace('.', ',')}</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>R$ {totalCalculado.toFixed(2).replace('.', ',')}</span>
                     </div>
 
                     <button
-                        id="finalizar-pedido-btn"
-                        className="btn btn-finalizar"
                         onClick={handleCheckout}
                         style={{
                             width: '100%',
-                            padding: '15px',
-                            background: '#FFA500',
-                            color: 'black',
+                            padding: '18px',
+                            background: '#25D366', 
+                            color: 'white',
                             border: 'none',
-                            borderRadius: '5px',
+                            borderRadius: '6px',
                             fontSize: '1.1rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             textTransform: 'uppercase',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '10px'
+                            boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)',
+                            boxSizing: 'border-box'
                         }}
                     >
-                        FINALIZAR PEDIDO VIA WHATSAPP
+                        FINALIZAR PEDIDO NO ZAP
                     </button>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px', color: '#888' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', fontSize: '0.75rem' }}>
+                            <ShieldCheck size={20} color="#28a745" /> <span>Compra Segura</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', fontSize: '0.75rem' }}>
+                            <Truck size={20} color="var(--cor-destaque)" /> <span>Envio Rápido</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Delete Confirmation Modal */}
             {itemToDelete !== null && (
-                <div className="modal-overlay" style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
                 }}>
-                    <div className="modal-content" style={{
-                        backgroundColor: '#222',
-                        padding: '25px',
-                        borderRadius: '10px',
-                        maxWidth: '400px',
-                        width: '90%',
-                        textAlign: 'center',
-                        border: '1px solid #444',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+                    <div style={{
+                        backgroundColor: '#222', padding: '30px', borderRadius: '10px', maxWidth: '400px', width: '90%', textAlign: 'center', border: '1px solid #444', boxSizing: 'border-box'
                     }}>
-                        <h3 style={{ marginBottom: '15px', color: 'white' }}>Remover Item?</h3>
-                        <p style={{ marginBottom: '25px', color: '#ccc' }}>Tem certeza que deseja apagar este item do carrinho?</p>
-                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-                            <button
-                                onClick={confirmDelete}
-                                style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '5px',
-                                    border: 'none',
-                                    backgroundColor: '#444',
-                                    color: 'white',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                Sim
-                            </button>
+                        <h3 style={{ marginBottom: '15px', color: 'white', fontSize: '1.5rem' }}>Remover Item?</h3>
+                        <p style={{ marginBottom: '25px', color: '#aaa' }}>Tem certeza que deseja apagar este item do carrinho?</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
                             <button
                                 onClick={() => setItemToDelete(null)}
-                                style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '5px',
-                                    border: 'none',
-                                    backgroundColor: '#dc3545',
-                                    color: 'white',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold',
-                                    boxShadow: '0 0 10px rgba(220, 53, 69, 0.5)'
-                                }}
+                                style={{ padding: '12px 25px', borderRadius: '6px', border: 'none', backgroundColor: '#444', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
                             >
-                                Não
+                                Manter Item
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                style={{ padding: '12px 25px', borderRadius: '6px', border: 'none', backgroundColor: '#dc3545', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                Sim, Remover
                             </button>
                         </div>
                     </div>
@@ -504,4 +496,5 @@ export default function CartPage() {
         </div>
     );
 }
+
 

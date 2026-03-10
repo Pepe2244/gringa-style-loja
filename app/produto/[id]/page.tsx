@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
-import StickyCTA from '@/components/StickyCTA';
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -16,8 +15,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         .select('nome, descricao, imagens, media_urls')
         .eq('id', productId)
         .single();
-
-    console.log('Metadata fetch for ID:', productId, 'Result:', product, 'Error:', error);
 
     if (!product) {
         return {
@@ -47,13 +44,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 3600;
 
 export async function generateStaticParams() {
     const { data: products } = await supabase
         .from('produtos')
         .select('id')
-        .limit(50); // Pre-render top 50 products
+        .limit(50);
 
     return products?.map((product) => ({
         id: String(product.id),
@@ -83,7 +80,6 @@ export default async function ProductPage({ params }: Props) {
             priceCurrency: 'BRL',
             price: product.preco_promocional || product.preco,
             availability: product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            // ADICIONE ESTA LINHA: Define a validade para daqui a 1 ano
             priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
         },
     } : null;
@@ -96,8 +92,8 @@ export default async function ProductPage({ params }: Props) {
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
                 />
             )}
-            <ProductPageContent id={productId} />
-            {product && <StickyCTA product={product} />}
+            <ProductPageContent id={productId} initialProduct={product} />
         </>
     );
 }
+
