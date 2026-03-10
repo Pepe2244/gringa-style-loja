@@ -1,11 +1,11 @@
 import { supabase } from '@/lib/supabase';
 import HomeContent from '@/components/home/HomeContent';
 
-export const revalidate = 0; // Revalidate every 60 seconds
+export const revalidate = 60;
 
 export default async function Home() {
   const [productsRes, categoriesRes, configRes] = await Promise.all([
-    supabase.from('produtos').select('*').order('id', { ascending: true }),
+    supabase.from('produtos').select('id, nome, preco, preco_promocional, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug').order('id', { ascending: true }),
     supabase.from('categorias').select('*').order('nome'),
     supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle()
   ]);
@@ -24,3 +24,5 @@ export default async function Home() {
     </main>
   );
 }
+
+

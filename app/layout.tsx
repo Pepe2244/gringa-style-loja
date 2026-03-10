@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Roboto, Teko } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import { GoogleAnalytics } from '@next/third-parties/google';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ToastProvider } from '@/context/ToastContext';
@@ -21,17 +22,12 @@ const teko = Teko({
 });
 
 export const metadata: Metadata = {
-  // Define a base para todas as URLs absolutas
+  // Estrategista avisa: Continuas com o subdomínio da Netlify. 
+  // Estás a perder conversão por falta de confiança no domínio. Muda isto assim que possível.
   metadataBase: new URL('https://gringa-style.netlify.app'),
-
-  // --- AQUI ESTÁ A CORREÇÃO ---
-  // Isso diz ao Next.js: "Gere uma tag canonical para esta página usando a URL atual"
-  // Como definimos o metadataBase acima, o './' resolve para a URL completa da página atual.
   alternates: {
     canonical: './',
   },
-  // ---------------------------
-
   title: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
   description: "Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!",
   keywords: ["máscara de solda", "solda tig", "personalizada", "gringa style", "acessórios solda"],
@@ -62,24 +58,19 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
         <link rel="dns-prefetch" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
-        {/* O Next.js injetará a tag canonical aqui automaticamente */}
       </head>
       <body
         className={`${roboto.variable} ${teko.variable} antialiased`}
       >
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN"
-          strategy="afterInteractive"
+        {/* Script carregado apenas após a página estar interativa (não bloqueia renderização) */}
+        <Script 
+          src="https://analytics.ahrefs.com/analytics.js" 
+          data-key="Sam0BvC3Nm1qohD+XzVeLA" 
+          strategy="lazyOnload" 
         />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){window.dataLayer.push(arguments);}
-            gtag('js', new Date());
 
-            gtag('config', 'G-2L2F9CY9JN');
-          `}
-        </Script><script src="https://analytics.ahrefs.com/analytics.js" data-key="Sam0BvC3Nm1qohD+XzVeLA" async></script>
+        {/* Componente otimizado do Next.js para Google Analytics */}
+        <GoogleAnalytics gaId="G-2L2F9CY9JN" />
 
         <ToastProvider>
           <Header />
@@ -92,3 +83,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@next/third-parties": "^16.1.6",
     "@supabase/supabase-js": "^2.98.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.555.0",

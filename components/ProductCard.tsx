@@ -35,9 +35,6 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
-        // Only carrousel if hovered, has multiple images, no video playing (desktop), or mobile (no video)
-        // Actually for simplicity: Desktop Hover = Video OR Carousel. Mobile = Static First Image (or maybe carousel later, but start simple for perf).
-        // Let's keep carousel logic for desktop manual hover (if no video)
 
         const shouldPlayVideo = videoUrl && isHovered && !isMobile;
 
@@ -61,6 +58,11 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const precoFinal = getPrecoFinal(product);
     const isPromo = precoFinal < product.preco;
 
+    // GATILHO DE CRO: Cálculo do percentual de desconto para a vitrine
+    const descontoPercentual = isPromo 
+        ? Math.round(((product.preco - precoFinal) / product.preco) * 100) 
+        : 0;
+
     const isNew = () => {
         if (!product.created_at) return false;
         const date = new Date(product.created_at);
@@ -71,13 +73,25 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
 
     const shouldShowVideo = videoUrl && isHovered && !isMobile;
 
+    const productSlug = product.slug || `${product.id}-${product.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
+
     return (
         <div
             className="produto-card"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            style={{ position: 'relative' }} // Garantir que elementos absolutos fiquem contidos aqui
         >
-            {isNew() && <span className="badge-novo">NOVO</span>}
+            {/* GATILHOS DE ESCASSEZ E NOVIDADE */}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
+                {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
+                {isPromo && (
+                    <span style={{ backgroundColor: 'var(--cor-destaque)', color: '#000', padding: '4px 8px', fontWeight: '900', borderRadius: '4px', fontSize: '0.8rem', boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                        {descontoPercentual}% OFF
+                    </span>
+                )}
+            </div>
+
             {product.em_estoque ? (
                 <span className="status-estoque em-estoque">Em Estoque</span>
             ) : (
@@ -138,7 +152,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             {product.variants ? 'Ver Opções' : 'Compra Rápida'}
                         </button>
                     )}
-                    <Link href={`/produto/${product.id}-${product.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`} className="btn btn-secundario">
+                    <Link href={`/produto/${productSlug}`} className="btn btn-secundario">
                         Ver Detalhes
                     </Link>
                 </div>
@@ -146,3 +160,5 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         </div>
     );
 }
+
+

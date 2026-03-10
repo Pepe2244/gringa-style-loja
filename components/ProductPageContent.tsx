@@ -39,6 +39,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         } else if (initialProduct) {
             setupProductState(initialProduct);
             fetchRelatedProducts(initialProduct);
+            setLoading(false);
         }
     }, [id, initialProduct]);
 
@@ -238,16 +239,38 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
     const MAX_DESC_LENGTH = 150;
     const isLongDescription = product.descricao && product.descricao.length > MAX_DESC_LENGTH;
 
+    const isPromo = product.preco_promocional && product.preco_promocional < product.preco;
+    const precoFinal = isPromo ? product.preco_promocional! : product.preco;
+    const descontoPercentual = isPromo 
+        ? Math.round(((product.preco - precoFinal) / product.preco) * 100) 
+        : 0;
+
     return (
         <div className="container produto-page-container">
+
+            {/* TÍTULO MOBILE (Estilo Mercado Livre) - Corrigido o respiro superior (marginTop: 20px) */}
+            <div className="titulo-mobile-container" style={{ display: 'none', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', marginTop: '20px' }}>
+                <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product.nome}</h1>
+                <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', padding: '0 0 0 10px' }}>
+                    <Share2 size={24} />
+                </button>
+            </div>
+
             <div className="detalhe-produto-container">
+                {/* COLUNA ESQUERDA: GALERIA */}
                 <div className="produto-detalhe-coluna-img" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div
-                        style={{ position: 'relative' }}
+                        style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#111' }}
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
                     >
+                        {isPromo && (
+                            <div style={{ position: 'absolute', top: '15px', left: '15px', backgroundColor: 'var(--cor-destaque)', color: '#000', padding: '6px 12px', fontWeight: '900', borderRadius: '6px', zIndex: 10, fontSize: '0.9rem', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+                                {descontoPercentual}% OFF
+                            </div>
+                        )}
+
                         {videoUrl && currentImageIndex === 0 && product.video ? (
                             <video src={videoUrl} controls muted loop className="video-principal" />
                         ) : (
@@ -257,18 +280,13 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                     src={currentMedia ? `${currentMedia}?format=webp&width=600&quality=80` : fallbackImage}
                                     alt={product.nome}
                                     draggable={false}
+                                    style={{ objectFit: 'cover', width: '100%', aspectRatio: '1/1' }}
                                 />
-                                {mediaUrls.length > 1 && (
-                                    <>
-                                        <button className="produto-seta" id="produto-seta-esq" onClick={() => setCurrentImageIndex((prev) => (prev - 1 + mediaUrls.length) % mediaUrls.length)}>&lt;</button>
-                                        <button className="produto-seta" id="produto-seta-dir" onClick={() => setCurrentImageIndex((prev) => (prev + 1) % mediaUrls.length)}>&gt;</button>
-                                    </>
-                                )}
                             </div>
                         )}
 
                         {mediaUrls.length > 1 && (
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '15px', position: 'absolute', bottom: '15px', width: '100%' }}>
                                 {mediaUrls.map((_, idx) => (
                                     <div 
                                         key={idx} 
@@ -276,9 +294,10 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                             width: idx === currentImageIndex ? '20px' : '8px',
                                             height: '8px',
                                             borderRadius: '4px',
-                                            backgroundColor: idx === currentImageIndex ? 'var(--cor-destaque)' : '#555',
+                                            backgroundColor: idx === currentImageIndex ? 'var(--cor-destaque)' : 'rgba(255,255,255,0.5)',
                                             transition: 'all 0.3s ease',
-                                            cursor: 'pointer'
+                                            cursor: 'pointer',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.8)'
                                         }}
                                         onClick={() => setCurrentImageIndex(idx)}
                                     />
@@ -295,49 +314,52 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                 className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
                                 onClick={() => setCurrentImageIndex(idx)}
                                 alt={`Miniatura ${idx + 1}`}
+                                style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent' }}
                             />
                         ))}
                     </div>
                 </div>
 
+                {/* COLUNA DIREITA: INFORMAÇÃO & CONVERSÃO */}
                 <div className="produto-detalhe-coluna-info">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                        <h1 style={{ fontSize: '1.8rem', lineHeight: '1.2', marginBottom: '10px' }}>{product.nome}</h1>
-                        <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', padding: '5px' }}>
+                    {/* TÍTULO DESKTOP - Só aparece no PC */}
+                    <div className="titulo-desktop-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                        <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2.5rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product.nome}</h1>
+                        <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', padding: '0 0 0 10px' }}>
                             <Share2 size={24} />
                         </button>
                     </div>
 
                     {product.em_estoque ? (
-                        <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', backgroundColor: 'rgba(40, 167, 69, 0.1)', color: '#28a745', border: '1px solid rgba(40, 167, 69, 0.2)', marginBottom: '15px' }}>
-                            Disponível em estoque
+                        <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(40, 167, 69, 0.15)', color: '#4ade80', border: '1px solid rgba(40, 167, 69, 0.3)', marginBottom: '15px' }}>
+                            ✓ Pronta Entrega
                         </p>
                     ) : (
-                        <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', backgroundColor: 'rgba(220, 53, 69, 0.1)', color: '#dc3545', border: '1px solid rgba(220, 53, 69, 0.2)', marginBottom: '15px' }}>
-                            Produto esgotado
+                        <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(220, 53, 69, 0.15)', color: '#f87171', border: '1px solid rgba(220, 53, 69, 0.3)', marginBottom: '15px' }}>
+                            ✕ Fora de Estoque
                         </p>
                     )}
 
                     <div className="produto-detalhe-preco" style={{ margin: '10px 0 25px 0' }}>
                         {product.preco_promocional ? (
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span className="preco-antigo" style={{ fontSize: '0.9rem', color: '#888', textDecoration: 'line-through' }}>
+                                <span className="preco-antigo" style={{ fontSize: '1.1rem', color: '#888', textDecoration: 'line-through' }}>
                                     De R$ {product.preco.toFixed(2).replace('.', ',')}
                                 </span>
-                                <span className="preco-novo" style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--cor-destaque)' }}>
-                                    Por R$ {product.preco_promocional.toFixed(2).replace('.', ',')}
+                                <span className="preco-novo" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
+                                    R$ {product.preco_promocional.toFixed(2).replace('.', ',')}
                                 </span>
                             </div>
                         ) : (
-                            <span className="preco-normal" style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--cor-destaque)' }}>
+                            <span className="preco-normal" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
                                 R$ {product.preco.toFixed(2).replace('.', ',')}
                             </span>
                         )}
-                        <p style={{ fontSize: '0.85rem', color: '#aaa', marginTop: '5px' }}>Em até 12x no cartão</p>
+                        <p style={{ fontSize: '0.9rem', color: '#aaa', marginTop: '5px' }}>💳 Em até 12x no cartão de crédito</p>
                     </div>
 
                     {variants && variants.opcoes && (
-                        <div className="produto-variantes" style={{ marginBottom: '25px' }}>
+                        <div className="produto-variantes" style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#1a1a1a', borderRadius: '8px', border: '1px solid #333' }}>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#eee' }}>
                                 Escolha {variants.tipo}:
                             </label>
@@ -345,7 +367,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                 className="select-variante"
                                 value={selectedVariant}
                                 onChange={(e) => setSelectedVariant(e.target.value)}
-                                style={{ width: '100%', padding: '12px', backgroundColor: '#222', color: 'white', border: '1px solid #444', borderRadius: '6px', fontSize: '1rem', outline: 'none' }}
+                                style={{ width: '100%', padding: '14px', backgroundColor: '#222', color: 'white', border: '1px solid #444', borderRadius: '6px', fontSize: '1rem', outline: 'none', cursor: 'pointer' }}
                             >
                                 <option value="" disabled>Selecione uma opção</option>
                                 {variants.opcoes.map((opt: string) => (
@@ -355,12 +377,12 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         </div>
                     )}
 
-                    <div className="produto-detalhe-botoes" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div className="produto-detalhe-botoes" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {product.em_estoque ? (
                             <button
                                 className="btn btn-adicionar"
                                 onClick={addToCart}
-                                style={{ padding: '16px', fontSize: '1.1rem', fontWeight: 'bold', borderRadius: '6px', boxShadow: '0 4px 15px rgba(255, 107, 0, 0.3)' }}
+                                style={{ padding: '18px', fontSize: '1.2rem', fontWeight: '900', borderRadius: '8px', textTransform: 'uppercase', letterSpacing: '1px', boxShadow: '0 6px 20px rgba(255, 107, 0, 0.4)', transition: 'transform 0.2s', border: 'none' }}
                             >
                                 Adicionar ao Carrinho
                             </button>
@@ -368,50 +390,51 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             <button
                                 className="btn btn-avise-me"
                                 onClick={() => window.open(`https://wa.me/5515998608170?text=Olá, gostaria de ser avisado quando o produto *${product.nome}* estiver disponível novamente.`, '_blank')}
-                                style={{ backgroundColor: '#444', color: 'white', width: '100%', padding: '16px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem' }}
+                                style={{ backgroundColor: '#444', color: 'white', width: '100%', padding: '18px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem' }}
                             >
                                 Avise-me quando chegar
                             </button>
                         )}
+
                         <button
                             className="btn btn-secundario"
                             onClick={() => setShowPurchaseModal(true)}
                             disabled={!product.em_estoque}
-                            style={{ padding: '14px', fontSize: '1rem', backgroundColor: 'transparent', border: '1px solid #555', color: '#ddd', borderRadius: '6px', fontWeight: '600' }}
+                            style={{ padding: '16px', fontSize: '1.05rem', backgroundColor: '#222', border: '1px solid #555', color: '#fff', borderRadius: '8px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                         >
-                            Comprar via WhatsApp
+                            Comprar Rápido via WhatsApp
                         </button>
                     </div>
 
-                    <div className="trust-badges" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', padding: '15px 10px', backgroundColor: '#1a1a1a', borderRadius: '6px', border: '1px solid #333' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', color: '#aaa', fontSize: '0.75rem', textAlign: 'center' }}>
-                            <ShieldCheck size={20} color="#28a745" />
-                            <span>Compra<br/>Segura</span>
+                    <div className="trust-badges" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '20px 15px', backgroundColor: '#111', borderRadius: '8px', border: '1px dashed #444' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>
+                            <ShieldCheck size={28} color="#28a745" />
+                            <span>Compra<br/>100% Segura</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', color: '#aaa', fontSize: '0.75rem', textAlign: 'center' }}>
-                            <Truck size={20} color="var(--cor-destaque)" />
-                            <span>Envio<br/>Rápido</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>
+                            <Truck size={28} color="var(--cor-destaque)" />
+                            <span>Envio para<br/>todo o Brasil</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', color: '#aaa', fontSize: '0.75rem', textAlign: 'center' }}>
-                            <CreditCard size={20} color="#17a2b8" />
-                            <span>Até 12X<br/>No Cartão</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>
+                            <CreditCard size={28} color="#17a2b8" />
+                            <span>Parcele em<br/>Até 12X</span>
                         </div>
                     </div>
 
-                    <div className="produto-descricao-container" style={{ marginTop: '35px', borderTop: '1px solid #333', paddingTop: '25px' }}>
-                        <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: '#eee', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            Detalhes do Produto
+                    <div className="produto-descricao-container" style={{ marginTop: '40px', borderTop: '1px solid #333', paddingTop: '30px' }}>
+                        <h3 style={{ fontSize: '1.4rem', marginBottom: '20px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
+                            Detalhes do Equipamento
                         </h3>
 
-                        <div style={{ color: '#bbb', lineHeight: '1.7', fontSize: '0.95rem' }}>
+                        <div style={{ color: '#bbb', lineHeight: '1.8', fontSize: '1rem' }}>
                             {isLongDescription && !isDescExpanded ? (
                                 <>
                                     <p>{product.descricao?.substring(0, MAX_DESC_LENGTH)}...</p>
                                     <button 
                                         onClick={() => setIsDescExpanded(true)}
-                                        style={{ background: 'none', border: 'none', color: 'var(--cor-destaque)', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem' }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--cor-destaque)', fontWeight: 'bold', cursor: 'pointer', padding: '15px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '1rem' }}
                                     >
-                                        Ler descrição completa <ChevronDown size={16} />
+                                        Ler descrição completa <ChevronDown size={18} />
                                     </button>
                                 </>
                             ) : (
@@ -420,9 +443,9 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                     {isLongDescription && (
                                         <button 
                                             onClick={() => setIsDescExpanded(false)}
-                                            style={{ background: 'none', border: 'none', color: '#888', fontWeight: 'bold', cursor: 'pointer', padding: '15px 0 5px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem' }}
+                                            style={{ background: 'none', border: 'none', color: '#888', fontWeight: 'bold', cursor: 'pointer', padding: '20px 0 5px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '1rem' }}
                                         >
-                                            Ocultar descrição <ChevronUp size={16} />
+                                            Ocultar descrição <ChevronUp size={18} />
                                         </button>
                                     )}
                                 </>
@@ -433,35 +456,37 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             </div>
 
             {relatedProducts.length > 0 && (
-                <section className="related-products-container" style={{ display: 'block', marginTop: '50px', borderTop: '1px solid #222', paddingTop: '40px' }}>
-                    <h2 className="related-title" style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Você também pode gostar</h2>
-                    <div className="related-list">
+                <section className="related-products-container" style={{ display: 'block', marginTop: '60px', borderTop: '1px solid #222', paddingTop: '40px' }}>
+                    <h2 className="related-title" style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', marginBottom: '30px', color: 'var(--cor-destaque)' }}>Você também pode gostar</h2>
+                    <div className="related-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                         {relatedProducts.map(rel => {
                             const mediaUrl = rel.media_urls?.[0] || rel.imagens?.[0] || fallbackImage;
                             const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || !!rel.video;
                             const finalVideoUrl = rel.video || (isVideo ? mediaUrl : null);
 
                             return (
-                                <Link key={rel.id} href={`/produto/${rel.id}`} className="related-product-card">
-                                    {finalVideoUrl ? (
-                                        <video
-                                            src={finalVideoUrl}
-                                            className="related-product-media"
-                                            muted
-                                            loop
-                                            playsInline
-                                            onMouseOver={e => e.currentTarget.play()}
-                                            onMouseOut={e => e.currentTarget.pause()}
-                                        />
-                                    ) : (
-                                        <img
-                                            src={mediaUrl}
-                                            className="related-product-media"
-                                            alt={rel.nome}
-                                        />
-                                    )}
-                                    <h4 style={{ fontSize: '0.9rem', margin: '10px 0 5px 0', color: '#eee' }}>{rel.nome}</h4>
-                                    <p style={{ color: 'var(--cor-destaque)', fontWeight: 'bold' }}>R$ {(rel.preco_promocional || rel.preco).toFixed(2).replace('.', ',')}</p>
+                                <Link key={rel.id} href={`/produto/${rel.slug || rel.id}`} className="related-product-card" style={{ backgroundColor: '#111', borderRadius: '12px', padding: '10px', textDecoration: 'none', border: '1px solid #222', transition: 'transform 0.2s' }}>
+                                    <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', marginBottom: '15px' }}>
+                                        {finalVideoUrl ? (
+                                            <video
+                                                src={finalVideoUrl}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                muted
+                                                loop
+                                                playsInline
+                                                onMouseOver={e => e.currentTarget.play()}
+                                                onMouseOut={e => e.currentTarget.pause()}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={mediaUrl}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                alt={rel.nome}
+                                            />
+                                        )}
+                                    </div>
+                                    <h4 style={{ fontSize: '0.95rem', margin: '0 0 10px 0', color: '#eee', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rel.nome}</h4>
+                                    <p style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>R$ {(rel.preco_promocional || rel.preco).toFixed(2).replace('.', ',')}</p>
                                 </Link>
                             );
                         })}
@@ -469,41 +494,41 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 </section>
             )}
 
-            <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido">
-                <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', padding: '15px', backgroundColor: '#222', borderRadius: '8px' }}>
+            <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido Rápido">
+                <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', padding: '15px', backgroundColor: '#111', borderRadius: '8px', border: '1px solid #333' }}>
                     <img
                         src={mediaUrls[0] || fallbackImage}
                         alt={product.nome}
                         style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '5px' }}
                     />
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <h3 style={{ fontSize: '1rem', margin: '0 0 5px 0' }}>{product.nome}</h3>
+                        <h3 style={{ fontSize: '1rem', margin: '0 0 5px 0', color: '#fff' }}>{product.nome}</h3>
                         {selectedVariant && <p style={{ fontSize: '0.85rem', color: '#aaa', margin: '0 0 5px 0' }}>{variants?.tipo}: {selectedVariant}</p>}
-                        <p style={{ fontWeight: 'bold', color: 'var(--cor-destaque)', fontSize: '1.1rem', margin: 0 }}>
+                        <p style={{ fontWeight: '900', color: 'var(--cor-destaque)', fontSize: '1.2rem', margin: 0 }}>
                             R$ {(product.preco_promocional || product.preco).toFixed(2).replace('.', ',')}
                         </p>
                     </div>
                 </div>
 
                 <div className="campo-cliente" style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#ccc' }}>Seu Nome Completo</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', color: '#ccc', fontWeight: 'bold' }}>Seu Nome Completo</label>
                     <input
                         type="text"
                         className="input-cliente"
-                        placeholder="Digite seu nome"
+                        placeholder="Ex: João da Silva"
                         value={clientName}
                         onChange={(e) => setClientName(e.target.value)}
-                        style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
+                        style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #444', backgroundColor: '#222', color: 'white', fontSize: '1rem', outline: 'none' }}
                     />
                 </div>
 
                 <div className="resumo-pagamento" style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#ccc' }}>Forma de Pagamento</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', color: '#ccc', fontWeight: 'bold' }}>Forma de Pagamento</label>
                     <select
                         className="select-pagamento"
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
+                        style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #444', backgroundColor: '#222', color: 'white', fontSize: '1rem', outline: 'none', cursor: 'pointer' }}
                     >
                         <option value="PIX">PIX (Aprovação imediata)</option>
                         <option value="Cartão de Crédito">Cartão de Crédito</option>
@@ -511,17 +536,20 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 </div>
 
                 {paymentMethod === 'Cartão de Crédito' && (
-                    <div className="resumo-pagamento" style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#ccc' }}>Parcelas</label>
+                    <div className="resumo-pagamento" style={{ marginBottom: '25px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', color: '#ccc', fontWeight: 'bold' }}>Parcelas</label>
                         <select
                             className="select-pagamento"
                             value={installments}
                             onChange={(e) => setInstallments(e.target.value)}
-                            style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
+                            style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #444', backgroundColor: '#222', color: 'white', fontSize: '1rem', outline: 'none', cursor: 'pointer' }}
                         >
                             <option value="1x">1x sem juros</option>
                             <option value="2x">2x sem juros</option>
                             <option value="3x">3x sem juros</option>
+                            <option value="4x">4x sem juros</option>
+                            <option value="5x">5x sem juros</option>
+                            <option value="6x">6x sem juros</option>
                         </select>
                     </div>
                 )}
@@ -529,13 +557,33 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 <button 
                     className="btn btn-finalizar" 
                     onClick={handleDirectPurchase}
-                    style={{ width: '100%', padding: '15px', backgroundColor: '#25D366', color: 'white', fontWeight: 'bold', border: 'none', borderRadius: '6px', fontSize: '1.1rem', marginTop: '10px' }}
+                    style={{ width: '100%', padding: '18px', backgroundColor: '#25D366', color: 'white', fontWeight: '900', border: 'none', borderRadius: '8px', fontSize: '1.1rem', marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)' }}
                 >
                     Confirmar Pedido no WhatsApp
                 </button>
             </Modal>
 
             {product && <StickyCTA product={product} />}
+
+            {/* ESTILO RESPONSIVO PARA O LAYOUT MERCADO LIVRE */}
+            <style dangerouslySetInnerHTML={{__html: `
+                @media (max-width: 768px) {
+                    .titulo-mobile-container {
+                        display: flex !important;
+                        margin-top: 20px !important; /* Adicionado respiro superior para afastar do cabeçalho */
+                    }
+                    .titulo-desktop-container {
+                        display: none !important;
+                    }
+                    .produto-detalhe-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 20px !important;
+                    }
+                    .produto-detalhe-coluna-info {
+                        padding-top: 0 !important;
+                    }
+                }
+            `}} />
         </div>
     );
 }

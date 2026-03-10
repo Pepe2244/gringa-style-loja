@@ -3794,3 +3794,12 @@ main,
     font-weight: 800;
     border: 1px solid #00ff88;
 }
+.produto-titulo {
+  font-family: var(--fonte-titulos);
+  font-size: 24px;
+  color: var(--cor-destaque);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

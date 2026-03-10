@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Product, Category } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
@@ -16,19 +16,13 @@ interface HomeContentProps {
 export default function HomeContent({ initialProducts, categories, diasNovo }: HomeContentProps) {
     const { showToast } = useToast();
     const [products, setProducts] = useState<Product[]>(initialProducts);
-    const [filteredProducts, setFilteredProducts] = useState<Product[]>(initialProducts);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [sortType, setSortType] = useState('padrao');
 
-    // Modals State
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
-
-    useEffect(() => {
-        applyFilters();
-    }, [searchTerm, selectedCategory, sortType, products]);
 
     const getPrecoFinal = (p: Product) => {
         if (!p.preco_promocional || p.preco_promocional >= p.preco) {
@@ -37,45 +31,44 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         return p.preco_promocional;
     };
 
-    const applyFilters = () => {
-        let result = products.filter(product => {
-            const term = searchTerm.toLowerCase().trim();
-            const matchSearch =
-                product.nome.toLowerCase().includes(term) ||
-                product.descricao.toLowerCase().includes(term) ||
-                (product.tags && product.tags.join(' ').toLowerCase().includes(term));
+    // Função vital para CRO: Normaliza strings para a busca ignorar acentos e capitulação
+    const normalizeString = (str: string) => {
+        if (!str) return '';
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    };
 
-            const matchCategory = selectedCategory ? product.categoria_id === selectedCategory : true;
+    // O filtro é calculado diretamente na renderização. Fim do useEffect e do estado duplicado.
+    const filteredProducts = products.filter(product => {
+        const term = normalizeString(searchTerm);
+        const matchSearch =
+            normalizeString(product.nome).includes(term) ||
+            normalizeString(product.descricao).includes(term) ||
+            (product.tags && normalizeString(product.tags.join(' ')).includes(term));
 
-            return matchSearch && matchCategory;
-        });
+        const matchCategory = selectedCategory ? product.categoria_id === selectedCategory : true;
 
-        // Sorting
+        return matchSearch && matchCategory;
+    }).sort((a, b) => {
         if (sortType === 'menor-preco') {
-            result.sort((a, b) => getPrecoFinal(a) - getPrecoFinal(b));
+            return getPrecoFinal(a) - getPrecoFinal(b);
         } else if (sortType === 'maior-preco') {
-            result.sort((a, b) => getPrecoFinal(b) - getPrecoFinal(a));
+            return getPrecoFinal(b) - getPrecoFinal(a);
         } else if (sortType === 'az') {
-            result.sort((a, b) => a.nome.localeCompare(b.nome));
+            return a.nome.localeCompare(b.nome);
         } else if (sortType === 'za') {
-            result.sort((a, b) => b.nome.localeCompare(a.nome));
+            return b.nome.localeCompare(a.nome);
         } else {
-            // Default: Newest first logic
+            // Lógica Padrão: Mais recentes primeiro
             const limitDate = new Date();
             limitDate.setDate(limitDate.getDate() - diasNovo);
+            const aNew = a.created_at && new Date(a.created_at) > limitDate;
+            const bNew = b.created_at && new Date(b.created_at) > limitDate;
 
-            result.sort((a, b) => {
-                const aNew = a.created_at && new Date(a.created_at) > limitDate;
-                const bNew = b.created_at && new Date(b.created_at) > limitDate;
-
-                if (aNew && !bNew) return -1;
-                if (!aNew && bNew) return 1;
-                return a.nome.localeCompare(b.nome);
-            });
+            if (aNew && !bNew) return -1;
+            if (!aNew && bNew) return 1;
+            return a.nome.localeCompare(b.nome);
         }
-
-        setFilteredProducts(result);
-    };
+    });
 
     const handleQuickView = (product: Product) => {
         setSelectedProduct(product);
@@ -116,7 +109,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
             <section id="contato" className="secao-info">
                 <h2 className="titulo-secao">Entre em Contato</h2>
                 <p>
-                    Pronto para elevar o nível da sua solda? Fale conosco pelo WhatsApp para um atendimento rápido.
+                    Pronto para elevar o nível da sua solda? Fale connosco pelo WhatsApp para um atendimento rápido.
                     Entregamos para todo o Brasil.
                 </p>
             </section>
@@ -130,3 +123,4 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         </div>
     );
 }
+

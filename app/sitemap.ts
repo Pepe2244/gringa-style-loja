@@ -2,41 +2,55 @@ import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    // Tenta pegar a URL do ambiente, senão usa o fallback. 
-    // Mude process.env.NEXT_PUBLIC_SITE_URL nas variáveis da Vercel/Netlify.
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gringa-style.netlify.app';
+  // AVISO ESTRATÉGICO: Quando você comprar o domínio oficial, altere esta variável imediatamente.
+  const baseUrl = 'https://gringa-style.netlify.app';
 
-    // Rotas Estáticas
-    // Carrinho removido: Não desperdice crawl budget do Google indexando carrinho vazio.
-    const routes = [
-        { url: '', changeFreq: 'daily', priority: 1.0 },      // Home é Rei
-        { url: '/rifa', changeFreq: 'daily', priority: 0.9 }, // Se for seu core business, alta prioridade
-        { url: '/historico', changeFreq: 'weekly', priority: 0.7 },
-    ];
+  // Busca todos os produtos no banco para indexação
+  const { data: products } = await supabase
+    .from('produtos')
+    .select('id, nome, slug, created_at');
 
-    const staticMap = routes.map((route) => ({
-        url: `${baseUrl}${route.url}`,
-        lastModified: new Date().toISOString(),
-        changeFrequency: route.changeFreq as 'daily' | 'weekly',
-        priority: route.priority,
-    }));
+  // Mapeia os produtos para o formato que o Google exige
+  const productUrls: MetadataRoute.Sitemap = (products || []).map((product) => {
+    // Usa o slug limpo do banco. Fallback de segurança mantido.
+    const productSlug = product.slug || `${product.id}-${product.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
 
-    // Rotas Dinâmicas (Produtos)
-    // Selecionamos apenas o necessário para economizar banda
-    const { data: products, error } = await supabase
-        .from('produtos')
-        .select('id, created_at');
+    return {
+      url: `${baseUrl}/produto/${productSlug}`,
+      lastModified: new Date(product.created_at || new Date()),
+      changeFrequency: 'weekly',
+      priority: 0.8, // Prioridade alta para produtos
+    };
+  });
 
-    if (error) {
-        console.error('Erro ao gerar sitemap de produtos:', error);
+  // Define as rotas estáticas principais do seu funil
+  const staticUrls: MetadataRoute.Sitemap = [
+    {
+      url: `${baseUrl}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 1.0, // Home é a página mais importante
+    },
+    {
+      url: `${baseUrl}/rifa`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9, // Alto volume de tráfego, manter indexado frequentemente
+    },
+    {
+      url: `${baseUrl}/carrinho`,
+      lastModified: new Date(),
+      changeFrequency: 'never',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/historico`,
+      lastModified: new Date(),
+      changeFrequency: 'never',
+      priority: 0.5,
     }
+  ];
 
-    const productRoutes = products?.map((product) => ({
-        url: `${baseUrl}/produto/${product.id}`,
-        lastModified: product.created_at, // O Google ama saber quando o conteúdo foi criado/atualizado
-        changeFrequency: 'weekly' as const,
-        priority: 0.8, // Produtos são importantes, mas menos que a Home
-    })) || [];
-
-    return [...staticMap, ...productRoutes];
+  return [...staticUrls, ...productUrls];
 }
+
