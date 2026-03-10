@@ -31,13 +31,11 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         return p.preco_promocional;
     };
 
-    // Função vital para CRO: Normaliza strings para a busca ignorar acentos e capitulação
     const normalizeString = (str: string) => {
         if (!str) return '';
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     };
 
-    // O filtro é calculado diretamente na renderização. Fim do useEffect e do estado duplicado.
     const filteredProducts = products.filter(product => {
         const term = normalizeString(searchTerm);
         const matchSearch =
@@ -58,7 +56,12 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         } else if (sortType === 'za') {
             return b.nome.localeCompare(a.nome);
         } else {
-            // Lógica Padrão: Mais recentes primeiro
+            const aHasPromo = a.preco_promocional && a.preco_promocional > 0 && a.preco_promocional < a.preco;
+            const bHasPromo = b.preco_promocional && b.preco_promocional > 0 && b.preco_promocional < b.preco;
+
+            if (aHasPromo && !bHasPromo) return -1;
+            if (!aHasPromo && bHasPromo) return 1;
+
             const limitDate = new Date();
             limitDate.setDate(limitDate.getDate() - diasNovo);
             const aNew = a.created_at && new Date(a.created_at) > limitDate;
@@ -66,6 +69,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
             if (aNew && !bNew) return -1;
             if (!aNew && bNew) return 1;
+
             return a.nome.localeCompare(b.nome);
         }
     });
