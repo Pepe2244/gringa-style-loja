@@ -10,9 +10,16 @@ import { useToast } from '@/context/ToastContext';
 import { reservarNumerosRifa } from '@/app/actions/rifa';
 import { Trophy } from 'lucide-react';
 
+// GROWTH HACK TÉCNICO: Forçamos o TypeScript a aceitar a nova coluna do banco
+// sem precisarmos reescrever os arquivos globais de tipagem agora.
+interface RifaFront extends Omit<Rifa, 'status'> {
+    status: 'ativa' | 'finalizada' | 'cancelada' | string;
+    numero_vencedor?: number | null;
+}
+
 export default function RifaPage() {
     const { showToast } = useToast();
-    const [rifa, setRifa] = useState<Rifa | null>(null);
+    const [rifa, setRifa] = useState<RifaFront | null>(null);
     const [premios, setPremios] = useState<Premio[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
@@ -31,7 +38,6 @@ export default function RifaPage() {
     const fetchRifa = async (showLoadingState = true) => {
         if (showLoadingState) setLoading(true);
         try {
-            // GROWTH HACK LÓGICO: Primeiro tenta achar uma rifa ATIVA.
             let { data: rifaData, error: rifaError } = await supabase
                 .from('rifas')
                 .select('*')
@@ -40,7 +46,6 @@ export default function RifaPage() {
                 .limit(1)
                 .maybeSingle();
 
-            // Se não tem ativa, pega a ÚLTIMA FINALIZADA para mostrar o vencedor!
             if (!rifaData) {
                 const { data: lastRifa } = await supabase
                     .from('rifas')
@@ -54,7 +59,7 @@ export default function RifaPage() {
             }
 
             if (rifaData) {
-                setRifa(rifaData);
+                setRifa(rifaData as RifaFront);
 
                 setSelectedNumbers(current => {
                     const sold = new Set(rifaData.numeros_vendidos || []);
@@ -80,7 +85,6 @@ export default function RifaPage() {
     };
 
     const toggleNumber = (number: number) => {
-        // Trava de segurança absoluta
         if (rifa?.status === 'finalizada') {
             showToast('Esta rifa já foi encerrada.', 'error');
             return;
@@ -176,7 +180,6 @@ export default function RifaPage() {
     const soldSet = new Set(rifa.numeros_vendidos || []);
     const reservedSet = new Set(rifa.numeros_reservados || []);
 
-    // A RIFA ACABA SE ESGOTAR OU SE O STATUS FOR FINALIZADA
     const isFinished = rifa.status === 'finalizada';
     const isSoldOut = soldSet.size >= rifa.total_numeros || isFinished;
 
@@ -191,7 +194,6 @@ export default function RifaPage() {
                     <Image src={imageUrl} alt="Prêmio da Rifa" fill priority sizes="(max-width: 768px) 100vw, 600px" className="rifa-imagem-premio object-cover rounded-lg" />
                 </div>
 
-                {/* EXIBIÇÃO DO VENCEDOR (ISSO FALTAVA!) */}
                 {isFinished && (
                     <div style={{ background: 'rgba(255, 165, 0, 0.1)', border: '2px solid orange', padding: '20px', borderRadius: '10px', marginBottom: '20px', textAlign: 'center' }}>
                         <Trophy size={48} color="orange" style={{ margin: '0 auto 10px' }} />
@@ -261,7 +263,6 @@ export default function RifaPage() {
                             <div
                                 key={i}
                                 className={`numero-rifa ${isOccupied ? 'ocupado' : ''} ${isSelected ? 'selecionado' : ''}`}
-                                // TRAVA DE CLIQUE SE ESTIVER FINALIZADO
                                 onClick={() => !isOccupied && !isFinished && !isSoldOut && toggleNumber(i)}
                                 style={{ opacity: isFinished ? 0.5 : 1, cursor: isFinished || isOccupied ? 'not-allowed' : 'pointer' }}
                             >

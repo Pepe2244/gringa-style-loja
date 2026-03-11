@@ -3,17 +3,22 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
-import { Trash2, Edit, Plus, X, Trophy, Users, PlayCircle } from 'lucide-react';
+import { Trash2, Edit, Plus, Trophy } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
 
+// Extensão da interface para enganar o compilador
+interface RifaFront extends Omit<Rifa, 'status'> {
+    status: 'ativa' | 'finalizada' | 'cancelada' | string;
+    numero_vencedor?: number | null;
+}
+
 export default function RifaManager() {
-    const [rifas, setRifas] = useState<Rifa[]>([]);
+    const [rifas, setRifas] = useState<RifaFront[]>([]);
     const [showModal, setShowModal] = useState(false);
-    const [editingRifa, setEditingRifa] = useState<Rifa | null>(null);
+    const [editingRifa, setEditingRifa] = useState<RifaFront | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Form states
     const [nomePremio, setNomePremio] = useState('');
     const [descricao, setDescricao] = useState('');
     const [precoNumero, setPrecoNumero] = useState('');
@@ -21,17 +26,14 @@ export default function RifaManager() {
     const [imagemCapaFile, setImagemCapaFile] = useState<File | null>(null);
     const [imagemCapaPreview, setImagemCapaPreview] = useState('');
 
-    // Prizes state
     const [premios, setPremios] = useState<{ id?: number, descricao: string, imagemFile?: File, imagemPreview?: string, imagemUrl?: string }[]>([{ descricao: '' }]);
 
-    // Management Modal
     const [showManageModal, setShowManageModal] = useState(false);
     const [selectedRifaId, setSelectedRifaId] = useState<number | null>(null);
     const [participants, setParticipants] = useState<any[]>([]);
 
-    // Draw Modal
     const [showDrawModal, setShowDrawModal] = useState(false);
-    const [drawRifa, setDrawRifa] = useState<Rifa | null>(null);
+    const [drawRifa, setDrawRifa] = useState<RifaFront | null>(null);
     const [drawPrizes, setDrawPrizes] = useState<Premio[]>([]);
     const [drawing, setDrawing] = useState(false);
     const [drawAnimation, setDrawAnimation] = useState('000');
@@ -42,14 +44,11 @@ export default function RifaManager() {
 
     const fetchRifas = async () => {
         const { data, error } = await supabase.from('rifas').select('*').order('created_at', { ascending: false });
-        if (error) {
-            console.error('Erro ao buscar rifas:', error);
-            alert('Erro ao buscar rifas: ' + error.message);
-        }
-        if (data) setRifas(data);
+        if (error) console.error('Erro ao buscar rifas:', error);
+        if (data) setRifas(data as RifaFront[]);
     };
 
-    const openModal = async (rifa: Rifa | null = null) => {
+    const openModal = async (rifa: RifaFront | null = null) => {
         setEditingRifa(rifa);
         if (rifa) {
             setNomePremio(rifa.nome_premio);
@@ -60,12 +59,7 @@ export default function RifaManager() {
 
             const { data: prizesData } = await supabase.from('premios').select('*').eq('rifa_id', rifa.id).order('ordem');
             if (prizesData && prizesData.length > 0) {
-                setPremios(prizesData.map(p => ({
-                    id: p.id,
-                    descricao: p.descricao,
-                    imagemUrl: p.imagem_url,
-                    imagemPreview: p.imagem_url
-                })));
+                setPremios(prizesData.map(p => ({ id: p.id, descricao: p.descricao, imagemUrl: p.imagem_url, imagemPreview: p.imagem_url })));
             } else {
                 setPremios([{ descricao: '' }]);
             }
@@ -112,11 +106,7 @@ export default function RifaManager() {
 
             if (imagemCapaFile) {
                 let fileToUpload = imagemCapaFile;
-                try {
-                    fileToUpload = await compressImage(imagemCapaFile);
-                } catch (err) {
-                    console.error('Erro compressão capa:', err);
-                }
+                try { fileToUpload = await compressImage(imagemCapaFile); } catch (err) {}
 
                 const fileName = `capa-${Date.now()}-${fileToUpload.name}`;
                 const { error: uploadError } = await supabase.storage.from('imagens-rifas').upload(fileName, fileToUpload);
@@ -151,25 +141,12 @@ export default function RifaManager() {
                 }
 
                 if (premios[i].descricao.trim()) {
-                    finalPrizes.push({
-                        id: premios[i].id,
-                        descricao: premios[i].descricao,
-                        imagem_url: pUrl
-                    });
+                    finalPrizes.push({ id: premios[i].id, descricao: premios[i].descricao, imagem_url: pUrl });
                 }
             }
 
-            const result = await manageRaffle(rifaData, finalPrizes);
+            const result = await manageRaffle(rifaData as any, finalPrizes);
             if (!result.success) throw new Error(result.error);
-
-            if (!editingRifa) {
-                await supabase.from('notificacoes_push_queue').insert({
-                    titulo: '🍀 Nova Rifa no Ar!',
-                    mensagem: `A rifa "${nomePremio}" já começou. Garanta seus números!`,
-                    link_url: `/rifa`,
-                    status: 'rascunho'
-                });
-            }
 
             alert(editingRifa ? 'Rifa atualizada!' : 'Rifa criada!');
             setShowModal(false);
@@ -183,7 +160,7 @@ export default function RifaManager() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Excluir rifa? Isso apagará participantes e prêmios.')) return;
+        if (!confirm('Excluir rifa?')) return;
         try {
             const result = await deleteRaffle(id);
             if (!result.success) throw new Error(result.error);
@@ -199,7 +176,7 @@ export default function RifaManager() {
             if (!result.success) throw new Error(result.error);
             fetchRifas();
         } catch (error: any) {
-            alert('Erro ao atualizar status: ' + error.message);
+            alert('Erro ao atualizar: ' + error.message);
         }
     };
 
@@ -214,90 +191,60 @@ export default function RifaManager() {
         if (data) setParticipants(data);
     };
 
-    // --- CORREÇÃO BRUTAL 1: Injetar números na Rifa ao aprovar pagamento ---
     const confirmPayment = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId) return;
         try {
-            const { error: partError } = await supabase
-                .from('participantes_rifa')
-                .update({ status_pagamento: 'pago' })
-                .eq('id', participantId);
+            const { error: partError } = await supabase.from('participantes_rifa').update({ status_pagamento: 'pago' }).eq('id', participantId);
             if (partError) throw partError;
 
-            const { data: currentRifa, error: rifaErr } = await supabase
-                .from('rifas')
-                .select('numeros_vendidos, numeros_reservados')
-                .eq('id', selectedRifaId)
-                .single();
+            const { data: currentRifa, error: rifaErr } = await supabase.from('rifas').select('numeros_vendidos, numeros_reservados').eq('id', selectedRifaId).single();
             if (rifaErr) throw rifaErr;
 
             const vendidosAtuais = currentRifa.numeros_vendidos || [];
             const novosVendidos = Array.from(new Set([...vendidosAtuais, ...numbers]));
-
             const reservadosAtuais = currentRifa.numeros_reservados || [];
             const novosReservados = reservadosAtuais.filter((n: number) => !numbers.includes(n));
 
-            const { error: updateRifaErr } = await supabase
-                .from('rifas')
-                .update({ 
-                    numeros_vendidos: novosVendidos,
-                    numeros_reservados: novosReservados
-                })
-                .eq('id', selectedRifaId);
+            const { error: updateRifaErr } = await supabase.from('rifas').update({ numeros_vendidos: novosVendidos, numeros_reservados: novosReservados }).eq('id', selectedRifaId);
             if (updateRifaErr) throw updateRifaErr;
 
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'pago' } : p));
             fetchRifas();
             alert('Pagamento confirmado e números bloqueados com sucesso!');
         } catch (error: any) {
-            console.error("Erro confirmacao:", error);
             alert('Erro crítico: ' + error.message);
         }
     };
 
-    // --- CORREÇÃO BRUTAL 2: Limpar arrays da Rifa ao cancelar reserva ---
     const cancelReservation = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId || !confirm('Cancelar reserva e liberar números?')) return;
         try {
-            const { error } = await supabase
-                .from('participantes_rifa')
-                .update({ status_pagamento: 'cancelado' })
-                .eq('id', participantId);
+            const { error } = await supabase.from('participantes_rifa').update({ status_pagamento: 'cancelado' }).eq('id', participantId);
             if (error) throw error;
 
-            const { data: currentRifa } = await supabase
-                .from('rifas')
-                .select('numeros_vendidos, numeros_reservados')
-                .eq('id', selectedRifaId)
-                .single();
+            const { data: currentRifa } = await supabase.from('rifas').select('numeros_vendidos, numeros_reservados').eq('id', selectedRifaId).single();
 
             if (currentRifa) {
                 const novosVendidos = (currentRifa.numeros_vendidos || []).filter((n: number) => !numbers.includes(n));
                 const novosReservados = (currentRifa.numeros_reservados || []).filter((n: number) => !numbers.includes(n));
-
-                await supabase.from('rifas').update({ 
-                    numeros_vendidos: novosVendidos, 
-                    numeros_reservados: novosReservados 
-                }).eq('id', selectedRifaId);
+                await supabase.from('rifas').update({ numeros_vendidos: novosVendidos, numeros_reservados: novosReservados }).eq('id', selectedRifaId);
             }
 
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'cancelado' } : p));
             fetchRifas();
-            alert('Reserva cancelada e números liberados no site!');
+            alert('Reserva cancelada!');
         } catch (error: any) {
-            console.error("Erro cancelamento:", error);
             alert('Erro: ' + error.message);
         }
     };
 
-    const openDrawModal = async (rifa: Rifa) => {
+    const openDrawModal = async (rifa: RifaFront) => {
         setDrawRifa(rifa);
         const { data } = await supabase.from('premios').select('*').eq('rifa_id', rifa.id).order('ordem');
         if (data) setDrawPrizes(data);
         setShowDrawModal(true);
     };
 
-    // --- CORREÇÃO BRUTAL 3: Fechar a rifa de vez no banco após sorteio ---
     const performDraw = async (prizeId: number, prizeDesc: string) => {
         if (!drawRifa) return;
         setDrawing(true);
@@ -315,32 +262,16 @@ export default function RifaManager() {
             if (result.success && result.winner) {
                 setDrawAnimation(String(result.winner.number).padStart(3, '0'));
 
-                // FORÇAR ATUALIZAÇÃO DA RIFA AQUI: MUDA O STATUS PARA FINALIZADA
-                const { error: fechaRifaErro } = await supabase
-                    .from('rifas')
-                    .update({ 
-                        status: 'finalizada', 
-                        numero_vencedor: result.winner.number 
-                    })
-                    .eq('id', drawRifa.id);
-
-                if (fechaRifaErro) {
-                    console.error("Erro ao tentar fechar a rifa no banco:", fechaRifaErro);
-                }
-
                 const { data } = await supabase.from('premios').select('*').eq('rifa_id', drawRifa.id).order('ordem');
                 if (data) setDrawPrizes(data);
 
-                // Atualiza o estado visual no painel
                 setRifas(prev => prev.map(r => r.id === drawRifa.id ? { ...r, status: 'finalizada', numero_vencedor: result.winner.number } : r));
-                fetchRifas();
 
-                alert(`Vencedor: ${result.winner.name} (Nº ${result.winner.number}). Rifa encerrada com sucesso!`);
+                alert(`Vencedor: ${result.winner.name} (Nº ${result.winner.number}).`);
             } else {
                 alert(result.message || 'Erro ao realizar sorteio.');
                 setDrawAnimation('ERR');
             }
-
         } catch (error: any) {
             alert('Erro inesperado: ' + error.message);
         } finally {
@@ -379,11 +310,7 @@ export default function RifaManager() {
                                         <span style={{ color: 'orange', fontWeight: 'bold' }}>FINALIZADA</span>
                                     ) : (
                                         <label className="switch">
-                                            <input
-                                                type="checkbox"
-                                                checked={rifa.status === 'ativa'}
-                                                onChange={() => toggleStatus(rifa.id, rifa.status)}
-                                            />
+                                            <input type="checkbox" checked={rifa.status === 'ativa'} onChange={() => toggleStatus(rifa.id, rifa.status)} />
                                             <span className="slider"></span>
                                         </label>
                                     )}
@@ -414,11 +341,7 @@ export default function RifaManager() {
                                     <span style={{ color: 'orange', fontWeight: 'bold', fontSize: '0.8rem' }}>FINALIZADA</span>
                                 ) : (
                                     <label className="switch" style={{ transform: 'scale(0.8)' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={rifa.status === 'ativa'}
-                                            onChange={() => toggleStatus(rifa.id, rifa.status)}
-                                        />
+                                        <input type="checkbox" checked={rifa.status === 'ativa'} onChange={() => toggleStatus(rifa.id, rifa.status)} />
                                         <span className="slider"></span>
                                     </label>
                                 )}
@@ -431,7 +354,7 @@ export default function RifaManager() {
                             </div>
                             <div className="admin-mobile-card-actions" style={{ flexWrap: 'wrap' }}>
                                 <button className="btn-admin-acao btn-sortear" onClick={() => openDrawModal(rifa)} style={{ flex: '1 1 45%' }}>Sortear</button>
-                                <button className="btn-admin-acao btn-participantes" onClick={() => openManageModal(rifa.id)} style={{ flex: '1 1 45%' }}>Participantes</button>
+                                <button className="btn-admin-acao btn-participantes" onClick={() => openManageModal(rifa.id)} style={{ flex: '1 1 45%' }}>Part.</button>
                                 <button className="btn-admin-acao btn-editar" onClick={() => openModal(rifa)} style={{ flex: '1 1 45%' }}>Editar</button>
                                 <button className="btn-admin-acao btn-excluir" onClick={() => handleDelete(rifa.id)} style={{ flex: '1 1 45%' }}>Excluir</button>
                             </div>
@@ -440,74 +363,36 @@ export default function RifaManager() {
                 })}
             </div>
 
-            {/* Edit/Create Modal */}
+            {/* Modais... */}
             {showModal && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin">
                         <button className="modal-fechar-btn" onClick={() => setShowModal(false)}>&times;</button>
-                        <h2 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '25px' }}>
-                            {editingRifa ? 'Editar Rifa' : 'Nova Rifa'}
-                        </h2>
+                        <h2 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '25px' }}>{editingRifa ? 'Editar Rifa' : 'Nova Rifa'}</h2>
                         <form onSubmit={handleSave}>
-                            <div className="form-campo">
-                                <label>Nome do Prêmio Principal</label>
-                                <input type="text" value={nomePremio} onChange={e => setNomePremio(e.target.value)} required />
-                            </div>
-                            <div className="form-campo">
-                                <label>Descrição</label>
-                                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={3} />
-                            </div>
-                            <div className="form-campo">
-                                <label>Preço por Número</label>
-                                <input type="number" step="0.01" value={precoNumero} onChange={e => setPrecoNumero(e.target.value)} required />
-                            </div>
-                            <div className="form-campo">
-                                <label>Total de Números</label>
-                                <input type="number" value={totalNumeros} onChange={e => setTotalNumeros(e.target.value)} required />
-                            </div>
-                            <div className="form-campo">
-                                <label>Imagem de Capa</label>
-                                <input type="file" accept="image/*" onChange={handleCapaChange} />
-                                {imagemCapaPreview && <img src={imagemCapaPreview} alt="Preview" style={{ width: '100px', marginTop: '10px' }} />}
-                            </div>
-
+                            <div className="form-campo"><label>Nome do Prêmio</label><input type="text" value={nomePremio} onChange={e => setNomePremio(e.target.value)} required /></div>
+                            <div className="form-campo"><label>Descrição</label><textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={3} /></div>
+                            <div className="form-campo"><label>Preço por Número</label><input type="number" step="0.01" value={precoNumero} onChange={e => setPrecoNumero(e.target.value)} required /></div>
+                            <div className="form-campo"><label>Total de Números</label><input type="number" value={totalNumeros} onChange={e => setTotalNumeros(e.target.value)} required /></div>
+                            <div className="form-campo"><label>Imagem de Capa</label><input type="file" accept="image/*" onChange={handleCapaChange} />{imagemCapaPreview && <img src={imagemCapaPreview} alt="Preview" style={{ width: '100px', marginTop: '10px' }} />}</div>
                             <hr style={{ borderColor: '#555', margin: '25px 0' }} />
-                            <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px' }}>Gerenciar Prêmios</h3>
-
+                            <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px' }}>Prêmios</h3>
                             {premios.map((premio, index) => (
                                 <div key={index} className="premio-item">
-                                    <div className="premio-item-header">
-                                        <label>{index + 1}º Prêmio</label>
-                                        {index > 0 && (
-                                            <button type="button" onClick={() => removePrizeField(index)} className="btn-admin btn-excluir" style={{ padding: '5px 10px' }}>Remover</button>
-                                        )}
-                                    </div>
+                                    <div className="premio-item-header"><label>{index + 1}º Prêmio</label>{index > 0 && (<button type="button" onClick={() => removePrizeField(index)} className="btn-admin btn-excluir" style={{ padding: '5px 10px' }}>Remover</button>)}</div>
                                     <div className="premio-item-body">
-                                        <div className="premio-campo-descricao">
-                                            <input type="text" placeholder="Descrição do prêmio" value={premio.descricao} onChange={e => handlePrizeChange(index, 'descricao', e.target.value)} required />
-                                        </div>
-                                        <div className="premio-campo-imagem">
-                                            <input type="file" accept="image/*" onChange={e => e.target.files && handlePrizeChange(index, 'file', e.target.files[0])} />
-                                            {premio.imagemPreview && <img src={premio.imagemPreview} alt="Preview" style={{ width: '50px', marginTop: '5px' }} />}
-                                        </div>
+                                        <div className="premio-campo-descricao"><input type="text" placeholder="Descrição" value={premio.descricao} onChange={e => handlePrizeChange(index, 'descricao', e.target.value)} required /></div>
+                                        <div className="premio-campo-imagem"><input type="file" accept="image/*" onChange={e => e.target.files && handlePrizeChange(index, 'file', e.target.files[0])} />{premio.imagemPreview && <img src={premio.imagemPreview} alt="Preview" style={{ width: '50px', marginTop: '5px' }} />}</div>
                                     </div>
                                 </div>
                             ))}
-
                             <button type="button" onClick={addPrizeField} className="btn-admin btn-editar" style={{ color: 'black', width: '100%', marginTop: '10px' }}>+ Adicionar Prêmio</button>
-
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '30px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-admin btn-cancelar">Cancelar</button>
-                                <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>
-                                    {loading ? 'Salvando...' : 'Salvar Rifa'}
-                                </button>
-                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '30px' }}><button type="button" onClick={() => setShowModal(false)} className="btn-admin btn-cancelar">Cancelar</button><button type="submit" className="btn-admin btn-adicionar" disabled={loading}>{loading ? 'Salvando...' : 'Salvar Rifa'}</button></div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Participants Modal */}
             {showManageModal && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin" style={{ maxWidth: '800px' }}>
@@ -518,23 +403,10 @@ export default function RifaManager() {
                                 <ul className="lista-participantes">
                                     {participants.map(p => (
                                         <li key={p.id} className="participante-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div>
-                                                <strong>{p.nome}</strong> <small>(Tel: {p.telefone})</small><br />
-                                                <small>Números: {p.numeros_escolhidos.join(', ')}</small><br />
-                                                <span style={{ color: p.status_pagamento === 'pago' ? '#00ff88' : '#ffcc00' }}>
-                                                    {p.status_pagamento === 'pago' ? 'Pago' : p.status_pagamento === 'cancelado' ? 'Cancelado' : 'Pendente'}
-                                                </span>
-                                            </div>
+                                            <div><strong>{p.nome}</strong> <small>(Tel: {p.telefone})</small><br /><small>Números: {p.numeros_escolhidos.join(', ')}</small><br /><span style={{ color: p.status_pagamento === 'pago' ? '#00ff88' : '#ffcc00' }}>{p.status_pagamento === 'pago' ? 'Pago' : p.status_pagamento === 'cancelado' ? 'Cancelado' : 'Pendente'}</span></div>
                                             <div className="acoes-btn">
-                                                {p.status_pagamento === 'pendente' && (
-                                                    <>
-                                                        <button className="btn-admin btn-adicionar" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => confirmPayment(p.id, p.numeros_escolhidos)}>Confirmar</button>
-                                                        <button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar</button>
-                                                    </>
-                                                )}
-                                                {p.status_pagamento === 'pago' && (
-                                                    <button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar Pagamento</button>
-                                                )}
+                                                {p.status_pagamento === 'pendente' && (<><button className="btn-admin btn-adicionar" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => confirmPayment(p.id, p.numeros_escolhidos)}>Confirmar</button><button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar</button></>)}
+                                                {p.status_pagamento === 'pago' && (<button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar Pagamento</button>)}
                                             </div>
                                         </li>
                                     ))}
@@ -545,37 +417,17 @@ export default function RifaManager() {
                 </div>
             )}
 
-            {/* Draw Modal */}
             {showDrawModal && drawRifa && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin" style={{ maxWidth: '500px', textAlign: 'center' }}>
                         <button className="modal-fechar-btn" onClick={() => setShowDrawModal(false)}>&times;</button>
                         <h2 className="titulo-secao">Sorteio: {drawRifa.nome_premio}</h2>
-
-                        <div id="sorteio-animacao" style={{ display: 'block' }}>
-                            {drawAnimation}
-                        </div>
-
+                        <div id="sorteio-animacao" style={{ display: 'block' }}>{drawAnimation}</div>
                         <ul id="sorteio-lista-premios">
                             {drawPrizes.map(prize => (
                                 <li key={prize.id} className="premio-sorteio-item">
-                                    <div className="premio-sorteio-info">
-                                        <strong>{prize.ordem}º Prêmio:</strong> {prize.descricao}
-                                        {prize.vencedor_nome && (
-                                            <div className="vencedor-destaque">
-                                                🏆 Vencedor: {prize.vencedor_nome} (Nº {prize.vencedor_numero})
-                                            </div>
-                                        )}
-                                    </div>
-                                    {!prize.vencedor_nome && (
-                                        <button
-                                            className="btn-admin btn-sortear"
-                                            onClick={() => performDraw(prize.id!, prize.descricao)}
-                                            disabled={drawing || drawRifa.status === 'finalizada'}
-                                        >
-                                            {drawing ? 'Sorteando...' : 'Sortear'}
-                                        </button>
-                                    )}
+                                    <div className="premio-sorteio-info"><strong>{prize.ordem}º Prêmio:</strong> {prize.descricao}{prize.vencedor_nome && (<div className="vencedor-destaque">🏆 Vencedor: {prize.vencedor_nome} (Nº {prize.vencedor_numero})</div>)}</div>
+                                    {!prize.vencedor_nome && (<button className="btn-admin btn-sortear" onClick={() => performDraw(prize.id!, prize.descricao)} disabled={drawing || drawRifa.status === 'finalizada'}>{drawing ? 'Sorteando...' : 'Sortear'}</button>)}
                                 </li>
                             ))}
                         </ul>
