@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import { Trash2, Edit, Plus, X, Trophy, Users, PlayCircle } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
-// Importamos as novas server actions
 import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
 
 export default function RifaManager() {
@@ -59,7 +58,6 @@ export default function RifaManager() {
             setTotalNumeros(String(rifa.total_numeros));
             setImagemCapaPreview(rifa.imagem_premio_url || '');
 
-            // Fetch prizes
             const { data: prizesData } = await supabase.from('premios').select('*').eq('rifa_id', rifa.id).order('ordem');
             if (prizesData && prizesData.length > 0) {
                 setPremios(prizesData.map(p => ({
@@ -102,13 +100,8 @@ export default function RifaManager() {
         setPremios(newPremios);
     };
 
-    const addPrizeField = () => {
-        setPremios([...premios, { descricao: '' }]);
-    };
-
-    const removePrizeField = (index: number) => {
-        setPremios(premios.filter((_, i) => i !== index));
-    };
+    const addPrizeField = () => setPremios([...premios, { descricao: '' }]);
+    const removePrizeField = (index: number) => setPremios(premios.filter((_, i) => i !== index));
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -117,7 +110,6 @@ export default function RifaManager() {
         try {
             let capaUrl = editingRifa ? editingRifa.imagem_premio_url : null;
 
-            // 1. Upload Capa (Client-side upload is fine for public buckets usually)
             if (imagemCapaFile) {
                 let fileToUpload = imagemCapaFile;
                 try {
@@ -135,7 +127,7 @@ export default function RifaManager() {
             }
 
             const rifaData = {
-                id: editingRifa?.id, // Pass ID if editing
+                id: editingRifa?.id,
                 nome_premio: nomePremio,
                 descricao,
                 preco_numero: parseFloat(precoNumero),
@@ -144,18 +136,12 @@ export default function RifaManager() {
                 status: editingRifa ? editingRifa.status : 'ativa'
             };
 
-            // 2. Upload Prize Images & Prepare Data
             const finalPrizes = [];
             for (let i = 0; i < premios.length; i++) {
                 let pUrl = premios[i].imagemUrl;
                 if (premios[i].imagemFile) {
                     let pFile = premios[i].imagemFile!;
-                    try {
-                        pFile = await compressImage(pFile);
-                    } catch (err) {
-                        console.error('Erro compressão premio:', err);
-                    }
-                    // Use a temp ID for filename if rifa doesn't exist yet, safe enough
+                    try { pFile = await compressImage(pFile); } catch (err) {}
                     const pName = `premio-${Date.now()}-${i}-${pFile.name}`;
                     const { error: pUpErr } = await supabase.storage.from('imagens-premios').upload(pName, pFile);
                     if (pUpErr) throw new Error('Erro upload prêmio: ' + pUpErr.message);
@@ -173,14 +159,9 @@ export default function RifaManager() {
                 }
             }
 
-            // 3. Call Server Action to Save to DB
             const result = await manageRaffle(rifaData, finalPrizes);
+            if (!result.success) throw new Error(result.error);
 
-            if (!result.success) {
-                throw new Error(result.error);
-            }
-
-            // 4. Notifications (Optional, keep on client or move to server action)
             if (!editingRifa) {
                 await supabase.from('notificacoes_push_queue').insert({
                     titulo: '🍀 Nova Rifa no Ar!',
@@ -206,7 +187,6 @@ export default function RifaManager() {
         try {
             const result = await deleteRaffle(id);
             if (!result.success) throw new Error(result.error);
-
             fetchRifas();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
@@ -217,18 +197,12 @@ export default function RifaManager() {
         try {
             const result = await toggleRaffleStatus(id, currentStatus);
             if (!result.success) throw new Error(result.error);
-
-            if (result.newStatus === 'finalizada') {
-                // Optionally trigger notification here or in server action
-            }
-
             fetchRifas();
         } catch (error: any) {
             alert('Erro ao atualizar status: ' + error.message);
         }
     };
 
-    // --- Management Logic (Keep Client Side Reads for now) ---
     const openManageModal = async (rifaId: number) => {
         setSelectedRifaId(rifaId);
         setShowManageModal(true);
@@ -240,43 +214,82 @@ export default function RifaManager() {
         if (data) setParticipants(data);
     };
 
+    // --- CORREÇÃO BRUTAL 1: Injetar números na Rifa ao aprovar pagamento ---
     const confirmPayment = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId) return;
         try {
-            const { error } = await supabase
+            const { error: partError } = await supabase
                 .from('participantes_rifa')
                 .update({ status_pagamento: 'pago' })
                 .eq('id', participantId);
+            if (partError) throw partError;
 
-            if (error) throw error;
+            const { data: currentRifa, error: rifaErr } = await supabase
+                .from('rifas')
+                .select('numeros_vendidos, numeros_reservados')
+                .eq('id', selectedRifaId)
+                .single();
+            if (rifaErr) throw rifaErr;
+
+            const vendidosAtuais = currentRifa.numeros_vendidos || [];
+            const novosVendidos = Array.from(new Set([...vendidosAtuais, ...numbers]));
+
+            const reservadosAtuais = currentRifa.numeros_reservados || [];
+            const novosReservados = reservadosAtuais.filter((n: number) => !numbers.includes(n));
+
+            const { error: updateRifaErr } = await supabase
+                .from('rifas')
+                .update({ 
+                    numeros_vendidos: novosVendidos,
+                    numeros_reservados: novosReservados
+                })
+                .eq('id', selectedRifaId);
+            if (updateRifaErr) throw updateRifaErr;
 
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'pago' } : p));
-            alert('Pagamento confirmado!');
+            fetchRifas();
+            alert('Pagamento confirmado e números bloqueados com sucesso!');
         } catch (error: any) {
             console.error("Erro confirmacao:", error);
-            alert('Erro: ' + error.message);
+            alert('Erro crítico: ' + error.message);
         }
     };
 
+    // --- CORREÇÃO BRUTAL 2: Limpar arrays da Rifa ao cancelar reserva ---
     const cancelReservation = async (participantId: number, numbers: number[]) => {
-        if (!selectedRifaId || !confirm('Cancelar reserva?')) return;
+        if (!selectedRifaId || !confirm('Cancelar reserva e liberar números?')) return;
         try {
             const { error } = await supabase
                 .from('participantes_rifa')
                 .update({ status_pagamento: 'cancelado' })
                 .eq('id', participantId);
-
             if (error) throw error;
 
+            const { data: currentRifa } = await supabase
+                .from('rifas')
+                .select('numeros_vendidos, numeros_reservados')
+                .eq('id', selectedRifaId)
+                .single();
+
+            if (currentRifa) {
+                const novosVendidos = (currentRifa.numeros_vendidos || []).filter((n: number) => !numbers.includes(n));
+                const novosReservados = (currentRifa.numeros_reservados || []).filter((n: number) => !numbers.includes(n));
+
+                await supabase.from('rifas').update({ 
+                    numeros_vendidos: novosVendidos, 
+                    numeros_reservados: novosReservados 
+                }).eq('id', selectedRifaId);
+            }
+
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'cancelado' } : p));
-            alert('Reserva cancelada!');
+            fetchRifas();
+            alert('Reserva cancelada e números liberados no site!');
         } catch (error: any) {
             console.error("Erro cancelamento:", error);
             alert('Erro: ' + error.message);
         }
     };
 
-    // --- Draw Logic ---
     const openDrawModal = async (rifa: Rifa) => {
         setDrawRifa(rifa);
         const { data } = await supabase.from('premios').select('*').eq('rifa_id', rifa.id).order('ordem');
@@ -284,6 +297,7 @@ export default function RifaManager() {
         setShowDrawModal(true);
     };
 
+    // --- CORREÇÃO BRUTAL 3: Fechar a rifa de vez no banco após sorteio ---
     const performDraw = async (prizeId: number, prizeDesc: string) => {
         if (!drawRifa) return;
         setDrawing(true);
@@ -296,16 +310,32 @@ export default function RifaManager() {
             }, 50);
 
             const result = await drawWinner(drawRifa.id, prizeId, prizeDesc);
-
             clearInterval(interval);
 
             if (result.success && result.winner) {
                 setDrawAnimation(String(result.winner.number).padStart(3, '0'));
 
+                // FORÇAR ATUALIZAÇÃO DA RIFA AQUI: MUDA O STATUS PARA FINALIZADA
+                const { error: fechaRifaErro } = await supabase
+                    .from('rifas')
+                    .update({ 
+                        status: 'finalizada', 
+                        numero_vencedor: result.winner.number 
+                    })
+                    .eq('id', drawRifa.id);
+
+                if (fechaRifaErro) {
+                    console.error("Erro ao tentar fechar a rifa no banco:", fechaRifaErro);
+                }
+
                 const { data } = await supabase.from('premios').select('*').eq('rifa_id', drawRifa.id).order('ordem');
                 if (data) setDrawPrizes(data);
 
-                alert(`Vencedor: ${result.winner.name} (Nº ${result.winner.number})`);
+                // Atualiza o estado visual no painel
+                setRifas(prev => prev.map(r => r.id === drawRifa.id ? { ...r, status: 'finalizada', numero_vencedor: result.winner.number } : r));
+                fetchRifas();
+
+                alert(`Vencedor: ${result.winner.name} (Nº ${result.winner.number}). Rifa encerrada com sucesso!`);
             } else {
                 alert(result.message || 'Erro ao realizar sorteio.');
                 setDrawAnimation('ERR');
@@ -345,14 +375,18 @@ export default function RifaManager() {
                                 <td>{rifa.nome_premio}</td>
                                 <td>{sold} / {rifa.total_numeros} ({percent.toFixed(1)}%)</td>
                                 <td>
-                                    <label className="switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={rifa.status === 'ativa'}
-                                            onChange={() => toggleStatus(rifa.id, rifa.status)}
-                                        />
-                                        <span className="slider"></span>
-                                    </label>
+                                    {rifa.status === 'finalizada' ? (
+                                        <span style={{ color: 'orange', fontWeight: 'bold' }}>FINALIZADA</span>
+                                    ) : (
+                                        <label className="switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={rifa.status === 'ativa'}
+                                                onChange={() => toggleStatus(rifa.id, rifa.status)}
+                                            />
+                                            <span className="slider"></span>
+                                        </label>
+                                    )}
                                 </td>
                                 <td>
                                     <div className="acoes-btn">
@@ -376,14 +410,18 @@ export default function RifaManager() {
                         <div key={rifa.id} className="admin-mobile-card">
                             <div className="admin-mobile-card-header">
                                 <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.2rem' }}>{rifa.nome_premio}</h3>
-                                <label className="switch" style={{ transform: 'scale(0.8)' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={rifa.status === 'ativa'}
-                                        onChange={() => toggleStatus(rifa.id, rifa.status)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
+                                {rifa.status === 'finalizada' ? (
+                                    <span style={{ color: 'orange', fontWeight: 'bold', fontSize: '0.8rem' }}>FINALIZADA</span>
+                                ) : (
+                                    <label className="switch" style={{ transform: 'scale(0.8)' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={rifa.status === 'ativa'}
+                                            onChange={() => toggleStatus(rifa.id, rifa.status)}
+                                        />
+                                        <span className="slider"></span>
+                                    </label>
+                                )}
                             </div>
                             <div className="admin-mobile-card-body">
                                 <p><strong>Progresso:</strong> {sold} / {rifa.total_numeros} ({percent.toFixed(1)}%)</p>
@@ -413,48 +451,23 @@ export default function RifaManager() {
                         <form onSubmit={handleSave}>
                             <div className="form-campo">
                                 <label>Nome do Prêmio Principal</label>
-                                <input
-                                    type="text"
-                                    value={nomePremio}
-                                    onChange={e => setNomePremio(e.target.value)}
-                                    required
-                                />
+                                <input type="text" value={nomePremio} onChange={e => setNomePremio(e.target.value)} required />
                             </div>
                             <div className="form-campo">
                                 <label>Descrição</label>
-                                <textarea
-                                    value={descricao}
-                                    onChange={e => setDescricao(e.target.value)}
-                                    required
-                                    rows={3}
-                                />
+                                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={3} />
                             </div>
                             <div className="form-campo">
                                 <label>Preço por Número</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={precoNumero}
-                                    onChange={e => setPrecoNumero(e.target.value)}
-                                    required
-                                />
+                                <input type="number" step="0.01" value={precoNumero} onChange={e => setPrecoNumero(e.target.value)} required />
                             </div>
                             <div className="form-campo">
                                 <label>Total de Números</label>
-                                <input
-                                    type="number"
-                                    value={totalNumeros}
-                                    onChange={e => setTotalNumeros(e.target.value)}
-                                    required
-                                />
+                                <input type="number" value={totalNumeros} onChange={e => setTotalNumeros(e.target.value)} required />
                             </div>
                             <div className="form-campo">
                                 <label>Imagem de Capa</label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleCapaChange}
-                                />
+                                <input type="file" accept="image/*" onChange={handleCapaChange} />
                                 {imagemCapaPreview && <img src={imagemCapaPreview} alt="Preview" style={{ width: '100px', marginTop: '10px' }} />}
                             </div>
 
@@ -471,20 +484,10 @@ export default function RifaManager() {
                                     </div>
                                     <div className="premio-item-body">
                                         <div className="premio-campo-descricao">
-                                            <input
-                                                type="text"
-                                                placeholder="Descrição do prêmio"
-                                                value={premio.descricao}
-                                                onChange={e => handlePrizeChange(index, 'descricao', e.target.value)}
-                                                required
-                                            />
+                                            <input type="text" placeholder="Descrição do prêmio" value={premio.descricao} onChange={e => handlePrizeChange(index, 'descricao', e.target.value)} required />
                                         </div>
                                         <div className="premio-campo-imagem">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={e => e.target.files && handlePrizeChange(index, 'file', e.target.files[0])}
-                                            />
+                                            <input type="file" accept="image/*" onChange={e => e.target.files && handlePrizeChange(index, 'file', e.target.files[0])} />
                                             {premio.imagemPreview && <img src={premio.imagemPreview} alt="Preview" style={{ width: '50px', marginTop: '5px' }} />}
                                         </div>
                                     </div>
@@ -504,7 +507,7 @@ export default function RifaManager() {
                 </div>
             )}
 
-            {/* Participants Modal and Draw Modal remain roughly the same but now data operations are more robust */}
+            {/* Participants Modal */}
             {showManageModal && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin" style={{ maxWidth: '800px' }}>
@@ -530,7 +533,7 @@ export default function RifaManager() {
                                                     </>
                                                 )}
                                                 {p.status_pagamento === 'pago' && (
-                                                    <button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar</button>
+                                                    <button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar Pagamento</button>
                                                 )}
                                             </div>
                                         </li>
@@ -567,8 +570,8 @@ export default function RifaManager() {
                                     {!prize.vencedor_nome && (
                                         <button
                                             className="btn-admin btn-sortear"
-                                            onClick={() => performDraw(prize.id, prize.descricao)}
-                                            disabled={drawing}
+                                            onClick={() => performDraw(prize.id!, prize.descricao)}
+                                            disabled={drawing || drawRifa.status === 'finalizada'}
                                         >
                                             {drawing ? 'Sorteando...' : 'Sortear'}
                                         </button>
@@ -582,3 +585,5 @@ export default function RifaManager() {
         </div>
     );
 }
+
+

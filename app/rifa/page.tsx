@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { reservarNumerosRifa } from '@/app/actions/rifa';
+import { Trophy } from 'lucide-react';
 
 export default function RifaPage() {
     const { showToast } = useToast();
@@ -22,57 +23,44 @@ export default function RifaPage() {
     const router = useRouter();
 
     useEffect(() => {
-        fetchRifa();
+        fetchRifa(true);
+        const pollInterval = setInterval(() => { fetchRifa(false); }, 10000);
+        return () => clearInterval(pollInterval);
+    }, []);
 
-        // Realtime Subscription
-        const channel = supabase
-            .channel('rifa-updates')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'rifas',
-                    filter: rifa ? `id=eq.${rifa.id}` : undefined
-                },
-                () => {
-                    fetchRifa();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [rifa?.id]);
-
-    const fetchRifa = async () => {
-        setLoading(true);
+    const fetchRifa = async (showLoadingState = true) => {
+        if (showLoadingState) setLoading(true);
         try {
-            const { data: rifaData, error: rifaError } = await supabase
+            // GROWTH HACK LÓGICO: Primeiro tenta achar uma rifa ATIVA.
+            let { data: rifaData, error: rifaError } = await supabase
                 .from('rifas')
                 .select('*')
                 .eq('status', 'ativa')
+                .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
 
-            if (rifaError) throw rifaError;
+            // Se não tem ativa, pega a ÚLTIMA FINALIZADA para mostrar o vencedor!
+            if (!rifaData) {
+                const { data: lastRifa } = await supabase
+                    .from('rifas')
+                    .select('*')
+                    .eq('status', 'finalizada')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                rifaData = lastRifa;
+            }
 
             if (rifaData) {
                 setRifa(rifaData);
 
-                // GA4: View Item
-                if (typeof window !== 'undefined' && (window as any).gtag) {
-                    (window as any).gtag('event', 'view_item', {
-                        currency: 'BRL',
-                        value: rifaData.preco_numero,
-                        items: [{
-                            item_id: rifaData.id,
-                            item_name: rifaData.nome_premio,
-                            price: rifaData.preco_numero
-                        }]
-                    });
-                }
+                setSelectedNumbers(current => {
+                    const sold = new Set(rifaData.numeros_vendidos || []);
+                    const reserved = new Set(rifaData.numeros_reservados || []);
+                    return current.filter(n => !sold.has(n) && !reserved.has(n));
+                });
 
                 const { data: premiosData } = await supabase
                     .from('premios')
@@ -81,41 +69,34 @@ export default function RifaPage() {
                     .order('ordem', { ascending: true });
 
                 if (premiosData) setPremios(premiosData);
+            } else {
+                setRifa(null);
             }
         } catch (error) {
-            // Silenced error for production
+            console.error('Erro ao buscar rifa:', error);
         } finally {
-            setLoading(false);
+            if (showLoadingState) setLoading(false);
         }
     };
 
     const toggleNumber = (number: number) => {
+        // Trava de segurança absoluta
+        if (rifa?.status === 'finalizada') {
+            showToast('Esta rifa já foi encerrada.', 'error');
+            return;
+        }
+
         let newSelection = [];
         if (selectedNumbers.includes(number)) {
             newSelection = selectedNumbers.filter(n => n !== number);
         } else {
             newSelection = [...selectedNumbers, number];
-
-            // GA4: Add to Cart (Single Number)
-            if (typeof window !== 'undefined' && (window as any).gtag && rifa) {
-                (window as any).gtag('event', 'add_to_cart', {
-                    currency: 'BRL',
-                    value: rifa.preco_numero,
-                    items: [{
-                        item_id: rifa.id,
-                        item_name: rifa.nome_premio,
-                        item_variant: number.toString(),
-                        price: rifa.preco_numero,
-                        quantity: 1
-                    }]
-                });
-            }
         }
         setSelectedNumbers(newSelection);
     };
 
     const handleSurpresinha = () => {
-        if (!rifa) return;
+        if (!rifa || rifa.status === 'finalizada') return;
         const available = [];
         const soldSet = new Set(rifa.numeros_vendidos || []);
         const reservedSet = new Set(rifa.numeros_reservados || []);
@@ -141,85 +122,51 @@ export default function RifaPage() {
 
         setSelectedNumbers([...selectedNumbers, ...randomSelection]);
         showToast(`${count} números aleatórios selecionados!`, 'success');
-
-        // GA4: Add to Cart (Surpresinha)
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'add_to_cart', {
-                currency: 'BRL',
-                value: rifa.preco_numero * count,
-                items: randomSelection.map(n => ({
-                    item_id: rifa.id,
-                    item_name: rifa.nome_premio,
-                    item_variant: n.toString(),
-                    price: rifa.preco_numero,
-                    quantity: 1
-                }))
-            });
-        }
     };
 
     const handleReserve = async () => {
-        if (!rifa) return;
+        if (!rifa || rifa.status === 'finalizada') return;
         if (!clientName.trim() || !clientPhone.trim() || selectedNumbers.length === 0) {
             showToast('Por favor, preencha seu nome, telefone e selecione pelo menos um número.', 'error');
             return;
         }
 
-        // GA4: Begin Checkout
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'begin_checkout', {
-                currency: 'BRL',
-                value: selectedNumbers.length * rifa.preco_numero,
-                items: selectedNumbers.map(n => ({
-                    item_id: rifa.id,
-                    item_name: rifa.nome_premio,
-                    item_variant: n.toString(),
-                    price: rifa.preco_numero,
-                    quantity: 1
-                }))
-            });
-        }
-
         setReserving(true);
         try {
+            await fetchRifa(false);
+            const soldSet = new Set(rifa.numeros_vendidos || []);
+            const reservedSet = new Set(rifa.numeros_reservados || []);
+            const conflitos = selectedNumbers.filter(n => soldSet.has(n) || reservedSet.has(n));
+
+            if (conflitos.length > 0) {
+                throw new Error("Um dos números que você escolheu acabou de ser reservado por outra pessoa. Atualizamos a lista.");
+            }
+
             const result = await reservarNumerosRifa(rifa.id, selectedNumbers, clientName, clientPhone);
 
             if (!result.success) throw new Error(result.error);
-
-            if (!result.data || !Array.isArray(result.data) || result.data.length === 0 || !result.data[0].participante_id) {
-                throw new Error("Erro interno: Falha ao recuperar ID da reserva. Contate o suporte.");
-            }
-
             const participantId = result.data[0].participante_id;
 
+            router.refresh();
             router.push(`/pagamento?participante_id=${participantId}`);
-        } catch (error: any) {
-            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
 
-            if (errorMessage.includes('já foi reservado')) {
-                showToast('Um dos números escolhidos já foi reservado. Atualize e tente de novo.', 'error');
-                fetchRifa(); // Refresh data
-                setSelectedNumbers([]);
-            } else {
-                showToast(errorMessage || 'Ocorreu um erro ao tentar reservar seus números. Tente novamente.', 'error');
-            }
+        } catch (error: any) {
+            showToast(error.message || 'Erro', 'error');
+            await fetchRifa(false);
+            setSelectedNumbers([]);
         } finally {
             setReserving(false);
         }
     };
 
-    if (loading) {
-        return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando rifa...</div>;
-    }
+    if (loading) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando rifa...</div>;
 
     if (!rifa) {
         return (
             <div className="container" id="rifa-container" style={{ textAlign: 'center', padding: '50px 0' }}>
                 <div className="rifa-card">
-                    <h1 className="titulo-secao">Nenhuma Rifa Ativa no Momento</h1>
-                    <p style={{ fontSize: '1.1em' }}>Fique de olho! Em breve teremos novidades e mais prêmios incríveis por aqui.</p>
-                    <br />
-                    <Link href="/historico" className="btn btn-secundario">Ver Ganhadores Anteriores</Link>
+                    <h1 className="titulo-secao">Nenhuma Rifa no Momento</h1>
+                    <p style={{ fontSize: '1.1em' }}>Em breve teremos novidades.</p>
                 </div>
             </div>
         );
@@ -228,12 +175,12 @@ export default function RifaPage() {
     const totalDigitos = String(rifa.total_numeros - 1).length;
     const soldSet = new Set(rifa.numeros_vendidos || []);
     const reservedSet = new Set(rifa.numeros_reservados || []);
-    const isSoldOut = soldSet.size >= rifa.total_numeros;
 
-    // Fallback para logo se não houver imagem da rifa
-    const imageUrl = rifa.imagem_premio_url
-        ? `${rifa.imagem_premio_url}`
-        : '/imagens/gringa_style_logo.png';
+    // A RIFA ACABA SE ESGOTAR OU SE O STATUS FOR FINALIZADA
+    const isFinished = rifa.status === 'finalizada';
+    const isSoldOut = soldSet.size >= rifa.total_numeros || isFinished;
+
+    const imageUrl = rifa.imagem_premio_url || '/imagens/gringa_style_logo.png';
 
     return (
         <div className="container" id="rifa-container">
@@ -241,31 +188,33 @@ export default function RifaPage() {
                 <h1 className="titulo-secao">{rifa.nome_premio}</h1>
 
                 <div className="relative w-full max-w-[600px] h-auto aspect-square mx-auto mb-5">
-                    <Image
-                        src={imageUrl}
-                        alt="Prêmio da Rifa"
-                        fill
-                        priority
-                        sizes="(max-width: 768px) 100vw, 600px"
-                        className="rifa-imagem-premio object-cover rounded-lg"
-                    />
+                    <Image src={imageUrl} alt="Prêmio da Rifa" fill priority sizes="(max-width: 768px) 100vw, 600px" className="rifa-imagem-premio object-cover rounded-lg" />
                 </div>
 
-                {premios.length > 0 && (
-                    <div className="lista-premios-rifa">
-                        <h4>Prêmios desta Rifa:</h4>
-                        <ul style={{ listStyle: 'none', paddingLeft: 0, textAlign: 'left', maxWidth: '400px', margin: '10px auto', backgroundColor: '#111', padding: '15px', borderRadius: '5px' }}>
-                            {premios.map(p => (
-                                <li key={p.id} style={{ marginBottom: '8px' }}>
-                                    <strong style={{ color: 'var(--cor-destaque)' }}>{p.ordem}º Prêmio:</strong> {p.descricao}
-                                </li>
-                            ))}
-                        </ul>
+                {/* EXIBIÇÃO DO VENCEDOR (ISSO FALTAVA!) */}
+                {isFinished && (
+                    <div style={{ background: 'rgba(255, 165, 0, 0.1)', border: '2px solid orange', padding: '20px', borderRadius: '10px', marginBottom: '20px', textAlign: 'center' }}>
+                        <Trophy size={48} color="orange" style={{ margin: '0 auto 10px' }} />
+                        <h2 style={{ color: 'orange', margin: 0 }}>RIFA ENCERRADA</h2>
+                        {rifa.numero_vencedor !== null && rifa.numero_vencedor !== undefined ? (
+                            <p style={{ fontSize: '1.2rem', color: 'white', marginTop: '10px' }}>
+                                O Número Vencedor foi: <strong style={{ fontSize: '1.8rem', color: '#00ff88' }}>{String(rifa.numero_vencedor).padStart(totalDigitos, '0')}</strong>
+                            </p>
+                        ) : (
+                            <p style={{ color: 'white', marginTop: '10px' }}>Sorteio realizado. Verifique os prêmios abaixo.</p>
+                        )}
+                        <Link href="/historico" style={{ display: 'inline-block', marginTop: '15px', color: 'orange', textDecoration: 'underline' }}>
+                            Ver Histórico Completo
+                        </Link>
                     </div>
                 )}
 
                 <p className="rifa-descricao">{rifa.descricao}</p>
-                <p className="rifa-preco">Apenas R$ {rifa.preco_numero.toFixed(2).replace('.', ',')} por número!</p>
+
+                {!isFinished && (
+                    <p className="rifa-preco">Apenas R$ {rifa.preco_numero.toFixed(2).replace('.', ',')} por número!</p>
+                )}
+
                 <Link href={`/acompanhar-rifa?id=${rifa.id}`} className="btn btn-secundario" style={{ marginBottom: '20px', display: 'inline-block' }}>
                     Ver Participantes
                 </Link>
@@ -276,40 +225,24 @@ export default function RifaPage() {
                         <span>{Math.round((soldSet.size / rifa.total_numeros) * 100)}% vendido</span>
                     </div>
                     <div style={{ width: '100%', height: '20px', backgroundColor: '#333', borderRadius: '10px', overflow: 'hidden' }}>
-                        <div
-                            style={{
-                                width: `${(soldSet.size / rifa.total_numeros) * 100}%`,
-                                height: '100%',
-                                backgroundColor: 'var(--cor-destaque)',
-                                transition: 'width 0.5s ease-in-out'
-                            }}
-                        />
+                        <div style={{ width: `${(soldSet.size / rifa.total_numeros) * 100}%`, height: '100%', backgroundColor: 'var(--cor-destaque)', transition: 'width 0.5s ease-in-out' }} />
                     </div>
-                    <p style={{ fontSize: '0.9em', color: '#ccc', marginTop: '5px' }}>
-                        {rifa.total_numeros - soldSet.size} números restantes!
-                    </p>
                 </div>
 
-                {isSoldOut ? (
-                    <div className="aviso-esgotado">RIFA ESGOTADA! Obrigado a todos que participaram. O sorteio será realizado em breve!</div>
+                {isFinished ? (
+                    <div className="aviso-esgotado" style={{ background: '#333', color: '#aaa', padding: '15px', borderRadius: '8px', fontWeight: 'bold' }}>
+                        Esta rifa já foi sorteada e encerrada. Obrigado por participar!
+                    </div>
+                ) : isSoldOut ? (
+                    <div className="aviso-esgotado" style={{ background: '#ff4444', color: 'white', padding: '15px', borderRadius: '8px', fontWeight: 'bold' }}>
+                        RIFA ESGOTADA! O sorteio será realizado em breve!
+                    </div>
                 ) : (
                     <div className="rifa-actions-container" style={{ marginBottom: '20px' }}>
                         <h3>Escolha seus números da sorte:</h3>
-
                         <div className="rifa-controls" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '15px' }}>
-                            <input
-                                type="number"
-                                placeholder="Buscar número..."
-                                className="input-busca-rifa"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{ padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: 'white' }}
-                            />
-                            <button
-                                className="btn btn-surpresinha"
-                                onClick={handleSurpresinha}
-                                style={{ background: 'var(--cor-destaque)', color: 'black', border: 'none', padding: '10px 15px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
-                            >
+                            <input type="number" placeholder="Buscar número..." className="input-busca-rifa" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: 'white' }} />
+                            <button className="btn btn-surpresinha" onClick={handleSurpresinha} style={{ background: 'var(--cor-destaque)', color: 'black', border: 'none', padding: '10px 15px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
                                 🎲 Surpresinha (5)
                             </button>
                         </div>
@@ -328,7 +261,9 @@ export default function RifaPage() {
                             <div
                                 key={i}
                                 className={`numero-rifa ${isOccupied ? 'ocupado' : ''} ${isSelected ? 'selecionado' : ''}`}
-                                onClick={() => !isOccupied && !isSoldOut && toggleNumber(i)}
+                                // TRAVA DE CLIQUE SE ESTIVER FINALIZADO
+                                onClick={() => !isOccupied && !isFinished && !isSoldOut && toggleNumber(i)}
+                                style={{ opacity: isFinished ? 0.5 : 1, cursor: isFinished || isOccupied ? 'not-allowed' : 'pointer' }}
                             >
                                 {numStr}
                             </div>
@@ -336,40 +271,14 @@ export default function RifaPage() {
                     })}
                 </div>
 
-                {!isSoldOut && selectedNumbers.length > 0 && (
+                {!isSoldOut && !isFinished && selectedNumbers.length > 0 && (
                     <div className="resumo-selecao" style={{ display: 'block' }}>
                         <h4>Resumo da sua Seleção</h4>
-                        <p>Números selecionados: <strong id="numeros-selecionados-lista">
-                            {selectedNumbers.sort((a, b) => a - b).map(n => String(n).padStart(totalDigitos, '0')).join(', ')}
-                        </strong></p>
-                        <p>Total a pagar: <strong id="total-a-pagar">
-                            R$ {(selectedNumbers.length * rifa.preco_numero).toFixed(2).replace('.', ',')}
-                        </strong></p>
+                        <p>Total a pagar: <strong id="total-a-pagar">R$ {(selectedNumbers.length * rifa.preco_numero).toFixed(2).replace('.', ',')}</strong></p>
                         <div className="form-cliente">
-                            <input
-                                type="text"
-                                id="nome-cliente"
-                                className="input-cliente"
-                                placeholder="Seu nome completo"
-                                value={clientName}
-                                onChange={(e) => setClientName(e.target.value)}
-                                required
-                            />
-                            <input
-                                type="tel"
-                                id="telefone-cliente"
-                                className="input-cliente"
-                                placeholder="Seu WhatsApp (DDD + Número)"
-                                value={clientPhone}
-                                onChange={(e) => setClientPhone(e.target.value)}
-                                required
-                            />
-                            <button
-                                id="btn-reservar"
-                                className="btn btn-finalizar"
-                                onClick={handleReserve}
-                                disabled={reserving}
-                            >
+                            <input type="text" className="input-cliente" placeholder="Seu nome completo" value={clientName} onChange={(e) => setClientName(e.target.value)} required />
+                            <input type="tel" className="input-cliente" placeholder="Seu WhatsApp (DDD + Número)" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} required />
+                            <button className="btn btn-finalizar" onClick={handleReserve} disabled={reserving}>
                                 {reserving ? 'Reservando...' : 'Reservar e Pagar'}
                             </button>
                         </div>
@@ -379,3 +288,5 @@ export default function RifaPage() {
         </div>
     );
 }
+
+

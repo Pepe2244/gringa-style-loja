@@ -28,7 +28,6 @@ export default function CampaignManager() {
         const { data: config, error: configError } = await supabase.from('configuracoes_site').select('campanha_ativa_id').limit(1).maybeSingle();
         if (configError) {
             console.error('Erro ao buscar configurações:', configError);
-            // alert('Erro ao buscar configurações: ' + configError.message); // Optional, maybe not critical
         }
         if (config) setActiveCampaignId(config.campanha_ativa_id);
 
@@ -133,17 +132,18 @@ export default function CampaignManager() {
 
         try {
             const newId = isActivating ? id : null;
-            const { error } = await supabase.from('configuracoes_site').update({ campanha_ativa_id: newId }).eq('id', 1);
 
-            // If config doesn't exist, insert it (unlikely but safe)
-            if (error && error.code === 'PGRST116') {
-                await supabase.from('configuracoes_site').insert({ id: 1, campanha_ativa_id: newId });
-            } else if (error) {
-                throw error;
-            }
+            // SOLUÇÃO DO BUG: UPSERT substitui a necessidade de checar se o ID=1 existe. 
+            // Ele insere se não existir, ou atualiza se já existir. À prova de falhas.
+            const { error } = await supabase
+                .from('configuracoes_site')
+                .upsert({ id: 1, campanha_ativa_id: newId });
 
+            if (error) throw error;
+
+            // Atualiza o estado da UI instantaneamente sem precisar esperar o fetchCampaigns()
             setActiveCampaignId(newId);
-            fetchCampaigns(); // Refresh UI
+
         } catch (error: any) {
             alert('Erro ao alterar status: ' + error.message);
         }
@@ -332,3 +332,5 @@ export default function CampaignManager() {
         </div>
     );
 }
+
+
