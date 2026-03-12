@@ -30,7 +30,7 @@ export default function CampaignBannerClient({ campaign }: CampaignBannerClientP
                 color: campaign.cor_texto || '#000000',
                 textAlign: 'center',
                 position: 'relative',
-                overflow: 'hidden', // Importante para o marquee
+                overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -43,14 +43,23 @@ export default function CampaignBannerClient({ campaign }: CampaignBannerClientP
             }}
         >
             {campaign.banner_url && (
-                <div style={{ width: '100%', position: 'relative', height: 'auto', minHeight: '100px' }}>
-                    {/* Usando img normal por enquanto para garantir responsividade fluida baseada na largura, 
-                       ou Image com width/height se soubermos a proporção. 
-                       Como é banner, width 100% é o ideal. */}
-                    <img
+                <div style={{ width: '100%', position: 'relative', display: 'block' }}>
+                    {/* O FIM DA DESCULPA: 
+                        O componente Image abaixo é perfeitamente responsivo e destrói o LCP alto. 
+                        A tag 'priority' obriga o navegador a descarregar isto antes de qualquer outra coisa.
+                    */}
+                    <Image
                         src={campaign.banner_url}
-                        alt={campaign.nome_campanha}
-                        style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+                        alt={campaign.nome_campanha || "Banner Promocional"}
+                        width={1200} // Valor base de referência, o CSS fará o resize
+                        height={670} // Valor base de referência
+                        sizes="100vw"
+                        priority={true} // A PROPRIEDADE MÁGICA QUE SALVA O TEU PAGESPEED
+                        style={{
+                            width: '100%',
+                            height: 'auto',
+                            objectFit: 'cover'
+                        }}
                     />
                 </div>
             )}
@@ -93,3 +102,4 @@ export default function CampaignBannerClient({ campaign }: CampaignBannerClientP
         </div>
     );
 }
+

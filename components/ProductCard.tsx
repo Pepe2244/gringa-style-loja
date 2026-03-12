@@ -20,7 +20,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const imageUrls = mediaUrls.filter(url => !url.includes('.mp4') && !url.includes('.webm'));
 
     // Use logo as fallback if no images
-    const displayImages = imageUrls.length > 0 ? imageUrls : ['/imagens/gringa_style_logo.png'];
+    const displayImages = imageUrls.length > 0 ? imageUrls : ['/imagens/logo_gringa_style.png'];
 
     useEffect(() => {
         const checkMobile = () => {
@@ -58,7 +58,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const precoFinal = getPrecoFinal(product);
     const isPromo = precoFinal < product.preco;
 
-    // GATILHO DE CRO: Cálculo do percentual de desconto para a vitrine
+    // GATILHO DE CRO MANTIDO: Excelente uso de ancoragem de preço
     const descontoPercentual = isPromo 
         ? Math.round(((product.preco - precoFinal) / product.preco) * 100) 
         : 0;
@@ -80,7 +80,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             className="produto-card"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{ position: 'relative' }} // Garantir que elementos absolutos fiquem contidos aqui
+            style={{ position: 'relative' }}
         >
             {/* GATILHOS DE ESCASSEZ E NOVIDADE */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
@@ -113,11 +113,13 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         src={displayImages[currentImageIndex]}
                         alt={product.nome}
                         fill
-                        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 30vw"
+                        // OTIMIZAÇÃO: Ajuste fino do Sizes para dizer ao navegador o tamanho real que a imagem vai ocupar na grelha.
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className={`card-imagem visivel`}
                         style={{ objectFit: 'cover' }}
                         priority={priority}
-                        quality={85}
+                        // OTIMIZAÇÃO BRUTAL: Reduzido de 85 para 75. A olho nu ninguém repara, mas a rede agradece.
+                        quality={75} 
                     />
                 )}
             </div>
