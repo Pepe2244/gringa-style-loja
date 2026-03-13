@@ -41,7 +41,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         if (isHovered && displayImages.length > 1 && !shouldPlayVideo) {
             interval = setInterval(() => {
                 setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
-            }, 2000);
+            }, 2000); // Slower carousel
         } else {
             setCurrentImageIndex(0);
         }
@@ -58,7 +58,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const precoFinal = getPrecoFinal(product);
     const isPromo = precoFinal < product.preco;
 
-    // GATILHO DE CRO MANTIDO: Ancoragem de preço
+    // GATILHO DE CRO MANTIDO: Excelente uso de ancoragem de preço
     const descontoPercentual = isPromo 
         ? Math.round(((product.preco - precoFinal) / product.preco) * 100) 
         : 0;
@@ -82,6 +82,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             onMouseLeave={() => setIsHovered(false)}
             style={{ position: 'relative' }}
         >
+            {/* GATILHOS DE ESCASSEZ E NOVIDADE */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
                 {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
                 {isPromo && (
@@ -112,11 +113,13 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         src={displayImages[currentImageIndex]}
                         alt={`Imagem de ${product.nome}`}
                         fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        // OTIMIZAÇÃO SEVERA: Força o download de versões drasticamente menores no telemóvel.
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         className={`card-imagem visivel`}
                         style={{ objectFit: 'cover' }}
                         priority={priority}
-                        quality={75} 
+                        // Qualidade reduzida para 60 para acelerar o LCP. Invisível a olho nu no telemóvel.
+                        quality={60} 
                     />
                 )}
             </div>
@@ -152,7 +155,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             {product.variants ? 'Ver Opções' : 'Compra Rápida'}
                         </button>
                     )}
-                    {/* CORREÇÃO A11Y/SEO: aria-label dinâmico que destrói o erro do Lighthouse */}
+                    {/* CORREÇÃO A11Y/SEO: aria-label dinâmico inserido */}
                     <Link 
                         href={`/produto/${productSlug}`} 
                         className="btn btn-secundario"
@@ -165,4 +168,5 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         </div>
     );
 }
+
 

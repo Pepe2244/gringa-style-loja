@@ -1,19 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function CookieConsent() {
-    const [show, setShow] = useState(false);
-
-    useEffect(() => {
-        const consent = localStorage.getItem('cookie-consent');
-        if (!consent) {
-            setShow(true);
-        }
-    }, []);
+    // Se o componente foi chamado, é porque o servidor não achou o cookie.
+    // Ele já nasce true, sem delay de hidratação.
+    const [show, setShow] = useState(true);
 
     const accept = () => {
-        localStorage.setItem('cookie-consent', 'true');
+        // Grava o cookie nativo válido por 1 ano (31536000 segundos)
+        document.cookie = "cookie-consent=true; path=/; max-age=31536000";
+        // Oculta visualmente sem reload
         setShow(false);
     };
 
@@ -32,16 +29,10 @@ export default function CookieConsent() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            flexWrap: 'nowrap', // Força a ficar na mesma linha
+            flexWrap: 'nowrap',
             gap: '15px'
         }}>
-            <p style={{ 
-                margin: 0, 
-                color: '#ccc', 
-                fontSize: '0.8rem', // Ligeiramente menor para caber bem no mobile
-                lineHeight: '1.4',
-                flex: 1 // Faz o texto ocupar o espaço restante e empurrar o botão
-            }}>
+            <p style={{ margin: 0, color: '#ccc', fontSize: '0.8rem', lineHeight: '1.4', flex: 1 }}>
                 Utilizamos cookies para melhorar sua experiência e analisar o tráfego. Ao continuar, você concorda com nossa política de privacidade.
             </p>
             <button
@@ -55,7 +46,7 @@ export default function CookieConsent() {
                     borderRadius: '5px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    flexShrink: 0 // Impede que o botão diminua de tamanho em telas pequenas
+                    flexShrink: 0
                 }}
             >
                 Aceitar

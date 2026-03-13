@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { ToastProvider } from '@/context/ToastContext';
 import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
+import { cookies } from "next/headers";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -21,13 +22,8 @@ const teko = Teko({
 });
 
 export const metadata: Metadata = {
-  // AVISO ESTRATÉGICO BRUTAL:
-  // Enquanto isto for 'gringa-style.netlify.app', vais perder 3 a cada 10 clientes por falta de confiança.
-  // Pessoas não metem o cartão de crédito em subdomínios gratuitos. Compra o domínio .com.br urgente.
   metadataBase: new URL('https://gringa-style.netlify.app'),
-  alternates: {
-    canonical: './',
-  },
+  alternates: { canonical: './' },
   title: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
   description: "Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!",
   keywords: ["máscara de solda", "solda tig", "personalizada", "gringa style", "acessórios solda"],
@@ -36,53 +32,37 @@ export const metadata: Metadata = {
     description: "Estilo e proteção para soldadores profissionais.",
     url: "https://gringa-style.netlify.app",
     siteName: "Gringa Style",
-    images: [
-      {
-        url: "/imagens/logo_gringa_style.png",
-        width: 800,
-        height: 600,
-      },
-    ],
+    images: [{ url: "/imagens/logo_gringa_style.png", width: 800, height: 600 }],
     locale: "pt_BR",
     type: "website",
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // GROWTH HACK: Lemos o cookie no SERVIDOR. 
+  // O Next 15+ exige o await em cookies().
+  const cookieStore = await cookies();
+  const hasConsent = cookieStore.get('cookie-consent')?.value === 'true';
+
   return (
     <html lang="pt-BR">
       <head>
-        {/* CORREÇÃO DO LIGHTHOUSE: crossOrigin removido. 
-            Ele estava fazendo o navegador descartar a pré-conexão com o banco de dados. */}
         <link rel="preconnect" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
         <link rel="dns-prefetch" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
       </head>
-      <body
-        className={`${roboto.variable} ${teko.variable} antialiased`}
-      >
-        <Script 
-          src="https://analytics.ahrefs.com/analytics.js" 
-          data-key="Sam0BvC3Nm1qohD+XzVeLA" 
-          strategy="lazyOnload" 
-        />
-
-        {/* GTM Adiado para depois da página estar interativa. Zera o bloqueio na thread. */}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN`}
-          strategy="lazyOnload"
-        />
+      <body className={`${roboto.variable} ${teko.variable} antialiased`}>
+        <Script src="https://analytics.ahrefs.com/analytics.js" data-key="Sam0BvC3Nm1qohD+XzVeLA" strategy="lazyOnload" />
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN`} strategy="lazyOnload" />
         <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-2L2F9CY9JN', {
-              page_path: window.location.pathname,
-            });
+            gtag('config', 'G-2L2F9CY9JN', { page_path: window.location.pathname });
           `}
         </Script>
 
@@ -90,7 +70,8 @@ export default function RootLayout({
           <Header />
           <CampaignBannerServer />
           {children}
-          <CookieConsent />
+          {/* Se o cookie existir, o HTML do banner sequer é enviado para o cliente. Zero peso. */}
+          {!hasConsent && <CookieConsent />}
           <Footer />
         </ToastProvider>
       </body>
