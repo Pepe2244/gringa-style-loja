@@ -30,10 +30,13 @@ export default function ProductGrid({
                         product={product}
                         diasNovo={diasNovo}
                         onQuickView={onQuickView}
-                        priority={index < 4}
+                        // GROWTH HACK: Prioridade apenas para as 2 primeiras imagens.
+                        // Focar a banda de internet do cliente onde o olho dele bate primeiro.
+                        priority={index < 2}
                     />
                 ))
             )}
         </div>
     );
 }
+

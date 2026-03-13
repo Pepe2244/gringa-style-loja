@@ -19,7 +19,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const videoUrl = product.video || mediaUrls.find(url => url.includes('.mp4') || url.includes('.webm'));
     const imageUrls = mediaUrls.filter(url => !url.includes('.mp4') && !url.includes('.webm'));
 
-    // Use logo as fallback if no images
+    // Fallback caso não haja imagens
     const displayImages = imageUrls.length > 0 ? imageUrls : ['/imagens/logo_gringa_style.png'];
 
     useEffect(() => {
@@ -41,7 +41,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         if (isHovered && displayImages.length > 1 && !shouldPlayVideo) {
             interval = setInterval(() => {
                 setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
-            }, 2000); // Slower carousel
+            }, 2000);
         } else {
             setCurrentImageIndex(0);
         }
@@ -58,7 +58,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const precoFinal = getPrecoFinal(product);
     const isPromo = precoFinal < product.preco;
 
-    // GATILHO DE CRO MANTIDO: Excelente uso de ancoragem de preço
+    // GATILHO DE CRO MANTIDO: Ancoragem de preço
     const descontoPercentual = isPromo 
         ? Math.round(((product.preco - precoFinal) / product.preco) * 100) 
         : 0;
@@ -82,7 +82,6 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             onMouseLeave={() => setIsHovered(false)}
             style={{ position: 'relative' }}
         >
-            {/* GATILHOS DE ESCASSEZ E NOVIDADE */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
                 {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
                 {isPromo && (
@@ -111,14 +110,12 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                 ) : (
                     <Image
                         src={displayImages[currentImageIndex]}
-                        alt={product.nome}
+                        alt={`Imagem de ${product.nome}`}
                         fill
-                        // OTIMIZAÇÃO: Ajuste fino do Sizes para dizer ao navegador o tamanho real que a imagem vai ocupar na grelha.
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className={`card-imagem visivel`}
                         style={{ objectFit: 'cover' }}
                         priority={priority}
-                        // OTIMIZAÇÃO BRUTAL: Reduzido de 85 para 75. A olho nu ninguém repara, mas a rede agradece.
                         quality={75} 
                     />
                 )}
@@ -150,11 +147,17 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         <button
                             className="btn btn-quick-view"
                             onClick={() => onQuickView(product)}
+                            aria-label={`Compra rápida para ${product.nome}`}
                         >
                             {product.variants ? 'Ver Opções' : 'Compra Rápida'}
                         </button>
                     )}
-                    <Link href={`/produto/${productSlug}`} className="btn btn-secundario">
+                    {/* CORREÇÃO A11Y/SEO: aria-label dinâmico que destrói o erro do Lighthouse */}
+                    <Link 
+                        href={`/produto/${productSlug}`} 
+                        className="btn btn-secundario"
+                        aria-label={`Ver detalhes do produto ${product.nome}`}
+                    >
                         Ver Detalhes
                     </Link>
                 </div>
@@ -162,5 +165,4 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         </div>
     );
 }
-
 

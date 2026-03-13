@@ -56,24 +56,21 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        {/* EXCELENTE: Isto corta milissegundos valiosos de DNS lookup para as tuas imagens */}
-        <link rel="preconnect" href="https://lijsjlkgydlszdhmsppt.supabase.co" crossOrigin="anonymous" />
+        {/* CORREÇÃO DO LIGHTHOUSE: crossOrigin removido. 
+            Ele estava fazendo o navegador descartar a pré-conexão com o banco de dados. */}
+        <link rel="preconnect" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
         <link rel="dns-prefetch" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
       </head>
       <body
         className={`${roboto.variable} ${teko.variable} antialiased`}
       >
-        {/* Ahrefs: Excelente uso de lazyOnload */}
         <Script 
           src="https://analytics.ahrefs.com/analytics.js" 
           data-key="Sam0BvC3Nm1qohD+XzVeLA" 
           strategy="lazyOnload" 
         />
 
-        {/* HACK DE PERFORMANCE: Google Analytics Injetado Manualmente com lazyOnload
-            Isto vai literalmente apagar o aviso de 169 KiB do teu PageSpeed.
-            O GA só carrega quando o CPU do telemóvel estiver ocioso.
-        */}
+        {/* GTM Adiado para depois da página estar interativa. Zera o bloqueio na thread. */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN`}
           strategy="lazyOnload"
@@ -100,6 +97,5 @@ export default function RootLayout({
     </html>
   );
 }
-
 
 
