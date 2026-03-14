@@ -6,9 +6,11 @@ import { Rifa } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getPaymentDetails } from '@/app/actions/pagamento';
-import { Copy, Check, MessageCircle } from 'lucide-react'; // Ícones limpos
+import { Copy, Check, MessageCircle } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 
 function PaymentContent() {
+    const { showToast } = useToast();
     const searchParams = useSearchParams();
     const participanteId = searchParams.get('participante_id');
 
@@ -49,12 +51,15 @@ function PaymentContent() {
 
     const copiarChavePix = () => {
         if (!pixKey) {
-            alert("A Chave PIX não foi configurada.");
+            showToast('A Chave PIX não foi configurada. Entre em contato com o suporte.', 'error');
             return;
         }
         navigator.clipboard.writeText(pixKey).then(() => {
             setCopiado(true);
+            showToast('Chave PIX copiada!', 'success');
             setTimeout(() => setCopiado(false), 2000);
+        }).catch(() => {
+            showToast('Não foi possível copiar a chave. Copie manualmente.', 'error');
         });
     };
 
@@ -72,7 +77,16 @@ function PaymentContent() {
     };
 
     if (loading) {
-        return <div className="container" style={{ padding: '100px 0', textAlign: 'center', color: 'white' }}>Carregando informações...</div>;
+        return (
+            <div className="container" style={{ maxWidth: '600px', margin: '40px auto', padding: '0 15px' }}>
+                <div style={{ background: '#222', padding: '30px', borderRadius: '10px' }}>
+                    {[{ w: '60%', h: '36px' }, { w: '100%', h: '120px' }, { w: '100%', h: '56px' }, { w: '100%', h: '56px' }].map((s, i) => (
+                        <div key={i} style={{ background: '#333', borderRadius: '6px', height: s.h, width: s.w, marginBottom: '16px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                    ))}
+                </div>
+                <style>{`@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.25} }`}</style>
+            </div>
+        );
     }
 
     if (erro) {

@@ -86,15 +86,27 @@ function TrackingContent() {
     };
 
     if (loading) {
-        return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando participantes...</div>;
+        return (
+            <div className="container">
+                <div style={{ background: '#333', borderRadius: '8px', height: '44px', width: '60%', margin: '0 auto 30px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                <div style={{ background: '#333', borderRadius: '25px', height: '46px', maxWidth: '500px', margin: '0 auto 30px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} style={{ background: '#222', borderRadius: '8px', height: '110px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                    ))}
+                </div>
+                <style>{`@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.25} }`}</style>
+            </div>
+        );
     }
 
     if (!rifa) {
         return (
-            <div className="container" style={{ textAlign: 'center', padding: '50px 0' }}>
-                <h2>Nenhuma rifa encontrada</h2>
-                <p>Não há rifas ativas ou o ID informado é inválido.</p>
-                <Link href="/rifa" className="btn" style={{ marginTop: '20px', display: 'inline-block' }}>Voltar para Rifa</Link>
+            <div className="container" style={{ textAlign: 'center', padding: '80px 0' }}>
+                <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎟️</div>
+                <h2 style={{ fontSize: '1.8rem', marginBottom: '10px' }}>Nenhuma rifa encontrada</h2>
+                <p style={{ color: '#aaa', marginBottom: '30px' }}>Não há rifas ativas ou o ID informado é inválido.</p>
+                <Link href="/rifa" className="btn" style={{ display: 'inline-block' }}>Ver Rifas Disponíveis</Link>
             </div>
         );
     }
@@ -115,7 +127,22 @@ function TrackingContent() {
 
             <div className="lista-participantes">
                 {filteredParticipantes.length === 0 ? (
-                    <p style={{ textAlign: 'center', color: '#ccc' }}>Nenhum participante encontrado.</p>
+                    <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔍</div>
+                        <h3 style={{ color: '#fff', marginBottom: '8px' }}>
+                            {searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum participante ainda'}
+                        </h3>
+                        <p style={{ color: '#aaa' }}>
+                            {searchTerm
+                                ? `Nenhum participante corresponde a "${searchTerm}". Tente outro nome ou número.`
+                                : 'Seja o primeiro a participar desta rifa!'}
+                        </p>
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')} style={{ marginTop: '16px', background: 'var(--cor-destaque)', border: 'none', borderRadius: '6px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer', color: 'black' }}>
+                                Limpar busca
+                            </button>
+                        )}
+                    </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
                         {filteredParticipantes.map((p, index) => (

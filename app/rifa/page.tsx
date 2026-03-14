@@ -35,8 +35,9 @@ export default function RifaPage() {
         return () => clearInterval(pollInterval);
     }, []);
 
-    const fetchRifa = async (showLoadingState = true) => {
+    const fetchRifa = async (showLoadingState = true): Promise<RifaFront | null> => {
         if (showLoadingState) setLoading(true);
+        let fetchedRifa: RifaFront | null = null;
         try {
             let { data: rifaData, error: rifaError } = await supabase
                 .from('rifas')
@@ -59,7 +60,8 @@ export default function RifaPage() {
             }
 
             if (rifaData) {
-                setRifa(rifaData as RifaFront);
+                fetchedRifa = rifaData as RifaFront;
+                setRifa(fetchedRifa);
 
                 setSelectedNumbers(current => {
                     const sold = new Set(rifaData.numeros_vendidos || []);
@@ -79,9 +81,11 @@ export default function RifaPage() {
             }
         } catch (error) {
             console.error('Erro ao buscar rifa:', error);
+            if (showLoadingState) showToast('Erro ao carregar a rifa. Tente recarregar a página.', 'error');
         } finally {
             if (showLoadingState) setLoading(false);
         }
+        return fetchedRifa;
     };
 
     const toggleNumber = (number: number) => {
@@ -137,16 +141,18 @@ export default function RifaPage() {
 
         setReserving(true);
         try {
-            await fetchRifa(false);
-            const soldSet = new Set(rifa.numeros_vendidos || []);
-            const reservedSet = new Set(rifa.numeros_reservados || []);
+            const freshRifa = await fetchRifa(false);
+            if (!freshRifa) throw new Error('Não foi possível verificar a disponibilidade. Tente novamente.');
+
+            const soldSet = new Set(freshRifa.numeros_vendidos || []);
+            const reservedSet = new Set(freshRifa.numeros_reservados || []);
             const conflitos = selectedNumbers.filter(n => soldSet.has(n) || reservedSet.has(n));
 
             if (conflitos.length > 0) {
                 throw new Error("Um dos números que você escolheu acabou de ser reservado por outra pessoa. Atualizamos a lista.");
             }
 
-            const result = await reservarNumerosRifa(rifa.id, selectedNumbers, clientName, clientPhone);
+            const result = await reservarNumerosRifa(freshRifa.id, selectedNumbers, clientName, clientPhone);
 
             if (!result.success) throw new Error(result.error);
             const participantId = result.data[0].participante_id;
@@ -155,7 +161,7 @@ export default function RifaPage() {
             router.push(`/pagamento?participante_id=${participantId}`);
 
         } catch (error: any) {
-            showToast(error.message || 'Erro', 'error');
+            showToast(error.message || 'Erro ao reservar. Tente novamente.', 'error');
             await fetchRifa(false);
             setSelectedNumbers([]);
         } finally {
@@ -163,7 +169,16 @@ export default function RifaPage() {
         }
     };
 
-    if (loading) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando rifa...</div>;
+    if (loading) return (
+        <div className="container" id="rifa-container">
+            <div className="rifa-card">
+                {[{ w: '70%', h: '40px' }, { w: '100%', h: '400px' }, { w: '50%', h: '24px' }, { w: '100%', h: '20px' }, { w: '100%', h: '20px' }].map((s, i) => (
+                    <div key={i} style={{ background: '#333', borderRadius: '8px', height: s.h, width: s.w, marginBottom: '16px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                ))}
+            </div>
+            <style>{`@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.25} }`}</style>
+        </div>
+    );
 
     if (!rifa) {
         return (

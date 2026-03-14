@@ -6,6 +6,7 @@ import { Rifa, Premio } from '@/types';
 import { Trash2, Edit, Plus, Trophy } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
+import { useToast } from '@/context/ToastContext';
 
 // Extensão da interface para enganar o compilador
 interface RifaFront extends Omit<Rifa, 'status'> {
@@ -14,6 +15,7 @@ interface RifaFront extends Omit<Rifa, 'status'> {
 }
 
 export default function RifaManager() {
+    const { showToast } = useToast();
     const [rifas, setRifas] = useState<RifaFront[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingRifa, setEditingRifa] = useState<RifaFront | null>(null);
@@ -106,7 +108,9 @@ export default function RifaManager() {
 
             if (imagemCapaFile) {
                 let fileToUpload = imagemCapaFile;
-                try { fileToUpload = await compressImage(imagemCapaFile); } catch (err) {}
+                try { fileToUpload = await compressImage(imagemCapaFile); } catch (err) {
+                    showToast('Aviso: não foi possível comprimir a imagem de capa. O arquivo original será usado.', 'info');
+                }
 
                 const fileName = `capa-${Date.now()}-${fileToUpload.name}`;
                 const { error: uploadError } = await supabase.storage.from('imagens-rifas').upload(fileName, fileToUpload);
@@ -131,7 +135,9 @@ export default function RifaManager() {
                 let pUrl = premios[i].imagemUrl;
                 if (premios[i].imagemFile) {
                     let pFile = premios[i].imagemFile!;
-                    try { pFile = await compressImage(pFile); } catch (err) {}
+                    try { pFile = await compressImage(pFile); } catch (err) {
+                        showToast(`Aviso: não foi possível comprimir a imagem do prêmio ${i + 1}. O arquivo original será usado.`, 'info');
+                    }
                     const pName = `premio-${Date.now()}-${i}-${pFile.name}`;
                     const { error: pUpErr } = await supabase.storage.from('imagens-premios').upload(pName, pFile);
                     if (pUpErr) throw new Error('Erro upload prêmio: ' + pUpErr.message);

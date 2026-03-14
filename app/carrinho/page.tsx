@@ -87,6 +87,7 @@ export default function CartPage() {
             }
         } catch (error) {
             console.error('Error validating total:', error);
+            showToast('Não foi possível validar os preços. Os valores exibidos podem estar desatualizados.', 'error');
         }
     };
 
@@ -186,11 +187,25 @@ export default function CartPage() {
         }
     };
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome.', 'error');
             return;
         }
+
+        const productIds = items.map((item) => item.produto_id);
+        const { data: freshProducts } = await supabase
+            .from('produtos')
+            .select('*')
+            .in('id', productIds);
+        const currentProducts = freshProducts || products;
+
+        const getPrecoAtual = (produtoId: number) => {
+            const p = currentProducts.find(p => p.id === produtoId);
+            if (!p) return 0;
+            if (!p.preco_promocional || p.preco_promocional >= p.preco) return p.preco;
+            return p.preco_promocional;
+        };
 
         const subtotal = validatedTotal !== null ? validatedTotal : calculateSubtotal();
         const discountAmount = appliedCoupon ? appliedCoupon.desconto_calculado : 0;
@@ -225,9 +240,9 @@ export default function CartPage() {
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
 
         items.forEach(item => {
-            const product = products.find(p => p.id === item.produto_id);
+            const product = currentProducts.find(p => p.id === item.produto_id);
             if (product) {
-                const price = getPrecoFinal(product);
+                const price = getPrecoAtual(item.produto_id);
                 const variantInfo = item.variante ? ` (${item.variante.tipo}: ${item.variante.opcao})` : '';
                 message += `• ${item.quantidade}x ${product.nome}${variantInfo} - R$ ${(price * item.quantidade).toFixed(2).replace('.', ',')}\n`;
             }
@@ -250,7 +265,20 @@ export default function CartPage() {
     };
 
     if (loading && items.length > 0 && products.length === 0) {
-        return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando carrinho...</div>;
+        return (
+            <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '40px 15px', boxSizing: 'border-box' }}>
+                <div style={{ background: '#333', borderRadius: '8px', height: '40px', width: '40%', marginBottom: '30px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 60%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {[1, 2].map(i => (
+                            <div key={i} style={{ background: '#1a1a1a', borderRadius: '8px', height: '120px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                        ))}
+                    </div>
+                    <div style={{ flex: '1 1 300px', background: '#111', borderRadius: '10px', height: '400px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                </div>
+                <style>{`@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.25} }`}</style>
+            </div>
+        );
     }
 
     if (items.length === 0) {
