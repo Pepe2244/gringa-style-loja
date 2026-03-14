@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface Campaign {
@@ -17,8 +17,33 @@ interface CampaignBannerClientProps {
     campaign: Campaign;
 }
 
+const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
+
 export default function CampaignBannerClient({ campaign }: CampaignBannerClientProps) {
-    const [visible, setVisible] = useState(true);
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        if (!campaign) return;
+
+        const storageKey = `banner_dismissed_${campaign.id}`;
+        const dismissedAt = localStorage.getItem(storageKey);
+
+        if (dismissedAt) {
+            const elapsed = Date.now() - parseInt(dismissedAt, 10);
+            if (elapsed < DISMISS_DURATION_MS) {
+                setVisible(false);
+                return;
+            }
+        }
+
+        setVisible(true);
+    }, [campaign]);
+
+    const handleClose = () => {
+        const storageKey = `banner_dismissed_${campaign.id}`;
+        localStorage.setItem(storageKey, Date.now().toString());
+        setVisible(false);
+    };
 
     if (!visible || !campaign) return null;
 
@@ -44,17 +69,13 @@ export default function CampaignBannerClient({ campaign }: CampaignBannerClientP
         >
             {campaign.banner_url && (
                 <div style={{ width: '100%', position: 'relative', display: 'block' }}>
-                    {/* O FIM DA DESCULPA: 
-                        O componente Image abaixo é perfeitamente responsivo e destrói o LCP alto. 
-                        A tag 'priority' obriga o navegador a descarregar isto antes de qualquer outra coisa.
-                    */}
                     <Image
                         src={campaign.banner_url}
                         alt={campaign.nome_campanha || "Banner Promocional"}
-                        width={1200} // Valor base de referência, o CSS fará o resize
-                        height={670} // Valor base de referência
+                        width={1200}
+                        height={670}
                         sizes="100vw"
-                        priority={true} // A PROPRIEDADE MÁGICA QUE SALVA O TEU PAGESPEED
+                        priority={true}
                         style={{
                             width: '100%',
                             height: 'auto',
@@ -75,7 +96,7 @@ export default function CampaignBannerClient({ campaign }: CampaignBannerClientP
             </div>
 
             <button
-                onClick={() => setVisible(false)}
+                onClick={handleClose}
                 aria-label="Fechar banner da campanha"
                 title="Fechar banner"
                 style={{
@@ -102,4 +123,3 @@ export default function CampaignBannerClient({ campaign }: CampaignBannerClientP
         </div>
     );
 }
-
