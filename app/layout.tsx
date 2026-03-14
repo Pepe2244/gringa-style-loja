@@ -43,26 +43,54 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // GROWTH HACK: Lemos o cookie no SERVIDOR. 
-  // O Next 15+ exige o await em cookies().
+  // GROWTH HACK: Lógica de consentimento no servidor para performance máxima
   const cookieStore = await cookies();
   const hasConsent = cookieStore.get('cookie-consent')?.value === 'true';
+
+  // SEGURANÇA: Extração da URL do Supabase via Env Var para evitar bloqueio do Netlify
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let supabaseOrigin = "";
+
+  if (supabaseUrl) {
+    try {
+      supabaseOrigin = new URL(supabaseUrl).origin;
+    } catch (e) {
+      console.error("Invalid NEXT_PUBLIC_SUPABASE_URL");
+    }
+  }
+
+  // CONFIGURAÇÕES DE ANALYTICS (Padrão fallback para segurança caso envs faltem)
+  const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-2L2F9CY9JN";
+  const AHREFS_KEY = process.env.AHREFS_KEY || "Sam0BvC3Nm1qohD+XzVeLA";
 
   return (
     <html lang="pt-BR">
       <head>
-        <link rel="preconnect" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
-        <link rel="dns-prefetch" href="https://lijsjlkgydlszdhmsppt.supabase.co" />
+        {/* Preload dinâmico: Se a URL mudar no Env, o preload atualiza sozinho */}
+        {supabaseOrigin && (
+          <>
+            <link rel="preconnect" href={supabaseOrigin} />
+            <link rel="dns-prefetch" href={supabaseOrigin} />
+          </>
+        )}
       </head>
       <body className={`${roboto.variable} ${teko.variable} antialiased`}>
-        <Script src="https://analytics.ahrefs.com/analytics.js" data-key="Sam0BvC3Nm1qohD+XzVeLA" strategy="lazyOnload" />
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=G-2L2F9CY9JN`} strategy="lazyOnload" />
+        {/* Scripts de Terceiros com carregamento otimizado */}
+        <Script 
+          src="https://analytics.ahrefs.com/analytics.js" 
+          data-key={AHREFS_KEY} 
+          strategy="lazyOnload" 
+        />
+        <Script 
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} 
+          strategy="lazyOnload" 
+        />
         <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-2L2F9CY9JN', { page_path: window.location.pathname });
+            gtag('config', '${GA_ID}', { page_path: window.location.pathname });
           `}
         </Script>
 
@@ -70,7 +98,7 @@ export default async function RootLayout({
           <Header />
           <CampaignBannerServer />
           {children}
-          {/* Se o cookie existir, o HTML do banner sequer é enviado para o cliente. Zero peso. */}
+          {/* Renderização condicional no servidor: Economia de bytes no cliente */}
           {!hasConsent && <CookieConsent />}
           <Footer />
         </ToastProvider>
@@ -78,5 +106,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-
