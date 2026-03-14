@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Trash2, Send, CheckCircle } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 export default function PushNotificationManager() {
     const [drafts, setDrafts] = useState<any[]>([]);
@@ -10,6 +11,7 @@ export default function PushNotificationManager() {
     const [message, setMessage] = useState('');
     const [link, setLink] = useState('/');
     const [loading, setLoading] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
     useEffect(() => {
         fetchDrafts();
@@ -79,15 +81,15 @@ export default function PushNotificationManager() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Excluir este rascunho permanentemente?')) return;
+    const handleDelete = (id: number) => setConfirmDelete(id);
 
-        // Optimistic UI: Apaga da tela na hora.
-        const updatedDrafts = drafts.filter(d => d.id !== id);
+    const executeDelete = async () => {
+        if (!confirmDelete) return;
+        const updatedDrafts = drafts.filter(d => d.id !== confirmDelete);
         setDrafts(updatedDrafts);
-
+        setConfirmDelete(null);
         try {
-            const { error } = await supabase.from('notificacoes_push_queue').delete().eq('id', id);
+            const { error } = await supabase.from('notificacoes_push_queue').delete().eq('id', confirmDelete);
             if (error) throw error;
         } catch (error: any) {
             alert('Erro ao excluir no banco de dados: ' + error.message);

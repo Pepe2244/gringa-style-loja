@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Trash2, Edit, Plus, X, Upload } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 export default function CampaignManager() {
     const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -10,6 +11,7 @@ export default function CampaignManager() {
     const [showModal, setShowModal] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
     // Form states
     const [nome, setNome] = useState('');
@@ -114,14 +116,18 @@ export default function CampaignManager() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Excluir esta campanha?')) return;
+    const handleDelete = (id: number) => setConfirmDelete(id);
+
+    const executeDelete = async () => {
+        if (!confirmDelete) return;
         try {
-            const { error } = await supabase.from('campanhas').delete().eq('id', id);
+            const { error } = await supabase.from('campanhas').delete().eq('id', confirmDelete);
             if (error) throw error;
             fetchCampaigns();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
+        } finally {
+            setConfirmDelete(null);
         }
     };
 

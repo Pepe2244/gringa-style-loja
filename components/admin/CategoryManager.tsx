@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Category } from '@/types';
 import { Trash2, Plus } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 export default function CategoryManager() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [loading, setLoading] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
     useEffect(() => {
         fetchCategories();
@@ -39,19 +41,22 @@ export default function CategoryManager() {
         }
     };
 
-    const handleDeleteCategory = async (id: number) => {
-        if (!confirm('Tem certeza?')) return;
+    const handleDeleteCategory = (id: number) => setConfirmDelete(id);
+
+    const executeDelete = async () => {
+        if (!confirmDelete) return;
         try {
-            const { error } = await supabase.from('categorias').delete().eq('id', id);
+            const { error } = await supabase.from('categorias').delete().eq('id', confirmDelete);
             if (error) throw error;
             fetchCategories();
-            alert('Categoria excluída!');
         } catch (error: any) {
             if (error.code === '23503') {
                 alert('Não é possível excluir: Existem produtos nesta categoria.');
             } else {
                 alert('Erro ao excluir categoria: ' + error.message);
             }
+        } finally {
+            setConfirmDelete(null);
         }
     };
 
@@ -110,6 +115,15 @@ export default function CategoryManager() {
                     </div>
                 ))}
             </div>
+
+            {confirmDelete !== null && (
+                <ConfirmModal
+                    message="Tem certeza que deseja excluir esta categoria? Isso só é possível se não houver produtos vinculados a ela."
+                    confirmLabel="Sim, Excluir"
+                    onConfirm={executeDelete}
+                    onCancel={() => setConfirmDelete(null)}
+                />
+            )}
         </div>
     );
 }

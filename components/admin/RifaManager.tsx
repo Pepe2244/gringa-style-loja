@@ -7,6 +7,7 @@ import { Trash2, Edit, Plus, Trophy } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
 import { useToast } from '@/context/ToastContext';
+import ConfirmModal from './ConfirmModal';
 
 // Extensão da interface para enganar o compilador
 interface RifaFront extends Omit<Rifa, 'status'> {
