@@ -28,8 +28,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
     const touchStartX = useRef<number | null>(null);
     const touchEndX = useRef<number | null>(null);
 
-    const [quantity, setQuantity] = useState(1);
-
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
     const [clientName, setClientName] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('PIX');
@@ -131,12 +129,12 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
         const cartItem: CartItem = {
             produto_id: product.id,
-            quantidade: quantity,
+            quantidade: 1,
             variante: variants ? { tipo: variants.tipo, opcao: selectedVariant } : null
         };
 
         addItem(cartItem);
-        showToast(`${quantity}x ${product.nome} adicionado ao carrinho!`, 'success');
+        showToast('Produto adicionado ao carrinho!', 'success');
     };
 
     const handleDirectPurchase = () => {
@@ -376,29 +374,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                     <option key={opt} value={opt}>{opt}</option>
                                 ))}
                             </select>
-                        </div>
-                    )}
-
-                    {product.em_estoque && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-                            <span style={{ color: '#aaa', fontSize: '0.95rem', fontWeight: '600' }}>Quantidade:</span>
-                            <div style={{ display: 'flex', alignItems: 'center', background: '#0a0a0a', borderRadius: '6px', border: '1px solid #444' }}>
-                                <button
-                                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                    style={{ background: 'none', border: 'none', color: '#fff', padding: '8px 16px', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}
-                                >
-                                    −
-                                </button>
-                                <span style={{ minWidth: '32px', textAlign: 'center', fontWeight: '700', fontSize: '1.1rem', color: '#fff' }}>
-                                    {quantity}
-                                </span>
-                                <button
-                                    onClick={() => setQuantity(q => q + 1)}
-                                    style={{ background: 'none', border: 'none', color: '#fff', padding: '8px 16px', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}
-                                >
-                                    +
-                                </button>
-                            </div>
                         </div>
                     )}
 

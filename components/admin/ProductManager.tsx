@@ -6,7 +6,6 @@ import { Product, Category, ProductVariant } from '@/types';
 import { Json } from '@/types/database.types';
 import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
-import ConfirmModal from './ConfirmModal';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -14,7 +13,6 @@ export default function ProductManager() {
     const [showModal, setShowModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
     const [nome, setNome] = useState('');
     const [descricao, setDescricao] = useState('');
@@ -194,20 +192,16 @@ export default function ProductManager() {
         }
     };
 
-    const handleDelete = (id: number) => setConfirmDelete(id);
-
-    const executeDelete = async () => {
-        if (!confirmDelete) return;
+    const handleDelete = async (id: number) => {
+        if (!confirm('Excluir este produto?')) return;
         try {
-            const { error } = await supabase.from('produtos').delete().eq('id', confirmDelete);
+            const { error } = await supabase.from('produtos').delete().eq('id', id);
             if (error) throw error;
             fetchProducts();
         } catch (error: any) {
             console.error('ERRO AO EXCLUIR:', error);
             const errorMessage = error?.message || error?.details || JSON.stringify(error);
             alert('Erro ao excluir: ' + errorMessage);
-        } finally {
-            setConfirmDelete(null);
         }
     };
 
@@ -365,15 +359,6 @@ export default function ProductManager() {
                         </form>
                     </div>
                 </div>
-            )}
-
-            {confirmDelete !== null && (
-                <ConfirmModal
-                    message="Esta ação é permanente e não pode ser desfeita. Deseja excluir este produto?"
-                    confirmLabel="Sim, Excluir"
-                    onConfirm={executeDelete}
-                    onCancel={() => setConfirmDelete(null)}
-                />
             )}
         </div>
     );

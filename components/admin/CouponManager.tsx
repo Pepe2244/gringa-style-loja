@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 import { Trash2, Edit, Plus, X } from 'lucide-react';
-import ConfirmModal from './ConfirmModal';
 
 export default function CouponManager() {
     const [coupons, setCoupons] = useState<any[]>([]);
@@ -12,7 +11,6 @@ export default function CouponManager() {
     const [showModal, setShowModal] = useState(false);
     const [editingCoupon, setEditingCoupon] = useState<any>(null);
     const [loading, setLoading] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
     // Form states
     const [codigo, setCodigo] = useState('');
@@ -101,18 +99,14 @@ export default function CouponManager() {
         }
     };
 
-    const handleDelete = (id: number) => setConfirmDelete(id);
-
-    const executeDelete = async () => {
-        if (!confirmDelete) return;
+    const handleDelete = async (id: number) => {
+        if (!confirm('Excluir este cupom?')) return;
         try {
-            const { error } = await supabase.from('cupons').delete().eq('id', confirmDelete);
+            const { error } = await supabase.from('cupons').delete().eq('id', id);
             if (error) throw error;
             fetchCoupons();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
-        } finally {
-            setConfirmDelete(null);
         }
     };
 
