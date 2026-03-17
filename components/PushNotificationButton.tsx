@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Bell, Check } from 'lucide-react';
 
-const VAPID_PUBLIC_KEY = 'BBADPd_a1fbfvFIxY2ZlJfO9CQZ1OO_11Zn-2uu_2WvWN-nLG_ZaVk0PJJrRJ8WnCLSRw-8oMjx8FnhUxExgidw';
-
+const VAPID_PUBLIC_KEY = "BCaTork5Um9GLXnz_wdFxTpYanQ86luYPxa0Ip2viZN0irV857PYM7R4YMAR0IrioaFWAHFV8QJDy6hXMHwakzQ";
 export default function PushNotificationButton() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
