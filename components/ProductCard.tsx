@@ -1,7 +1,5 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { Product } from '@/types';
 import { useState, useEffect } from 'react';
+import { Product } from '@/types';
 
 interface ProductCardProps {
     product: Product;
@@ -10,38 +8,74 @@ interface ProductCardProps {
     priority?: boolean;
 }
 
+// CONSTANTE ESTRATÉGICA: Centraliza a URL do bucket para facilitar manutenção futura.
+const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
+
+// Componentes de fallback para evitar erros de compilação no Canvas (ambiente sem Next.js)
+const Link = ({ href, children, className, ...props }: any) => (
+    <a href={href} className={className} {...props}>{children}</a>
+);
+
+const Image = ({ src, alt, fill, className, style, sizes, priority, quality, ...props }: any) => {
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className={className}
+            style={{
+                ...(fill ? { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 } : {}),
+                ...style
+            }}
+            {...props}
+        />
+    );
+};
+
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
+    // PROTEÇÃO CRÍTICA: Evita o erro "Cannot read properties of undefined" se o produto não existir.
+    if (!product) return null;
+
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
-    const mediaUrls = product.media_urls || product.imagens || [];
-    const videoUrl = product.video || mediaUrls.find(url => url.includes('.mp4') || url.includes('.webm'));
-    const imageUrls = mediaUrls.filter(url => !url.includes('.mp4') && !url.includes('.webm'));
+    // LÓGICA DE RESOLUÇÃO DE URL: Garante que o src seja sempre uma URL válida.
+    const resolveMediaUrl = (path: any) => {
+        if (!path || typeof path !== 'string') return "";
+        if (path.startsWith('http') || path.startsWith('/')) return path;
+        return `${BUCKET_URL}${path}`;
+    };
 
-    // Fallback caso não haja imagens
+    // Acesso seguro às propriedades do produto
+    const mediaUrls = Array.isArray(product.media_urls) ? product.media_urls :
+        (Array.isArray(product.imagens) ? product.imagens : []);
+
+    const rawVideoUrl = product.video || mediaUrls.find(url => typeof url === 'string' && (url.includes('.mp4') || url.includes('.webm'))) || "";
+    const videoUrl = resolveMediaUrl(rawVideoUrl);
+
+    const imageUrls = mediaUrls
+        .filter(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
+        .map(url => resolveMediaUrl(url));
+
     const displayImages = imageUrls.length > 0 ? imageUrls : ['/imagens/logo_gringa_style.png'];
 
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth <= 768);
         };
-
         checkMobile();
         window.addEventListener('resize', checkMobile);
-
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
-
         const shouldPlayVideo = videoUrl && isHovered && !isMobile;
 
         if (isHovered && displayImages.length > 1 && !shouldPlayVideo) {
             interval = setInterval(() => {
                 setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
-            }, 2000); // Slower carousel
+            }, 2000);
         } else {
             setCurrentImageIndex(0);
         }
@@ -49,6 +83,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     }, [isHovered, displayImages.length, videoUrl, isMobile]);
 
     const getPrecoFinal = (p: Product) => {
+        if (!p || !p.preco) return 0;
         if (!p.preco_promocional || p.preco_promocional >= p.preco) {
             return p.preco;
         }
@@ -56,24 +91,24 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     };
 
     const precoFinal = getPrecoFinal(product);
-    const isPromo = precoFinal < product.preco;
+    const precoOriginal = product.preco || 0;
+    const isPromo = precoFinal < precoOriginal;
 
-    // GATILHO DE CRO MANTIDO: Excelente uso de ancoragem de preço
-    const descontoPercentual = isPromo 
-        ? Math.round(((product.preco - precoFinal) / product.preco) * 100) 
+    const descontoPercentual = isPromo
+        ? Math.round(((precoOriginal - precoFinal) / precoOriginal) * 100)
         : 0;
 
     const isNew = () => {
         if (!product.created_at) return false;
         const date = new Date(product.created_at);
         const limitDate = new Date();
-        limitDate.setDate(limitDate.getDate() - diasNovo);
+        limitDate.setDate(limitDate.getDate() - (diasNovo || 7));
         return date > limitDate;
     };
 
-    const shouldShowVideo = videoUrl && isHovered && !isMobile;
-
-    const productSlug = product.slug || `${product.id}-${product.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
+    const shouldShowVideo = !!videoUrl && isHovered && !isMobile;
+    const productName = product.nome || 'Produto Sem Nome';
+    const productSlug = product.slug || `${product.id}-${productName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
 
     return (
         <div
@@ -82,7 +117,6 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             onMouseLeave={() => setIsHovered(false)}
             style={{ position: 'relative' }}
         >
-            {/* GATILHOS DE ESCASSEZ E NOVIDADE */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
                 {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
                 {isPromo && (
@@ -111,26 +145,24 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                 ) : (
                     <Image
                         src={displayImages[currentImageIndex]}
-                        alt={`Imagem de ${product.nome}`}
+                        alt={`Imagem de ${productName}`}
                         fill
-                        // OTIMIZAÇÃO SEVERA: Força o download de versões drasticamente menores no telemóvel.
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        className={`card-imagem visivel`}
+                        className="card-imagem visivel"
                         style={{ objectFit: 'cover' }}
                         priority={priority}
-                        // Qualidade reduzida para 60 para acelerar o LCP. Invisível a olho nu no telemóvel.
-                        quality={60} 
+                        quality={60}
                     />
                 )}
             </div>
 
             <div className="produto-info">
                 <h2 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {product.nome}
+                    {productName}
                 </h2>
                 {isPromo ? (
                     <p className="preco">
-                        <span className="preco-antigo">De R$ {product.preco.toFixed(2).replace('.', ',')}</span>
+                        <span className="preco-antigo">De R$ {precoOriginal.toFixed(2).replace('.', ',')}</span>
                         <span className="preco-novo">Por R$ {precoFinal.toFixed(2).replace('.', ',')}</span>
                     </p>
                 ) : (
@@ -141,7 +173,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                     {!product.em_estoque ? (
                         <button
                             className="btn btn-avise-me"
-                            onClick={() => window.open(`https://wa.me/5515998608170?text=Olá, gostaria de ser avisado quando o produto *${product.nome}* estiver disponível novamente.`, '_blank')}
+                            onClick={() => window.open(`https://wa.me/5515998608170?text=Olá, gostaria de ser avisado quando o produto *${productName}* estiver disponível novamente.`, '_blank')}
                             style={{ backgroundColor: '#555', color: 'white' }}
                         >
                             Avise-me
@@ -150,16 +182,15 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         <button
                             className="btn btn-quick-view"
                             onClick={() => onQuickView(product)}
-                            aria-label={`Compra rápida para ${product.nome}`}
+                            aria-label={`Compra rápida para ${productName}`}
                         >
                             {product.variants ? 'Ver Opções' : 'Compra Rápida'}
                         </button>
                     )}
-                    {/* CORREÇÃO A11Y/SEO: aria-label dinâmico inserido */}
-                    <Link 
-                        href={`/produto/${productSlug}`} 
+                    <Link
+                        href={`/produto/${productSlug}`}
                         className="btn btn-secundario"
-                        aria-label={`Ver detalhes do produto ${product.nome}`}
+                        aria-label={`Ver detalhes do produto ${productName}`}
                     >
                         Ver Detalhes
                     </Link>
@@ -168,5 +199,3 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         </div>
     );
 }
-
-

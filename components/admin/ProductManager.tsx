@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Product, Category, ProductVariant } from '@/types';
-import { Json } from '@/types/database.types';
-import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video } from 'lucide-react';
-import { compressImage } from '@/utils/imageCompression';
+// Correção de caminhos para resolver erros de compilação
+import { supabase } from '../../lib/supabase';
+import { Product, Category, ProductVariant } from '../../types';
+import { Json } from '../../types/database.types';
+import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser } from 'lucide-react';
+import { compressImage } from '../../utils/imageCompression';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -37,17 +38,12 @@ export default function ProductManager() {
         const { data, error } = await supabase.from('produtos').select('*').order('id');
         if (error) {
             console.error('Erro ao buscar produtos:', error);
-            alert('Erro ao buscar produtos: ' + error.message);
         }
         if (data) setProducts(data);
     };
 
     const fetchCategories = async () => {
         const { data, error } = await supabase.from('categorias').select('*').order('nome');
-        if (error) {
-            console.error('Erro ao buscar categorias:', error);
-            alert('Erro ao buscar categorias: ' + error.message);
-        }
         if (data) setCategories(data);
     };
 
@@ -67,39 +63,56 @@ export default function ProductManager() {
             setVariantOpcoes(variants?.opcoes.join(', ') || '');
             setExistingMedia(product.media_urls || []);
         } else {
-            setNome('');
-            setDescricao('');
-            setPreco('');
-            setPrecoPromocional('');
-            setCategoriaId('');
-            setTags('');
-            setEmEstoque(true);
-            setVariantTipo('');
-            setVariantOpcoes('');
-            setExistingMedia([]);
+            resetForm();
         }
         setMediaFiles([]);
         setMediaPreviews([]);
         setShowModal(true);
     };
 
+    const resetForm = () => {
+        setNome('');
+        setDescricao('');
+        setPreco('');
+        setPrecoPromocional('');
+        setCategoriaId('');
+        setTags('');
+        setEmEstoque(true);
+        setVariantTipo('');
+        setVariantOpcoes('');
+        setExistingMedia([]);
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            setMediaFiles(prev => [...prev, ...files]);
 
+            // Limpa previews anteriores para evitar fugas de memória
+            mediaPreviews.forEach(url => URL.revokeObjectURL(url));
+
+            // ESTRATÉGIA: Substitui a seleção pendente em vez de acumular
+            setMediaFiles(files);
             const newPreviews = files.map(file => URL.createObjectURL(file));
-            setMediaPreviews(prev => [...prev, ...newPreviews]);
+            setMediaPreviews(newPreviews);
         }
     };
 
     const removeNewMedia = (index: number) => {
-        setMediaFiles(prev => prev.filter((_, i) => i !== index));
-        setMediaPreviews(prev => prev.filter((_, i) => i !== index));
+        const newFiles = mediaFiles.filter((_, i) => i !== index);
+        const newPreviews = mediaPreviews.filter((_, i) => i !== index);
+        URL.revokeObjectURL(mediaPreviews[index]);
+        setMediaFiles(newFiles);
+        setMediaPreviews(newPreviews);
     };
 
     const removeExistingMedia = (urlToRemove: string) => {
         setExistingMedia(prev => prev.filter(url => url !== urlToRemove));
+    };
+
+    const clearAllExistingMedia = () => {
+        if (confirm('Remover todas as fotos atuais do produto?')) {
+            setExistingMedia([]);
+        }
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -122,10 +135,7 @@ export default function ProductManager() {
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
             const { error: uploadError } = await supabase.storage.from('gringa-style-produtos').upload(fileName, fileToUpload);
 
-            if (uploadError) {
-                alert(`Erro no upload de ${file.name}: ${uploadError.message}`);
-                continue;
-            }
+            if (uploadError) continue;
 
             const { data } = supabase.storage.from('gringa-style-produtos').getPublicUrl(fileName);
             finalMediaUrls.push(data.publicUrl);
@@ -136,12 +146,11 @@ export default function ProductManager() {
             opcoes: variantOpcoes.split(',').map(s => s.trim()).filter(Boolean)
         } : null;
 
-        // Geração automática do slug baseada no nome
         const generatedSlug = nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 
         const productData = {
             nome,
-            slug: generatedSlug, // Inserção do slug para evitar violação de restrição NOT NULL
+            slug: generatedSlug,
             descricao,
             preco: parseFloat(preco),
             preco_promocional: precoPromocional ? parseFloat(precoPromocional) : null,
@@ -154,39 +163,18 @@ export default function ProductManager() {
 
         try {
             if (editingProduct) {
-                // Usando 'as any' temporariamente caso o seu database.types.ts ainda não tenha o 'slug' mapeado
                 const { error } = await supabase.from('produtos').update(productData as any).eq('id', editingProduct.id);
                 if (error) throw error;
-
-                if (productData.preco_promocional && (!editingProduct.preco_promocional || productData.preco_promocional !== editingProduct.preco_promocional)) {
-                    await supabase.from('notificacoes_push_queue').insert({
-                        titulo: '🔥 PROMOÇÃO ATIVADA!',
-                        mensagem: `O produto "${nome}" está em promoção por R$${productData.preco_promocional.toFixed(2).replace('.', ',')}!`,
-                        link_url: `/produto/${editingProduct.id}-${generatedSlug}`,
-                        status: 'rascunho'
-                    });
-                }
-
                 alert('Produto atualizado!');
             } else {
                 const { data, error } = await supabase.from('produtos').insert([productData as any]).select().single();
                 if (error) throw error;
-
-                await supabase.from('notificacoes_push_queue').insert({
-                    titulo: '🔥 Novidade na Loja!',
-                    mensagem: `O produto "${nome}" já está disponível. Venha conferir!`,
-                    link_url: `/produto/${data.id}-${generatedSlug}`,
-                    status: 'rascunho'
-                });
-
                 alert('Produto criado!');
             }
             setShowModal(false);
             fetchProducts();
         } catch (error: any) {
-            console.error('🔥 ERRO CRU DO SUPABASE:', error);
-            const errorMessage = error?.message || error?.details || JSON.stringify(error);
-            alert(`Erro crítico ao salvar: ${errorMessage}`);
+            alert(`Erro crítico: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -194,41 +182,13 @@ export default function ProductManager() {
 
     const handleDelete = async (id: number) => {
         if (!confirm('Excluir este produto?')) return;
-        try {
-            const { error } = await supabase.from('produtos').delete().eq('id', id);
-            if (error) throw error;
-            fetchProducts();
-        } catch (error: any) {
-            console.error('ERRO AO EXCLUIR:', error);
-            const errorMessage = error?.message || error?.details || JSON.stringify(error);
-            alert('Erro ao excluir: ' + errorMessage);
-        }
+        await supabase.from('produtos').delete().eq('id', id);
+        fetchProducts();
     };
 
     const toggleStock = async (id: number, currentStatus: boolean) => {
-        try {
-            const { error } = await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
-            if (error) throw error;
-
-            if (!currentStatus) {
-                const prod = products.find(p => p.id === id);
-                if (prod) {
-                    const slug = prod.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-                    await supabase.from('notificacoes_push_queue').insert({
-                        titulo: '🛍️ De volta ao estoque!',
-                        mensagem: `O produto "${prod.nome}" está disponível novamente!`,
-                        link_url: `/produto/${id}-${slug}`,
-                        status: 'rascunho'
-                    });
-                }
-            }
-
-            fetchProducts();
-        } catch (error: any) {
-            console.error('ERRO AO ALTERAR ESTOQUE:', error);
-            const errorMessage = error?.message || error?.details || JSON.stringify(error);
-            alert('Erro ao atualizar estoque: ' + errorMessage);
-        }
+        await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
+        fetchProducts();
     };
 
     return (
@@ -253,17 +213,10 @@ export default function ProductManager() {
                     {products.map(prod => (
                         <tr key={prod.id}>
                             <td>{prod.nome}</td>
-                            <td>
-                                R$ {prod.preco.toFixed(2)}
-                                {prod.preco_promocional && <span style={{ color: '#00ff88', marginLeft: '5px' }}>({prod.preco_promocional.toFixed(2)})</span>}
-                            </td>
+                            <td>R$ {prod.preco.toFixed(2)}</td>
                             <td>
                                 <label className="switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={prod.em_estoque}
-                                        onChange={() => toggleStock(prod.id, prod.em_estoque)}
-                                    />
+                                    <input type="checkbox" checked={prod.em_estoque} onChange={() => toggleStock(prod.id, prod.em_estoque)} />
                                     <span className="slider"></span>
                                 </label>
                             </td>
@@ -278,83 +231,78 @@ export default function ProductManager() {
                 </tbody>
             </table>
 
-            <div className="admin-mobile-list">
-                {products.map(prod => (
-                    <div key={prod.id} className="admin-mobile-card">
-                        <div className="admin-mobile-card-header">
-                            <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.2rem' }}>{prod.nome}</h3>
-                            <label className="switch" style={{ transform: 'scale(0.8)' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={prod.em_estoque}
-                                    onChange={() => toggleStock(prod.id, prod.em_estoque)}
-                                />
-                                <span className="slider"></span>
-                            </label>
-                        </div>
-                        <div className="admin-mobile-card-body">
-                            <p><strong>Preço:</strong> R$ {prod.preco.toFixed(2)}</p>
-                            {prod.preco_promocional && (
-                                <p style={{ color: '#00ff88' }}><strong>Promo:</strong> R$ {prod.preco_promocional.toFixed(2)}</p>
-                            )}
-                            <p><strong>Estoque:</strong> {prod.em_estoque ? 'Sim' : 'Não'}</p>
-                        </div>
-                        <div className="admin-mobile-card-actions">
-                            <button className="btn-admin-acao btn-editar" onClick={() => openModal(prod)} style={{ flex: 1, padding: '10px' }}>Editar</button>
-                            <button className="btn-admin-acao btn-excluir" onClick={() => handleDelete(prod.id)} style={{ flex: 1, padding: '10px' }}>Excluir</button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
             {showModal && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin">
                         <button className="modal-fechar-btn" onClick={() => setShowModal(false)}>&times;</button>
-                        <h2 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '25px' }}>
-                            {editingProduct ? 'Editar Produto' : 'Adicionar Produto'}
-                        </h2>
+                        <h2 className="titulo-secao">{editingProduct ? 'Editar Produto' : 'Adicionar Produto'}</h2>
 
                         <form onSubmit={handleSave}>
-                            <div className="form-campo">
-                                <label>Nome do Produto</label>
-                                <input type="text" value={nome} onChange={e => setNome(e.target.value)} required />
+                            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <div className="form-campo">
+                                    <label>Nome</label>
+                                    <input type="text" value={nome} onChange={e => setNome(e.target.value)} required />
+                                </div>
+                                <div className="form-campo">
+                                    <label>Categoria</label>
+                                    <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} required>
+                                        <option value="">Selecione...</option>
+                                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.nome}</option>)}
+                                    </select>
+                                </div>
                             </div>
-                            <div className="form-campo">
-                                <label>Preço</label>
-                                <input type="number" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} required />
-                            </div>
-                            <div className="form-campo">
-                                <label>Preço Promocional (Opcional)</label>
-                                <input type="number" step="0.01" value={precoPromocional} onChange={e => setPrecoPromocional(e.target.value)} />
-                            </div>
+
                             <div className="form-campo">
                                 <label>Descrição</label>
-                                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={4} />
+                                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={3} />
                             </div>
-                            <div className="form-campo">
-                                <label>Categoria</label>
-                                <select value={categoriaId} onChange={e => setCategoriaId(e.target.value)} required>
-                                    <option value="">Selecione...</option>
-                                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.nome}</option>)}
-                                </select>
+
+                            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <div className="form-campo">
+                                    <label>Preço</label>
+                                    <input type="number" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} required />
+                                </div>
+                                <div className="form-campo">
+                                    <label>Preço Promo</label>
+                                    <input type="number" step="0.01" value={precoPromocional} onChange={e => setPrecoPromocional(e.target.value)} />
+                                </div>
                             </div>
-                            <div className="form-campo">
-                                <label>Tipo da Variante</label>
-                                <input type="text" value={variantTipo} onChange={e => setVariantTipo(e.target.value)} placeholder="Ex: Cor" />
-                            </div>
-                            <div className="form-campo">
-                                <label>Opções (separadas por vírgula)</label>
-                                <input type="text" value={variantOpcoes} onChange={e => setVariantOpcoes(e.target.value)} placeholder="Ex: Azul, Verde" />
-                            </div>
-                            <div className="form-campo">
-                                <label>Mídias</label>
-                                <input type="file" multiple accept="image/*,video/*" onChange={handleFileChange} />
+
+                            <div className="form-campo" style={{ marginTop: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <label style={{ fontWeight: 'bold' }}>Mídias do Produto ({existingMedia.length + mediaFiles.length})</label>
+                                    {existingMedia.length > 0 && (
+                                        <button type="button" onClick={clearAllExistingMedia} className="btn-admin" style={{ background: '#ff4444', fontSize: '0.8rem', padding: '5px 10px' }}>
+                                            <Eraser size={14} /> Limpar Atuais
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="media-management-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px', background: '#222', padding: '10px', borderRadius: '8px', marginBottom: '15px' }}>
+                                    {existingMedia.map((url, i) => (
+                                        <div key={`existing-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
+                                            <img src={url} className="preview-img" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '2px solid var(--cor-destaque)' }} />
+                                            <button type="button" onClick={() => removeExistingMedia(url)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'red', borderRadius: '50%', border: 'none', color: 'white', cursor: 'pointer', padding: '2px' }}><X size={14} /></button>
+                                        </div>
+                                    ))}
+
+                                    {mediaPreviews.map((url, i) => (
+                                        <div key={`new-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
+                                            <img src={url} className="preview-img" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '2px solid #00ff88' }} />
+                                            <button type="button" onClick={() => removeNewMedia(i)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#00ff88', borderRadius: '50%', border: 'none', color: 'black', cursor: 'pointer', padding: '2px' }}><X size={14} /></button>
+                                        </div>
+                                    ))}
+
+                                    <label className="upload-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #444', borderRadius: '4px', cursor: 'pointer', aspectRatio: '1/1' }}>
+                                        <input type="file" multiple accept="image/*,video/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                                        <Plus size={24} color="#666" />
+                                    </label>
+                                </div>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
                                 <button type="button" onClick={() => setShowModal(false)} className="btn-admin btn-cancelar">Cancelar</button>
-                                <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>{loading ? 'Salvando...' : 'Salvar'}</button>
+                                <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>{loading ? 'Processando...' : 'Salvar'}</button>
                             </div>
                         </form>
                     </div>

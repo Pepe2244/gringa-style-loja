@@ -27,11 +27,7 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // 4. TESTE NO CELULAR: Libera o acesso via rede local (IP 192.168.0.239)
-  // Sem isso, as imagens podem quebrar ou dar erro de CORS no seu iPhone
-  experimental: {
-    allowedDevOrigins: ['192.168.0.239:3000'],
-  },
+
 
   // 5. LIMPEZA DE LIXO EM PRODUÇÃO: Remove console.logs para economizar processamento e privacidade
   compiler: {
