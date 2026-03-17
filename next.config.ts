@@ -2,36 +2,41 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // 1. A MÁGICA DA COMPRESSÃO: Força o servidor a converter imagens para AVIF e WebP
+    // 1. RESOLUÇÃO DE ERROS DE LOG: Adicionado o 60 para parar o erro de "unconfigured qualities"
+    qualities: [60, 75],
+
+    // 2. MÁGICA DA COMPRESSÃO: Converte para formatos ultra-leves (AVIF é 20% menor que WebP)
     formats: ['image/avif', 'image/webp'],
 
-    // 2. Cache máximo (1 ano) para calar o aviso do Google PageSpeed
+    // 3. CACHE AGRESSIVO: 1 ano de cache para passar no Google PageSpeed
     minimumCacheTTL: 31536000, 
 
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'lijsjlkgydlszdhmsppt.supabase.co',
+        hostname: 'tsilaaurmpahookyanbe.supabase.co', // ID Corrigido e funcional
         port: '',
         pathname: '/storage/v1/object/public/**',
       },
       {
         protocol: 'https',
-        hostname: 'res.cloudinary.com', // Mantive a tua configuração do Cloudinary
+        hostname: 'res.cloudinary.com',
         port: '',
         pathname: '/**',
       }
     ],
   },
 
-  // 3. Limpeza de lixo em Produção
-  // O PageSpeed acusou "JavaScript legado". Isto remove todos os console.log() do teu código
-  // quando for para produção, poupando bytes desnecessários no telemóvel do utilizador.
+  // 4. TESTE NO CELULAR: Libera o acesso via rede local (IP 192.168.0.239)
+  // Sem isso, as imagens podem quebrar ou dar erro de CORS no seu iPhone
+  experimental: {
+    allowedDevOrigins: ['192.168.0.239:3000'],
+  },
+
+  // 5. LIMPEZA DE LIXO EM PRODUÇÃO: Remove console.logs para economizar processamento e privacidade
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
 };
 
 export default nextConfig;
-
-

@@ -210,7 +210,7 @@ export default function ProductManager() {
             const { error } = await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
             if (error) throw error;
 
-            if (!currentStatus) { 
+            if (!currentStatus) {
                 const prod = products.find(p => p.id === id);
                 if (prod) {
                     const slug = prod.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
