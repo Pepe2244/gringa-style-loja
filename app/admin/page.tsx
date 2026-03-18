@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { loginAction, checkAuth, logoutAction } from '@/app/actions/auth';
 import { supabase } from '@/lib/supabase';

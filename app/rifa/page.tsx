@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
@@ -155,9 +154,20 @@ export default function RifaPage() {
             const result = await reservarNumerosRifa(freshRifa.id, selectedNumbers, clientName, clientPhone);
 
             if (!result.success) throw new Error(result.error);
-            const participantId = Array.isArray(result.data) ? result.data[0].participante_id : result.data.participante_id;
+            
+            let participantId = null;
+            if (Array.isArray(result.data) && result.data.length > 0) {
+                participantId = result.data[0].participante_id || result.data[0].id || (typeof result.data[0] === 'number' ? result.data[0] : null);
+            } else if (result.data && typeof result.data === 'object') {
+                participantId = result.data.participante_id || result.data.id;
+            } else if (typeof result.data === 'number' || typeof result.data === 'string') {
+                participantId = result.data;
+            }
 
-            if (!participantId) throw new Error("ID do participante não foi retornado pelo banco.");
+            if (!participantId) {
+                console.error("Erro Crítico: ID do Participante Ausente. Data completa:", result.data);
+                throw new Error(`Ocorreu um erro ao obter sua reserva. Dados: ${JSON.stringify(result.data)}. Por favor contate o suporte.`);
+            }
 
             router.refresh();
             router.push(`/pagamento?participante_id=${participantId}`);
