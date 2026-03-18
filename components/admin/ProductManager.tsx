@@ -7,6 +7,7 @@ import { Product, Category, ProductVariant } from '../../types';
 import { Json } from '../../types/database.types';
 import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser, AlertCircle, Loader2, Package, Tag, Settings2 } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
+import { getProxiedImageUrl } from '../../utils/imageUrl';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -139,7 +140,10 @@ export default function ProductManager() {
                 }
             }
 
-            const fileExt = fileToUpload.name.split('.').pop();
+            let fileExt = fileToUpload.name.split('.').pop();
+            if (fileToUpload.type.startsWith('image/')) {
+                fileExt = 'webp';
+            }
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
             const { error: uploadError } = await supabase.storage.from('gringa-style-produtos').upload(fileName, fileToUpload);
 
@@ -321,13 +325,13 @@ export default function ProductManager() {
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', background: '#000', padding: '8px', borderRadius: '8px' }}>
                                     {existingMedia.map((url, i) => (
                                         <div key={`ex-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
-                                            <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--cor-destaque)' }} />
+                                            <img src={getProxiedImageUrl(url)} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--cor-destaque)' }} />
                                             <button type="button" onClick={() => removeExistingMedia(url)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'red', borderRadius: '50%', color: 'white', border: 'none', width: '18px', height: '18px', fontSize: '10px' }}>&times;</button>
                                         </div>
                                     ))}
                                     {mediaPreviews.map((url, i) => (
                                         <div key={`nw-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
-                                            <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #00ff88', opacity: 0.8 }} />
+                                            <img src={url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #00ff88', opacity: 0.8 }} />
                                             <button type="button" onClick={() => removeNewMedia(i)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#00ff88', borderRadius: '50%', color: 'black', border: 'none', width: '18px', height: '18px', fontSize: '10px' }}>&times;</button>
                                         </div>
                                     ))}

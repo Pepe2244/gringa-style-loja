@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { reservarNumerosRifa } from '@/app/actions/rifa';
 import { Trophy } from 'lucide-react';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 // GROWTH HACK TÉCNICO: Forçamos o TypeScript a aceitar a nova coluna do banco
 // sem precisarmos reescrever os arquivos globais de tipagem agora.
@@ -155,7 +156,9 @@ export default function RifaPage() {
             const result = await reservarNumerosRifa(freshRifa.id, selectedNumbers, clientName, clientPhone);
 
             if (!result.success) throw new Error(result.error);
-            const participantId = result.data[0].participante_id;
+            const participantId = Array.isArray(result.data) ? result.data[0].participante_id : result.data.participante_id;
+
+            if (!participantId) throw new Error("ID do participante não foi retornado pelo banco.");
 
             router.refresh();
             router.push(`/pagamento?participante_id=${participantId}`);
@@ -198,7 +201,24 @@ export default function RifaPage() {
     const isFinished = rifa.status === 'finalizada';
     const isSoldOut = soldSet.size >= rifa.total_numeros || isFinished;
 
-    const imageUrl = rifa.imagem_premio_url || '/imagens/gringa_style_logo.png';
+    const imageUrl = getProxiedImageUrl(rifa.imagem_premio_url || '/imagens/gringa_style_logo.png');
+
+    const censurarNome = (nome: string) => {
+        if (!nome) return '';
+        const partes = nome.trim().split(' ');
+        return `${partes[0]} ************`;
+    };
+
+    const censurarTelefone = (telefone: string) => {
+        if (!telefone) return '';
+        const apenasNumeros = telefone.replace(/\D/g, '');
+        if (apenasNumeros.length < 10) return telefone;
+        const ddd = apenasNumeros.substring(0, 2);
+        const inicio = apenasNumeros.substring(2, 7); 
+        return `(${ddd}) ${inicio}-****`;
+    };
+
+    const premioVencedor = premios.find(p => p.vencedor_numero === rifa.numero_vencedor);
 
     return (
         <div className="container" id="rifa-container">
@@ -214,9 +234,17 @@ export default function RifaPage() {
                         <Trophy size={48} color="orange" style={{ margin: '0 auto 10px' }} />
                         <h2 style={{ color: 'orange', margin: 0 }}>RIFA ENCERRADA</h2>
                         {rifa.numero_vencedor !== null && rifa.numero_vencedor !== undefined ? (
-                            <p style={{ fontSize: '1.2rem', color: 'white', marginTop: '10px' }}>
-                                O Número Vencedor foi: <strong style={{ fontSize: '1.8rem', color: '#00ff88' }}>{String(rifa.numero_vencedor).padStart(totalDigitos, '0')}</strong>
-                            </p>
+                            <div style={{ background: '#222', padding: '15px', borderRadius: '8px', marginTop: '15px' }}>
+                                <p style={{ fontSize: '1.2rem', color: 'white', marginBottom: '10px' }}>
+                                    O Número Vencedor foi: <br/><strong style={{ fontSize: '2.5rem', color: '#00ff88', letterSpacing: '2px' }}>{String(rifa.numero_vencedor).padStart(totalDigitos, '0')}</strong>
+                                </p>
+                                {premioVencedor && (
+                                    <>
+                                        <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>🏆 Ganhador: <strong style={{color: 'white'}}>{censurarNome(String(premioVencedor.vencedor_nome))}</strong></p>
+                                        <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>📱 Contato: <strong style={{color: 'white'}}>{censurarTelefone(String(premioVencedor.vencedor_telefone))}</strong></p>
+                                    </>
+                                )}
+                            </div>
                         ) : (
                             <p style={{ color: 'white', marginTop: '10px' }}>Sorteio realizado. Verifique os prêmios abaixo.</p>
                         )}

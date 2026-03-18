@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 export default function HistoricoPage() {
     const [rifas, setRifas] = useState<Rifa[]>([]);
@@ -74,7 +75,7 @@ export default function HistoricoPage() {
 
                         // Fallback para logo se não houver imagem da rifa
                         const rifaImagem = rifa.imagem_premio_url
-                            ? `${rifa.imagem_premio_url}?format=webp&width=150&quality=75`
+                            ? `${getProxiedImageUrl(rifa.imagem_premio_url)}?format=webp&width=150&quality=75`
                             : '/imagens/gringa_style_logo.png';
 
                         return (
@@ -98,6 +99,7 @@ export default function HistoricoPage() {
                                     <img
                                         src={rifaImagem}
                                         alt={rifa.nome_premio}
+                                        loading="lazy"
                                         style={{
                                             width: '80px',
                                             height: '80px',
@@ -128,8 +130,9 @@ export default function HistoricoPage() {
                                         }}>
                                             {premio.imagem_url ? (
                                                 <img
-                                                    src={`${premio.imagem_url}?format=webp&width=60&quality=75`}
+                                                    src={`${getProxiedImageUrl(premio.imagem_url)}?format=webp&width=60&quality=75`}
                                                     alt={premio.descricao}
+                                                    loading="lazy"
                                                     style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
                                                 />
                                             ) : (

@@ -9,6 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 import StickyCTA from './StickyCTA';
 import { useCartStore } from '@/store/useCartStore';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 interface ProductPageContentProps {
     id: number;
@@ -277,7 +278,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             <div className="container-imagem-zoom">
                                 <img
                                     id="produto-imagem-principal"
-                                    src={currentMedia ? `${currentMedia}?format=webp&width=600&quality=80` : fallbackImage}
+                                    src={currentMedia ? `${getProxiedImageUrl(currentMedia)}?format=webp&width=600&quality=80` : fallbackImage}
                                     alt={product.nome}
                                     draggable={false}
                                     style={{ objectFit: 'cover', width: '100%', aspectRatio: '1/1' }}
@@ -310,10 +311,11 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         {mediaUrls.map((url, idx) => (
                             <img
                                 key={idx}
-                                src={`${url}?format=webp&width=100&quality=70`}
+                                src={`${getProxiedImageUrl(url)}?format=webp&width=100&quality=70`}
                                 className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
                                 onClick={() => setCurrentImageIndex(idx)}
                                 alt={`Miniatura ${idx + 1}`}
+                                loading="lazy"
                                 style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent' }}
                             />
                         ))}
@@ -479,9 +481,10 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                             />
                                         ) : (
                                             <img
-                                                src={mediaUrl}
+                                                src={getProxiedImageUrl(mediaUrl)}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 alt={rel.nome}
+                                                loading="lazy"
                                             />
                                         )}
                                     </div>
@@ -497,8 +500,9 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido Rápido">
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', padding: '15px', backgroundColor: '#111', borderRadius: '8px', border: '1px solid #333' }}>
                     <img
-                        src={mediaUrls[0] || fallbackImage}
+                        src={getProxiedImageUrl(mediaUrls[0] || fallbackImage)}
                         alt={product.nome}
+                        loading="lazy"
                         style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '5px' }}
                     />
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

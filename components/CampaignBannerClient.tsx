@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 interface Campaign {
     id: number;
@@ -70,7 +71,7 @@ export default function CampaignBannerClient({ campaign }: CampaignBannerClientP
             {campaign.banner_url && (
                 <div style={{ width: '100%', position: 'relative', display: 'block' }}>
                     <Image
-                        src={campaign.banner_url}
+                        src={getProxiedImageUrl(campaign.banner_url)}
                         alt={campaign.nome_campanha || "Banner Promocional"}
                         width={1200}
                         height={670}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 interface DirectPurchaseModalProps {
     isOpen: boolean;
@@ -108,7 +109,8 @@ export default function DirectPurchaseModal({
             <div id="modal-compra-resumo-produto">
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                     <img
-                        src={(product.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/gringa_style_logo.png')}
+                        src={getProxiedImageUrl(product.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/gringa_style_logo.png')}
+                        loading="lazy"
                         style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '5px' }}
                         alt={product.nome}
                     />

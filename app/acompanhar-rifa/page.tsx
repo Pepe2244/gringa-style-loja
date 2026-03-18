@@ -13,6 +13,7 @@ function TrackingContent() {
     const [loading, setLoading] = useState(true);
     const [rifa, setRifa] = useState<Rifa | null>(null);
     const [participantes, setParticipantes] = useState<any[]>([]);
+    const [premios, setPremios] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
@@ -57,9 +58,16 @@ function TrackingContent() {
                     .eq('rifa_id', rifaData.id);
 
                 if (allPartData) {
-                    // Opcional: filtrar apenas pagos se quiser esconder pendentes/cancelados do público
-                    // const confirmed = allPartData.filter(p => p.status_pagamento === 'pago');
                     setParticipantes(allPartData);
+                }
+
+                if (rifaData.status === 'finalizada') {
+                    const { data: premiosData } = await supabase
+                        .from('premios')
+                        .select('vencedor_numero, vencedor_nome, vencedor_telefone')
+                        .eq('rifa_id', rifaData.id);
+                        
+                    if (premiosData) setPremios(premiosData);
                 }
             }
         } catch (error) {
@@ -77,12 +85,16 @@ function TrackingContent() {
     const censurarNome = (nome: string) => {
         if (!nome) return '';
         const partes = nome.trim().split(' ').filter(p => p.length > 0);
-        if (partes.length <= 1) return nome;
-        const primeiroNome = partes[0];
-        const sobrenomesCensurados = partes.slice(1).map(parte => {
-            return parte.charAt(0) + '*'.repeat(parte.length - 1);
-        }).join(' ');
-        return `${primeiroNome} ${sobrenomesCensurados}`;
+        return `${partes[0]} ************`;
+    };
+
+    const censurarTelefone = (telefone: string) => {
+        if (!telefone) return '';
+        const apenasNumeros = telefone.replace(/\D/g, '');
+        if (apenasNumeros.length < 10) return telefone;
+        const ddd = apenasNumeros.substring(0, 2);
+        const inicio = apenasNumeros.substring(2, 7);
+        return `(${ddd}) ${inicio}-****`;
     };
 
     if (loading) {
@@ -114,6 +126,27 @@ function TrackingContent() {
     return (
         <div className="container">
             <h1 className="titulo-secao">Participantes da Rifa: {rifa.nome_premio}</h1>
+
+            {rifa.status === 'finalizada' && (
+                <div style={{ background: 'rgba(255, 165, 0, 0.1)', border: '2px solid orange', padding: '20px', borderRadius: '10px', marginBottom: '30px', textAlign: 'center', maxWidth: '600px', margin: '0 auto 30px' }}>
+                    <h2 style={{ color: 'orange', margin: '0 0 15px 0' }}>🏆 RIFA ENCERRADA E SORTEADA 🏆</h2>
+                    {premios.find(p => p.vencedor_numero === rifa.numero_vencedor) ? (() => {
+                        const vencedor = premios.find(p => p.vencedor_numero === rifa.numero_vencedor);
+                        const totalDigitos = String(rifa.total_numeros - 1).length;
+                        return (
+                            <div style={{ background: '#222', padding: '15px', borderRadius: '8px' }}>
+                                <p style={{ fontSize: '1.2rem', color: 'white', marginBottom: '10px' }}>
+                                    Número Sorteado: <br/><strong style={{ fontSize: '2.5rem', color: '#00ff88', letterSpacing: '2px' }}>{String(rifa.numero_vencedor).padStart(totalDigitos, '0')}</strong>
+                                </p>
+                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Ganhador: <strong style={{color: 'white'}}>{censurarNome(String(vencedor.vencedor_nome))}</strong></p>
+                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Contato: <strong style={{color: 'white'}}>{censurarTelefone(String(vencedor.vencedor_telefone))}</strong></p>
+                            </div>
+                        );
+                    })() : (
+                        <p style={{ color: 'white' }}>Nenhum vencedor atribuído no momento.</p>
+                    )}
+                </div>
+            )}
 
             <div className="search-container" style={{ maxWidth: '500px', margin: '0 auto 30px' }}>
                 <input

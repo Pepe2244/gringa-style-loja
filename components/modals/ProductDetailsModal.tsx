@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 interface ProductDetailsModalProps {
     isOpen: boolean;
@@ -79,7 +80,7 @@ export default function ProductDetailsModal({
 
                     return (
                         <div style={{ position: 'relative' }}>
-                            <img src={currentImage} alt={product.nome} style={{ width: '100%', borderRadius: '5px' }} />
+                            <img src={getProxiedImageUrl(currentImage)} alt={product.nome} loading="lazy" style={{ width: '100%', borderRadius: '5px' }} />
                             {modalImages.length > 1 && (
                                 <>
                                     <button

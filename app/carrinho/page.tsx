@@ -8,6 +8,7 @@ import { Product, CartItem } from '@/types';
 import { Trash2, ShoppingCart, ShieldCheck, Truck } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useCartStore, CartState } from '@/store/useCartStore';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 export default function CartPage() {
     const { showToast } = useToast();
@@ -312,7 +313,7 @@ export default function CartPage() {
                                 <div style={{ width: '100px', height: '100px', flexShrink: 0 }}>
                                     <Link href={`/produto/${item.produto_id}`}>
                                         <Image
-                                            src={imageUrl}
+                                            src={getProxiedImageUrl(imageUrl)}
                                             alt={product.nome}
                                             width={100}
                                             height={100}

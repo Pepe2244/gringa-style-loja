@@ -36,13 +36,14 @@ export async function compressImage(file: File, maxWidth = 1920, quality = 0.8):
                             resolve(file);
                             return;
                         }
-                        const newFile = new File([blob], file.name, {
-                            type: 'image/jpeg',
+                        const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                        const newFile = new File([blob], newFileName, {
+                            type: 'image/webp',
                             lastModified: Date.now(),
                         });
                         resolve(newFile);
                     },
-                    'image/jpeg',
+                    'image/webp',
                     quality
                 );
             };

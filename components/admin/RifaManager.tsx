@@ -7,6 +7,7 @@ import { Trash2, Edit, Plus, Trophy } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
 import { useToast } from '@/context/ToastContext';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 // Extensão da interface para enganar o compilador
 interface RifaFront extends Omit<Rifa, 'status'> {
@@ -380,7 +381,7 @@ export default function RifaManager() {
                             <div className="form-campo"><label>Descrição</label><textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={3} /></div>
                             <div className="form-campo"><label>Preço por Número</label><input type="number" step="0.01" value={precoNumero} onChange={e => setPrecoNumero(e.target.value)} required /></div>
                             <div className="form-campo"><label>Total de Números</label><input type="number" value={totalNumeros} onChange={e => setTotalNumeros(e.target.value)} required /></div>
-                            <div className="form-campo"><label>Imagem de Capa</label><input type="file" accept="image/*" onChange={handleCapaChange} />{imagemCapaPreview && <img src={imagemCapaPreview} alt="Preview" style={{ width: '100px', marginTop: '10px' }} />}</div>
+                            <div className="form-campo"><label>Imagem de Capa</label><input type="file" accept="image/*" onChange={handleCapaChange} />{imagemCapaPreview && <img src={getProxiedImageUrl(imagemCapaPreview)} alt="Preview" loading="lazy" style={{ width: '100px', marginTop: '10px' }} />}</div>
                             <hr style={{ borderColor: '#555', margin: '25px 0' }} />
                             <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px' }}>Prêmios</h3>
                             {premios.map((premio, index) => (
@@ -388,7 +389,7 @@ export default function RifaManager() {
                                     <div className="premio-item-header"><label>{index + 1}º Prêmio</label>{index > 0 && (<button type="button" onClick={() => removePrizeField(index)} className="btn-admin btn-excluir" style={{ padding: '5px 10px' }}>Remover</button>)}</div>
                                     <div className="premio-item-body">
                                         <div className="premio-campo-descricao"><input type="text" placeholder="Descrição" value={premio.descricao} onChange={e => handlePrizeChange(index, 'descricao', e.target.value)} required /></div>
-                                        <div className="premio-campo-imagem"><input type="file" accept="image/*" onChange={e => e.target.files && handlePrizeChange(index, 'file', e.target.files[0])} />{premio.imagemPreview && <img src={premio.imagemPreview} alt="Preview" style={{ width: '50px', marginTop: '5px' }} />}</div>
+                                        <div className="premio-campo-imagem"><input type="file" accept="image/*" onChange={e => e.target.files && handlePrizeChange(index, 'file', e.target.files[0])} />{premio.imagemPreview && <img src={getProxiedImageUrl(premio.imagemPreview)} alt="Preview" loading="lazy" style={{ width: '50px', marginTop: '5px' }} />}</div>
                                     </div>
                                 </div>
                             ))}

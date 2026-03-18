@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product } from '@/types';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 interface ProductCardProps {
     product: Product;
@@ -42,8 +43,8 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     // LÓGICA DE RESOLUÇÃO DE URL: Garante que o src seja sempre uma URL válida.
     const resolveMediaUrl = (path: any) => {
         if (!path || typeof path !== 'string') return "";
-        if (path.startsWith('http') || path.startsWith('/')) return path;
-        return `${BUCKET_URL}${path}`;
+        if (path.startsWith('http') || path.startsWith('/')) return getProxiedImageUrl(path);
+        return getProxiedImageUrl(`${BUCKET_URL}${path}`);
     };
 
     // Acesso seguro às propriedades do produto

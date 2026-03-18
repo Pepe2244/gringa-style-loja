@@ -34,6 +34,12 @@ export async function reservarNumerosRifa(
     const supabase = getAdminClient();
 
     try {
+        // Validação de segurança no SERVIDOR: checa se a rifa já encerrou
+        const { data: rifaCheck } = await supabase.from('rifas').select('status').eq('id', rifaId).single();
+        if (rifaCheck && rifaCheck.status === 'finalizada') {
+            throw new Error('CUIDADO: Tentativa de compra em rifa já encerrada e sorteada. Ação bloqueada.');
+        }
+
         const { data, error } = await supabase.rpc('reservar_numeros_rifa', {
             id_rifa_param: rifaId,
             numeros_escolhidos_param: numeros,

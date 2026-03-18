@@ -1,0 +1,12 @@
+[[redirects]]
+  from = "/supabase-assets/*"
+  to = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/:splat"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "/supabase-assets/*"
+  [headers.values]
+    # Aqui é onde a mágica acontece: 31536000 segundos = 1 ano
+    Cache-Control = "public, max-age=31536000, immutable"
+    X-Content-Type-Options = "nosniff"

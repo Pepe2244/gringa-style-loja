@@ -138,6 +138,7 @@ export interface Database {
                     data_sorteio: string | null
                     numeros_vendidos: number[] | null
                     numeros_reservados: number[] | null
+                    numero_vencedor: number | null
                 }
                 Insert: {
                     id?: number
@@ -151,6 +152,7 @@ export interface Database {
                     data_sorteio?: string | null
                     numeros_vendidos?: number[] | null
                     numeros_reservados?: number[] | null
+                    numero_vencedor?: number | null
                 }
                 Update: {
                     id?: number
@@ -164,6 +166,7 @@ export interface Database {
                     data_sorteio?: string | null
                     numeros_vendidos?: number[] | null
                     numeros_reservados?: number[] | null
+                    numero_vencedor?: number | null
                 }
             }
             participantes_rifa: {
@@ -208,6 +211,7 @@ export interface Database {
                     imagem_url: string | null
                     vencedor_nome: string | null
                     vencedor_numero: number | null
+                    vencedor_telefone: string | null
                 }
                 Insert: {
                     id?: number
@@ -218,6 +222,7 @@ export interface Database {
                     imagem_url?: string | null
                     vencedor_nome?: string | null
                     vencedor_numero?: number | null
+                    vencedor_telefone?: string | null
                 }
                 Update: {
                     id?: number
@@ -228,6 +233,7 @@ export interface Database {
                     imagem_url?: string | null
                     vencedor_nome?: string | null
                     vencedor_numero?: number | null
+                    vencedor_telefone?: string | null
                 }
             }
             configuracoes: {

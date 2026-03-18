@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Trash2, Edit, Plus, X, Upload } from 'lucide-react';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 export default function CampaignManager() {
     const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -207,7 +208,7 @@ export default function CampaignManager() {
                         </div>
                         <div className="admin-mobile-card-body">
                             {camp.banner_url && (
-                                <img src={camp.banner_url} alt="Banner" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px', marginBottom: '10px' }} />
+                                <img src={getProxiedImageUrl(camp.banner_url)} alt="Banner" loading="lazy" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px', marginBottom: '10px' }} />
                             )}
                             <p><strong>Aviso:</strong> {camp.aviso_deslizante_texto || 'Nenhum'}</p>
                         </div>
@@ -252,7 +253,7 @@ export default function CampaignManager() {
                                     onChange={handleFileChange}
                                 />
                                 {bannerPreview && (
-                                    <img src={bannerPreview} alt="Preview" style={{ width: '100%', marginTop: '10px', maxHeight: '100px', objectFit: 'contain' }} />
+                                    <img src={getProxiedImageUrl(bannerPreview)} alt="Preview" loading="lazy" style={{ width: '100%', marginTop: '10px', maxHeight: '100px', objectFit: 'contain' }} />
                                 )}
                             </div>
 
