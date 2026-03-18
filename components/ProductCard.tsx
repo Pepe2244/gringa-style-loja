@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import Image from 'next/image';
 
 interface ProductCardProps {
     product: Product;
@@ -16,21 +17,6 @@ const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/p
 const Link = ({ href, children, className, ...props }: any) => (
     <a href={href} className={className} {...props}>{children}</a>
 );
-
-const Image = ({ src, alt, fill, className, style, sizes, priority, quality, ...props }: any) => {
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className={className}
-            style={{
-                ...(fill ? { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 } : {}),
-                ...style
-            }}
-            {...props}
-        />
-    );
-};
 
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
     // PROTEÇÃO CRÍTICA: Evita o erro "Cannot read properties of undefined" se o produto não existir.
@@ -52,11 +38,17 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         (Array.isArray(product.imagens) ? product.imagens : []);
 
     const rawVideoUrl = product.video || mediaUrls.find(url => typeof url === 'string' && (url.includes('.mp4') || url.includes('.webm'))) || "";
+    // O Vídeo continuará passando pelo proxy pois next/image não suporta <video>
     const videoUrl = resolveMediaUrl(rawVideoUrl);
 
+    // As imagens irão usar a URL original do Supabase para que a Netlify / Next.js consigam
+    // fazer o download interno no servidor deles e aplicar o WebP/AVIF compression
     const imageUrls = mediaUrls
         .filter(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
-        .map(url => resolveMediaUrl(url));
+        .map(url => {
+            if (url.startsWith('http') || url.startsWith('/')) return url;
+            return `${BUCKET_URL}${url}`;
+        });
 
     const displayImages = imageUrls.length > 0 ? imageUrls : ['/imagens/logo_gringa_style.png'];
 

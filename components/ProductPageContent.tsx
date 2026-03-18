@@ -10,6 +10,15 @@ import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp } from '
 import StickyCTA from './StickyCTA';
 import { useCartStore } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import Image from 'next/image';
+
+const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
+
+const resolveOriginalUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('http') || path.startsWith('/')) return path;
+    return `${BUCKET_URL}${path}`;
+};
 
 interface ProductPageContentProps {
     id: number;
@@ -275,13 +284,15 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         {videoUrl && currentImageIndex === 0 && product.video ? (
                             <video src={videoUrl} controls muted loop className="video-principal" />
                         ) : (
-                            <div className="container-imagem-zoom">
-                                <img
+                            <div className="container-imagem-zoom" style={{ position: 'relative', width: '100%', aspectRatio: '1/1' }}>
+                                <Image
                                     id="produto-imagem-principal"
-                                    src={currentMedia ? `${getProxiedImageUrl(currentMedia)}?format=webp&width=600&quality=80` : fallbackImage}
+                                    src={currentMedia ? resolveOriginalUrl(currentMedia) : fallbackImage}
                                     alt={product.nome}
+                                    fill
                                     draggable={false}
-                                    style={{ objectFit: 'cover', width: '100%', aspectRatio: '1/1' }}
+                                    style={{ objectFit: 'cover' }}
+                                    priority={true}
                                 />
                             </div>
                         )}
@@ -309,14 +320,16 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
                     <div className="produto-miniaturas" style={{ marginTop: '20px' }}>
                         {mediaUrls.map((url, idx) => (
-                            <img
+                            <Image
                                 key={idx}
-                                src={`${getProxiedImageUrl(url)}?format=webp&width=100&quality=70`}
+                                src={resolveOriginalUrl(url)}
                                 className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
                                 onClick={() => setCurrentImageIndex(idx)}
                                 alt={`Miniatura ${idx + 1}`}
                                 loading="lazy"
-                                style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent' }}
+                                width={100}
+                                height={100}
+                                style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent', objectFit: 'cover' }}
                             />
                         ))}
                     </div>
@@ -480,11 +493,12 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                                 onMouseOut={e => e.currentTarget.pause()}
                                             />
                                         ) : (
-                                            <img
-                                                src={getProxiedImageUrl(mediaUrl)}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            <Image
+                                                src={resolveOriginalUrl(mediaUrl)}
                                                 alt={rel.nome}
-                                                loading="lazy"
+                                                fill
+                                                sizes="(max-width: 768px) 50vw, 25vw"
+                                                style={{ objectFit: 'cover' }}
                                             />
                                         )}
                                     </div>

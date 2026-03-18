@@ -26,9 +26,9 @@ export default async function Footer() {
 
                 {/* A MATRIZ DINÂMICA DE SEO */}
                 <div className="rodape-coluna" style={{ flex: '1 1 200px' }}>
-                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
                         <ShoppingBag size={18} /> Destaques
-                    </h4>
+                    </h3>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {topProdutos && topProdutos.length > 0 ? (
                             topProdutos.map((produto) => (
@@ -51,7 +51,7 @@ export default async function Footer() {
                 </div>
 
                 <div className="rodape-coluna" style={{ flex: '1 1 200px' }}>
-                    <h4 style={{ marginBottom: '15px' }}>Contato</h4>
+                    <h3 style={{ marginBottom: '15px' }}>Contato</h3>
                     <p style={{ marginBottom: '10px' }}>
                         <a href="https://wa.me/5515998608170" target="_blank" aria-label="Contato via WhatsApp" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -66,7 +66,7 @@ export default async function Footer() {
                 </div>
 
                 <div className="rodape-coluna" style={{ flex: '1 1 200px' }}>
-                    <h4 style={{ marginBottom: '15px' }}>Siga-nos</h4>
+                    <h3 style={{ marginBottom: '15px' }}>Siga-nos</h3>
                     <a href="https://www.instagram.com/gringastyle_br" target="_blank" className="social-link" aria-label="Siga-nos no Instagram" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}>
                         <Instagram size={16} /> Instagram
                     </a>
