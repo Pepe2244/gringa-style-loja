@@ -9,10 +9,10 @@ import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/ri
 import { useToast } from '@/context/ToastContext';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 
-// Extensão da interface para enganar o compilador
-interface RifaFront extends Omit<Rifa, 'status'> {
+// Extensão da interface corrigida para evitar conflito de tipos
+interface RifaFront extends Omit<Rifa, 'status' | 'numero_vencedor'> {
     status: 'ativa' | 'finalizada' | 'cancelada' | string;
-    numero_vencedor?: number | null;
+    numero_vencedor: number | null;
 }
 
 export default function RifaManager() {
