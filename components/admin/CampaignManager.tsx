@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Trash2, Edit, Plus, X, Upload } from 'lucide-react';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { revalidateCampaignCache } from '@/app/actions/campanha';
 
 export default function CampaignManager() {
     const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -100,10 +101,12 @@ export default function CampaignManager() {
             if (editingCampaign) {
                 const { error } = await supabase.from('campanhas').update(campaignData).eq('id', editingCampaign.id);
                 if (error) throw error;
+                await revalidateCampaignCache();
                 alert('Campanha atualizada!');
             } else {
                 const { error } = await supabase.from('campanhas').insert([campaignData]);
                 if (error) throw error;
+                await revalidateCampaignCache();
                 alert('Campanha criada!');
             }
             setShowModal(false);
@@ -120,6 +123,7 @@ export default function CampaignManager() {
         try {
             const { error } = await supabase.from('campanhas').delete().eq('id', id);
             if (error) throw error;
+            await revalidateCampaignCache();
             fetchCampaigns();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
@@ -141,6 +145,7 @@ export default function CampaignManager() {
                 .upsert({ id: 1, campanha_ativa_id: newId });
 
             if (error) throw error;
+            await revalidateCampaignCache();
 
             // Atualiza o estado da UI instantaneamente sem precisar esperar o fetchCampaigns()
             setActiveCampaignId(newId);
