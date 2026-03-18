@@ -7,8 +7,8 @@ export const revalidate = 60;
 export default async function Home() {
   const [productsRes, categoriesRes, configRes] = await Promise.all([
     // Adicionamos media_urls e produtos_relacionados_ids para satisfazer o TypeScript
-    // e evitar a quebra do build na Netlify, mantendo o payload seguro.
-    supabase.from('produtos').select('id, nome, preco, preco_promocional, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids').order('id', { ascending: true }),
+    // Limitamos a 12 produtos para Lazy Loading inicial hiper-rápido.
+    supabase.from('produtos').select('id, nome, preco, preco_promocional, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids').order('created_at', { ascending: false }).limit(12),
     supabase.from('categorias').select('*').order('nome'),
     supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle()
   ]);

@@ -10,6 +10,15 @@ import { useToast } from '@/context/ToastContext';
 import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 
+interface ShippingOption {
+    id: number;
+    name: string;
+    price: string | number;
+    custom_price?: string | number;
+    custom_delivery_time?: number;
+    delivery_time: number;
+}
+
 export default function CartPage() {
     const { showToast } = useToast();
     const items = useCartStore((state: CartState) => state.items);
@@ -26,6 +35,14 @@ export default function CartPage() {
     const [validatingCoupon, setValidatingCoupon] = useState(false);
 
     const [clientName, setClientName] = useState('');
+    const [cep, setCep] = useState('');
+    const [loadingCep, setLoadingCep] = useState(false);
+    const [endereco, setEndereco] = useState({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
+    
+    const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+    const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
+    const [loadingShipping, setLoadingShipping] = useState(false);
+
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
@@ -134,10 +151,66 @@ export default function CartPage() {
             discount = appliedCoupon.desconto_calculado;
             if (discount > subtotal) discount = subtotal;
         }
-        return subtotal - discount;
+        
+        let shippingCost = 0;
+        if (selectedShipping) {
+            shippingCost = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+        }
+
+        return subtotal - discount + shippingCost;
     };
 
     const totalCalculado = calculateTotal();
+
+    const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 8) value = value.slice(0, 8);
+        setCep(value);
+
+        if (value.length === 8) {
+            setLoadingCep(true);
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
+                const data = await res.json();
+                if (!data.erro) {
+                    setEndereco(prev => ({
+                        ...prev,
+                        rua: data.logradouro || '',
+                        bairro: data.bairro || '',
+                        cidade: data.localidade || '',
+                        estado: data.uf || ''
+                    }));
+
+                    setLoadingShipping(true);
+                    setShippingOptions([]);
+                    setSelectedShipping(null);
+                    try {
+                        const shipRes = await fetch('/api/shipping', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ to_postal_code: value })
+                        });
+                        const shipData = await shipRes.json();
+                        if (Array.isArray(shipData) && shipData.length > 0) {
+                            setShippingOptions(shipData);
+                            setSelectedShipping(shipData[0]); 
+                        }
+                    } catch (e) {
+                        console.error('Erro ao calcular frete:', e);
+                    } finally {
+                        setLoadingShipping(false);
+                    }
+
+                } else {
+                    showToast('CEP não encontrado.', 'error');
+                }
+            } catch (error) {
+                showToast('Erro ao buscar CEP.', 'error');
+            } finally {
+                setLoadingCep(false);
+            }
+        }
+    };
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) {
@@ -190,7 +263,15 @@ export default function CartPage() {
 
     const handleCheckout = async () => {
         if (!clientName.trim()) {
-            showToast('Por favor, preencha seu nome.', 'error');
+            showToast('Por favor, preencha seu nome para finalizar.', 'error');
+            return;
+        }
+        if (cep.length === 8 && (!endereco.rua || !endereco.numero)) {
+            showToast('Por favor, preencha o número do seu endereço.', 'error');
+            return;
+        }
+        if (cep.length === 8 && shippingOptions.length > 0 && !selectedShipping) {
+            showToast('Por favor, selecione uma opção de frete.', 'error');
             return;
         }
 
@@ -210,7 +291,13 @@ export default function CartPage() {
 
         const subtotal = validatedTotal !== null ? validatedTotal : calculateSubtotal();
         const discountAmount = appliedCoupon ? appliedCoupon.desconto_calculado : 0;
-        const finalTotal = subtotal - discountAmount;
+        
+        let shippingAmount = 0;
+        if (selectedShipping) {
+            shippingAmount = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+        }
+
+        const finalTotal = subtotal - discountAmount + shippingAmount;
 
         const analyticsItems = items.map(item => {
             const product = products.find(p => p.id === item.produto_id);
@@ -249,9 +336,9 @@ export default function CartPage() {
             }
         });
 
-        message += `\n*Total:* R$ ${finalTotal.toFixed(2).replace('.', ',')}`;
+        message += `\n*TOTAL:* R$ ${finalTotal.toFixed(2).replace('.', ',')}`;
         if (appliedCoupon) {
-            message += ` (Desconto: ${appliedCoupon.codigo} - ${appliedCoupon.desconto}%)`;
+            message += ` (Cupom: ${appliedCoupon.codigo} - ${appliedCoupon.desconto}%)`;
         }
         message += `\n\n`;
 
@@ -259,7 +346,25 @@ export default function CartPage() {
         if (paymentMethod === 'Cartão de Crédito') {
             message += ` em ${installments}`;
         }
-        message += `\n\n*Aguardo o retorno!*`;
+        message += `\n\n`;
+
+        if (cep.length === 8) {
+            message += `📍 *Endereço de Entrega*\n`;
+            message += `${endereco.rua}, Nº ${endereco.numero}\n`;
+            if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
+            message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
+            message += `CEP: ${cep}\n`;
+            if (selectedShipping) {
+                const sPrice = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+                const sTime = selectedShipping.custom_delivery_time || selectedShipping.delivery_time;
+                message += `*Frete Escolhido:* ${selectedShipping.name} (${sTime} dias) - R$ ${sPrice.toFixed(2).replace('.', ',')}\n\n`;
+            } else {
+                message += `\n`;
+            }
+        } else {
+            message += `📍 *Entrega:* (Baixar com vendedor)\n\n`;
+        }
+        message += `Aguardo as instruções finais!`;
 
         window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
         clearCart();
@@ -305,8 +410,9 @@ export default function CartPage() {
                         const product = products.find(p => p.id === item.produto_id);
                         if (!product) return null;
 
-                        const mediaUrls = product.media_urls || product.imagens || [];
-                        const imageUrl = mediaUrls.find(url => !url.includes('.mp4')) || '/imagens/gringa_style_logo.png';
+                        const mediaUrls = Array.isArray(product.media_urls) ? product.media_urls : (Array.isArray(product.imagens) ? product.imagens : []);
+                        const foundImg = mediaUrls.find((url: string) => url && typeof url === 'string' && !url.includes('.mp4'));
+                        const imageUrl = foundImg || '/imagens/logo_gringa_style.png';
 
                         return (
                             <div key={`${item.produto_id}-${index}`} style={{ display: 'flex', gap: '15px', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #333', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
@@ -384,6 +490,13 @@ export default function CartPage() {
                         </div>
                     )}
 
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
+                        <span>Frete</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                            {selectedShipping ? `+ R$ ${parseFloat(String(selectedShipping.custom_price || selectedShipping.price)).toFixed(2).replace('.', ',')}` : 'A calcular'}
+                        </span>
+                    </div>
+
                     <div style={{ margin: '20px 0' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <input
@@ -429,6 +542,70 @@ export default function CartPage() {
                             onChange={(e) => setClientName(e.target.value)}
                             style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
                         />
+                    </div>
+
+                    <div style={{ marginBottom: '15px', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                            <label style={{ color: '#aaa', fontSize: '0.9rem' }}>CEP de Entrega (Opcional)</label>
+                            {loadingCep && <span style={{ fontSize: '0.8rem', color: '#25D366' }}>Buscando...</span>}
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="00000000"
+                            maxLength={8}
+                            value={cep}
+                            onChange={handleCepChange}
+                            style={{ width: '150px', padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box', marginBottom: '10px' }}
+                        />
+                        {cep.length === 8 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <input type="text" placeholder="Rua / Avenida" value={endereco.rua} onChange={e => setEndereco({...endereco, rua: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input type="text" placeholder="Número" value={endereco.numero} onChange={e => setEndereco({...endereco, numero: e.target.value})} style={{ width: '80px', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} required />
+                                    <input type="text" placeholder="Complemento" value={endereco.complemento} onChange={e => setEndereco({...endereco, complemento: e.target.value})} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} />
+                                </div>
+                                <input type="text" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input type="text" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 2, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa' }} readOnly />
+                                    <input type="text" placeholder="UF" value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa' }} readOnly />
+                                </div>
+                                
+                                <div style={{ marginTop: '15px' }}>
+                                    {loadingShipping ? (
+                                        <div style={{ color: '#aaa', fontSize: '0.9rem' }}>Calculando opções de frete...</div>
+                                    ) : shippingOptions.length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#aaa' }}>Selecione o Frete:</p>
+                                            {shippingOptions.map((option) => {
+                                                const priceValue = parseFloat(String(option.custom_price || option.price));
+                                                const days = option.custom_delivery_time || option.delivery_time;
+                                                return (
+                                                    <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#1a1a1a', padding: '10px', borderRadius: '6px', cursor: 'pointer', border: selectedShipping?.id === option.id ? '1px solid var(--cor-destaque)' : '1px solid #333' }}>
+                                                        <input 
+                                                            type="radio" 
+                                                            name="shipping_option" 
+                                                            checked={selectedShipping?.id === option.id}
+                                                            onChange={() => setSelectedShipping(option)}
+                                                        />
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                                            <div>
+                                                                <strong style={{ color: 'white' }}>{option.name}</strong>
+                                                                <div style={{ fontSize: '0.8rem', color: '#888' }}>Até {days} dias úteis</div>
+                                                            </div>
+                                                            <div style={{ fontWeight: 'bold', color: 'var(--cor-destaque)' }}>
+                                                                R$ {priceValue.toFixed(2).replace('.', ',')}
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                )
+                                            })}
+                                        </div>
+                                    ) : cep.length === 8 && !loadingShipping && endereco.cidade ? (
+                                        <div style={{ color: '#ff4444', fontSize: '0.9rem' }}>Não foi possível calcular o frete automaticamente. O vendedor informará o valor.</div>
+                                    ) : null}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div style={{ marginBottom: '15px' }}>

@@ -11,6 +11,7 @@ import StickyCTA from './StickyCTA';
 import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
+import ShippingEstimator from './ShippingEstimator';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -425,6 +426,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             Comprar Rápido via WhatsApp
                         </button>
                     </div>
+
+                    <ShippingEstimator />
 
                     <div className="trust-badges" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '20px 15px', backgroundColor: '#111', borderRadius: '8px', border: '1px dashed #444' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>

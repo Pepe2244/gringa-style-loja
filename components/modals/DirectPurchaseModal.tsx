@@ -4,6 +4,15 @@ import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 
+interface ShippingOption {
+    id: number;
+    name: string;
+    price: string | number;
+    custom_price?: string | number;
+    custom_delivery_time?: number;
+    delivery_time: number;
+}
+
 interface DirectPurchaseModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -19,6 +28,14 @@ export default function DirectPurchaseModal({
 }: DirectPurchaseModalProps) {
     const { showToast } = useToast();
     const [clientName, setClientName] = useState('');
+    const [cep, setCep] = useState('');
+    const [loadingCep, setLoadingCep] = useState(false);
+    const [endereco, setEndereco] = useState({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
+    
+    const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+    const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
+    const [loadingShipping, setLoadingShipping] = useState(false);
+
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
@@ -52,13 +69,75 @@ export default function DirectPurchaseModal({
         return p.preco_promocional;
     };
 
+    const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 8) value = value.slice(0, 8);
+        setCep(value);
+
+        if (value.length === 8) {
+            setLoadingCep(true);
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
+                const data = await res.json();
+                if (!data.erro) {
+                    setEndereco(prev => ({
+                        ...prev,
+                        rua: data.logradouro || '',
+                        bairro: data.bairro || '',
+                        cidade: data.localidade || '',
+                        estado: data.uf || ''
+                    }));
+                    
+                    setLoadingShipping(true);
+                    setShippingOptions([]);
+                    setSelectedShipping(null);
+                    try {
+                        const shipRes = await fetch('/api/shipping', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ to_postal_code: value })
+                        });
+                        const shipData = await shipRes.json();
+                        if (Array.isArray(shipData) && shipData.length > 0) {
+                            setShippingOptions(shipData);
+                            setSelectedShipping(shipData[0]); 
+                        }
+                    } catch (e) {
+                        console.error('Erro ao calcular frete:', e);
+                    } finally {
+                        setLoadingShipping(false);
+                    }
+                } else {
+                    showToast('CEP não encontrado.', 'error');
+                }
+            } catch (error) {
+                showToast('Erro ao buscar CEP.', 'error');
+            } finally {
+                setLoadingCep(false);
+            }
+        }
+    };
+
     const handleDirectPurchase = () => {
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome.', 'error');
             return;
         }
+        if (cep.length === 8 && (!endereco.rua || !endereco.numero)) {
+            showToast('Por favor, preencha o número do endereço.', 'error');
+            return;
+        }
+        if (cep.length === 8 && shippingOptions.length > 0 && !selectedShipping) {
+            showToast('Por favor, selecione uma opção de frete.', 'error');
+            return;
+        }
 
-        const precoFinal = getPrecoFinal(product);
+        const precoProduto = getPrecoFinal(product);
+        let shippingAmount = 0;
+        if (selectedShipping) {
+            shippingAmount = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+        }
+        const precoFinal = precoProduto + shippingAmount;
 
         // --- INÍCIO DO RASTREAMENTO GA4 ---
         if (typeof window !== 'undefined' && (window as any).gtag) {
@@ -84,17 +163,37 @@ export default function DirectPurchaseModal({
             message += `\n*Opção:* ${selectedVariant.tipo}: ${selectedVariant.opcao}`;
         }
 
-        message += `\n*Valor:* R$ ${precoFinal.toFixed(2).replace('.', ',')}\n\n`;
+        message += `\n*Valor:* R$ ${precoProduto.toFixed(2).replace('.', ',')}\n`;
 
         if (precoFinal < product.preco) {
-            message += `_(Valor promocional)_\n\n`;
+            message += `_(Valor promocional)_\n`;
         }
+        message += `\n*TOTAL:* R$ ${precoFinal.toFixed(2).replace('.', ',')}\n\n`;
 
         if (paymentMethod === 'Cartão de Crédito') {
-            message += `*Pagamento:* ${paymentMethod} em ${installments}\n\nAguardo o link para pagamento.`;
+            message += `*Pagamento:* ${paymentMethod} em ${installments}\n\n`;
         } else {
-            message += `*Pagamento:* ${paymentMethod}\n\nAguardo a chave PIX.`;
+            message += `*Pagamento:* ${paymentMethod}\n\n`;
         }
+
+        if (cep.length === 8) {
+            message += `📍 *Endereço de Entrega*\n`;
+            message += `${endereco.rua}, Nº ${endereco.numero}\n`;
+            if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
+            message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
+            message += `CEP: ${cep}\n`;
+            if (selectedShipping) {
+                const sPrice = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+                const sTime = selectedShipping.custom_delivery_time || selectedShipping.delivery_time;
+                message += `*Frete Escolhido:* ${selectedShipping.name} (${sTime} dias) - R$ ${sPrice.toFixed(2).replace('.', ',')}\n\n`;
+            } else {
+                message += `\n`;
+            }
+        } else {
+            message += `📍 *Entrega:* (CEP não informado)\n\n`;
+        }
+
+        message += `Aguardo as instruções finais!`;
 
         window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
         onClose();
@@ -158,6 +257,73 @@ export default function DirectPurchaseModal({
                     onChange={(e) => setClientName(e.target.value)}
                     required
                 />
+            </div>
+
+            <div className="endereco-container" style={{ marginTop: '15px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid #333' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <label htmlFor="modal-cep" style={{ fontWeight: 'bold' }}>CEP de Entrega (Opcional)</label>
+                    {loadingCep && <span style={{ fontSize: '0.8rem', color: 'var(--cor-destaque)' }}>Buscando...</span>}
+                </div>
+                <input
+                    type="text"
+                    id="modal-cep"
+                    className="input-cliente"
+                    placeholder="00000000"
+                    maxLength={8}
+                    value={cep}
+                    onChange={handleCepChange}
+                    style={{ marginBottom: '10px', width: '150px' }}
+                />
+
+                {cep.length === 8 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '5px' }}>
+                        <input type="text" className="input-cliente" placeholder="Rua / Avenida" value={endereco.rua} onChange={e => setEndereco({...endereco, rua: e.target.value})} />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input type="text" className="input-cliente" placeholder="Número" value={endereco.numero} onChange={e => setEndereco({...endereco, numero: e.target.value})} style={{ width: '80px' }} required />
+                            <input type="text" className="input-cliente" placeholder="Complemento" value={endereco.complemento} onChange={e => setEndereco({...endereco, complemento: e.target.value})} style={{ flex: 1 }} />
+                        </div>
+                        <input type="text" className="input-cliente" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input type="text" className="input-cliente" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 2 }} readOnly />
+                            <input type="text" className="input-cliente" placeholder="UF" value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ flex: 1 }} readOnly />
+                        </div>
+                        
+                        <div style={{ marginTop: '10px' }}>
+                            {loadingShipping ? (
+                                <div style={{ color: '#aaa', fontSize: '0.9rem' }}>Calculando frete...</div>
+                            ) : shippingOptions.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#aaa' }}>Fretes disponíveis:</p>
+                                    {shippingOptions.map((option) => {
+                                        const priceValue = parseFloat(String(option.custom_price || option.price));
+                                        const days = option.custom_delivery_time || option.delivery_time;
+                                        return (
+                                            <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#111', padding: '10px', borderRadius: '6px', cursor: 'pointer', border: selectedShipping?.id === option.id ? '1px solid var(--cor-destaque)' : '1px solid #333' }}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="shipping_option_modal" 
+                                                    checked={selectedShipping?.id === option.id}
+                                                    onChange={() => setSelectedShipping(option)}
+                                                />
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                                    <div>
+                                                        <strong style={{ color: 'white', fontSize: '0.9rem' }}>{option.name}</strong>
+                                                        <div style={{ fontSize: '0.75rem', color: '#888' }}>Até {days} dias úteis</div>
+                                                    </div>
+                                                    <div style={{ fontWeight: 'bold', color: 'var(--cor-destaque)', fontSize: '0.9rem' }}>
+                                                        R$ {priceValue.toFixed(2).replace('.', ',')}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+                            ) : cep.length === 8 && !loadingShipping && endereco.cidade ? (
+                                <div style={{ color: '#ff4444', fontSize: '0.85rem' }}>Não foi possível calcular o frete online. O vendedor informará.</div>
+                            ) : null}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="resumo-pagamento">

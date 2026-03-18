@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Product, Category } from '@/types';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
@@ -19,6 +20,10 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [sortType, setSortType] = useState('padrao');
+
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(initialProducts.length === 12);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
@@ -43,6 +48,39 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     const normalizeString = (str: string) => {
         if (!str) return '';
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    };
+
+    const handleLoadMore = async () => {
+        if (loadingMore) return;
+        setLoadingMore(true);
+        
+        const from = page * 12;
+        const to = from + 11;
+        
+        try {
+            let query = supabase
+                .from('produtos')
+                .select('id, nome, preco, preco_promocional, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                setProducts(prev => [...prev, ...data]);
+                setPage(prev => prev + 1);
+                if (data.length < 12) setHasMore(false);
+            } else {
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar mais produtos:', error);
+            showToast('Erro ao carregar mais produtos', 'error');
+        } finally {
+            setLoadingMore(false);
+        }
     };
 
     const filteredProducts = products.filter(product => {
@@ -108,6 +146,9 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 loading={false}
                 diasNovo={diasNovo}
                 onQuickView={handleQuickView}
+                hasMore={hasMore && searchTerm === '' && selectedCategory === null} // Only show Load More if not filtering aggressively
+                loadingMore={loadingMore}
+                onLoadMore={handleLoadMore}
             />
 
             <section id="sobre" className="secao-info">
