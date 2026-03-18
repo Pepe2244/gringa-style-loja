@@ -15,7 +15,6 @@ import { getProxiedImageUrl } from '@/utils/imageUrl';
 // sem precisarmos reescrever os arquivos globais de tipagem agora.
 interface RifaFront extends Omit<Rifa, 'status'> {
     status: 'ativa' | 'finalizada' | 'cancelada' | string;
-    numero_vencedor?: number | null;
 }
 
 export default function RifaPage() {
