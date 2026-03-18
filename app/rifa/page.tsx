@@ -169,9 +169,7 @@ export default function RifaPage() {
                 throw new Error(`Ocorreu um erro ao obter sua reserva. Dados: ${JSON.stringify(result.data)}. Por favor contate o suporte.`);
             }
 
-            router.refresh();
             router.push(`/pagamento?participante_id=${participantId}`);
-
         } catch (error: any) {
             showToast(error.message || 'Erro ao reservar. Tente novamente.', 'error');
             await fetchRifa(false);
