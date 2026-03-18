@@ -8,6 +8,7 @@ import { Json } from '../../types/database.types';
 import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser, AlertCircle, Loader2, Package, Tag, Settings2 } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
+import { revalidateProductCache } from '../../app/actions/produtos';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -182,6 +183,7 @@ export default function ProductManager() {
                 if (error) throw error;
                 alert('Produto criado!');
             }
+            await revalidateProductCache();
             setShowModal(false);
             fetchProducts();
         } catch (error: any) {
@@ -194,11 +196,13 @@ export default function ProductManager() {
     const handleDelete = async (id: number) => {
         if (!confirm('Excluir este produto?')) return;
         await supabase.from('produtos').delete().eq('id', id);
+        await revalidateProductCache();
         fetchProducts();
     };
 
     const toggleStock = async (id: number, currentStatus: boolean) => {
         await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
+        await revalidateProductCache();
         fetchProducts();
     };
 

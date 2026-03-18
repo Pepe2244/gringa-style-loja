@@ -3,6 +3,16 @@ import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
 import { notFound } from 'next/navigation';
 
+const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
+const SITE_URL = "https://gringa-style.netlify.app";
+
+const resolveAbsoluteUrl = (path: string) => {
+    if (!path) return `${SITE_URL}/imagens/logo_gringa_style.png`;
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('/')) return `${SITE_URL}${path}`;
+    return `${BUCKET_URL}${path}`;
+};
+
 interface Props {
     params: Promise<{ id: string }>;
 }
@@ -52,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const mediaUrls = product.media_urls || product.imagens || [];
-    const imageUrl = mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')) || '/imagens/logo_gringa_style.png';
+    const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
     const descricaoLimpa = product.descricao?.substring(0, 150).replace(/<[^>]*>?/gm, '') || `Compre ${product.nome} na Gringa Style.`;
 
     return {
@@ -105,12 +115,11 @@ export default async function ProductPage({ params }: Props) {
         notFound();
     }
 
-    // Marcação estruturada para o Google Shopping e Rich Snippets (Excelente)
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Product',
         name: product.nome,
-        image: product.media_urls?.[0] || product.imagens?.[0],
+        image: resolveAbsoluteUrl(product.media_urls?.[0] || product.imagens?.[0]),
         description: product.descricao,
         sku: String(product.id),
         offers: {

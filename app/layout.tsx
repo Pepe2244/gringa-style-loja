@@ -8,6 +8,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
 import { cookies } from "next/headers";
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -81,18 +82,8 @@ export default async function RootLayout({
           data-key={AHREFS_KEY} 
           strategy="lazyOnload" 
         />
-        <Script 
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} 
-          strategy="lazyOnload" 
-        />
-        <Script id="google-analytics" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_ID}', { page_path: window.location.pathname });
-          `}
-        </Script>
+        
+        <GoogleAnalytics gaId={GA_ID} />
 
         <ToastProvider>
           <Header />

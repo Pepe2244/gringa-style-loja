@@ -6,7 +6,6 @@ import ProductManager from '@/components/admin/ProductManager';
 import RifaManager from '@/components/admin/RifaManager';
 import CouponManager from '@/components/admin/CouponManager';
 import CampaignManager from '@/components/admin/CampaignManager';
-import PushNotificationManager from '@/components/admin/PushNotificationManager';
 import CategoryManager from '@/components/admin/CategoryManager';
 import ConfigManager from '@/components/admin/ConfigManager';
 
@@ -133,12 +132,6 @@ export default function AdminPage() {
                 >
                     Configurações
                 </button>
-                <button
-                    className={`btn ${activeTab === 'push' ? '' : 'btn-secundario'}`}
-                    onClick={() => setActiveTab('push')}
-                >
-                    Notificações
-                </button>
             </div>
 
             <div className="admin-content">
@@ -148,7 +141,6 @@ export default function AdminPage() {
                 {activeTab === 'campanhas' && <CampaignManager />}
                 {activeTab === 'categorias' && <CategoryManager />}
                 {activeTab === 'config' && <ConfigManager />}
-                {activeTab === 'push' && <PushNotificationManager />}
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -14,6 +14,17 @@ export default function Header() {
     const totalItems = useCartStore(state => state.totalItems());
     const [mounted, setMounted] = useState(false);
     const [hasActiveRaffles, setHasActiveRaffles] = useState(false);
+    const [isBouncing, setIsBouncing] = useState(false);
+    const prevItemsRef = useRef(totalItems);
+
+    useEffect(() => {
+        if (mounted && totalItems > prevItemsRef.current) {
+            setIsBouncing(true);
+            const timer = setTimeout(() => setIsBouncing(false), 300);
+            return () => clearTimeout(timer);
+        }
+        prevItemsRef.current = totalItems;
+    }, [totalItems, mounted]);
 
     useEffect(() => {
         setMounted(true);
@@ -70,7 +81,18 @@ export default function Header() {
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <Link href="/carrinho" className="carrinho" style={{ display: 'flex', alignItems: 'center' }}>
                         <ShoppingCart size={28} />
-                        <span className="carrinho-contador" style={{ minWidth: '20px', display: 'inline-grid', placeItems: 'center' }}>
+                        <span 
+                            className="carrinho-contador" 
+                            style={{ 
+                                minWidth: '20px', 
+                                display: 'inline-grid', 
+                                placeItems: 'center',
+                                transform: isBouncing ? 'scale(1.3)' : 'scale(1)',
+                                transition: 'transform 0.2s ease-out',
+                                backgroundColor: isBouncing ? '#fff' : 'var(--cor-destaque)',
+                                color: isBouncing ? '#000' : 'inherit'
+                            }}
+                        >
                             {mounted ? totalItems : 0}
                         </span>
                     </Link>

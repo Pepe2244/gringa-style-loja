@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Product, Category } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
@@ -20,6 +20,15 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [sortType, setSortType] = useState('padrao');
 
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [searchTerm]);
+
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
@@ -37,7 +46,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     };
 
     const filteredProducts = products.filter(product => {
-        const term = normalizeString(searchTerm);
+        const term = normalizeString(debouncedSearchTerm);
         const matchSearch =
             normalizeString(product.nome).includes(term) ||
             normalizeString(product.descricao).includes(term) ||

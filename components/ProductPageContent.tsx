@@ -8,10 +8,11 @@ import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 import StickyCTA from './StickyCTA';
-import { useCartStore } from '@/store/useCartStore';
+import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
 
+const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
 
 const resolveOriginalUrl = (path: string) => {
@@ -110,7 +111,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         }
     };
 
-    const addItem = useCartStore(state => state.addItem);
+    const addItem = useCartStore((state: CartState) => state.addItem);
 
     const addToCart = () => {
         if (!product) return;
@@ -293,6 +294,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                     draggable={false}
                                     style={{ objectFit: 'cover' }}
                                     priority={true}
+                                    placeholder="blur"
+                                    blurDataURL={BLUR_DATA_URL}
                                 />
                             </div>
                         )}
@@ -330,6 +333,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                 width={100}
                                 height={100}
                                 style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent', objectFit: 'cover' }}
+                                placeholder="blur"
+                                blurDataURL={BLUR_DATA_URL}
                             />
                         ))}
                     </div>
@@ -499,6 +504,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                                 fill
                                                 sizes="(max-width: 768px) 50vw, 25vw"
                                                 style={{ objectFit: 'cover' }}
+                                                placeholder="blur"
+                                                blurDataURL={BLUR_DATA_URL}
                                             />
                                         )}
                                     </div>

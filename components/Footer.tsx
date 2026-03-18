@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import PushNotificationButton from './PushNotificationButton';
 import { Mail, MapPin, Instagram, ShoppingBag } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -83,10 +82,6 @@ export default async function Footer() {
                     </Link> 
                     {' '}Gringa Style. Todos os direitos reservados.
                 </p>
-
-                <div id="push-subscribe-container" className="push-subscribe-container" style={{ marginTop: '20px' }}>
-                    <PushNotificationButton />
-                </div>
             </div>
 
             {/* CSS inline para evitar que o hover do client quebre no Server Component */}

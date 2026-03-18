@@ -3,6 +3,8 @@ import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
 
+const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
 interface ProductCardProps {
     product: Product;
     diasNovo: number;
@@ -136,16 +138,33 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         playsInline
                     />
                 ) : (
-                    <Image
-                        src={displayImages[currentImageIndex]}
-                        alt={`Imagem de ${productName}`}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        className="card-imagem visivel"
-                        style={{ objectFit: 'cover' }}
-                        priority={priority}
-                        quality={60}
-                    />
+                    <>
+                        <Image
+                            src={displayImages[0]}
+                            alt={`Produto ${product.nome}`}
+                            fill
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                            className="card-imagem visivel"
+                            style={{ objectFit: 'cover' }}
+                            priority={priority}
+                            placeholder="blur"
+                            blurDataURL={BLUR_DATA_URL}
+                            quality={60}
+                        />
+                        {displayImages[1] && (
+                            <Image
+                                src={displayImages[1]}
+                                alt={`Produto ${product.nome} Hover`}
+                                fill
+                                sizes="(max-width: 768px) 50vw, 33vw"
+                                className="card-imagem hover"
+                                style={{ objectFit: 'cover' }}
+                                placeholder="blur"
+                                blurDataURL={BLUR_DATA_URL}
+                                quality={60}
+                            />
+                        )}
+                    </>
                 )}
             </div>
 
