@@ -322,6 +322,7 @@ export default function CartPage() {
 
         let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
 
+        message += `🛒 *Itens:*\n`;
         items.forEach(item => {
             const product = currentProducts.find(p => p.id === item.produto_id);
             if (product) {
@@ -330,21 +331,10 @@ export default function CartPage() {
                 message += `• ${item.quantidade}x ${product.nome}${variantInfo} - R$ ${(price * item.quantidade).toFixed(2).replace('.', ',')}\n`;
             }
         });
-
-        message += `\n*TOTAL:* R$ ${finalTotal.toFixed(2).replace('.', ',')}`;
-        if (appliedCoupon) {
-            message += ` (Cupom: ${appliedCoupon.codigo} - ${appliedCoupon.desconto}%)`;
-        }
-        message += `\n\n`;
-
-        message += `*Pagamento:* ${paymentMethod}`;
-        if (paymentMethod === 'Cartão de Crédito') {
-            message += ` em ${installments}`;
-        }
-        message += `\n\n`;
+        message += `\n`;
 
         if (cep.length === 8) {
-            message += `📍 *Endereço de Entrega*\n`;
+            message += `📍 *Endereço de Entrega:*\n`;
             message += `${endereco.rua}, Nº ${endereco.numero}\n`;
             if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
             message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
@@ -357,8 +347,27 @@ export default function CartPage() {
                 message += `\n`;
             }
         } else {
-            message += `📍 *Entrega:* (Baixar com vendedor)\n\n`;
+            message += `📍 *Entrega:* (Combinar com vendedor)\n\n`;
         }
+
+        message += `💳 *Pagamento:* ${paymentMethod}`;
+        if (paymentMethod === 'Cartão de Crédito') {
+            message += ` em ${installments}`;
+        }
+        message += `\n\n`;
+
+        message += `📊 *Resumo de Valores:*\n`;
+        message += `• Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
+        if (selectedShipping) {
+            message += `• Frete: R$ ${shippingAmount.toFixed(2).replace('.', ',')}\n`;
+        }
+        if (appliedCoupon) {
+            message += `• Desconto (${appliedCoupon.codigo}): - R$ ${discountAmount.toFixed(2).replace('.', ',')}\n`;
+        }
+        message += `\n`;
+
+        message += `💰 *TOTAL A PAGAR:* R$ ${finalTotal.toFixed(2).replace('.', ',')}\n\n`;
+
         message += `Aguardo as instruções finais!`;
 
         clearCart();
