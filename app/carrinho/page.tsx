@@ -480,63 +480,7 @@ export default function CartPage() {
                 </div>
 
                 <div style={{ flex: '1 1 350px', maxWidth: '100%', background: '#111', padding: '25px', borderRadius: '10px', border: '1px solid #333', position: 'sticky', top: '20px', boxSizing: 'border-box' }}>
-                    <h2 style={{ fontSize: '1.5rem', marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>Resumo do Pedido</h2>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
-                        <span>Subtotal ({items.length} itens)</span>
-                        <span style={{ whiteSpace: 'nowrap' }}>R$ {calculateSubtotal().toFixed(2).replace('.', ',')}</span>
-                    </div>
-
-                    {appliedCoupon && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#00ff88' }}>
-                            <span>Desconto ({appliedCoupon.codigo})</span>
-                            <span style={{ whiteSpace: 'nowrap' }}>- R$ {appliedCoupon.desconto_calculado.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                    )}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
-                        <span>Frete</span>
-                        <span style={{ whiteSpace: 'nowrap' }}>
-                            {selectedShipping ? `+ R$ ${parseFloat(String(selectedShipping.custom_price || selectedShipping.price)).toFixed(2).replace('.', ',')}` : 'A calcular'}
-                        </span>
-                    </div>
-
-                    <div style={{ margin: '20px 0' }}>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <input
-                                type="text"
-                                placeholder="Tem um cupom?"
-                                value={couponCode}
-                                onChange={(e) => setCouponCode(e.target.value)}
-                                disabled={!!appliedCoupon}
-                                style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
-                            />
-                            <button
-                                onClick={appliedCoupon ? () => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(null); } : handleApplyCoupon}
-                                disabled={validatingCoupon}
-                                style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '6px',
-                                    border: 'none',
-                                    background: appliedCoupon ? '#dc3545' : '#444',
-                                    color: 'white',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold',
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                {validatingCoupon ? '...' : (appliedCoupon ? 'Remover' : 'Aplicar')}
-                            </button>
-                        </div>
-                        {couponMessage && (
-                            <p style={{ fontSize: '0.85em', marginTop: '8px', color: couponMessage.type === 'error' ? '#ff4444' : '#00ff88' }}>
-                                {couponMessage.text}
-                            </p>
-                        )}
-                    </div>
-
-                    <div style={{ height: '1px', backgroundColor: '#333', margin: '20px 0' }} />
-
+                    
                     <div style={{ marginBottom: '15px' }}>
                         <label style={{ display: 'block', marginBottom: '5px', color: '#aaa', fontSize: '0.9rem' }}>Seu Nome Completo</label>
                         <input
@@ -639,6 +583,63 @@ export default function CartPage() {
                             </select>
                         </div>
                     )}
+
+                    <div style={{ margin: '20px 0' }}>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                                type="text"
+                                placeholder="Tem um cupom?"
+                                value={couponCode}
+                                onChange={(e) => setCouponCode(e.target.value)}
+                                disabled={!!appliedCoupon}
+                                style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
+                            />
+                            <button
+                                onClick={appliedCoupon ? () => { setAppliedCoupon(null); setCouponCode(''); setCouponMessage(null); } : handleApplyCoupon}
+                                disabled={validatingCoupon}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    background: appliedCoupon ? '#dc3545' : '#444',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                {validatingCoupon ? '...' : (appliedCoupon ? 'Remover' : 'Aplicar')}
+                            </button>
+                        </div>
+                        {couponMessage && (
+                            <p style={{ fontSize: '0.85em', marginTop: '8px', color: couponMessage.type === 'error' ? '#ff4444' : '#00ff88' }}>
+                                {couponMessage.text}
+                            </p>
+                        )}
+                    </div>
+
+                    <div style={{ height: '1px', backgroundColor: '#333', margin: '25px 0' }} />
+
+                    <h2 style={{ fontSize: '1.3rem', marginTop: 0, marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>Resumo Final do Pedido</h2>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
+                        <span>Subtotal ({items.length} itens)</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>R$ {calculateSubtotal().toFixed(2).replace('.', ',')}</span>
+                    </div>
+
+                    {appliedCoupon && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#00ff88' }}>
+                            <span>Desconto ({appliedCoupon.codigo})</span>
+                            <span style={{ whiteSpace: 'nowrap' }}>- R$ {appliedCoupon.desconto_calculado.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
+                        <span>Frete</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                            {selectedShipping ? `+ R$ ${parseFloat(String(selectedShipping.custom_price || selectedShipping.price)).toFixed(2).replace('.', ',')}` : 'A calcular'}
+                        </span>
+                    </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', margin: '25px 0', fontSize: '1.8rem', fontWeight: '900', color: 'white', alignItems: 'center' }}>
                         <span>Total</span>
