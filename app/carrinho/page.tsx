@@ -261,7 +261,7 @@ export default function CartPage() {
         }
     };
 
-    const handleCheckout = async () => {
+    const handleCheckout = () => {
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome para finalizar.', 'error');
             return;
@@ -275,12 +275,7 @@ export default function CartPage() {
             return;
         }
 
-        const productIds = items.map((item) => item.produto_id);
-        const { data: freshProducts } = await supabase
-            .from('produtos')
-            .select('*')
-            .in('id', productIds);
-        const currentProducts = freshProducts || products;
+        const currentProducts = products;
 
         const getPrecoAtual = (produtoId: number) => {
             const p = currentProducts.find(p => p.id === produtoId);
@@ -366,8 +361,8 @@ export default function CartPage() {
         }
         message += `Aguardo as instruções finais!`;
 
-        window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
         clearCart();
+        window.location.href = `https://wa.me/5515998608170?text=${encodeURIComponent(message)}`;
     };
 
     if (loading && items.length > 0 && products.length === 0) {
