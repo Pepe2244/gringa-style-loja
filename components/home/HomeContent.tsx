@@ -151,20 +151,35 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 onLoadMore={handleLoadMore}
             />
 
-            <section id="sobre" className="secao-info">
-                <h2 className="titulo-secao">Sobre a Gringa Style</h2>
-                <p>
-                    Somos especializados em equipamentos para solda TIG. A Gringa Style oferece máscaras de solda
-                    personalizadas, tochas TIG profissionais e lentes de alta performance.
-                    Nossos produtos unem estilo único e proteção máxima para o soldador moderno.
-                </p>
+            <section id="faq" className="secao-info" style={{ marginTop: '40px', padding: '20px', backgroundColor: '#111', borderRadius: '10px' }}>
+                <h2 className="titulo-secao" style={{ marginBottom: '15px' }}>Dúvidas Frequentes (FAQ)</h2>
+                
+                <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px' }}>›</span> A lente escura da máscara é substituível?
+                    </summary>
+                    <p style={{ color: '#ccc', lineHeight: '1.5', marginTop: '10px', paddingLeft: '20px' }}>Sim, a lente escura (passiva) das nossas máscaras Gringa Style pode ser facilmente removida e substituída, garantindo conveniência e durabilidade para a sua máscara na hora da manutenção.</p>
+                </details>
+                
+                <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px' }}>›</span> Vocês enviam para todo o Brasil?
+                    </summary>
+                    <p style={{ color: '#ccc', lineHeight: '1.5', marginTop: '10px', paddingLeft: '20px' }}>Com certeza! Enviamos via Correios (PAC e Sedex) para todas as regiões do Brasil. O cálculo do frete pode ser feito diretamente no carrinho de compras informando o seu CEP.</p>
+                </details>
+                
+                <details style={{ paddingBottom: '10px' }}>
+                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px' }}>›</span> Como funcionam as opções de pagamento?
+                    </summary>
+                    <p style={{ color: '#ccc', lineHeight: '1.5', marginTop: '10px', paddingLeft: '20px' }}>Aceitamos pagamento seguro via PIX (com aprovação imediata) ou Cartão de Crédito em até 12x. Toda a finalização pode ser acompanhada pelo nosso atendimento VIP no WhatsApp.</p>
+                </details>
             </section>
 
-            <section id="contato" className="secao-info">
+            <section id="contato" className="secao-info" style={{ marginTop: '20px', padding: '20px', backgroundColor: '#111', borderRadius: '10px', marginBottom: '40px' }}>
                 <h2 className="titulo-secao">Entre em Contato</h2>
-                <p>
-                    Pronto para elevar o nível da sua solda? Fale connosco pelo WhatsApp para um atendimento rápido.
-                    Entregamos para todo o Brasil.
+                <p style={{ color: '#ccc', lineHeight: '1.6' }}>
+                    Pronto para elevar o nível da sua solda? Fale conosco pelo WhatsApp para um atendimento rápido, sanar dúvidas técnicas sobre bocais e bicos, ou para encomendar sua máscara personalizada exclusiva.
                 </p>
             </section>
 

@@ -9,53 +9,36 @@ export default function PrivacyPage() {
                 <h1 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '20px' }}>Política de Privacidade</h1>
                 <p>Sua privacidade é importante para nós. Esta política explica, em linguagem simples, como tratamos seus dados no site da Gringa Style.</p>
 
-                <h2>1. Dados que Coletamos</h2>
-                <p>Coletamos informações de duas formas principais:</p>
+                <h2>1. Dados que Coletamos e Forma de Uso</h2>
+                <p>Coletamos informações essenciais para garantir o processamento dos seus pedidos e sua participação em nossos eventos:</p>
                 <ul>
-                    <li><strong>Ao comprar um produto:</strong> Solicitamos seu <strong>Nome</strong> para identificar seu pedido no WhatsApp.</li>
-                    <li><strong>Ao participar de uma Rifa:</strong> Solicitamos seu <strong>Nome</strong> e <strong>Telefone (WhatsApp)</strong>. Esses dados são salvos em nosso banco de dados (Supabase) para gerenciar a rifa e entrar em contato com o vencedor.</li>
+                    <li><strong>Compras na Loja (Carrinho):</strong> Solicitamos <strong>Nome Completo</strong> e <strong>Endereço de Entrega (CEP, Rua, etc)</strong> para o cálculo preciso do frete (via SuperFrete) e preparo do envio. Caso você pague via PIX ou Cartão de Crédito, a transação é processada de forma 100% segura por provedores de pagamento homologados, e finalizada pelo nosso atendimento humano no WhatsApp para garantir a entrega perfeita.</li>
+                    <li><strong>Participação em Rifas:</strong> Solicitamos <strong>Nome</strong> e <strong>Telefone (WhatsApp)</strong>. Esses dados são armazenados de forma segura em nosso banco de dados em nuvem, garantindo a lisura do sorteio e nos permitindo contatar você imediatamente caso seja o vencedor.</li>
                 </ul>
 
-                <h2>2. Cupons de Desconto</h2>
-                <p>Ao aplicar um cupom de desconto no carrinho, o código digitado é enviado ao nosso servidor (Supabase) para verificação. Esse processo nos permite:</p>
+                <h2>2. Cupons de Desconto e Promoções</h2>
+                <p>Ao aplicar cupons no seu carrinho de compras, os dados são processados em nossos servidores para validar descontos de forma dinâmica e prevenir fraudes ou usos além do limite estabelecido pelas campanhas.</p>
+
+                <h2>3. Armazenamento Local (Cookies e LocalStorage)</h2>
+                <p>Para melhorar sua experiência de navegação, nós utilizamos tecnologias de mercado:</p>
                 <ul>
-                    <li>Validar se o cupom é autêntico e está dentro da validade.</li>
-                    <li>Contabilizar o uso desse cupom, para garantir o limite de usos (ex: "válido para as 100 primeiras compras").</li>
+                    <li><strong>Carrinho de Compras:</strong> Utilizamos o "LocalStorage" do seu dispositivo para guardar os itens que você colocou no carrinho. Assim, mesmo que você feche a aba, seus produtos não se perdem. Nenhuma informação pessoal é enviada nesse processo passivo.</li>
+                    <li><strong>Google Analytics e Ahrefs:</strong> Utilizamos ferramentas de métricas de forma agrupada e autônoma. Coletamos dados de navegação base (como páginas visitadas e tempo no site) para otimizar velocidade e oferecer os melhores produtos. Tudo de forma que respeite os termos de consentimento e LGPD.</li>
                 </ul>
 
-                <h2>3. Como Usamos seus Dados</h2>
-                <p>Usamos seus dados exclusivamente para:</p>
+                <h2>4. Segurança da Base de Dados</h2>
+                <p>A Gringa Style utiliza o <strong>Supabase</strong>, um provedor de infraestrutura de banco de dados global que aplica segurança e criptografia de nível de indústria. Tudo o que processamos tem acesso fortemente restrito, limitado a membros da moderação das rifas ou postagens dos produtos.</p>
+
+                <h2>5. Seus Direitos (LGPD)</h2>
+                <p>Nós respeitamos integralmente a Lei Geral de Proteção de Dados Pessoais (LGPD). A qualquer momento você tem o direito de:</p>
                 <ul>
-                    <li>Processar seu pedido de compra (via WhatsApp).</li>
-                    <li>Registrar sua participação na rifa.</li>
-                    <li>Validar e aplicar cupons de desconto.</li>
-                    <li>Identificar você publicamente (de forma censurada, ex: "Pedro H.") caso você seja o vencedor de uma rifa.</li>
-                    <li>Entrar em contato sobre seu pedido ou sua participação.</li>
+                    <li>Saber quais dos seus dados diretos estão armazenados.</li>
+                    <li>Corrigir informações de endereço de entrega ou contatos de celular via nosso canal oficial antes do envio ou sorteio.</li>
+                    <li>Pedir a exclusão de sua conta/dados (ressalvadas obrigações legais de comprovação e nota fiscal após compras e participações).</li>
                 </ul>
-                <p><strong>Nós não vendemos, alugamos ou compartilhamos seus dados pessoais com terceiros.</strong></p>
+                <p>Para qualquer uma dessas solicitações, basta entrar em contato conosco pelo nosso WhatsApp de Suporte.</p>
 
-                <h2>4. Armazenamento Local (Não são Cookies)</h2>
-                <p>Este site <strong>não usa cookies de rastreamento</strong>.</p>
-                <p>Usamos o "Armazenamento Local" (<code>localStorage</code>) do seu navegador para uma única finalidade: <strong>manter os produtos no seu carrinho de compras</strong>. Se você fechar o site e voltar depois, seus itens ainda estarão lá. Esse dado fica salvo apenas no seu próprio dispositivo e não é enviado para nós, a menos que você finalize a compra.</p>
-
-                <h2>5. Dados Analíticos</h2>
-                <p>Para entender como nosso site está sendo usado e onde podemos melhorar, coletamos dados analíticos <strong>totalmente anônimos</strong>. Isso inclui informações como quais páginas são mais visitadas ou quantos visitantes recebemos. Esses dados não podem ser usados para identificar você pessoalmente.</p>
-
-
-                <h2>6. Seus Direitos (LGPD)</h2>
-                <p>Como seus dados (Nome e Telefone) são coletados para a rifa, você tem o direito de:</p>
-                <ul>
-                    <li><strong>Acessar:</strong> Saber quais dados temos.</li>
-                    <li><strong>Corrigir:</strong> Atualizar seus dados se estiverem errados.</li>
-                    <li><strong>Excluir:</strong> Solicitar a remoção dos seus dados *após* a finalização da rifa da qual participou.</li>
-                </ul>
-                <p>Para qualquer uma dessas solicitações, basta entrar em contato conosco pelo WhatsApp.</p>
-
-                <h2>7. Segurança</h2>
-                <p>Usamos o Supabase como nosso provedor de banco de dados, que aplica medidas de segurança robustas para proteger as informações da rifa. O acesso ao painel de administração é restrito por senha.</p>
-                <p>Qualquer dúvida, fale conosco!</p>
-
-                <p style={{ marginTop: '20px' }}><em>Última atualização: 06 de novembro de 2025.</em></p>
+                <p style={{ marginTop: '20px' }}><em>Última atualização: Março de 2026.</em></p>
 
                 <div style={{ marginTop: '40px', textAlign: 'center' }}>
                     <Link href="/" className="btn btn-secundario">

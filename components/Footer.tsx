@@ -61,6 +61,7 @@ export default async function Footer() {
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}><Mail size={16} /> nalessogtaw015@gmail.com</p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}><MapPin size={16} /> Itapetininga - SP (Loja Online)</p>
+                    <p><Link href="/sobre" style={{ textDecoration: 'underline' }}>Sobre a Gringa Style</Link></p>
                     <p><Link href="/privacidade" style={{ textDecoration: 'underline' }}>Política de Privacidade</Link></p>
                 </div>
 

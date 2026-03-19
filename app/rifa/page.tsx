@@ -29,9 +29,41 @@ export default function RifaPage() {
     const router = useRouter();
 
     useEffect(() => {
+        let channel: ReturnType<typeof supabase.channel>;
+
+        // Busca inicial
         fetchRifa(true);
-        const pollInterval = setInterval(() => { fetchRifa(false); }, 10000);
-        return () => clearInterval(pollInterval);
+
+        // 1. Fallback de segurança: atualiza a cada 30 segundos (reduz a carga no servidor comparado aos 10s de antes)
+        const pollInterval = setInterval(() => { fetchRifa(false); }, 30000);
+
+        // 2. Assinatura do Supabase Realtime (Mágica acontecendo)
+        // Ouve qualquer alteração (INSERT ou UPDATE) na tabela 'rifas'
+        const setupRealtime = async () => {
+            channel = supabase
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'rifas' },
+                    (payload) => {
+                        console.log('Alteração na Rifa detectada em tempo real!', payload);
+                        // Ao notar que o servidor mudou os dados, buscamos silenciosamente os novos números ocupados
+                        fetchRifa(false);
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('Status de conexão do Supabase Realtime:', status);
+                });
+        };
+
+        setupRealtime();
+
+        return () => {
+            clearInterval(pollInterval);
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
+        };
     }, []);
 
     const fetchRifa = async (showLoadingState = true): Promise<RifaFront | null> => {
@@ -190,13 +222,41 @@ export default function RifaPage() {
         </div>
     );
 
+    const rifaFaq = (
+        <div className="rifa-faq" style={{ marginTop: '40px', background: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333', textAlign: 'left' }}>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '25px', color: 'white', borderBottom: '2px solid var(--cor-destaque)', paddingBottom: '10px', display: 'inline-block' }}>Como funciona a Rifa Gringa Style? (Transparência e Regras)</h2>
+            
+            <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+                <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ marginRight: '10px' }}>›</span> Sobre a Transparência do Sorteio
+                </summary>
+                <p style={{ color: '#ccc', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é sempre baseado nos números da Loteria Federal (geralmente os últimos dígitos do 1º prêmio). Isso garante que o sorteio é imune a qualquer tipo de fraude ou manipulação por parte da Gringa Style.</p>
+            </details>
+
+            <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+                <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ marginRight: '10px' }}>›</span> Datas e Prazos
+                </summary>
+                <p style={{ color: '#ccc', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>A data exata do sorteio é marcada e comunicada em nossos grupos de WhatsApp e Instagram (<strong>@gringastyle_br</strong>) logo após a venda da última cota. Assim que você reservar seu número, é fundamental enviar o comprovante de pagamento via WhatsApp no prazo estipulado (geralmente 24 horas), caso contrário, o número voltará a ficar disponível para o público.</p>
+            </details>
+
+            <details style={{ paddingBottom: '10px' }}>
+                <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ marginRight: '10px' }}>›</span> Como recebo meu prêmio?
+                </summary>
+                <p style={{ color: '#ccc', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>Se você for o ganhador, nossa equipe entrará em contato imediatamente pelo WhatsApp cadastrado na hora da reserva. O envio do equipamento de solda TIG (máscara, tocha ou acessórios) é feito via transportadora ou Correios, totalmente documentado, e entregue direto na sua casa em qualquer lugar do Brasil.</p>
+            </details>
+        </div>
+    );
+
     if (!rifa) {
         return (
             <div className="container" id="rifa-container" style={{ textAlign: 'center', padding: '50px 0' }}>
-                <div className="rifa-card">
+                <div className="rifa-card" style={{ marginBottom: '40px' }}>
                     <h1 className="titulo-secao">Nenhuma Rifa no Momento</h1>
                     <p style={{ fontSize: '1.1em' }}>Em breve teremos novidades.</p>
                 </div>
+                {rifaFaq}
             </div>
         );
     }
@@ -336,6 +396,7 @@ export default function RifaPage() {
                     </div>
                 )}
             </div>
+            {rifaFaq}
         </div>
     );
 }
