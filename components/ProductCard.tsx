@@ -143,25 +143,25 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             src={displayImages[0]}
                             alt={`Produto ${product.nome}`}
                             fill
-                            sizes="(max-width: 768px) 50vw, 33vw"
+                            sizes="(max-width: 639px) 50vw, (max-width: 1024px) 33vw, 20vw"
                             className="card-imagem visivel"
                             style={{ objectFit: 'cover' }}
                             priority={priority}
                             placeholder="blur"
                             blurDataURL={BLUR_DATA_URL}
-                            quality={60}
+                            quality={75}
                         />
                         {displayImages[1] && (
                             <Image
                                 src={displayImages[1]}
                                 alt={`Produto ${product.nome} Hover`}
                                 fill
-                                sizes="(max-width: 768px) 50vw, 33vw"
+                                sizes="(max-width: 639px) 50vw, (max-width: 1024px) 33vw, 20vw"
                                 className="card-imagem hover"
                                 style={{ objectFit: 'cover' }}
                                 placeholder="blur"
                                 blurDataURL={BLUR_DATA_URL}
-                                quality={60}
+                                quality={75}
                             />
                         )}
                     </>

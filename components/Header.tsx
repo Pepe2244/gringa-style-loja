@@ -59,7 +59,7 @@ export default function Header() {
                         alt="Gringa Style Logo"
                         fill
                         priority
-                        sizes="120px"
+                        sizes="(max-width: 768px) 120px, 120px"
                         style={{ objectFit: 'contain' }}
                     />
                 </Link>

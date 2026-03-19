@@ -62,7 +62,11 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'none'; upgrade-insecure-requests;"
+            value: "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://analytics.ahrefs.com; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;"
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups'
           }
         ]
       }
