@@ -507,15 +507,15 @@ export default function CartPage() {
                         />
                         {cep.length === 8 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <input type="text" placeholder="Rua / Avenida" value={endereco.rua} onChange={e => setEndereco({...endereco, rua: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} />
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input type="text" placeholder="Número" value={endereco.numero} onChange={e => setEndereco({...endereco, numero: e.target.value})} style={{ width: '80px', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} required />
-                                    <input type="text" placeholder="Complemento" value={endereco.complemento} onChange={e => setEndereco({...endereco, complemento: e.target.value})} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} />
+                                <input type="text" placeholder="Rua / Avenida" value={endereco.rua} onChange={e => setEndereco({...endereco, rua: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} />
+                                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                                    <input type="text" placeholder="Número" value={endereco.numero} onChange={e => setEndereco({...endereco, numero: e.target.value})} style={{ width: '80px', flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} required />
+                                    <input type="text" placeholder="Complemento" value={endereco.complemento} onChange={e => setEndereco({...endereco, complemento: e.target.value})} style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} />
                                 </div>
-                                <input type="text" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white' }} />
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input type="text" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 2, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa' }} readOnly />
-                                    <input type="text" placeholder="UF" value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa' }} readOnly />
+                                <input type="text" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} />
+                                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                                    <input type="text" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa', boxSizing: 'border-box' }} readOnly />
+                                    <input type="text" placeholder="UF" value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ width: '60px', flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa', textAlign: 'center', boxSizing: 'border-box' }} readOnly />
                                 </div>
                                 
                                 <div style={{ marginTop: '15px' }}>
