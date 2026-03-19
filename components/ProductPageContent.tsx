@@ -523,12 +523,17 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
             <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido Rápido">
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', padding: '15px', backgroundColor: '#111', borderRadius: '8px', border: '1px solid #333' }}>
-                    <img
-                        src={getProxiedImageUrl(mediaUrls[0] || fallbackImage)}
-                        alt={product.nome}
-                        loading="lazy"
-                        style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '5px' }}
-                    />
+                    <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '5px', overflow: 'hidden', flexShrink: 0 }}>
+                        <Image
+                            src={resolveOriginalUrl(mediaUrls[0] || fallbackImage)}
+                            alt={product.nome}
+                            fill
+                            sizes="80px"
+                            style={{ objectFit: 'cover' }}
+                            placeholder="blur"
+                            blurDataURL={BLUR_DATA_URL}
+                        />
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <h3 style={{ fontSize: '1rem', margin: '0 0 5px 0', color: '#fff' }}>{product.nome}</h3>
                         {selectedVariant && <p style={{ fontSize: '0.85rem', color: '#aaa', margin: '0 0 5px 0' }}>{variants?.tipo}: {selectedVariant}</p>}

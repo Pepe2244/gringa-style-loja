@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import Image from 'next/image';
+
+const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
+
+const resolveOriginalUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('http') || path.startsWith('/')) return path;
+    return `${BUCKET_URL}${path}`;
+};
 
 interface ProductDetailsModalProps {
     isOpen: boolean;
@@ -79,8 +89,16 @@ export default function ProductDetailsModal({
                     const currentImage = modalImages.length > 0 ? modalImages[currentModalImageIndex] : '/imagens/gringa_style_logo.png';
 
                     return (
-                        <div style={{ position: 'relative' }}>
-                            <img src={getProxiedImageUrl(currentImage)} alt={product.nome} loading="lazy" style={{ width: '100%', borderRadius: '5px' }} />
+                        <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '5px', overflow: 'hidden' }}>
+                            <Image 
+                                src={resolveOriginalUrl(currentImage)} 
+                                alt={product.nome} 
+                                fill
+                                sizes="(max-width: 639px) 100vw, 500px"
+                                style={{ objectFit: 'cover' }}
+                                placeholder="blur"
+                                blurDataURL={BLUR_DATA_URL}
+                            />
                             {modalImages.length > 1 && (
                                 <>
                                     <button

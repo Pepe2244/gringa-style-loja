@@ -3,6 +3,16 @@ import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import Image from 'next/image';
+
+const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
+
+const resolveOriginalUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('http') || path.startsWith('/')) return path;
+    return `${BUCKET_URL}${path}`;
+};
 
 interface ShippingOption {
     id: number;
@@ -207,12 +217,17 @@ export default function DirectPurchaseModal({
             <h2 className="modal-titulo">Finalizar Pedido</h2>
             <div id="modal-compra-resumo-produto">
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <img
-                        src={getProxiedImageUrl(product.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/gringa_style_logo.png')}
-                        loading="lazy"
-                        style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '5px' }}
-                        alt={product.nome}
-                    />
+                    <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '5px', overflow: 'hidden', flexShrink: 0 }}>
+                        <Image
+                            src={resolveOriginalUrl(product.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/gringa_style_logo.png')}
+                            alt={product.nome}
+                            fill
+                            sizes="80px"
+                            style={{ objectFit: 'cover' }}
+                            placeholder="blur"
+                            blurDataURL={BLUR_DATA_URL}
+                        />
+                    </div>
                     <div>
                         <h3>{product.nome}</h3>
                         {selectedVariant && (
