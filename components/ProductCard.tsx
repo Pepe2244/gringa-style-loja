@@ -147,9 +147,10 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             className="card-imagem visivel"
                             style={{ objectFit: 'cover' }}
                             priority={priority}
+                            fetchPriority={priority ? 'high' : 'auto'}
                             placeholder="blur"
                             blurDataURL={BLUR_DATA_URL}
-                            quality={75}
+                            quality={60}
                         />
                         {displayImages[1] && (
                             <Image
@@ -161,7 +162,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                                 style={{ objectFit: 'cover' }}
                                 placeholder="blur"
                                 blurDataURL={BLUR_DATA_URL}
-                                quality={75}
+                                quality={60}
                             />
                         )}
                     </>
