@@ -88,8 +88,8 @@ export async function POST(request: Request) {
         if (!CORREIOS_TOKEN) {
             console.warn('[Shipping] Token dos Correios não configurado. Usando mock.');
             return NextResponse.json([
-                { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '150.00', delivery_time: 20 },
-                { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', price: '260.00', delivery_time: 8 },
+                { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '320.00', delivery_time: 20 },
+                { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', price: '400.00', delivery_time: 8 },
             ]);
         }
 
