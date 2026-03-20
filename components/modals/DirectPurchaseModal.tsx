@@ -39,6 +39,7 @@ export default function DirectPurchaseModal({
     const { showToast } = useToast();
     const [clientName, setClientName] = useState('');
     const [cep, setCep] = useState('');
+    const [country, setCountry] = useState('BR');
     const [loadingCep, setLoadingCep] = useState(false);
     const [endereco, setEndereco] = useState({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
     
@@ -79,52 +80,60 @@ export default function DirectPurchaseModal({
         return p.preco_promocional;
     };
 
-    const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 8) value = value.slice(0, 8);
-        setCep(value);
-
-        if (value.length === 8) {
-            setLoadingCep(true);
-            try {
-                const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
-                const data = await res.json();
-                if (!data.erro) {
-                    setEndereco(prev => ({
-                        ...prev,
-                        rua: data.logradouro || '',
-                        bairro: data.bairro || '',
-                        cidade: data.localidade || '',
-                        estado: data.uf || ''
-                    }));
-                    
-                    setLoadingShipping(true);
-                    setShippingOptions([]);
-                    setSelectedShipping(null);
-                    try {
-                        const shipRes = await fetch('/api/shipping', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ to_postal_code: value })
-                        });
-                        const shipData = await shipRes.json();
-                        if (Array.isArray(shipData) && shipData.length > 0) {
-                            setShippingOptions(shipData);
-                            setSelectedShipping(shipData[0]); 
-                        }
-                    } catch (e) {
-                        console.error('Erro ao calcular frete:', e);
-                    } finally {
-                        setLoadingShipping(false);
-                    }
-                } else {
-                    showToast('CEP não encontrado.', 'error');
-                }
-            } catch (error) {
-                showToast('Erro ao buscar CEP.', 'error');
-            } finally {
-                setLoadingCep(false);
+    const calcularFrete = async (postalCode: string, selectedCountry: string) => {
+        if (!postalCode) return;
+        setLoadingShipping(true);
+        setShippingOptions([]);
+        setSelectedShipping(null);
+        try {
+            const shipRes = await fetch('/api/shipping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to_postal_code: postalCode, country: selectedCountry })
+            });
+            const shipData = await shipRes.json();
+            if (Array.isArray(shipData) && shipData.length > 0) {
+                setShippingOptions(shipData);
+                setSelectedShipping(shipData[0]); 
             }
+        } catch (e) {
+            console.error('Erro ao calcular frete:', e);
+        } finally {
+            setLoadingShipping(false);
+        }
+    };
+
+    const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (country === 'BR') {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.slice(0, 8);
+            setCep(value);
+
+            if (value.length === 8) {
+                setLoadingCep(true);
+                try {
+                    const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
+                    const data = await res.json();
+                    if (!data.erro) {
+                        setEndereco(prev => ({
+                            ...prev,
+                            rua: data.logradouro || '',
+                            bairro: data.bairro || '',
+                            cidade: data.localidade || '',
+                            estado: data.uf || ''
+                        }));
+                        calcularFrete(value, 'BR');
+                    } else {
+                        showToast('CEP não encontrado.', 'error');
+                    }
+                } catch (error) {
+                    showToast('Erro ao buscar CEP.', 'error');
+                } finally {
+                    setLoadingCep(false);
+                }
+            }
+        } else {
+            setCep(e.target.value);
         }
     };
 
@@ -133,11 +142,15 @@ export default function DirectPurchaseModal({
             showToast('Por favor, preencha seu nome.', 'error');
             return;
         }
-        if (cep.length === 8 && (!endereco.rua || !endereco.numero)) {
+        if (country === 'BR' && cep.length === 8 && (!endereco.rua || !endereco.numero)) {
             showToast('Por favor, preencha o número do endereço.', 'error');
             return;
         }
-        if (cep.length === 8 && shippingOptions.length > 0 && !selectedShipping) {
+        if (country !== 'BR' && cep.length >= 3 && (!endereco.rua || !endereco.numero || !endereco.cidade || !endereco.estado)) {
+            showToast('Por favor, preencha o endereço completo para envio internacional.', 'error');
+            return;
+        }
+        if ((country === 'BR' ? cep.length === 8 : cep.length >= 3) && shippingOptions.length > 0 && !selectedShipping) {
             showToast('Por favor, selecione uma opção de frete.', 'error');
             return;
         }
@@ -186,12 +199,13 @@ export default function DirectPurchaseModal({
             message += `*Pagamento:* ${paymentMethod}\n\n`;
         }
 
-        if (cep.length === 8) {
+        if (country === 'BR' ? cep.length === 8 : cep.length >= 3) {
             message += `📍 *Endereço de Entrega*\n`;
+            message += `País: ${country === 'BR' ? 'Brasil' : country}\n`;
             message += `${endereco.rua}, Nº ${endereco.numero}\n`;
             if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
             message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
-            message += `CEP: ${cep}\n`;
+            message += `Postal Code/CEP: ${cep}\n`;
             if (selectedShipping) {
                 const sPrice = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
                 const sTime = selectedShipping.custom_delivery_time || selectedShipping.delivery_time;
@@ -200,7 +214,7 @@ export default function DirectPurchaseModal({
                 message += `\n`;
             }
         } else {
-            message += `📍 *Entrega:* (CEP não informado)\n\n`;
+            message += `📍 *Entrega:* (Endereço não informado)\n\n`;
         }
 
         message += `Aguardo as instruções finais!`;
@@ -279,18 +293,41 @@ export default function DirectPurchaseModal({
                     <label htmlFor="modal-cep" style={{ fontWeight: 'bold' }}>CEP de Entrega (Opcional)</label>
                     {loadingCep && <span style={{ fontSize: '0.8rem', color: 'var(--cor-destaque)' }}>Buscando...</span>}
                 </div>
-                <input
-                    type="text"
-                    id="modal-cep"
-                    className="input-cliente"
-                    placeholder="00000000"
-                    maxLength={8}
-                    value={cep}
-                    onChange={handleCepChange}
-                    style={{ marginBottom: '10px', width: '150px' }}
-                />
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                    <select
+                        value={country}
+                        onChange={(e) => {
+                            setCountry(e.target.value);
+                            setCep('');
+                            setShippingOptions([]);
+                            setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
+                        }}
+                        className="select-pagamento"
+                        style={{ width: '110px', padding: '10px' }}
+                    >
+                        <option value="BR">Brasil</option>
+                        <option value="US">USA</option>
+                        <option value="PT">Portugal</option>
+                        <option value="INT">Outro País</option>
+                    </select>
+                    <input
+                        type="text"
+                        id="modal-cep"
+                        className="input-cliente"
+                        placeholder={country === 'BR' ? "00000000" : "Postal Code"}
+                        maxLength={country === 'BR' ? 8 : 20}
+                        value={cep}
+                        onChange={handleCepChange}
+                        onBlur={() => {
+                            if (country !== 'BR' && cep.length >= 3) {
+                                calcularFrete(cep, country);
+                            }
+                        }}
+                        style={{ flex: 1, margin: 0 }}
+                    />
+                </div>
 
-                {cep.length === 8 && (
+                {(country === 'BR' ? cep.length === 8 : cep.length >= 3) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '5px' }}>
                         <input type="text" className="input-cliente" placeholder="Rua / Avenida" value={endereco.rua} onChange={e => setEndereco({...endereco, rua: e.target.value})} />
                         <div style={{ display: 'flex', gap: '10px' }}>
@@ -299,8 +336,8 @@ export default function DirectPurchaseModal({
                         </div>
                         <input type="text" className="input-cliente" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} />
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <input type="text" className="input-cliente" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 2 }} readOnly />
-                            <input type="text" className="input-cliente" placeholder="UF" value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ flex: 1 }} readOnly />
+                            <input type="text" className="input-cliente" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 2 }} readOnly={country === 'BR'} />
+                            <input type="text" className="input-cliente" placeholder={country === 'BR' ? "UF" : "Estado"} value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ flex: 1 }} readOnly={country === 'BR'} />
                         </div>
                         
                         <div style={{ marginTop: '10px' }}>
@@ -333,7 +370,7 @@ export default function DirectPurchaseModal({
                                         )
                                     })}
                                 </div>
-                            ) : cep.length === 8 && !loadingShipping && endereco.cidade ? (
+                            ) : !loadingShipping && endereco.cidade ? (
                                 <div style={{ color: '#ff4444', fontSize: '0.85rem' }}>Não foi possível calcular o frete online. O vendedor informará.</div>
                             ) : null}
                         </div>

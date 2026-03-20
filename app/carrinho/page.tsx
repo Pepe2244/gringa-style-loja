@@ -36,6 +36,7 @@ export default function CartPage() {
 
     const [clientName, setClientName] = useState('');
     const [cep, setCep] = useState('');
+    const [country, setCountry] = useState('BR');
     const [loadingCep, setLoadingCep] = useState(false);
     const [endereco, setEndereco] = useState({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
     
@@ -162,53 +163,60 @@ export default function CartPage() {
 
     const totalCalculado = calculateTotal();
 
-    const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 8) value = value.slice(0, 8);
-        setCep(value);
-
-        if (value.length === 8) {
-            setLoadingCep(true);
-            try {
-                const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
-                const data = await res.json();
-                if (!data.erro) {
-                    setEndereco(prev => ({
-                        ...prev,
-                        rua: data.logradouro || '',
-                        bairro: data.bairro || '',
-                        cidade: data.localidade || '',
-                        estado: data.uf || ''
-                    }));
-
-                    setLoadingShipping(true);
-                    setShippingOptions([]);
-                    setSelectedShipping(null);
-                    try {
-                        const shipRes = await fetch('/api/shipping', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ to_postal_code: value })
-                        });
-                        const shipData = await shipRes.json();
-                        if (Array.isArray(shipData) && shipData.length > 0) {
-                            setShippingOptions(shipData);
-                            setSelectedShipping(shipData[0]); 
-                        }
-                    } catch (e) {
-                        console.error('Erro ao calcular frete:', e);
-                    } finally {
-                        setLoadingShipping(false);
-                    }
-
-                } else {
-                    showToast('CEP não encontrado.', 'error');
-                }
-            } catch (error) {
-                showToast('Erro ao buscar CEP.', 'error');
-            } finally {
-                setLoadingCep(false);
+    const calcularFrete = async (postalCode: string, selectedCountry: string) => {
+        if (!postalCode) return;
+        setLoadingShipping(true);
+        setShippingOptions([]);
+        setSelectedShipping(null);
+        try {
+            const shipRes = await fetch('/api/shipping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to_postal_code: postalCode, country: selectedCountry })
+            });
+            const shipData = await shipRes.json();
+            if (Array.isArray(shipData) && shipData.length > 0) {
+                setShippingOptions(shipData);
+                setSelectedShipping(shipData[0]); 
             }
+        } catch (e) {
+            console.error('Erro ao calcular frete:', e);
+        } finally {
+            setLoadingShipping(false);
+        }
+    };
+
+    const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (country === 'BR') {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.slice(0, 8);
+            setCep(value);
+
+            if (value.length === 8) {
+                setLoadingCep(true);
+                try {
+                    const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
+                    const data = await res.json();
+                    if (!data.erro) {
+                        setEndereco(prev => ({
+                            ...prev,
+                            rua: data.logradouro || '',
+                            bairro: data.bairro || '',
+                            cidade: data.localidade || '',
+                            estado: data.uf || ''
+                        }));
+                        calcularFrete(value, 'BR');
+                    } else {
+                        showToast('CEP não encontrado.', 'error');
+                    }
+                } catch (error) {
+                    showToast('Erro ao buscar CEP.', 'error');
+                } finally {
+                    setLoadingCep(false);
+                }
+            }
+        } else {
+            setCep(e.target.value);
         }
     };
 
@@ -266,11 +274,15 @@ export default function CartPage() {
             showToast('Por favor, preencha seu nome para finalizar.', 'error');
             return;
         }
-        if (cep.length === 8 && (!endereco.rua || !endereco.numero)) {
+        if (country === 'BR' && cep.length === 8 && (!endereco.rua || !endereco.numero)) {
             showToast('Por favor, preencha o número do seu endereço.', 'error');
             return;
         }
-        if (cep.length === 8 && shippingOptions.length > 0 && !selectedShipping) {
+        if (country !== 'BR' && cep.length >= 3 && (!endereco.rua || !endereco.numero || !endereco.cidade || !endereco.estado)) {
+            showToast('Por favor, preencha seu endereço completo para envios internacionais.', 'error');
+            return;
+        }
+        if ((country === 'BR' ? cep.length === 8 : cep.length >= 3) && shippingOptions.length > 0 && !selectedShipping) {
             showToast('Por favor, selecione uma opção de frete.', 'error');
             return;
         }
@@ -333,12 +345,13 @@ export default function CartPage() {
         });
         message += `\n`;
 
-        if (cep.length === 8) {
+        if (country === 'BR' ? cep.length === 8 : cep.length >= 3) {
             message += `📍 *Endereço de Entrega:*\n`;
+            message += `País: ${country === 'BR' ? 'Brasil' : country}\n`;
             message += `${endereco.rua}, Nº ${endereco.numero}\n`;
             if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
             message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
-            message += `CEP: ${cep}\n`;
+            message += `Postal Code/CEP: ${cep}\n`;
             if (selectedShipping) {
                 const sPrice = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
                 const sTime = selectedShipping.custom_delivery_time || selectedShipping.delivery_time;
@@ -347,7 +360,7 @@ export default function CartPage() {
                 message += `\n`;
             }
         } else {
-            message += `📍 *Entrega:* (Combinar com vendedor)\n\n`;
+            message += `📍 *Entrega:* (Endereço não informado)\n\n`;
         }
 
         message += `💳 *Pagamento:* ${paymentMethod}`;
@@ -497,15 +510,37 @@ export default function CartPage() {
                             <label style={{ color: '#aaa', fontSize: '0.9rem' }}>CEP de Entrega (Opcional)</label>
                             {loadingCep && <span style={{ fontSize: '0.8rem', color: '#25D366' }}>Buscando...</span>}
                         </div>
-                        <input
-                            type="text"
-                            placeholder="00000000"
-                            maxLength={8}
-                            value={cep}
-                            onChange={handleCepChange}
-                            style={{ width: '150px', padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box', marginBottom: '10px' }}
-                        />
-                        {cep.length === 8 && (
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                            <select
+                                value={country}
+                                onChange={(e) => {
+                                    setCountry(e.target.value);
+                                    setCep('');
+                                    setShippingOptions([]);
+                                    setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
+                                }}
+                                style={{ width: '130px', padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white' }}
+                            >
+                                <option value="BR">Brasil</option>
+                                <option value="US">USA</option>
+                                <option value="PT">Portugal</option>
+                                <option value="INT">Outro País</option>
+                            </select>
+                            <input
+                                type="text"
+                                placeholder={country === 'BR' ? "00000000" : "Postal Code"}
+                                maxLength={country === 'BR' ? 8 : 20}
+                                value={cep}
+                                onChange={handleCepChange}
+                                onBlur={() => {
+                                    if (country !== 'BR' && cep.length >= 3) {
+                                        calcularFrete(cep, country);
+                                    }
+                                }}
+                                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
+                            />
+                        </div>
+                        {(country === 'BR' ? cep.length === 8 : cep.length >= 3) && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <input type="text" placeholder="Rua / Avenida" value={endereco.rua} onChange={e => setEndereco({...endereco, rua: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} />
                                 <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
@@ -514,8 +549,8 @@ export default function CartPage() {
                                 </div>
                                 <input type="text" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} />
                                 <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                                    <input type="text" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa', boxSizing: 'border-box' }} readOnly />
-                                    <input type="text" placeholder="UF" value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ width: '60px', flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#aaa', textAlign: 'center', boxSizing: 'border-box' }} readOnly />
+                                    <input type="text" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: country === 'BR' ? '#aaa' : 'white', boxSizing: 'border-box' }} readOnly={country === 'BR'} />
+                                    <input type="text" placeholder={country === 'BR' ? "UF" : "Estado"} value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ width: '90px', flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: country === 'BR' ? '#aaa' : 'white', textAlign: 'center', boxSizing: 'border-box' }} readOnly={country === 'BR'} />
                                 </div>
                                 
                                 <div style={{ marginTop: '15px' }}>
@@ -548,7 +583,7 @@ export default function CartPage() {
                                                 )
                                             })}
                                         </div>
-                                    ) : cep.length === 8 && !loadingShipping && endereco.cidade ? (
+                                    ) : !loadingShipping && endereco.cidade ? (
                                         <div style={{ color: '#ff4444', fontSize: '0.9rem' }}>Não foi possível calcular o frete automaticamente. O vendedor informará o valor.</div>
                                     ) : null}
                                 </div>
