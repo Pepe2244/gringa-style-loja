@@ -510,7 +510,7 @@ export default function CartPage() {
                             <label style={{ color: '#aaa', fontSize: '0.9rem' }}>CEP de Entrega (Opcional)</label>
                             {loadingCep && <span style={{ fontSize: '0.8rem', color: '#25D366' }}>Buscando...</span>}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', minWidth: 0 }}>
                             <select
                                 value={country}
                                 onChange={(e) => {
@@ -519,12 +519,12 @@ export default function CartPage() {
                                     setShippingOptions([]);
                                     setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
                                 }}
-                                style={{ width: '130px', padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white' }}
+                                style={{ flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white' }}
                             >
-                                <option value="BR">Brasil</option>
-                                <option value="US">USA</option>
-                                <option value="PT">Portugal</option>
-                                <option value="INT">Outro País</option>
+                                <option value="BR">🇧🇷 Brasil</option>
+                                <option value="US">🇺🇸 USA</option>
+                                <option value="PT">🇵🇹 Portugal</option>
+                                <option value="INT">🌍 Outro País</option>
                             </select>
                             <input
                                 type="text"
@@ -537,7 +537,7 @@ export default function CartPage() {
                                         calcularFrete(cep, country);
                                     }
                                 }}
-                                style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
+                                style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
                             />
                         </div>
                         {(country === 'BR' ? cep.length === 8 : cep.length >= 3) && (

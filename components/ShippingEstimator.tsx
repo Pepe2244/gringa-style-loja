@@ -64,45 +64,49 @@ export default function ShippingEstimator() {
                 Calcular Frete e Prazo
             </h3>
             
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
-                <select
-                    value={country}
-                    onChange={(e) => {
-                        setCountry(e.target.value);
-                        setCep('');
-                        setOptions([]);
-                        setSearched(false);
-                    }}
-                    style={{ flex: '0 0 auto', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', fontSize: '0.95rem' }}
-                >
-                    <option value="BR">Brasil</option>
-                    <option value="US">USA</option>
-                    <option value="PT">Portugal</option>
-                    <option value="INT">Outro País</option>
-                </select>
-                <input
-                    type="text"
-                    placeholder={country === 'BR' ? "Seu CEP" : "Postal Code"}
-                    value={cep}
-                    maxLength={country === 'BR' ? 9 : 20}
-                    onChange={(e) => {
-                        if (country === 'BR') {
-                            let v = e.target.value.replace(/\D/g, '');
-                            if (v.length > 5) v = v.substring(0, 5) + '-' + v.substring(5, 8);
-                            setCep(v);
-                        } else {
-                            setCep(e.target.value);
-                        }
-                    }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleCalculate(); }}
-                    style={{ flex: 1, padding: '10px 12px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', fontSize: '0.95rem' }}
-                />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                {/* Linha 1: País + CEP — encolhem juntos sem estourar a tela */}
+                <div style={{ display: 'flex', gap: '8px', width: '100%', minWidth: 0 }}>
+                    <select
+                        value={country}
+                        onChange={(e) => {
+                            setCountry(e.target.value);
+                            setCep('');
+                            setOptions([]);
+                            setSearched(false);
+                        }}
+                        style={{ flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', fontSize: '0.95rem' }}
+                    >
+                        <option value="BR">🇧🇷 Brasil</option>
+                        <option value="US">🇺🇸 USA</option>
+                        <option value="PT">🇵🇹 Portugal</option>
+                        <option value="INT">🌍 Outro País</option>
+                    </select>
+                    <input
+                        type="text"
+                        placeholder={country === 'BR' ? "Seu CEP" : "Postal Code"}
+                        value={cep}
+                        maxLength={country === 'BR' ? 9 : 20}
+                        onChange={(e) => {
+                            if (country === 'BR') {
+                                let v = e.target.value.replace(/\D/g, '');
+                                if (v.length > 5) v = v.substring(0, 5) + '-' + v.substring(5, 8);
+                                setCep(v);
+                            } else {
+                                setCep(e.target.value);
+                            }
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleCalculate(); }}
+                        style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', fontSize: '0.95rem' }}
+                    />
+                </div>
+                {/* Linha 2: Botão ocupa largura total */}
                 <button
                     onClick={handleCalculate}
                     disabled={loading || (country === 'BR' ? cep.replace(/\D/g, '').length !== 8 : cep.trim().length < 3)}
-                    style={{ padding: '0 20px', background: 'var(--cor-destaque)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+                    style={{ width: '100%', padding: '10px', background: 'var(--cor-destaque)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
                 >
-                    {loading ? '...' : 'OK'}
+                    {loading ? 'Calculando...' : 'Calcular Frete'}
                 </button>
             </div>
 
