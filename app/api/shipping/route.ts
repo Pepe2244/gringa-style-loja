@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         }
 
         // Determinar CEP de origem (Máscaras saem de Três Lagoas/MS)
-        const MASKS_ORIGIN_CEP = '79600000';
+        const MASKS_ORIGIN_CEP = '79631170'; 
         const isMask = product_name && (
             product_name.toLowerCase().includes('mascara') || 
             product_name.toLowerCase().includes('máscara')
