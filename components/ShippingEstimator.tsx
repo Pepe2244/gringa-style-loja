@@ -12,7 +12,7 @@ interface ShippingOption {
     delivery_time: number;
 }
 
-export default function ShippingEstimator() {
+export default function ShippingEstimator({ productName }: { productName?: string }) {
     const { showToast } = useToast();
     const [cep, setCep] = useState('');
     const [country, setCountry] = useState('BR');
@@ -39,7 +39,11 @@ export default function ShippingEstimator() {
             const res = await fetch('/api/shipping', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to_postal_code: cleanCep, country })
+                body: JSON.stringify({ 
+                    to_postal_code: cleanCep, 
+                    country,
+                    product_name: productName
+                })
             });
 
             const data = await res.json();

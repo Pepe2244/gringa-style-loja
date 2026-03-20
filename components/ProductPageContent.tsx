@@ -427,7 +427,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         </button>
                     </div>
 
-                    <ShippingEstimator />
+                    <ShippingEstimator productName={product.nome} />
 
                     <div className="trust-badges" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '20px 15px', backgroundColor: '#111', borderRadius: '8px', border: '1px dashed #444' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>

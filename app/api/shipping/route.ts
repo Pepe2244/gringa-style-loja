@@ -41,7 +41,7 @@ const COUNTRY_CODES: Record<string, string> = {
 export async function POST(request: Request) {
     try {
         const payloadJson = await request.json();
-        const { to_postal_code, country = 'BR' } = payloadJson;
+        const { to_postal_code, country = 'BR', product_name } = payloadJson;
 
         if (!to_postal_code) {
             return NextResponse.json(
@@ -49,6 +49,16 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
+
+        // Determinar CEP de origem (Máscaras saem de Três Lagoas/MS)
+        const MASKS_ORIGIN_CEP = '79600000';
+        const isMask = product_name && (
+            product_name.toLowerCase().includes('mascara') || 
+            product_name.toLowerCase().includes('máscara')
+        );
+        const effectiveOriginCep = isMask ? MASKS_ORIGIN_CEP : ORIGIN_CEP;
+
+        console.log(`[Shipping] Product: ${product_name}, isMask: ${isMask}, Origin CEP: ${effectiveOriginCep}`);
 
         // ─── Lógica Nacional – SuperFrete ─────────────────────────────────────
         if (country === 'BR') {
@@ -60,7 +70,7 @@ export async function POST(request: Request) {
                     Authorization: `Bearer ${SUPERFRETE_TOKEN}`,
                 },
                 body: JSON.stringify({
-                    from: { postal_code: ORIGIN_CEP },
+                    from: { postal_code: effectiveOriginCep },
                     to: { postal_code: to_postal_code.replace(/\D/g, '') },
                     services: '1,2', // 1 = PAC, 2 = SEDEX
                     options: { own_hand: false, receipt: false, insurance_value: 0 },
@@ -108,7 +118,7 @@ export async function POST(request: Request) {
                             },
                             body: JSON.stringify({
                                 coPaisDestino,
-                                nuCepOrigem: ORIGIN_CEP,
+                                nuCepOrigem: effectiveOriginCep,
                                 nuCartaoPostagem: CORREIOS_CARTAO,
                                 psObjeto: '2000',    // 1 kg em gramas
                                 tpObjeto: '2',       // 2 = Caixa/Pacote

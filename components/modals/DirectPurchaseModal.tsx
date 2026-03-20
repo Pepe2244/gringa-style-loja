@@ -89,7 +89,11 @@ export default function DirectPurchaseModal({
             const shipRes = await fetch('/api/shipping', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to_postal_code: postalCode, country: selectedCountry })
+                body: JSON.stringify({ 
+                    to_postal_code: postalCode, 
+                    country: selectedCountry,
+                    product_name: product.nome
+                })
             });
             const shipData = await shipRes.json();
             if (Array.isArray(shipData) && shipData.length > 0) {
