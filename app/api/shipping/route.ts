@@ -110,7 +110,7 @@ export async function POST(request: Request) {
                                 coPaisDestino,
                                 nuCepOrigem: ORIGIN_CEP,
                                 nuCartaoPostagem: CORREIOS_CARTAO,
-                                psObjeto: '1000',    // 1 kg em gramas
+                                psObjeto: '2000',    // 1 kg em gramas
                                 tpObjeto: '2',       // 2 = Caixa/Pacote
                                 comprimento: '25',
                                 largura: '15',
@@ -146,8 +146,8 @@ export async function POST(request: Request) {
         // Fallback se nenhum serviço retornar
         if (validos.length === 0) {
             return NextResponse.json([
-                { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '150.00', delivery_time: 20 },
-                { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', price: '260.00', delivery_time: 8 },
+                { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '320.00', delivery_time: 20 },
+                { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', price: '400.00', delivery_time: 8 },
             ]);
         }
 
