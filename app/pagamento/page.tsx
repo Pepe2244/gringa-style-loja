@@ -72,7 +72,7 @@ function PaymentContent() {
             `*Valor:* R$ ${total.toFixed(2).replace('.', ',')}\n\n` +
             `Segue o comprovante em anexo.`;
 
-        window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(mensagem)}`, '_blank');
+        window.open(`https://wa.me/5515998462118?text=${encodeURIComponent(mensagem)}`, '_blank');
     };
 
     if (loading) {
