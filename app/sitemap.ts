@@ -1,62 +1,64 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 
+/**
+ * SITEMAP ESTRATÉGICO - GRINGA STYLE
+ * Garante que o Google indexe os produtos e as novas políticas antes do prazo do Merchant Center.
+ */
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // AVISO ESTRATÉGICO: Quando você comprar o domínio oficial, altere esta variável imediatamente.
   const baseUrl = 'https://gringa-style.netlify.app';
 
-  // Busca todos os produtos no banco para indexação
+  // 1. Busca Dinâmica de Produtos no Supabase
   const { data: products } = await supabase
     .from('produtos')
     .select('id, nome, slug, created_at');
 
-  // Mapeia os produtos para o formato que o Google exige
   const productUrls: MetadataRoute.Sitemap = (products || []).map((product) => {
-    // Usa o slug limpo do banco. Fallback de segurança mantido.
+    // Lógica de slug robusta para SEO
     const productSlug = product.slug || `${product.id}-${product.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
 
     return {
       url: `${baseUrl}/produto/${productSlug}`,
       lastModified: new Date(product.created_at || new Date()),
       changeFrequency: 'weekly',
-      priority: 0.8, // Prioridade alta para produtos
+      priority: 0.8,
     };
   });
 
-  // Define as rotas estáticas principais do seu funil
+  // 2. Rotas Estáticas de Autoridade
   const staticUrls: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}`,
       lastModified: new Date(),
       changeFrequency: 'daily',
-      priority: 1.0, // Home é a página mais importante
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/devolucao-e-reembolso`, // A PÁGINA QUE SALVA O MERCHANT CENTER
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/rifa`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.9, // Alto volume de tráfego, manter indexado frequentemente
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/sobre`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
     {
-      url: `${baseUrl}/carrinho`,
+      url: `${baseUrl}/privacidade`,
       lastModified: new Date(),
-      changeFrequency: 'never',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/historico`,
-      lastModified: new Date(),
-      changeFrequency: 'never',
-      priority: 0.5,
+      changeFrequency: 'monthly',
+      priority: 0.6,
     }
   ];
 
   return [...staticUrls, ...productUrls];
 }
-

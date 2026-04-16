@@ -1,98 +1,111 @@
-import Link from 'next/link';
-import { Mail, MapPin, Instagram, ShoppingBag } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import React from 'react';
+// Substituímos o componente Link do Next.js por tags <a> convencionais para garantir que o código compile corretamente no Canvas.
+// No seu projeto Next.js real, você poderá reverter para o componente Link se desejar.
+import { Instagram, Facebook, Mail, MessageCircle, ShieldCheck } from 'lucide-react';
 
-// Transformamos o Footer num Server Component (sem 'use client')
-// Isso garante que o Google lê os links no código-fonte original (SEO Perfeito)
-export default async function Footer() {
-    // Busca dinâmica dos 4 produtos mais relevantes (ex: últimos adicionados ou em estoque)
-    const { data: topProdutos } = await supabase
-        .from('produtos')
-        .select('id, nome, slug')
-        .eq('em_estoque', true) // Garante que não manda o usuário para produto esgotado
-        .limit(4);
+const Footer = () => {
+  const currentYear = new Date().getFullYear();
 
-    return (
-        <footer className="rodape">
-            <div className="container" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '30px' }}>
-
-                <div className="rodape-coluna" style={{ flex: '1 1 200px' }}>
-                    <div style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '15px', fontWeight: 'bold' }}>
-                        Gringa Style
-                    </div>
-                    <p>Equipamentos e acessórios para solda com a mais alta qualidade e estilo.</p>
-                </div>
-
-                {/* A MATRIZ DINÂMICA DE SEO */}
-                <div className="rodape-coluna" style={{ flex: '1 1 200px' }}>
-                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
-                        <ShoppingBag size={18} /> Destaques
-                    </h3>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {topProdutos && topProdutos.length > 0 ? (
-                            topProdutos.map((produto) => (
-                                <li key={produto.id}>
-                                    <Link 
-                                        href={`/produto/${produto.slug || produto.id}`} 
-                                        title={`Comprar ${produto.nome}`} 
-                                        style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                                        className="hover-destaque"
-                                    >
-                                        {produto.nome}
-                                    </Link>
-                                </li>
-                            ))
-                        ) : (
-                            // Fallback caso o banco falhe
-                            <li><Link href="/" style={{ color: 'inherit' }}>Ver Catálogo Completo</Link></li>
-                        )}
-                    </ul>
-                </div>
-
-                <div className="rodape-coluna" style={{ flex: '1 1 200px' }}>
-                    <h3 style={{ marginBottom: '15px' }}>Contato</h3>
-                    <p style={{ marginBottom: '10px' }}>
-                        <a href="https://wa.me/5515998608170" target="_blank" aria-label="Contato via WhatsApp" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z" />
-                            </svg>
-                            (15) 99860-8170
-                        </a>
-                    </p>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}><Mail size={16} /> nalessogtaw015@gmail.com</p>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}><MapPin size={16} /> Itapetininga - SP (Loja Online)</p>
-                    <p><Link href="/sobre" style={{ textDecoration: 'underline' }}>Sobre a Gringa Style</Link></p>
-                    <p><Link href="/privacidade" style={{ textDecoration: 'underline' }}>Política de Privacidade</Link></p>
-                </div>
-
-                <div className="rodape-coluna" style={{ flex: '1 1 200px' }}>
-                    <h3 style={{ marginBottom: '15px' }}>Siga-nos</h3>
-                    <a href="https://www.instagram.com/gringastyle_br" target="_blank" className="social-link" aria-label="Siga-nos no Instagram" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}>
-                        <Instagram size={16} /> Instagram
-                    </a>
-                </div>
+  return (
+    <footer className="bg-zinc-950 text-white pt-16 pb-8 border-t border-zinc-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+          {/* Brand Section */}
+          <div className="space-y-6">
+            <a href="/" className="inline-block">
+              <span className="text-2xl font-black tracking-tighter italic text-orange-500">
+                GRINGA<span className="text-white font-light">STYLE</span>
+              </span>
+            </a>
+            <p className="text-zinc-400 text-sm leading-relaxed max-w-xs">
+              Equipamentos de alta performance para soldadores que não aceitam nada menos que a perfeição. Estilo e proteção em cada cordão.
+            </p>
+            <div className="flex space-x-4">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-900 rounded-full hover:bg-orange-600 transition-colors">
+                <Instagram size={18} />
+              </a>
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="p-2 bg-zinc-900 rounded-full hover:bg-orange-600 transition-colors">
+                <Facebook size={18} />
+              </a>
             </div>
+          </div>
 
-            <div className="rodape-base">
-                <p>Usamos armazenamento local para salvar seu carrinho. Ao navegar, você concorda com nossa <Link href="/privacidade" style={{ textDecoration: 'underline', color: 'var(--cor-destaque)' }}>Política de Privacidade</Link>.</p>
-                <p style={{ marginTop: '10px' }}>
-                    &copy; 
-                    {/* Link stealth: visualmente idêntico a um texto normal, mas leva direto pro admin */}
-                    <Link href="/admin" style={{ cursor: 'default', color: 'inherit', textDecoration: 'none', marginLeft: '4px' }}>
-                        {new Date().getFullYear()}
-                    </Link> 
-                    {' '}Gringa Style. Todos os direitos reservados.
-                </p>
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-orange-500 mb-6">Categorias</h3>
+            <ul className="space-y-4">
+              <li><a href="/" className="text-zinc-400 hover:text-white text-sm transition-colors">Máscaras de Solda</a></li>
+              <li><a href="/" className="text-zinc-400 hover:text-white text-sm transition-colors">Tochas e Consumíveis</a></li>
+              <li><a href="/" className="text-zinc-400 hover:text-white text-sm transition-colors">Lentes Especiais</a></li>
+              <li><a href="/" className="text-zinc-400 hover:text-white text-sm transition-colors">Personalizados</a></li>
+            </ul>
+          </div>
+
+          {/* Institutional */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-orange-500 mb-6">Institucional</h3>
+            <ul className="space-y-4">
+              <li><a href="/sobre" className="text-zinc-400 hover:text-white text-sm transition-colors">Sobre Nós</a></li>
+              <li><a href="/privacidade" className="text-zinc-400 hover:text-white text-sm transition-colors">Política de Privacidade</a></li>
+              <li>
+                <a href="/devolucao-e-reembolso" className="text-zinc-400 hover:text-white text-sm transition-colors font-medium flex items-center">
+                  Trocas e Devoluções
+                  <span className="ml-2 px-1.5 py-0.5 bg-orange-500/10 text-orange-500 text-[10px] rounded border border-orange-500/20">Novo</span>
+                </a>
+              </li>
+              <li><a href="/acompanhar-rifa" className="text-zinc-400 hover:text-white text-sm transition-colors">Acompanhar Rifa</a></li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-orange-500 mb-6">Atendimento</h3>
+            <ul className="space-y-4">
+              <li className="flex items-start space-x-3">
+                <Mail size={18} className="text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <span className="block text-xs text-zinc-500 uppercase font-bold">E-mail</span>
+                  <a href="mailto:nalessogtaw015@gmail.com" className="text-zinc-300 hover:text-white text-sm break-all">
+                    nalessogtaw015@gmail.com
+                  </a>
+                </div>
+              </li>
+              <li className="flex items-start space-x-3">
+                <MessageCircle size={18} className="text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <span className="block text-xs text-zinc-500 uppercase font-bold">WhatsApp</span>
+                  <a href="https://wa.me/5500000000000" target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white text-sm">
+                    Suporte Especializado
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <div className="mt-8 p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 flex items-center space-x-3">
+              <ShieldCheck className="text-green-500" size={24} />
+              <div className="text-[10px] text-zinc-500 leading-tight uppercase font-bold">
+                Site 100% Seguro<br />Ambiente Criptografado
+              </div>
             </div>
+          </div>
+        </div>
 
-            {/* CSS inline para evitar que o hover do client quebre no Server Component */}
-            <style dangerouslySetInnerHTML={{__html: `
-                .hover-destaque:hover {
-                    color: var(--cor-destaque) !important;
-                }
-            `}} />
-        </footer>
-    );
-}
+        {/* Bottom Section */}
+        <div className="pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+          <p className="text-zinc-500 text-xs text-center md:text-left">
+            &copy; {currentYear} Gringa Style. Todos os direitos reservados. 
+            <span className="block md:inline md:ml-2 text-zinc-600 italic">Feito por e para Soldadores.</span>
+          </p>
+          <div className="flex items-center space-x-6">
+            <div className="flex space-x-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
+              <div className="w-8 h-5 bg-zinc-800 rounded flex items-center justify-center text-[8px] font-bold">PIX</div>
+              <div className="w-8 h-5 bg-zinc-800 rounded flex items-center justify-center text-[8px] font-bold">VISA</div>
+              <div className="w-8 h-5 bg-zinc-800 rounded flex items-center justify-center text-[8px] font-bold">MC</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
 
-
+export default Footer;

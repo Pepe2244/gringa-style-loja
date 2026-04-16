@@ -9,6 +9,7 @@ import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
 import { cookies } from "next/headers";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { LocalBusinessSchema, WebSiteSchema } from '@/components/SEO/StructuredData';
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -44,11 +45,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // GROWTH HACK: Lógica de consentimento no servidor para performance máxima
+  // Lógica de consentimento no servidor para performance máxima
   const cookieStore = await cookies();
   const hasConsent = cookieStore.get('cookie-consent')?.value === 'true';
 
-  // SEGURANÇA: Extração da URL do Supabase via Env Var para evitar bloqueio do Netlify
+  // SEGURANÇA: Extração da URL do Supabase via Env Var
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   let supabaseOrigin = "";
 
@@ -60,14 +61,18 @@ export default async function RootLayout({
     }
   }
 
-  // CONFIGURAÇÕES DE ANALYTICS (Padrão fallback para segurança caso envs faltem)
+  // CONFIGURAÇÕES DE ANALYTICS
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-2L2F9CY9JN";
   const AHREFS_KEY = process.env.AHREFS_KEY || "Sam0BvC3Nm1qohD+XzVeLA";
 
   return (
     <html lang="pt-BR">
       <head>
-        {/* Preload dinâmico: Se a URL mudar no Env, o preload atualiza sozinho */}
+        {/* DADOS ESTRUTURADOS GLOBAIS - A autoridade da marca no Google */}
+        <LocalBusinessSchema />
+        <WebSiteSchema />
+
+        {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (
           <>
             <link rel="preconnect" href={supabaseOrigin} />
@@ -85,7 +90,7 @@ export default async function RootLayout({
         
         <GoogleAnalytics gaId={GA_ID} />
 
-        {/* Microsoft Clarity para Mapa de Calor e Gravação de Sessões */}
+        {/* Microsoft Clarity para análise de comportamento de conversão */}
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
             (function(c,l,a,r,i,t,y){
@@ -97,12 +102,16 @@ export default async function RootLayout({
         </Script>
 
         <ToastProvider>
-          <Header />
-          <CampaignBannerServer />
-          {children}
-          {/* Renderização condicional no servidor: Economia de bytes no cliente */}
-          {!hasConsent && <CookieConsent />}
-          <Footer />
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <CampaignBannerServer />
+            <main className="flex-grow">
+              {children}
+            </main>
+            {/* Renderização condicional para economia de recursos */}
+            {!hasConsent && <CookieConsent />}
+            <Footer />
+          </div>
         </ToastProvider>
       </body>
     </html>
