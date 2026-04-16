@@ -7,6 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
+import { FAQSchema } from '@/components/SEO/StructuredData';
 
 interface HomeContentProps {
     initialProducts: Product[];
@@ -152,6 +153,20 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
             />
 
             <section id="faq" className="secao-info" style={{ marginTop: '40px', padding: '20px', backgroundColor: '#111', borderRadius: '10px' }}>
+                <FAQSchema questions={[
+                    {
+                        q: "A lente escura da máscara é substituível?",
+                        a: "Sim, a lente escura (passiva) das nossas máscaras Gringa Style pode ser facilmente removida e substituída, garantindo conveniência e durabilidade para a sua máscara na hora da manutenção."
+                    },
+                    {
+                        q: "Vocês enviam para todo o Brasil?",
+                        a: "Com certeza! Enviamos via Correios (PAC e Sedex) para todas as regiões do Brasil. O cálculo do frete pode ser feito diretamente no carrinho de compras informando o seu CEP."
+                    },
+                    {
+                        q: "Como funcionam as opções de pagamento?",
+                        a: "Aceitamos pagamento seguro via PIX (com aprovação imediata) ou Cartão de Crédito em até 12x. Toda a finalização pode ser acompanhada pelo nosso atendimento VIP no WhatsApp."
+                    }
+                ]} />
                 <h2 className="titulo-secao" style={{ marginBottom: '15px' }}>Dúvidas Frequentes (FAQ)</h2>
                 
                 <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>

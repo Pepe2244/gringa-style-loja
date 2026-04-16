@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
+import { BreadcrumbSchema } from '@/components/SEO/StructuredData';
 import { notFound } from 'next/navigation';
 
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -65,16 +66,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
     const descricaoLimpa = product.descricao?.substring(0, 150).replace(/<[^>]*>?/gm, '') || `Compre ${product.nome} na Gringa Style.`;
 
+    const productUrl = `https://gringa-style.netlify.app/produto/${product.slug || slug}`;
+
     return {
         title: `${product.nome} | Gringa Style`,
         description: descricaoLimpa,
         alternates: {
-            // URL Canônica: Diz ao Google qual é a URL oficial, matando o problema de conteúdo duplicado
-            canonical: `/produto/${product.slug || slug}`,
+            // URL Canônica absoluta para evitar duplicação de URL
+            canonical: productUrl,
         },
         openGraph: {
             title: product.nome,
             description: descricaoLimpa,
+            url: productUrl,
             images: [
                 {
                     url: imageUrl,
@@ -115,6 +119,8 @@ export default async function ProductPage({ params }: Props) {
         notFound();
     }
 
+    const productUrl = `https://gringa-style.netlify.app/produto/${product.slug || product.id}`;
+
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Product',
@@ -129,7 +135,7 @@ export default async function ProductPage({ params }: Props) {
         },
         offers: {
             '@type': 'Offer',
-            url: `https://gringa-style.netlify.app/produto/${product.slug || product.id}`,
+            url: productUrl,
             priceCurrency: 'BRL',
             price: product.preco_promocional || product.preco,
             availability: product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
@@ -183,6 +189,10 @@ export default async function ProductPage({ params }: Props) {
 
     return (
         <>
+            <BreadcrumbSchema items={[
+                { name: 'Gringa Style', url: '/' },
+                { name: product.nome, url: productUrl }
+            ]} />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

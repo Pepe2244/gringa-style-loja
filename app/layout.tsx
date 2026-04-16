@@ -9,7 +9,7 @@ import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
 import { cookies } from "next/headers";
 import { GoogleAnalytics } from '@next/third-parties/google';
-import { LocalBusinessSchema, WebSiteSchema } from '@/components/SEO/StructuredData';
+import { LocalBusinessSchema, WebSiteSchema, OrganizationSchema } from '@/components/SEO/StructuredData';
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -71,6 +71,7 @@ export default async function RootLayout({
         {/* DADOS ESTRUTURADOS GLOBAIS - A autoridade da marca no Google */}
         <LocalBusinessSchema />
         <WebSiteSchema />
+        <OrganizationSchema />
 
         {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (
