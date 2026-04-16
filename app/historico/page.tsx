@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import type { Metadata } from 'next';
+import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
+
+export const metadata: Metadata = {
+  title: 'Histórico de Rifas | Gringa Style',
+  description: 'Confira o histórico completo das rifas realizadas pela Gringa Style. Veja os vencedores e prêmios sorteados.',
+  alternates: { canonical: '/historico' },
+};
 
 export default function HistoricoPage() {
     const [rifas, setRifas] = useState<Rifa[]>([]);
@@ -61,7 +69,17 @@ export default function HistoricoPage() {
     }
 
     return (
-        <div className="container historico-container">
+        <>
+            <WebPageSchema page={{
+                name: 'Histórico de Rifas',
+                description: 'Confira o histórico completo das rifas realizadas pela Gringa Style. Veja os vencedores e prêmios sorteados.',
+                url: '/historico'
+            }} />
+            <BreadcrumbSchema items={[
+                { name: 'Gringa Style', url: '/' },
+                { name: 'Histórico', url: '/historico' }
+            ]} />
+            <div className="container historico-container">
             <h1 className="titulo-secao">Histórico de Rifas</h1>
             <div id="historico-lista" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {rifas.length === 0 ? (

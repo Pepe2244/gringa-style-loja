@@ -215,3 +215,36 @@ export const BreadcrumbSchema = ({ items }: { items: BreadcrumbItem[] }) => {
     />
   );
 };
+
+// 7. WebPage: Schema para páginas estáticas
+interface WebPageData {
+  name: string;
+  description: string;
+  url: string;
+}
+
+export const WebPageSchema = ({ page }: { page: WebPageData }) => {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": page.name,
+    "description": page.description,
+    "url": page.url.startsWith('http') ? page.url : `https://gringa-style.netlify.app${page.url}`,
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Gringa Style",
+      "url": "https://gringa-style.netlify.app"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Gringa Style"
+    }
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+};

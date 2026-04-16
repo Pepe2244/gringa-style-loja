@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 
 export const metadata: Metadata = {
   title: 'Sobre a Gringa Style | Especialistas em Solda TIG',
@@ -9,7 +10,17 @@ export const metadata: Metadata = {
 
 export default function SobrePage() {
     return (
-        <main className="container" style={{ padding: '60px 15px', maxWidth: '800px', margin: '0 auto' }}>
+        <>
+            <WebPageSchema page={{
+                name: 'Sobre a Gringa Style',
+                description: 'Conheça a história da Gringa Style. Somos apaixonados por solda TIG, oferecendo máscaras passivas e acessórios de alta durabilidade e estilo exclusivo.',
+                url: '/sobre'
+            }} />
+            <BreadcrumbSchema items={[
+                { name: 'Gringa Style', url: '/' },
+                { name: 'Sobre', url: '/sobre' }
+            ]} />
+            <main className="container" style={{ padding: '60px 15px', maxWidth: '800px', margin: '0 auto' }}>
             <h1 className="titulo-secao" style={{ textAlign: 'center', marginBottom: '40px' }}>Sobre a Gringa Style</h1>
             
             <div style={{ backgroundColor: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333' }}>

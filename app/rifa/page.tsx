@@ -9,6 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import { reservarNumerosRifa } from '@/app/actions/rifa';
 import { Trophy } from 'lucide-react';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { FAQSchema, BreadcrumbSchema } from '@/components/SEO/StructuredData';
 
 // GROWTH HACK TÉCNICO: Forçamos o TypeScript a aceitar a nova coluna do banco
 // sem precisarmos reescrever os arquivos globais de tipagem agora.
@@ -223,7 +224,22 @@ export default function RifaPage() {
     );
 
     const rifaFaq = (
-        <div className="rifa-faq" style={{ marginTop: '40px', background: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333', textAlign: 'left' }}>
+        <>
+            <FAQSchema questions={[
+                {
+                    q: "Sobre a Transparência do Sorteio",
+                    a: "Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é sempre baseado nos números da Loteria Federal (geralmente os últimos dígitos do 1º prêmio). Isso garante que o sorteio é imune a qualquer tipo de fraude ou manipulação por parte da Gringa Style."
+                },
+                {
+                    q: "Datas e Prazos",
+                    a: "A data exata do sorteio é marcada e comunicada em nossos grupos de WhatsApp e Instagram (@gringastyle_br) logo após a venda da última cota. Assim que você reservar seu número, é fundamental enviar o comprovante de pagamento via WhatsApp no prazo estipulado (geralmente 24 horas), caso contrário, o número voltará a ficar disponível para o público."
+                },
+                {
+                    q: "Como recebo meu prêmio?",
+                    a: "Se você for o ganhador, nossa equipe entrará em contato imediatamente pelo WhatsApp cadastrado na hora da reserva. O envio do equipamento de solda TIG (máscara, tocha ou acessórios) é feito via transportadora ou Correios, totalmente documentado, e entregue direto na sua casa em qualquer lugar do Brasil."
+                }
+            ]} />
+            <div className="rifa-faq" style={{ marginTop: '40px', background: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333', textAlign: 'left' }}>
             <h2 style={{ fontSize: '1.8rem', marginBottom: '25px', color: 'white', borderBottom: '2px solid var(--cor-destaque)', paddingBottom: '10px', display: 'inline-block' }}>Como funciona a Rifa Gringa Style? (Transparência e Regras)</h2>
             
             <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
@@ -247,6 +263,7 @@ export default function RifaPage() {
                 <p style={{ color: '#ccc', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>Se você for o ganhador, nossa equipe entrará em contato imediatamente pelo WhatsApp cadastrado na hora da reserva. O envio do equipamento de solda TIG (máscara, tocha ou acessórios) é feito via transportadora ou Correios, totalmente documentado, e entregue direto na sua casa em qualquer lugar do Brasil.</p>
             </details>
         </div>
+        </>
     );
 
     if (!rifa) {
@@ -288,7 +305,12 @@ export default function RifaPage() {
     const premioVencedor = premios.find(p => p.vencedor_numero === rifa.numero_vencedor);
 
     return (
-        <div className="container" id="rifa-container">
+        <>
+            <BreadcrumbSchema items={[
+                { name: 'Gringa Style', url: '/' },
+                { name: 'Rifa', url: '/rifa' }
+            ]} />
+            <div className="container" id="rifa-container">
             <div className="rifa-card">
                 <h1 className="titulo-secao">{rifa.nome_premio}</h1>
 

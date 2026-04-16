@@ -1,8 +1,23 @@
 import { supabase } from '@/lib/supabase';
 import HomeContent from '@/components/home/HomeContent';
 import { Product } from '@/types';
+import type { Metadata } from 'next';
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG',
+  description: 'Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!',
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'Gringa Style | Máscaras de Solda Personalizadas',
+    description: 'Estilo e proteção para soldadores profissionais.',
+    url: 'https://gringa-style.netlify.app',
+    images: [{ url: '/imagens/logo_gringa_style.png', width: 800, height: 600 }],
+    locale: 'pt_BR',
+    type: 'website',
+  },
+};
 
 export default async function Home() {
   const [productsRes, categoriesRes, configRes] = await Promise.all([
