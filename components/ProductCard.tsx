@@ -25,12 +25,12 @@ const cardVariants = {
     hover: {
         y: -5,
         boxShadow: '0 10px 25px rgba(255, 165, 0, 0.3)',
-        transition: { duration: 0.3, ease: "easeOut" }
+        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
     },
     rest: {
         y: 0,
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        transition: { duration: 0.3, ease: "easeOut" }
+        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
     }
 };
 
