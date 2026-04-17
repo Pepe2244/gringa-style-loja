@@ -420,6 +420,7 @@ export default function RifaPage() {
             </div>
             {rifaFaq}
         </div>
+    </>
     );
 }
 

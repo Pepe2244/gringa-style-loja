@@ -65,5 +65,6 @@ export default function SobrePage() {
                 </div>
             </div>
         </main>
+    </>
     );
 }
