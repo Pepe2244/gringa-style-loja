@@ -3,7 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Desabilitar Turbopack temporariamente para resolver problemas com Server Actions
   experimental: {
-    turbo: false,
     serverActions: {
       allowedOrigins: ['localhost:3000', 'gringa-style.netlify.app'],
     },
