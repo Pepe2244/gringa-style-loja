@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -19,6 +20,19 @@ const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/p
 const Link = ({ href, children, className, ...props }: any) => (
     <a href={href} className={className} {...props}>{children}</a>
 );
+
+const cardVariants = {
+    hover: {
+        y: -5,
+        boxShadow: '0 10px 25px rgba(255, 165, 0, 0.3)',
+        transition: { duration: 0.3, ease: "easeOut" }
+    },
+    rest: {
+        y: 0,
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        transition: { duration: 0.3, ease: "easeOut" }
+    }
+};
 
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
     // PROTEÇÃO CRÍTICA: Evita o erro "Cannot read properties of undefined" se o produto não existir.
@@ -106,11 +120,14 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const productSlug = product.slug || `${product.id}-${productName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
 
     return (
-        <div
+        <motion.div
             className="produto-card"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             style={{ position: 'relative' }}
+            variants={cardVariants}
+            initial="rest"
+            whileHover="hover"
         >
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
                 {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
@@ -209,6 +226,6 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                     </Link>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }

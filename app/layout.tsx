@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { ToastProvider } from '@/context/ToastContext';
 import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
+import AnalyticsLoader from "@/components/AnalyticsLoader";
 import { cookies } from "next/headers";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { LocalBusinessSchema, WebSiteSchema, OrganizationSchema } from '@/components/SEO/StructuredData';
@@ -82,25 +83,29 @@ export default async function RootLayout({
         )}
       </head>
       <body className={`${roboto.variable} ${teko.variable} antialiased`}>
-        {/* Scripts de Terceiros com carregamento otimizado */}
-        <Script 
-          src="https://analytics.ahrefs.com/analytics.js" 
-          data-key={AHREFS_KEY} 
-          strategy="lazyOnload" 
-        />
-        
-        <GoogleAnalytics gaId={GA_ID} />
+        {/* Scripts de Terceiros com carregamento condicional baseado em consentimento */}
+        {hasConsent && (
+          <>
+            <Script 
+              src="https://analytics.ahrefs.com/analytics.js" 
+              data-key={AHREFS_KEY} 
+              strategy="lazyOnload" 
+            />
+            
+            <GoogleAnalytics gaId={GA_ID} />
 
-        {/* Microsoft Clarity para análise de comportamento de conversão */}
-        <Script id="microsoft-clarity" strategy="afterInteractive">
-          {`
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "vybz5xptlm");
-          `}
-        </Script>
+            {/* Microsoft Clarity para análise de comportamento de conversão */}
+            <Script id="microsoft-clarity" strategy="afterInteractive">
+              {`
+                (function(c,l,a,r,i,t,y){
+                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                })(window, document, "clarity", "script", "vybz5xptlm");
+              `}
+            </Script>
+          </>
+        )}
 
         <ToastProvider>
           <div className="flex flex-col min-h-screen">
@@ -111,6 +116,7 @@ export default async function RootLayout({
             </main>
             {/* Renderização condicional para economia de recursos */}
             {!hasConsent && <CookieConsent />}
+            <AnalyticsLoader ahrefsKey={AHREFS_KEY} />
             <Footer />
           </div>
         </ToastProvider>

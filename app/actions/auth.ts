@@ -5,9 +5,8 @@ import { cookies } from 'next/headers'
 export async function loginAction(formData: FormData) {
     const password = formData.get('password') as string;
 
-    // A senha agora vem EXCLUSIVAMENTE da variável de ambiente do servidor
+    // Verificar se as variáveis de ambiente estão configuradas
     const adminPassword = process.env.ADMIN_PASSWORD;
-
     if (!adminPassword) {
         console.error("ERRO CRÍTICO DE SEGURANÇA: A variável ADMIN_PASSWORD não está configurada no painel do servidor.");
         return { success: false, message: 'Erro de configuração no servidor. Contate o suporte.' };

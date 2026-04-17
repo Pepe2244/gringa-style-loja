@@ -10,6 +10,7 @@ import { reservarNumerosRifa } from '@/app/actions/rifa';
 import { Trophy } from 'lucide-react';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { FAQSchema, BreadcrumbSchema } from '@/components/SEO/StructuredData';
+import { motion } from 'framer-motion';
 
 // GROWTH HACK TÉCNICO: Forçamos o TypeScript a aceitar a nova coluna do banco
 // sem precisarmos reescrever os arquivos globais de tipagem agora.
@@ -27,6 +28,7 @@ export default function RifaPage() {
     const [clientPhone, setClientPhone] = useState('');
     const [reserving, setReserving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [focusedInput, setFocusedInput] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -319,7 +321,10 @@ export default function RifaPage() {
                 </div>
 
                 {isFinished && (
-                    <div style={{ background: 'rgba(255, 165, 0, 0.1)', border: '2px solid orange', padding: '20px', borderRadius: '10px', marginBottom: '20px', textAlign: 'center' }}>
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        style={{ background: 'rgba(255, 165, 0, 0.1)', border: '2px solid orange', padding: '20px', borderRadius: '10px', marginBottom: '20px', textAlign: 'center' }}>
                         <Trophy size={48} color="orange" style={{ margin: '0 auto 10px' }} />
                         <h2 style={{ color: 'orange', margin: 0 }}>RIFA ENCERRADA</h2>
                         {rifa.numero_vencedor !== null && rifa.numero_vencedor !== undefined ? (
@@ -340,7 +345,7 @@ export default function RifaPage() {
                         <Link href="/historico" style={{ display: 'inline-block', marginTop: '15px', color: 'orange', textDecoration: 'underline' }}>
                             Ver Histórico Completo
                         </Link>
-                    </div>
+                    </motion.div>
                 )}
 
                 <p className="rifa-descricao">{rifa.descricao}</p>
@@ -409,8 +414,38 @@ export default function RifaPage() {
                         <h4>Resumo da sua Seleção</h4>
                         <p>Total a pagar: <strong id="total-a-pagar">R$ {(selectedNumbers.length * rifa.preco_numero).toFixed(2).replace('.', ',')}</strong></p>
                         <div className="form-cliente">
-                            <input type="text" className="input-cliente" placeholder="Seu nome completo" value={clientName} onChange={(e) => setClientName(e.target.value)} required />
-                            <input type="tel" className="input-cliente" placeholder="Seu WhatsApp (DDD + Número)" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} required />
+                            <motion.div
+                                animate={{ boxShadow: focusedInput === 'name' ? '0 0 10px rgba(255, 165, 0, 0.3)' : '0 0 0px rgba(255, 165, 0, 0)' }}
+                                transition={{ duration: 0.2 }}
+                                style={{ borderRadius: '5px' }}
+                            >
+                                <input 
+                                    type="text" 
+                                    className="input-cliente" 
+                                    placeholder="Seu nome completo" 
+                                    value={clientName} 
+                                    onChange={(e) => setClientName(e.target.value)}
+                                    onFocus={() => setFocusedInput('name')}
+                                    onBlur={() => setFocusedInput(null)}
+                                    required 
+                                />
+                            </motion.div>
+                            <motion.div
+                                animate={{ boxShadow: focusedInput === 'phone' ? '0 0 10px rgba(255, 165, 0, 0.3)' : '0 0 0px rgba(255, 165, 0, 0)' }}
+                                transition={{ duration: 0.2 }}
+                                style={{ borderRadius: '5px' }}
+                            >
+                                <input 
+                                    type="tel" 
+                                    className="input-cliente" 
+                                    placeholder="Seu WhatsApp (DDD + Número)" 
+                                    value={clientPhone} 
+                                    onChange={(e) => setClientPhone(e.target.value)}
+                                    onFocus={() => setFocusedInput('phone')}
+                                    onBlur={() => setFocusedInput(null)}
+                                    required 
+                                />
+                            </motion.div>
                             <button className="btn btn-finalizar" onClick={handleReserve} disabled={reserving}>
                                 {reserving ? 'Reservando...' : 'Reservar e Pagar'}
                             </button>

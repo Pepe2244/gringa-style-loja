@@ -3,6 +3,7 @@ import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -11,6 +12,18 @@ const resolveOriginalUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('http') || path.startsWith('/')) return path;
     return `${BUCKET_URL}${path}`;
+};
+
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: { 
+        opacity: 1, 
+        scale: 1, 
+        transition: { 
+            duration: 0.3, 
+            ease: "easeOut"
+        } 
+    }
 };
 
 interface ProductDetailsModalProps {
@@ -77,6 +90,11 @@ export default function ProductDetailsModal({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={modalVariants}
+            >
             <div className="modal-imagem">
                 {(() => {
                     const mediaUrls = product.media_urls || product.imagens || [];
@@ -175,6 +193,7 @@ export default function ProductDetailsModal({
                     )}
                 </div>
             </div >
+        </motion.div>
         </Modal >
     );
 }

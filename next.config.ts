@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Desabilitar Turbopack temporariamente para resolver problemas com Server Actions
+  experimental: {
+    turbo: false,
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'gringa-style.netlify.app'],
+    },
+  },
   images: {
     // 1. RESOLUÇÃO DE ERROS DE LOG: Adicionado o 60 para parar o erro de "unconfigured qualities"
     qualities: [60, 75],

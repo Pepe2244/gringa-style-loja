@@ -3,16 +3,27 @@
 import { createClient } from '@supabase/supabase-js';
 
 export async function getPaymentDetails(participanteId: number) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // Cria o cliente ADMIN
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    });
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return { success: false, error: 'Configuração do Supabase incompleta.' };
+    }
+
+    // Cria o cliente ADMIN ou fallback para anônimo
+    const supabaseAdmin = supabaseServiceKey
+        ? createClient(supabaseUrl, supabaseServiceKey, {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        })
+        : createClient(supabaseUrl, supabaseAnonKey);
+
+    if (!supabaseServiceKey) {
+        console.warn('SUPABASE_SERVICE_ROLE_KEY não configurada em pagamento.ts, usando chave anônima');
+    }
 
     try {
         if (!participanteId || isNaN(participanteId)) {

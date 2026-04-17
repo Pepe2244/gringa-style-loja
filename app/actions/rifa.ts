@@ -2,27 +2,44 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseServiceKey) {
-    console.error('CRÍTICO: SUPABASE_SERVICE_ROLE_KEY ausente em app/actions/rifa.ts');
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('CRÍTICO: Variáveis de ambiente do Supabase não configuradas');
 }
 
-// Cliente ADMIN para operações privilegiadas
+if (!supabaseServiceKey) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY não configurada, usando chave anônima para operações limitadas');
+}
+
+// Cliente ADMIN para operações privilegiadas (sorteio, etc)
 const getAdminClient = () => {
-    return createClient(supabaseUrl, supabaseServiceKey!, {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    });
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Configuração do Supabase incompleta');
+    }
+
+    if (supabaseServiceKey) {
+        return createClient(supabaseUrl, supabaseServiceKey, {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        });
+    } else {
+        // Fallback para chave anônima se service key não estiver disponível
+        console.warn('Usando chave anônima para operações admin - algumas funções podem falhar');
+        return createClient(supabaseUrl, supabaseAnonKey);
+    }
 };
 
 // Cliente PÚBLICO para operações de usuário (como reservar)
 const getPublicClient = () => {
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    return createClient(supabaseUrl, anonKey);
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Configuração do Supabase incompleta');
+    }
+    return createClient(supabaseUrl, supabaseAnonKey);
 };
 
 export async function reservarNumerosRifa(

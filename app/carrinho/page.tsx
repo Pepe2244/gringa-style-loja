@@ -9,6 +9,7 @@ import { Trash2, ShoppingCart, ShieldCheck, Truck } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShippingOption {
     id: number;
@@ -47,6 +48,7 @@ export default function CartPage() {
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+    const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
     const [validatedTotal, setValidatedTotal] = useState<number | null>(null);
 
@@ -423,7 +425,8 @@ export default function CartPage() {
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', alignItems: 'flex-start', width: '100%' }}>
                 <div style={{ flex: '1 1 60%', minWidth: '300px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {items.map((item, index) => {
+                    <AnimatePresence>
+                        {items.map((item, index) => {
                         const product = products.find(p => p.id === item.produto_id);
                         if (!product) return null;
 
@@ -432,7 +435,12 @@ export default function CartPage() {
                         const imageUrl = foundImg || '/imagens/logo_gringa_style.png';
 
                         return (
-                            <div key={`${item.produto_id}-${index}`} style={{ display: 'flex', gap: '15px', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #333', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+                            <motion.div 
+                                key={`${item.produto_id}-${index}`}
+                                initial={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
+                                style={{ display: 'flex', gap: '15px', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #333', position: 'relative', width: '100%', boxSizing: 'border-box' }}
+                            >
                                 <div style={{ width: '100px', height: '100px', flexShrink: 0 }}>
                                     <Link href={`/produto/${item.produto_id}`}>
                                         <Image
@@ -487,22 +495,31 @@ export default function CartPage() {
                                 >
                                     <Trash2 size={20} />
                                 </button>
-                            </div>
+                            </motion.div>
                         );
                     })}
+                    </AnimatePresence>
                 </div>
 
                 <div style={{ flex: '1 1 350px', maxWidth: '100%', background: '#111', padding: '25px', borderRadius: '10px', border: '1px solid #333', position: 'sticky', top: '20px', boxSizing: 'border-box' }}>
                     
                     <div style={{ marginBottom: '15px' }}>
                         <label style={{ display: 'block', marginBottom: '5px', color: '#aaa', fontSize: '0.9rem' }}>Seu Nome Completo</label>
-                        <input
-                            type="text"
-                            placeholder="Para quem será o pedido?"
-                            value={clientName}
-                            onChange={(e) => setClientName(e.target.value)}
-                            style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
-                        />
+                        <motion.div
+                            animate={{ boxShadow: focusedInput === 'name' ? '0 0 10px rgba(255, 165, 0, 0.3)' : '0 0 0px rgba(255, 165, 0, 0)' }}
+                            transition={{ duration: 0.2 }}
+                            style={{ borderRadius: '6px' }}
+                        >
+                            <input
+                                type="text"
+                                placeholder="Para quem será o pedido?"
+                                value={clientName}
+                                onChange={(e) => setClientName(e.target.value)}
+                                onFocus={() => setFocusedInput('name')}
+                                onBlur={() => setFocusedInput(null)}
+                                style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
+                            />
+                        </motion.div>
                     </div>
 
                     <div style={{ marginBottom: '15px', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
@@ -541,7 +558,12 @@ export default function CartPage() {
                             />
                         </div>
                         {(country === 'BR' ? cep.length === 8 : cep.length >= 3) && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+                            >
                                 <input type="text" placeholder="Rua / Avenida" value={endereco.rua} onChange={e => setEndereco({...endereco, rua: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} />
                                 <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                                     <input type="text" placeholder="Número" value={endereco.numero} onChange={e => setEndereco({...endereco, numero: e.target.value})} style={{ width: '80px', flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} required />
@@ -587,7 +609,7 @@ export default function CartPage() {
                                         <div style={{ color: '#ff4444', fontSize: '0.9rem' }}>Não foi possível calcular o frete automaticamente. O vendedor informará o valor.</div>
                                     ) : null}
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
                     </div>
 
@@ -681,8 +703,10 @@ export default function CartPage() {
                         <span style={{ whiteSpace: 'nowrap' }}>R$ {totalCalculado.toFixed(2).replace('.', ',')}</span>
                     </div>
 
-                    <button
+                    <motion.button
                         onClick={handleCheckout}
+                        whileHover={{ scale: 1.02, boxShadow: '0 8px 20px rgba(37, 211, 102, 0.5)' }}
+                        whileTap={{ scale: 0.98 }}
                         style={{
                             width: '100%',
                             padding: '18px',
@@ -699,7 +723,7 @@ export default function CartPage() {
                         }}
                     >
                         FINALIZAR PEDIDO NO ZAP
-                    </button>
+                    </motion.button>
 
                     <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px', color: '#888' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', fontSize: '0.75rem' }}>

@@ -130,7 +130,12 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
     return (
         <div className="container">
-            <h1 className="titulo-secao">Nossos Produtos</h1>
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h1 className="titulo-secao" style={{ marginBottom: '10px' }}>Nossos Produtos</h1>
+                <p style={{ color: '#ccc', fontSize: '1.2rem', lineHeight: '1.6' }}>
+                    Equipamentos de solda TIG com estilo único, conforto e proteção máxima para profissionais exigentes.
+                </p>
+            </div>
 
             <ProductFilters
                 searchTerm={searchTerm}

@@ -30,13 +30,19 @@ export default function AdminPage() {
         const formData = new FormData();
         formData.append('password', passwordInput);
 
-        const result = await loginAction(formData);
+        try {
+            const result = await loginAction(formData);
 
-        if (result.success) {
-            setIsAuthenticated(true);
-            setError('');
-        } else {
-            setError(result.message || 'Erro ao entrar');
+            if (result.success) {
+                setIsAuthenticated(true);
+                setError('');
+                setPasswordInput('');
+            } else {
+                setError(result.message || 'Erro ao entrar');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setError('Erro interno do servidor');
         }
     };
 
