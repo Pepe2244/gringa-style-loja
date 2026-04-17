@@ -4,14 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
-import type { Metadata } from 'next';
 import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
-
-export const metadata: Metadata = {
-  title: 'Histórico de Rifas | Gringa Style',
-  description: 'Confira o histórico completo das rifas realizadas pela Gringa Style. Veja os vencedores e prêmios sorteados.',
-  alternates: { canonical: '/historico' },
-};
 
 export default function HistoricoPage() {
     const [rifas, setRifas] = useState<Rifa[]>([]);
