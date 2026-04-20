@@ -17,7 +17,7 @@ import WishlistButton from '@/components/WishlistButton';
 import ImageZoom from '@/components/ImageZoom';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import SavingsBadge from '@/components/SavingsBadge';
-import { TrustBadges, PaymentMethods } from '@/components/PaymentMethods';
+import { PaymentMethods, TrustBadges } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import { trackButtonClick, trackVariantSelection, trackProductShare } from '@/utils/analytics';
 

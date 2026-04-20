@@ -7,7 +7,7 @@ interface PaymentMethodsProps {
     compact?: boolean;
 }
 
-export default function PaymentMethods({ showLabel = true, compact = false }: PaymentMethodsProps) {
+export function PaymentMethods({ showLabel = true, compact = false }: PaymentMethodsProps) {
     const methods = [
         { name: 'PIX', icon: '📱', color: '#3498db' },
         { name: 'Cartão', icon: '💳', color: '#2ecc71' },

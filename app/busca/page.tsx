@@ -8,13 +8,6 @@ import ProductGrid from '@/components/home/ProductGrid';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import { trackSearchQuery } from '@/utils/analytics';
-import type { Metadata } from 'next';
-
-// Export metadata gerada dinamicamente em um server component separado
-export const metadata: Metadata = {
-    title: 'Busca de Produtos | Gringa Style',
-    description: 'Encontre o que você procura no catálogo de produtos da Gringa Style',
-};
 
 export default function SearchPage() {
     const searchParams = useSearchParams();
