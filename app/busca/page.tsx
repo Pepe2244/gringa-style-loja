@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Product } from '@/types';
+import { Product, Category } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
@@ -15,7 +15,7 @@ export default function SearchPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-    const [categories, setCategories] = useState([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [sortType, setSortType] = useState('padrao');
     const [searchTerm, setSearchTerm] = useState(query);
     const { showToast } = useToast();
