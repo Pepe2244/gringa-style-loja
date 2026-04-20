@@ -152,6 +152,7 @@ export default function SearchPage() {
 
                         <ProductGrid
                             products={filteredProducts}
+                            loading={loading}
                             diasNovo={7}
                             onQuickView={() => {}}
                         />
