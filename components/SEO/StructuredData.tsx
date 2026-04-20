@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Product } from '@/types';
 
 /**
  * MOTOR DE DADOS ESTRUTURADOS - GRINGA STYLE
@@ -150,34 +151,69 @@ export const OrganizationSchema = () => {
 
 // 5. Product: Schema dinâmico para produtos (uso em páginas de produto)
 interface ProductData {
-  id: string;
+  id: number;
   nome: string;
-  descricao: string;
+  descricao?: string;
   preco: number;
+  preco_promocional?: number | null;
   imagem?: string;
   avaliacoes?: number;
   totalAvaliacoes?: number;
-  estoque?: number;
+  em_estoque?: boolean;
+  slug?: string;
+  variants?: any;
 }
 
 export const ProductSchema = ({ product }: { product: ProductData }) => {
+  const imagemUrl = product.imagem || "https://gringa-style.netlify.app/imagens/logo_gringa_style.png";
+  const precoFinal = product.preco_promocional || product.preco;
+  const has_promo = product.preco_promocional && product.preco_promocional < product.preco;
+
+  const offers: any = {
+    "@type": "Offer",
+    "url": `https://gringa-style.netlify.app/produto/${product.slug || product.id}`,
+    "priceCurrency": "BRL",
+    "price": precoFinal.toString(),
+    "availability": product.em_estoque ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+  };
+
+  // Se tem variantes, adicionar AggregateOffer
+  const offersStructure = product.variants ? {
+    "@type": "AggregateOffer",
+    "priceCurrency": "BRL",
+    "lowPrice": precoFinal.toString(),
+    "highPrice": product.preco.toString(),
+    "offerCount": Array.isArray(product.variants?.opcoes) ? product.variants.opcoes.length : 1,
+    "offers": [offers]
+  } : offers;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": product.nome,
-    "description": product.descricao,
-    "image": product.imagem || "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
+    "description": product.descricao || `Compre ${product.nome} na Gringa Style`,
+    "image": imagemUrl,
     "brand": {
       "@type": "Brand",
       "name": "Gringa Style"
     },
-    "offers": {
-      "@type": "Offer",
-      "url": `https://gringa-style.netlify.app/produto/${product.id}`,
-      "priceCurrency": "BRL",
-      "price": product.preco.toString(),
-      "availability": product.estoque && product.estoque > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
-    },
+    "offers": offersStructure,
+    ...(has_promo && {
+      "priceSpecification": [
+        {
+          "@type": "PriceSpecification",
+          "price": product.preco.toString(),
+          "priceCurrency": "BRL",
+          "priceType": "ListPrice"
+        },
+        {
+          "@type": "PriceSpecification",
+          "price": product.preco_promocional.toString(),
+          "priceCurrency": "BRL",
+          "priceType": "SalePrice"
+        }
+      ]
+    }),
     ...(product.avaliacoes && product.totalAvaliacoes && {
       "aggregateRating": {
         "@type": "AggregateRating",

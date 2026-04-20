@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // 1. Estratégia Principal: Busca pelo Slug Imutável (SEO Perfeito)
     let { data: product } = await supabase
         .from('produtos')
-        .select('nome, descricao, imagens, media_urls, slug')
+        .select('nome, descricao, imagens, media_urls, slug, preco, preco_promocional, em_estoque')
         .eq('slug', slug)
         .maybeSingle();
 
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         if (idMatch) {
             const { data: legacyProduct } = await supabase
                 .from('produtos')
-                .select('nome, descricao, imagens, media_urls, slug')
+                .select('nome, descricao, imagens, media_urls, slug, preco, preco_promocional, em_estoque')
                 .eq('id', parseInt(idMatch[1], 10))
                 .maybeSingle();
             product = legacyProduct;
@@ -64,13 +64,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const mediaUrls = product.media_urls || product.imagens || [];
     const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
-    const descricaoLimpa = product.descricao?.substring(0, 150).replace(/<[^>]*>?/gm, '') || `Compre ${product.nome} na Gringa Style.`;
+    const descricaoLimpa = product.descricao?.substring(0, 160).replace(/<[^>]*>?/gm, '') || `Compre ${product.nome} na Gringa Style - Equipamentos de solda de qualidade.`;
 
     const productUrl = `https://gringa-style.netlify.app/produto/${product.slug || slug}`;
+    const precoFinal = product.preco_promocional || product.preco;
 
     return {
         title: `${product.nome} | Gringa Style`,
         description: descricaoLimpa,
+        keywords: [product.nome, 'gringa style', 'solda', 'tig', 'máscara de solda'],
         alternates: {
             // URL Canônica absoluta para evitar duplicação de URL
             canonical: productUrl,
@@ -79,15 +81,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title: product.nome,
             description: descricaoLimpa,
             url: productUrl,
+            type: 'product',
+            siteName: 'Gringa Style',
+            locale: 'pt_BR',
             images: [
                 {
                     url: imageUrl,
-                    width: 800,
-                    height: 600,
+                    width: 1200,
+                    height: 630,
                     alt: product.nome,
+                    type: 'image/jpeg',
                 },
             ],
-            type: 'website',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: product.nome,
+            description: descricaoLimpa,
+            images: [imageUrl],
         },
     };
 }

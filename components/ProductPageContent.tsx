@@ -12,6 +12,14 @@ import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
 import ShippingEstimator from './ShippingEstimator';
+import Breadcrumbs from '@/components/Breadcrumbs';
+import WishlistButton from '@/components/WishlistButton';
+import ImageZoom from '@/components/ImageZoom';
+import RecentlyViewed from '@/components/RecentlyViewed';
+import SavingsBadge from '@/components/SavingsBadge';
+import { TrustBadges, PaymentMethods } from '@/components/PaymentMethods';
+import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
+import { trackButtonClick, trackVariantSelection, trackProductShare } from '@/utils/analytics';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -29,9 +37,11 @@ interface ProductPageContentProps {
 
 export default function ProductPageContent({ id, initialProduct }: ProductPageContentProps) {
     const { showToast } = useToast();
+    const addRecentlyViewed = useRecentlyViewedStore(state => state.addView);
 
     const [product, setProduct] = useState<Product | null>(initialProduct || null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(!initialProduct);
     const [selectedVariant, setSelectedVariant] = useState<string>('');
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -52,8 +62,21 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             setupProductState(initialProduct);
             fetchRelatedProducts(initialProduct);
             setLoading(false);
+            // Add to recently viewed
+            addRecentlyViewed(initialProduct);
         }
-    }, [id, initialProduct]);
+        // Load categories
+        loadCategories();
+    }, [id, initialProduct, addRecentlyViewed]);
+
+    const loadCategories = async () => {
+        try {
+            const { data } = await supabase.from('categorias').select('*').order('nome');
+            setCategories(data || []);
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    };
 
     useEffect(() => {
         if (product && typeof window !== 'undefined' && (window as any).gtag) {
@@ -200,6 +223,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         const title = `${product.nome} | Gringa Style`;
         const text = `Confira ${product.nome} na Gringa Style!`;
 
+        trackProductShare(product.id, product.nome, 'web');
+
         if (navigator.share) {
             try {
                 await navigator.share({ title, text, url });
@@ -259,10 +284,22 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
     return (
         <div className="container produto-page-container">
+            {/* BREADCRUMBS Navigation */}
+            {product && (
+                <Breadcrumbs
+                    items={[
+                        { 
+                            label: product.categoria_id ? categories?.find((c: any) => c.id === product.categoria_id)?.nome || 'Produtos' : 'Produtos', 
+                            href: '/#produtos' 
+                        },
+                        { label: product.nome }
+                    ]}
+                />
+            )}
 
             {/* TÍTULO MOBILE (Estilo Mercado Livre) - Corrigido o respiro superior (marginTop: 20px) */}
             <div className="titulo-mobile-container" style={{ display: 'none', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', marginTop: '20px' }}>
-                <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product.nome}</h1>
+                <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product?.nome}</h1>
                 <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', padding: '0 0 0 10px' }}>
                     <Share2 size={24} />
                 </button>
@@ -293,10 +330,17 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                     alt={product.nome}
                                     fill
                                     draggable={false}
-                                    style={{ objectFit: 'cover' }}
+                                    style={{ objectFit: 'cover', cursor: 'zoom-in' }}
                                     priority={true}
                                     placeholder="blur"
                                     blurDataURL={BLUR_DATA_URL}
+                                />
+                                {/* Image Zoom Button */}
+                                <ImageZoom 
+                                    src={currentMedia ? resolveOriginalUrl(currentMedia) : fallbackImage}
+                                    alt={product.nome}
+                                    imageIndex={currentImageIndex}
+                                    productId={product.id}
                                 />
                             </div>
                         )}
@@ -333,7 +377,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                 loading="lazy"
                                 width={100}
                                 height={100}
-                                style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent', objectFit: 'cover' }}
+                                style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent', objectFit: 'cover', cursor: 'pointer' }}
                                 placeholder="blur"
                                 blurDataURL={BLUR_DATA_URL}
                             />
@@ -350,6 +394,14 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             <Share2 size={24} />
                         </button>
                     </div>
+
+                    {/* Wishlist Button */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <WishlistButton product={product} variant="button" />
+                    </div>
+
+                    {/* Savings Badge */}
+                    <SavingsBadge originalPrice={product.preco} promotionalPrice={product.preco_promocional} />
 
                     {product.em_estoque ? (
                         <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(40, 167, 69, 0.15)', color: '#4ade80', border: '1px solid rgba(40, 167, 69, 0.3)', marginBottom: '15px' }}>
@@ -376,6 +428,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                 R$ {product.preco.toFixed(2).replace('.', ',')}
                             </span>
                         )}
+                        <PaymentMethods showLabel={true} compact={false} />
                         <p style={{ fontSize: '0.9rem', color: '#aaa', marginTop: '5px' }}>💳 Em até 12x no cartão de crédito</p>
                     </div>
 
@@ -429,20 +482,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
                     <ShippingEstimator productName={product.nome} />
 
-                    <div className="trust-badges" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '20px 15px', backgroundColor: '#111', borderRadius: '8px', border: '1px dashed #444' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>
-                            <ShieldCheck size={28} color="#28a745" />
-                            <span>Compra<br/>100% Segura</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>
-                            <Truck size={28} color="var(--cor-destaque)" />
-                            <span>Envio para<br/>todo o Brasil</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.8rem', textAlign: 'center', fontWeight: '600' }}>
-                            <CreditCard size={28} color="#17a2b8" />
-                            <span>Parcele em<br/>Até 12X</span>
-                        </div>
-                    </div>
+                    {/* Trust Badges - New Component */}
+                    <TrustBadges />
 
                     <div className="produto-descricao-container" style={{ marginTop: '40px', borderTop: '1px solid #333', paddingTop: '30px' }}>
                         <h3 style={{ fontSize: '1.4rem', marginBottom: '20px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
@@ -520,6 +561,9 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     </div>
                 </section>
             )}
+
+            {/* Recently Viewed Products */}
+            <RecentlyViewed currentProductId={product?.id} limit={5} />
 
             <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido Rápido">
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', padding: '15px', backgroundColor: '#111', borderRadius: '8px', border: '1px solid #333' }}>
