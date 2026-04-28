@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title: product.nome,
             description: descricaoLimpa,
             url: productUrl,
-            type: 'product',
+            type: 'website',
             siteName: 'Gringa Style',
             locale: 'pt_BR',
             images: [

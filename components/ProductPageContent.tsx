@@ -400,18 +400,23 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         <WishlistButton product={product} variant="button" />
                     </div>
 
-                    {/* Savings Badge */}
-                    <SavingsBadge originalPrice={product.preco} promotionalPrice={product.preco_promocional} />
+                    {/* Savings Badge - Desktop spacing */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <SavingsBadge originalPrice={product.preco} promotionalPrice={product.preco_promocional} />
+                    </div>
 
-                    {product.em_estoque ? (
-                        <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(40, 167, 69, 0.15)', color: '#4ade80', border: '1px solid rgba(40, 167, 69, 0.3)', marginBottom: '15px' }}>
-                            ✓ Pronta Entrega
-                        </p>
-                    ) : (
-                        <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(220, 53, 69, 0.15)', color: '#f87171', border: '1px solid rgba(220, 53, 69, 0.3)', marginBottom: '15px' }}>
-                            ✕ Fora de Estoque
-                        </p>
-                    )}
+                    {/* Status de Estoque - Desktop spacing */}
+                    <div style={{ marginBottom: '20px' }}>
+                        {product.em_estoque ? (
+                            <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(40, 167, 69, 0.15)', color: '#4ade80', border: '1px solid rgba(40, 167, 69, 0.3)' }}>
+                                ✓ Pronta Entrega
+                            </p>
+                        ) : (
+                            <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(220, 53, 69, 0.15)', color: '#f87171', border: '1px solid rgba(220, 53, 69, 0.3)' }}>
+                                ✕ Fora de Estoque
+                            </p>
+                        )}
+                    </div>
 
                     <div className="produto-detalhe-preco" style={{ margin: '10px 0 25px 0' }}>
                         {product.preco_promocional ? (

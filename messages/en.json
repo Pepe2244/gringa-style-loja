@@ -1,0 +1,189 @@
+export default {
+    // Navigation
+    nav: {
+        home: 'Home',
+        search: 'Search',
+        cart: 'Cart',
+        account: 'Account',
+        categories: 'Categories',
+        sale: 'Sale',
+        new: 'New'
+    },
+
+    // Home page
+    home: {
+        welcome: 'Welcome to Gringa Style',
+        subtitle: 'Women\'s fashion with style and quality',
+        shopNow: 'Shop Now',
+        featuredProducts: 'Featured Products',
+        newArrivals: 'New Arrivals',
+        bestSellers: 'Best Sellers',
+        onSale: 'On Sale'
+    },
+
+    // Search
+    search: {
+        placeholder: 'Search products...',
+        results: 'Results for "{query}"',
+        noResults: 'No products found',
+        filters: 'Filters',
+        sortBy: 'Sort by',
+        priceRange: 'Price range',
+        category: 'Category',
+        brand: 'Brand',
+        rating: 'Rating',
+        inStock: 'In stock',
+        onSale: 'On sale',
+        applyFilters: 'Apply Filters',
+        clearFilters: 'Clear Filters'
+    },
+
+    // Product
+    product: {
+        addToCart: 'Add to Cart',
+        buyNow: 'Buy Now',
+        outOfStock: 'Out of Stock',
+        size: 'Size',
+        color: 'Color',
+        quantity: 'Quantity',
+        description: 'Description',
+        specifications: 'Specifications',
+        reviews: 'Reviews',
+        relatedProducts: 'Related Products',
+        shipping: 'Shipping',
+        returns: 'Returns',
+        share: 'Share'
+    },
+
+    // Cart
+    cart: {
+        title: 'Your Cart',
+        empty: 'Your cart is empty',
+        continueShopping: 'Continue Shopping',
+        checkout: 'Checkout',
+        subtotal: 'Subtotal',
+        shipping: 'Shipping',
+        total: 'Total',
+        remove: 'Remove',
+        update: 'Update',
+        discount: 'Discount',
+        coupon: 'Coupon',
+        applyCoupon: 'Apply Coupon'
+    },
+
+    // Checkout
+    checkout: {
+        title: 'Checkout',
+        personalInfo: 'Personal Information',
+        shippingAddress: 'Shipping Address',
+        paymentMethod: 'Payment Method',
+        orderSummary: 'Order Summary',
+        placeOrder: 'Place Order',
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        email: 'Email',
+        phone: 'Phone',
+        address: 'Address',
+        city: 'City',
+        state: 'State',
+        zipCode: 'ZIP Code',
+        country: 'Country',
+        cardNumber: 'Card Number',
+        expiryDate: 'Expiry Date',
+        cvv: 'CVV',
+        nameOnCard: 'Name on Card'
+    },
+
+    // Account
+    account: {
+        title: 'My Account',
+        orders: 'Orders',
+        addresses: 'Addresses',
+        paymentMethods: 'Payment Methods',
+        wishlist: 'Wishlist',
+        settings: 'Settings',
+        logout: 'Logout',
+        login: 'Login',
+        register: 'Register',
+        forgotPassword: 'Forgot Password?',
+        resetPassword: 'Reset Password'
+    },
+
+    // Common
+    common: {
+        loading: 'Loading...',
+        error: 'An error occurred',
+        success: 'Success!',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        yes: 'Yes',
+        no: 'No',
+        close: 'Close',
+        save: 'Save',
+        edit: 'Edit',
+        delete: 'Delete',
+        view: 'View',
+        back: 'Back',
+        next: 'Next',
+        previous: 'Previous',
+        page: 'Page',
+        of: 'of'
+    },
+
+    // Footer
+    footer: {
+        about: 'About Us',
+        contact: 'Contact',
+        privacy: 'Privacy',
+        terms: 'Terms of Use',
+        shipping: 'Shipping',
+        returns: 'Returns',
+        faq: 'FAQ',
+        followUs: 'Follow Us',
+        newsletter: 'Newsletter',
+        subscribe: 'Subscribe',
+        emailPlaceholder: 'Your email'
+    },
+
+    // Errors
+    errors: {
+        network: 'Network error. Check your internet connection.',
+        notFound: 'Page not found',
+        unauthorized: 'Unauthorized access',
+        forbidden: 'Access forbidden',
+        server: 'Internal server error',
+        validation: 'Invalid data',
+        cartEmpty: 'Cart is empty',
+        outOfStock: 'Product out of stock',
+        paymentFailed: 'Payment failed'
+    },
+
+    // Validation
+    validation: {
+        required: 'Required field',
+        email: 'Invalid email',
+        phone: 'Invalid phone',
+        password: 'Password must be at least 6 characters',
+        confirmPassword: 'Passwords do not match',
+        zipCode: 'Invalid ZIP code',
+        cardNumber: 'Invalid card number',
+        expiryDate: 'Invalid expiry date',
+        cvv: 'Invalid CVV'
+    },
+
+    // PWA
+    pwa: {
+        install: 'Install App',
+        installDescription: 'Install our app for a better experience',
+        offline: 'You are offline',
+        share: 'Share'
+    },
+
+    // Analytics
+    analytics: {
+        pageView: 'Page view',
+        addToCart: 'Added to cart',
+        purchase: 'Purchase completed',
+        search: 'Search performed'
+    }
+} as const;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
@@ -9,52 +9,169 @@ import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import { trackSearchQuery } from '@/utils/analytics';
 
+const PRODUCTS_PER_PAGE = 12;
+
 export default function SearchPage() {
     const searchParams = useSearchParams();
     const query = searchParams.get('q') || '';
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [categories, setCategories] = useState<Category[]>([]);
     const [sortType, setSortType] = useState('padrao');
     const [searchTerm, setSearchTerm] = useState(query);
+    const [page, setPage] = useState(0);
+    // Novos filtros avançados
+    const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+    const [inStockOnly, setInStockOnly] = useState(false);
+    const [hasDiscountOnly, setHasDiscountOnly] = useState(false);
+    const [minRating, setMinRating] = useState(0);
     const { showToast } = useToast();
 
+    const observerRef = useRef<IntersectionObserver>();
+    const loadingRef = useRef<HTMLDivElement>(null);
+
+    // Função para buscar produtos com paginação
+    const fetchProducts = useCallback(async (pageNum: number, isLoadMore = false) => {
+        try {
+            let queryBuilder = supabase
+                .from('produtos')
+                .select('*')
+                .range(pageNum * PRODUCTS_PER_PAGE, (pageNum + 1) * PRODUCTS_PER_PAGE - 1);
+
+            // Aplicar filtros de busca se houver query
+            if (query.trim()) {
+                const searchTerm = query.toLowerCase();
+                queryBuilder = queryBuilder.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
+            }
+
+            // Aplicar filtro de categoria
+            if (selectedCategory) {
+                queryBuilder = queryBuilder.eq('categoria_id', selectedCategory);
+            }
+
+            // Aplicar filtro de preço
+            if (priceRange[0] > 0 || priceRange[1] < 10000) {
+                queryBuilder = queryBuilder.or(
+                    `preco_promocional.gte.${priceRange[0]},preco_promocional.lte.${priceRange[1]},preco.gte.${priceRange[0]},preco.lte.${priceRange[1]}`
+                );
+            }
+
+            // Aplicar filtro de estoque
+            if (inStockOnly) {
+                queryBuilder = queryBuilder.eq('em_estoque', true);
+            }
+
+            // Aplicar filtro de promoção
+            if (hasDiscountOnly) {
+                queryBuilder = queryBuilder.not('preco_promocional', 'is', null);
+            }
+
+            // Aplicar ordenação
+            if (sortType === 'menor-preco') {
+                queryBuilder = queryBuilder.order('preco_promocional', { ascending: true, nullsFirst: false })
+                    .order('preco', { ascending: true });
+            } else if (sortType === 'maior-preco') {
+                queryBuilder = queryBuilder.order('preco_promocional', { ascending: false, nullsFirst: false })
+                    .order('preco', { ascending: false });
+            } else if (sortType === 'az') {
+                queryBuilder = queryBuilder.order('nome', { ascending: true });
+            } else if (sortType === 'za') {
+                queryBuilder = queryBuilder.order('nome', { ascending: false });
+            } else {
+                queryBuilder = queryBuilder.order('created_at', { ascending: false });
+            }
+
+            const { data, error } = await queryBuilder;
+
+            if (error) throw error;
+
+            if (data) {
+                if (isLoadMore) {
+                    setProducts(prev => [...prev, ...data]);
+                } else {
+                    setProducts(data);
+                    if (!isLoadMore && pageNum === 0) {
+                        trackSearchQuery(query, data.length);
+                    }
+                }
+
+                // Verificar se há mais produtos
+                setHasMore(data.length === PRODUCTS_PER_PAGE);
+            } else {
+                if (!isLoadMore) {
+                    setProducts([]);
+                }
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            showToast('Erro ao buscar produtos', 'error');
+            setHasMore(false);
+        }
+    }, [query, selectedCategory, sortType, priceRange, inStockOnly, hasDiscountOnly, showToast]);
+
+    // Carregar categorias
     useEffect(() => {
-        const loadData = async () => {
-            setLoading(true);
+        const loadCategories = async () => {
             try {
-                // Load categories
                 const { data: categoriesData } = await supabase
                     .from('categorias')
                     .select('*')
                     .order('nome');
                 setCategories(categoriesData || []);
-
-                // Search products
-                if (query.trim()) {
-                    const searchTerm = query.toLowerCase();
-                    const { data: searchData } = await supabase
-                        .from('produtos')
-                        .select('*')
-                        .or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
-                        .order('created_at', { ascending: false });
-
-                    if (searchData) {
-                        setProducts(searchData);
-                        trackSearchQuery(query, searchData.length);
-                    }
-                }
             } catch (error) {
-                console.error('Search error:', error);
-                showToast('Erro ao buscar produtos', 'error');
-            } finally {
-                setLoading(false);
+                console.error('Error loading categories:', error);
             }
         };
 
-        loadData();
-    }, [query, showToast]);
+        loadCategories();
+    }, []);
+
+    // Carregar produtos iniciais
+    useEffect(() => {
+        setPage(0);
+        setProducts([]);
+        setHasMore(true);
+        setLoading(true);
+
+        fetchProducts(0, false).finally(() => {
+            setLoading(false);
+        });
+    }, [query, selectedCategory, sortType, fetchProducts]);
+
+    // Infinite scroll observer
+    useEffect(() => {
+        if (loading || loadingMore) return;
+
+        if (observerRef.current) observerRef.current.disconnect();
+
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore) {
+                    setLoadingMore(true);
+                    const nextPage = page + 1;
+                    setPage(nextPage);
+                    fetchProducts(nextPage, true).finally(() => {
+                        setLoadingMore(false);
+                    });
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (loadingRef.current) {
+            observerRef.current.observe(loadingRef.current);
+        }
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, [loading, loadingMore, hasMore, page, fetchProducts]);
 
     const normalizeString = (str: string) => {
         if (!str) return '';
@@ -68,27 +185,17 @@ export default function SearchPage() {
         return p.preco_promocional;
     };
 
+    // Filtro local adicional (fallback para busca por texto)
     const filteredProducts = products.filter(product => {
+        if (!searchTerm.trim()) return true;
+
         const term = normalizeString(searchTerm);
         const matchSearch =
             normalizeString(product.nome).includes(term) ||
             normalizeString(product.descricao).includes(term) ||
             (product.tags && normalizeString(product.tags.join(' ')).includes(term));
 
-        const matchCategory = selectedCategory ? product.categoria_id === selectedCategory : true;
-
-        return matchSearch && matchCategory;
-    }).sort((a, b) => {
-        if (sortType === 'menor-preco') {
-            return getPrecoFinal(a) - getPrecoFinal(b);
-        } else if (sortType === 'maior-preco') {
-            return getPrecoFinal(b) - getPrecoFinal(a);
-        } else if (sortType === 'az') {
-            return a.nome.localeCompare(b.nome);
-        } else if (sortType === 'za') {
-            return b.nome.localeCompare(a.nome);
-        }
-        return 0;
+        return matchSearch;
     });
 
     return (
@@ -144,10 +251,19 @@ export default function SearchPage() {
                             sortType={sortType}
                             setSortType={setSortType}
                             categories={categories}
+                            priceRange={priceRange}
+                            setPriceRange={setPriceRange}
+                            inStockOnly={inStockOnly}
+                            setInStockOnly={setInStockOnly}
+                            hasDiscountOnly={hasDiscountOnly}
+                            setHasDiscountOnly={setHasDiscountOnly}
+                            minRating={minRating}
+                            setMinRating={setMinRating}
                         />
 
                         <div style={{ marginTop: '30px', marginBottom: '20px', color: '#888' }}>
                             Encontrados <strong style={{ color: 'var(--cor-destaque)' }}>{filteredProducts.length}</strong> produtos
+                            {hasMore && <span> (carregando mais...)</span>}
                         </div>
 
                         <ProductGrid
@@ -156,9 +272,56 @@ export default function SearchPage() {
                             diasNovo={7}
                             onQuickView={() => {}}
                         />
+
+                        {/* Infinite Scroll Loading Indicator */}
+                        <div
+                            ref={loadingRef}
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                padding: '40px',
+                                minHeight: '100px'
+                            }}
+                        >
+                            {loadingMore ? (
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '15px',
+                                    color: '#888'
+                                }}>
+                                    <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        border: '3px solid #333',
+                                        borderTop: '3px solid var(--cor-destaque)',
+                                        borderRadius: '50%',
+                                        animation: 'spin 1s linear infinite'
+                                    }}></div>
+                                    <p>Carregando mais produtos...</p>
+                                </div>
+                            ) : hasMore ? (
+                                <p style={{ color: '#666' }}>
+                                    Role para baixo para ver mais produtos
+                                </p>
+                            ) : (
+                                <p style={{ color: '#666' }}>
+                                    Você viu todos os produtos disponíveis
+                                </p>
+                            )}
+                        </div>
                     </>
                 )}
             </div>
+
+            <style jsx>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
         </main>
     );
 }

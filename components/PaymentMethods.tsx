@@ -10,8 +10,7 @@ interface PaymentMethodsProps {
 export function PaymentMethods({ showLabel = true, compact = false }: PaymentMethodsProps) {
     const methods = [
         { name: 'PIX', icon: '📱', color: '#3498db' },
-        { name: 'Cartão', icon: '💳', color: '#2ecc71' },
-        { name: 'Boleto', icon: '📄', color: '#e74c3c' }
+        { name: 'Cartão', icon: '💳', color: '#2ecc71' }
     ];
 
     return (

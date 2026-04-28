@@ -8,6 +8,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { cookies } from "next/headers";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { LocalBusinessSchema, WebSiteSchema, OrganizationSchema } from '@/components/SEO/StructuredData';
@@ -26,8 +27,13 @@ const teko = Teko({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://gringa-style.netlify.app'),
-  alternates: { canonical: './' },
-  title: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
+  alternates: { 
+    canonical: '/',
+  },
+  title: {
+    default: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
+    template: "%s | Gringa Style"
+  },
   description: "Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!",
   keywords: ["máscara de solda", "solda tig", "personalizada", "gringa style", "acessórios solda"],
   openGraph: {
@@ -108,17 +114,19 @@ export default async function RootLayout({
         )}
 
         <ToastProvider>
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <CampaignBannerServer />
-            <main className="flex-grow">
-              {children}
-            </main>
-            {/* Renderização condicional para economia de recursos */}
-            {!hasConsent && <CookieConsent />}
-            <AnalyticsLoader ahrefsKey={AHREFS_KEY} />
-            <Footer />
-          </div>
+          <ErrorBoundary>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <CampaignBannerServer />
+              <main className="flex-grow">
+                {children}
+              </main>
+              {/* Renderização condicional para economia de recursos */}
+              {!hasConsent && <CookieConsent />}
+              <AnalyticsLoader ahrefsKey={AHREFS_KEY} />
+              <Footer />
+            </div>
+          </ErrorBoundary>
         </ToastProvider>
       </body>
     </html>

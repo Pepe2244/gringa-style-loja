@@ -1,0 +1,189 @@
+export default {
+    // Navegação
+    nav: {
+        home: 'Início',
+        search: 'Buscar',
+        cart: 'Carrinho',
+        account: 'Conta',
+        categories: 'Categorias',
+        sale: 'Oferta',
+        new: 'Novo'
+    },
+
+    // Página inicial
+    home: {
+        welcome: 'Bem-vinda à Gringa Style',
+        subtitle: 'Moda feminina com estilo e qualidade',
+        shopNow: 'Comprar Agora',
+        featuredProducts: 'Produtos em Destaque',
+        newArrivals: 'Novidades',
+        bestSellers: 'Mais Vendidos',
+        onSale: 'Em Oferta'
+    },
+
+    // Busca
+    search: {
+        placeholder: 'Buscar produtos...',
+        results: 'Resultados para "{query}"',
+        noResults: 'Nenhum produto encontrado',
+        filters: 'Filtros',
+        sortBy: 'Ordenar por',
+        priceRange: 'Faixa de preço',
+        category: 'Categoria',
+        brand: 'Marca',
+        rating: 'Avaliação',
+        inStock: 'Em estoque',
+        onSale: 'Em oferta',
+        applyFilters: 'Aplicar Filtros',
+        clearFilters: 'Limpar Filtros'
+    },
+
+    // Produto
+    product: {
+        addToCart: 'Adicionar ao Carrinho',
+        buyNow: 'Comprar Agora',
+        outOfStock: 'Fora de Estoque',
+        size: 'Tamanho',
+        color: 'Cor',
+        quantity: 'Quantidade',
+        description: 'Descrição',
+        specifications: 'Especificações',
+        reviews: 'Avaliações',
+        relatedProducts: 'Produtos Relacionados',
+        shipping: 'Frete',
+        returns: 'Devoluções',
+        share: 'Compartilhar'
+    },
+
+    // Carrinho
+    cart: {
+        title: 'Seu Carrinho',
+        empty: 'Seu carrinho está vazio',
+        continueShopping: 'Continuar Comprando',
+        checkout: 'Finalizar Compra',
+        subtotal: 'Subtotal',
+        shipping: 'Frete',
+        total: 'Total',
+        remove: 'Remover',
+        update: 'Atualizar',
+        discount: 'Desconto',
+        coupon: 'Cupom',
+        applyCoupon: 'Aplicar Cupom'
+    },
+
+    // Checkout
+    checkout: {
+        title: 'Finalizar Compra',
+        personalInfo: 'Informações Pessoais',
+        shippingAddress: 'Endereço de Entrega',
+        paymentMethod: 'Método de Pagamento',
+        orderSummary: 'Resumo do Pedido',
+        placeOrder: 'Fazer Pedido',
+        firstName: 'Nome',
+        lastName: 'Sobrenome',
+        email: 'E-mail',
+        phone: 'Telefone',
+        address: 'Endereço',
+        city: 'Cidade',
+        state: 'Estado',
+        zipCode: 'CEP',
+        country: 'País',
+        cardNumber: 'Número do Cartão',
+        expiryDate: 'Data de Expiração',
+        cvv: 'CVV',
+        nameOnCard: 'Nome no Cartão'
+    },
+
+    // Conta
+    account: {
+        title: 'Minha Conta',
+        orders: 'Pedidos',
+        addresses: 'Endereços',
+        paymentMethods: 'Métodos de Pagamento',
+        wishlist: 'Lista de Desejos',
+        settings: 'Configurações',
+        logout: 'Sair',
+        login: 'Entrar',
+        register: 'Cadastrar',
+        forgotPassword: 'Esqueceu a senha?',
+        resetPassword: 'Redefinir Senha'
+    },
+
+    // Gerais
+    common: {
+        loading: 'Carregando...',
+        error: 'Ocorreu um erro',
+        success: 'Sucesso!',
+        cancel: 'Cancelar',
+        confirm: 'Confirmar',
+        yes: 'Sim',
+        no: 'Não',
+        close: 'Fechar',
+        save: 'Salvar',
+        edit: 'Editar',
+        delete: 'Excluir',
+        view: 'Ver',
+        back: 'Voltar',
+        next: 'Próximo',
+        previous: 'Anterior',
+        page: 'Página',
+        of: 'de'
+    },
+
+    // Footer
+    footer: {
+        about: 'Sobre Nós',
+        contact: 'Contato',
+        privacy: 'Privacidade',
+        terms: 'Termos de Uso',
+        shipping: 'Frete',
+        returns: 'Devoluções',
+        faq: 'Perguntas Frequentes',
+        followUs: 'Siga-nos',
+        newsletter: 'Newsletter',
+        subscribe: 'Inscrever-se',
+        emailPlaceholder: 'Seu e-mail'
+    },
+
+    // Erros
+    errors: {
+        network: 'Erro de conexão. Verifique sua internet.',
+        notFound: 'Página não encontrada',
+        unauthorized: 'Acesso não autorizado',
+        forbidden: 'Acesso proibido',
+        server: 'Erro interno do servidor',
+        validation: 'Dados inválidos',
+        cartEmpty: 'Carrinho vazio',
+        outOfStock: 'Produto fora de estoque',
+        paymentFailed: 'Pagamento falhou'
+    },
+
+    // Validações
+    validation: {
+        required: 'Campo obrigatório',
+        email: 'E-mail inválido',
+        phone: 'Telefone inválido',
+        password: 'Senha deve ter pelo menos 6 caracteres',
+        confirmPassword: 'Senhas não coincidem',
+        zipCode: 'CEP inválido',
+        cardNumber: 'Número do cartão inválido',
+        expiryDate: 'Data de expiração inválida',
+        cvv: 'CVV inválido'
+    },
+
+    // PWA
+    pwa: {
+        install: 'Instalar App',
+        installDescription: 'Instale nosso app para uma experiência melhor',
+        offline: 'Você está offline',
+        share: 'Compartilhar'
+    },
+
+    // Analytics
+    analytics: {
+        pageView: 'Visualização de página',
+        addToCart: 'Adicionado ao carrinho',
+        purchase: 'Compra realizada',
+        search: 'Busca realizada'
+    }
+} as const;
