@@ -208,7 +208,7 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
         },
         {
           "@type": "PriceSpecification",
-          "price": product.preco_promocional.toString(),
+          "price": product.preco_promocional != null ? product.preco_promocional.toString() : product.preco.toString(),
           "priceCurrency": "BRL",
           "priceType": "SalePrice"
         }

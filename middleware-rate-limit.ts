@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Configurações de rate limiting
-const RATE_LIMITS = {
+const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
     // API endpoints
     '/api/auth/login': { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 tentativas por 15 min
     '/api/auth/register': { maxRequests: 3, windowMs: 60 * 60 * 1000 }, // 3 registros por hora
@@ -14,7 +14,7 @@ const RATE_LIMITS = {
     '/api/shipping': { maxRequests: 30, windowMs: 60 * 1000 }, // 30 cálculos de frete por minuto
 
     // Padrão para outras rotas
-    default: { maxRequests: 1000, windowMs: 60 * 60 * 1000 } // 1000 por hora
+    'default': { maxRequests: 1000, windowMs: 60 * 60 * 1000 } // 1000 por hora
 };
 
 // Store simples em memória (em produção, use Redis)
@@ -104,8 +104,8 @@ function getClientIP(request: NextRequest): string {
     if (forwarded) return forwarded.split(',')[0].trim();
     if (realIP) return realIP;
 
-    // Fallback para IP do socket (pode não funcionar em todos os ambientes)
-    return request.ip || 'unknown';
+    // Fallback padrão quando IP não está disponível
+    return 'unknown';
 }
 
 // Verificar se deve pular rate limiting

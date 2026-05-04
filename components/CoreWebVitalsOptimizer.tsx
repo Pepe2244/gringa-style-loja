@@ -11,6 +11,7 @@ export function useCoreWebVitals() {
         // Função para enviar métricas para analytics
         const reportWebVitals = (metric: any) => {
             // Enviar para Google Analytics 4
+            const gtag = (window as any).gtag;
             if (typeof gtag !== 'undefined') {
                 gtag('event', metric.name, {
                     event_category: 'Web Vitals',
@@ -162,7 +163,7 @@ export function useCLSOptimization() {
     useEffect(() => {
         // Reservar espaço para imagens antes do carregamento
         const reserveImageSpace = () => {
-            const images = document.querySelectorAll('img:not([width]):not([height])');
+            const images = document.querySelectorAll<HTMLImageElement>('img:not([width]):not([height])');
 
             images.forEach(img => {
                 if (!img.hasAttribute('width') && !img.hasAttribute('height')) {

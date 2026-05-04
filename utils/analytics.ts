@@ -94,6 +94,22 @@ export const trackNewsletterSignup = (success: boolean, email?: string) => {
     });
 };
 
+export const trackError = (errorMessage: string, errorContext?: string | Record<string, any>) => {
+    const basePayload: Record<string, any> = {
+        error_message: errorMessage,
+        timestamp: new Date().toISOString()
+    };
+
+    const contextPayload = typeof errorContext === 'string'
+        ? { error_context: errorContext }
+        : errorContext || { error_context: 'unknown' };
+
+    trackEvent('error_occurred', {
+        ...basePayload,
+        ...contextPayload
+    });
+};
+
 export const trackWishlistAction = (action: 'add' | 'remove', productId: number, productName: string) => {
     trackEvent('wishlist_action', {
         action: action,

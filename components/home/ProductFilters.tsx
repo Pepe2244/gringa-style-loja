@@ -339,27 +339,3 @@ export default function ProductFilters({
         </div>
     );
 }
-                style={{ padding: '10px', borderRadius: '25px', border: 'none', background: '#333', color: 'white', marginLeft: '10px', cursor: 'pointer' }}
-            >
-                <option value="">Todas as Categorias</option>
-                {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.nome}</option>
-                ))}
-            </select>
-
-            <label htmlFor="sort-select" className="sr-only">Ordenar por</label>
-            <select
-                id="sort-select"
-                value={sortType}
-                onChange={(e) => setSortType(e.target.value)}
-                style={{ padding: '10px', borderRadius: '25px', border: 'none', background: '#333', color: 'white', marginLeft: '10px', cursor: 'pointer' }}
-            >
-                <option value="padrao">Ordenar por</option>
-                <option value="menor-preco">Menor Preço</option>
-                <option value="maior-preco">Maior Preço</option>
-                <option value="az">Nome (A-Z)</option>
-                <option value="za">Nome (Z-A)</option>
-            </select>
-        </div>
-    );
-}

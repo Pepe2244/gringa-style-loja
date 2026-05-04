@@ -130,14 +130,12 @@ export const orderSchema = z.object({
         produto_id: z.string().uuid('ID do produto inválido'),
         quantidade: z.number().int().positive().max(99, 'Quantidade máxima por item é 99'),
         preco_unitario: z.number().positive(),
-        variacoes: z.record(z.string()).optional()
+        variacoes: z.record(z.string(), z.string()).optional()
     })).min(1, 'Pedido deve ter pelo menos um item').max(50, 'Máximo de 50 itens por pedido'),
 
     endereco_entrega: addressSchema,
 
-    metodo_pagamento: z.enum(['cartao_credito', 'cartao_debito', 'boleto', 'pix', 'paypal'], {
-        errorMap: () => ({ message: 'Método de pagamento inválido' })
-    }),
+    metodo_pagamento: z.enum(['cartao_credito', 'cartao_debito', 'boleto', 'pix', 'paypal']).catch('cartao_credito'),
 
     dados_pagamento: z.discriminatedUnion('tipo', [
         z.object({
@@ -181,9 +179,7 @@ export const couponSchema = z.object({
         .max(20, 'Código muito longo')
         .regex(/^[A-Z0-9_-]+$/, 'Código deve conter apenas letras maiúsculas, números, underscore e hífen'),
 
-    tipo: z.enum(['percentual', 'valor_fixo'], {
-        errorMap: () => ({ message: 'Tipo de desconto inválido' })
-    }),
+    tipo: z.enum(['percentual', 'valor_fixo']).catch('percentual'),
 
     valor: z.number()
         .positive('Valor deve ser positivo')
@@ -233,16 +229,16 @@ export const newsletterSchema = z.object({
 export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): {
     success: boolean;
     data?: T;
-    errors?: z.ZodError['errors'];
+    errors?: z.ZodIssue[];
 } {
     try {
         const validData = schema.parse(data);
         return { success: true, data: validData };
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return { success: false, errors: error.errors };
+            return { success: false, errors: error.issues };
         }
-        return { success: false, errors: [{ message: 'Erro de validação desconhecido' }] };
+        return { success: false, errors: [{ code: 'custom', message: 'Erro de validação desconhecido', path: [] }] };
     }
 }
 

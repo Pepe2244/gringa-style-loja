@@ -30,8 +30,8 @@ export default function SearchPage() {
     const [minRating, setMinRating] = useState(0);
     const { showToast } = useToast();
 
-    const observerRef = useRef<IntersectionObserver>();
-    const loadingRef = useRef<HTMLDivElement>(null);
+    const observerRef = useRef<IntersectionObserver | null>(null);
+    const loadingRef = useRef<HTMLDivElement | null>(null);
 
     // Função para buscar produtos com paginação
     const fetchProducts = useCallback(async (pageNum: number, isLoadMore = false) => {

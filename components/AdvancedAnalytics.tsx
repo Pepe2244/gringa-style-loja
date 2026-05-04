@@ -70,10 +70,13 @@ export default function AdvancedAnalytics({
             script.src = `https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`;
             document.head.appendChild(script);
 
-            window.dataLayer = window.dataLayer || [];
+            const dataLayer = (window as any).dataLayer || [];
+            (window as any).dataLayer = dataLayer;
+
             function gtag(...args: any[]) {
-                window.dataLayer.push(args);
+                dataLayer.push(args);
             }
+
             gtag('js', new Date());
             gtag('config', gaTrackingId, {
                 custom_map: {
