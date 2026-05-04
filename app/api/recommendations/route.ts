@@ -57,7 +57,6 @@ async function getUpsellProducts(category: string, tags: string[], limit: number
 
     if (error) throw error;
 
-    // Filtrar produtos premium (preço acima da média)
     const prices = data.map(p => p.preco);
     const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
 
