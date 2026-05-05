@@ -313,7 +313,7 @@ export default function DirectPurchaseModal({
                     <label htmlFor="modal-cep" style={{ fontWeight: 'bold' }}>CEP de Entrega (Opcional)</label>
                     {loadingCep && <span style={{ fontSize: '0.8rem', color: 'var(--cor-destaque)' }}>Buscando...</span>}
                 </div>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', width: '100%', minWidth: 0 }}>
                     <select
                         value={country}
                         onChange={(e) => {
@@ -323,7 +323,7 @@ export default function DirectPurchaseModal({
                             setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
                         }}
                         className="select-pagamento"
-                        style={{ flexShrink: 0, padding: '10px' }}
+                        style={{ flex: '0 0 120px', minWidth: '120px', padding: '10px' }}
                     >
                         <option value="BR">🇧🇷 Brasil</option>
                         <option value="US">🇺🇸 USA</option>
@@ -343,7 +343,7 @@ export default function DirectPurchaseModal({
                                 calcularFrete(cep, country);
                             }
                         }}
-                        style={{ flex: 1, margin: 0 }}
+                        style={{ flex: 1, minWidth: 0, margin: 0 }}
                     />
                 </div>
 
