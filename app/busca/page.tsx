@@ -8,6 +8,7 @@ import ProductGrid from '@/components/home/ProductGrid';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import { trackSearchQuery } from '@/utils/analytics';
+import { ItemListSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -259,6 +260,26 @@ export default function SearchPage() {
                             setHasDiscountOnly={setHasDiscountOnly}
                             minRating={minRating}
                             setMinRating={setMinRating}
+                        />
+
+                        <WebPageSchema page={{
+                            name: 'Resultados de Busca | Gringa Style',
+                            description: `Página de resultados de busca para ${query || 'produtos Gringa Style'}`,
+                            url: `https://gringa-style.netlify.app/busca?q=${encodeURIComponent(query || '')}`
+                        }} />
+                        <ItemListSchema
+                            products={filteredProducts.map(product => ({
+                                id: product.id,
+                                nome: product.nome,
+                                descricao: product.descricao,
+                                preco: product.preco,
+                                preco_promocional: product.preco_promocional,
+                                em_estoque: product.em_estoque,
+                                imagens: product.imagens,
+                                media_urls: product.media_urls,
+                                slug: product.slug
+                            }))}
+                            pageUrl={`https://gringa-style.netlify.app/busca?q=${encodeURIComponent(query || '')}`}
                         />
 
                         <div style={{ marginTop: '30px', marginBottom: '20px', color: '#888' }}>

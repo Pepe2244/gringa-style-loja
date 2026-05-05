@@ -7,7 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
-import { FAQSchema } from '@/components/SEO/StructuredData';
+import { FAQSchema, ItemListSchema } from '@/components/SEO/StructuredData';
 
 interface HomeContentProps {
     initialProducts: Product[];
@@ -146,6 +146,18 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 setSortType={setSortType}
                 categories={categories}
             />
+
+            <ItemListSchema products={filteredProducts.map(product => ({
+                id: product.id,
+                nome: product.nome,
+                descricao: product.descricao,
+                preco: product.preco,
+                preco_promocional: product.preco_promocional,
+                em_estoque: product.em_estoque,
+                imagens: product.imagens,
+                media_urls: product.media_urls,
+                slug: product.slug
+            }))} pageUrl='https://gringa-style.netlify.app/' />
 
             <ProductGrid
                 products={filteredProducts}

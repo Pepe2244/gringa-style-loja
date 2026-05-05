@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import HomeContent from '@/components/home/HomeContent';
 import { Product } from '@/types';
+import { WebPageSchema } from '@/components/SEO/StructuredData';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -35,6 +36,11 @@ export default async function Home() {
 
   return (
     <main>
+      <WebPageSchema page={{
+        name: 'Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG',
+        description: 'Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!',
+        url: '/'
+      }} />
       <HomeContent
         initialProducts={products}
         categories={categories}

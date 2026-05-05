@@ -314,6 +314,76 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
   );
 };
 
+interface ItemListProduct {
+  id: number;
+  nome: string;
+  descricao?: string;
+  preco: number;
+  preco_promocional?: number | null;
+  em_estoque?: boolean;
+  imagens?: string[] | null;
+  media_urls?: string[] | null;
+  slug?: string;
+}
+
+export const ItemListSchema = ({
+  products,
+  pageUrl,
+}: {
+  products: ItemListProduct[];
+  pageUrl: string;
+}) => {
+  const listItems = products.slice(0, 20).map((product, index) => {
+    const imagePath = product.media_urls?.find(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
+      || product.imagens?.find(url => typeof url === 'string');
+
+    const imageUrl = imagePath
+      ? imagePath.startsWith('http')
+        ? imagePath
+        : imagePath.startsWith('/')
+          ? `${SITE_URL}${imagePath}`
+          : `${SITE_URL}/${imagePath}`
+      : `${SITE_URL}/imagens/logo_gringa_style.png`;
+
+    const offerPrice = product.preco_promocional && product.preco_promocional < product.preco
+      ? product.preco_promocional
+      : product.preco;
+
+    return {
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'Product',
+        'name': product.nome,
+        'image': imageUrl,
+        'description': product.descricao || `Compre ${product.nome} na Gringa Style`,
+        'sku': String(product.id),
+        'url': `${SITE_URL}/produto/${product.slug || product.id}`,
+        'offers': {
+          '@type': 'Offer',
+          'priceCurrency': 'BRL',
+          'price': offerPrice.toString(),
+          'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+        }
+      }
+    };
+  });
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    'itemListElement': listItems,
+    'url': pageUrl
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+};
+
 // 6. Breadcrumb: Navegação limpa (Gringa Style > Máscaras > Produto) na busca.
 export const BreadcrumbSchema = ({ items }: { items: BreadcrumbItem[] }) => {
   const schema = {

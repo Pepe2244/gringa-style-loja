@@ -47,8 +47,12 @@ export async function GET() {
             if (!produto.media_urls || produto.media_urls.length === 0) return;
 
             const productUrl = `${SITE_URL}/produto/${produto.id}-${produto.slug}`;
-            const imageLink = produto.media_urls[0]; // Pega sempre a primeira imagem real do produto
+            const rawImage = produto.media_urls[0]; // Pega sempre a primeira imagem real do produto
+            const imageLink = rawImage.startsWith('http') ? rawImage : `${SITE_URL}${rawImage.startsWith('/') ? rawImage : `/${rawImage}`}`;
             const precoBase = produto.preco.toFixed(2);
+            const salePrice = produto.preco_promocional && produto.preco_promocional < produto.preco ? produto.preco_promocional.toFixed(2) : null;
+            const priceEffectiveStart = new Date().toISOString().split('.')[0] + 'Z';
+            const priceEffectiveEnd = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('.')[0] + 'Z';
 
             xml += `
         <item>
@@ -58,17 +62,33 @@ export async function GET() {
             <g:link>${productUrl}</g:link>
             <g:image_link>${escapeXml(imageLink)}</g:image_link>
             <g:condition>new</g:condition>
-            <g:availability>in_stock</g:availability>
-            <g:price>${precoBase} BRL</g:price>`;
+            <g:availability>${produto.em_estoque ? 'in_stock' : 'out_of_stock'}</g:availability>
+            <g:price>${precoBase} BRL</g:price>
+            <g:price_effective_date>${priceEffectiveStart}/${priceEffectiveEnd}</g:price_effective_date>
+            <g:google_product_category>Apparel & Accessories > Safety Apparel</g:google_product_category>
+            <g:product_type>Equipamentos de Solda > Máscaras de Solda</g:product_type>
+            <g:brand>Gringa Style</g:brand>
+            <g:mpn>${escapeXml(produto.slug || String(produto.id))}</g:mpn>
+            <g:shipping>
+                <g:country>BR</g:country>
+                <g:service>Standard</g:service>
+                <g:price>0.00 BRL</g:price>
+            </g:shipping>
+            <g:tax>
+                <g:country>BR</g:country>
+                <g:rate>0.00</g:rate>
+                <g:tax_ship>FALSE</g:tax_ship>
+            </g:tax>`;
 
             // Lógica de Preço Promocional
-            if (produto.preco_promocional && produto.preco_promocional < produto.preco) {
+            if (salePrice) {
                 xml += `
-            <g:sale_price>${produto.preco_promocional.toFixed(2)} BRL</g:sale_price>`;
+            <g:sale_price>${salePrice} BRL`;
+                xml += `</g:sale_price>`;
             }
 
             xml += `
-            <g:brand>Gringa Style</g:brand>
+            <g:identifier_exists>true</g:identifier_exists>
         </item>`;
         });
 
