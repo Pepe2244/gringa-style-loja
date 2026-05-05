@@ -151,7 +151,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         loading={priority ? 'eager' : 'lazy'}
                         placeholder="blur"
                         blurDataURL={BLUR_DATA_URL}
-                        quality={40}
+                        quality={35}
                     />
                 )}
             </div>

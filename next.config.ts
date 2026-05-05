@@ -1,21 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Desabilitar Turbopack temporariamente para resolver problemas com Server Actions
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000', 'gringa-style.netlify.app'],
-    },
-  },
   images: {
-    // 1. RESOLUÇÃO DE ERROS DE LOG: Adicionado o 60 para parar o erro de "unconfigured qualities"
-    qualities: [60, 75],
+    // 1. RESOLUÇÃO DE ERROS DE LOG: Qualidades otimizadas para performance
+    qualities: [35, 60, 75],
 
     // 2. MÁGICA DA COMPRESSÃO: Converte para formatos ultra-leves (AVIF é 20% menor que WebP)
     formats: ['image/avif', 'image/webp'],
 
     // 3. CACHE AGRESSIVO: 1 ano de cache para passar no Google PageSpeed
-    minimumCacheTTL: 31536000, 
+    minimumCacheTTL: 31536000,
 
     remotePatterns: [
       {
@@ -33,12 +27,17 @@ const nextConfig: NextConfig = {
     ],
   },
 
-
-
-  // 5. LIMPEZA DE LIXO EM PRODUÇÃO: Remove console.logs para economizar processamento e privacidade
-  compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+  // MODERN BROWSER TARGETING: Elimina polyfills desnecessários para navegadores antigos
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'gringa-style.netlify.app'],
+    },
+    // Força ES6+ sem transpilação para navegadores modernos
+    esmExternals: 'loose',
   },
+
+  // MINIFICAÇÃO AGRESSIVA: Usa SWC para minificação mais eficiente
+  swcMinify: true,
 
   // SEGURANÇA ENTERPRISE: Cabeçalhos HTTP para proteção contra Hackers
   async headers() {
@@ -79,5 +78,7 @@ const nextConfig: NextConfig = {
     ];
   },
 };
+
+export default nextConfig;
 
 export default nextConfig;
