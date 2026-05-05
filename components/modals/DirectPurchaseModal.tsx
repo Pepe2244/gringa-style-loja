@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
-import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -231,23 +229,9 @@ export default function DirectPurchaseModal({
     const variants = product.variants as unknown as ProductVariant;
     const hasVariants = variants && variants.opcoes && variants.opcoes.length > 0;
 
-    const modalVariants = {
-        hidden: { opacity: 0, scale: 0.9 },
-        visible: { opacity: 1, scale: 1, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const } }
-    };
-
-    const buttonVariants = {
-        hover: { scale: 1.05, boxShadow: "0 8px 16px rgba(255, 165, 0, 0.4)" },
-        tap: { scale: 0.98 }
-    };
-
     return (
         <Modal isOpen={isOpen} onClose={onClose} className="modal-compra-direta">
-            <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={modalVariants}
-            >
+            <div style={{ opacity: 1, transform: 'scale(1)', transition: 'opacity 0.3s ease, transform 0.3s ease' }}>
                 <h2 className="modal-titulo">Finalizar Pedido</h2>
             <div id="modal-compra-resumo-produto">
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
@@ -431,7 +415,7 @@ export default function DirectPurchaseModal({
             <button className="btn btn-finalizar" onClick={handleDirectPurchase} style={{ marginTop: '20px' }}>
                 Confirmar Pedido no WhatsApp
             </button>
-            </motion.div>
+            </div>
         </Modal>
     );
 }

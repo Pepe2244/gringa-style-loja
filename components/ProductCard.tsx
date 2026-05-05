@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -21,18 +20,6 @@ const Link = ({ href, children, className, ...props }: any) => (
     <a href={href} className={className} {...props}>{children}</a>
 );
 
-const cardVariants = {
-    hover: {
-        y: -5,
-        boxShadow: '0 10px 25px rgba(255, 165, 0, 0.3)',
-        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const }
-    },
-    rest: {
-        y: 0,
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const }
-    }
-};
 
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
     // PROTEÇÃO CRÍTICA: Evita o erro "Cannot read properties of undefined" se o produto não existir.
@@ -120,14 +107,11 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const productSlug = product.slug || `${product.id}-${productName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
 
     return (
-        <motion.div
-            className="produto-card"
+        <div
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{ position: 'relative' }}
-            variants={cardVariants}
-            initial="rest"
-            whileHover="hover"
+            style={{ position: 'relative', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}
+            className="produto-card"
         >
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
                 {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
@@ -167,7 +151,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         loading={priority ? 'eager' : 'lazy'}
                         placeholder="blur"
                         blurDataURL={BLUR_DATA_URL}
-                        quality={45}
+                        quality={40}
                     />
                 )}
             </div>
@@ -212,6 +196,6 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                     </Link>
                 </div>
             </div>
-        </motion.div>
+        </div>
     );
 }

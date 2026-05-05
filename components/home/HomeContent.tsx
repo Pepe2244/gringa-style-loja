@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Product, Category } from '@/types';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
@@ -57,19 +56,16 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         
         const from = page * 12;
         const to = from + 11;
-        
-        try {
-            let query = supabase
-                .from('produtos')
-                .select('id, nome, preco, preco_promocional, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
-                .order('created_at', { ascending: false })
-                .range(from, to);
 
-            const { data, error } = await query;
-            
-            if (error) throw error;
-            
-            if (data && data.length > 0) {
+        try {
+            const response = await fetch(`/api/produtos?from=${from}&to=${to}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.error || 'Erro ao carregar mais produtos');
+            }
+
+            if (Array.isArray(data) && data.length > 0) {
                 setProducts(prev => [...prev, ...data]);
                 setPage(prev => prev + 1);
                 if (data.length < 12) setHasMore(false);
