@@ -27,18 +27,6 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // MODERN BROWSER TARGETING: Elimina polyfills desnecessários para navegadores antigos
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000', 'gringa-style.netlify.app'],
-    },
-    // Força ES6+ sem transpilação para navegadores modernos
-    esmExternals: 'loose',
-  },
-
-  // MINIFICAÇÃO AGRESSIVA: Usa SWC para minificação mais eficiente
-  swcMinify: true,
-
   // SEGURANÇA ENTERPRISE: Cabeçalhos HTTP para proteção contra Hackers
   async headers() {
     return [
