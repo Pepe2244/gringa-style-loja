@@ -156,70 +156,80 @@ interface ProductData {
   descricao?: string;
   preco: number;
   preco_promocional?: number | null;
-  imagem?: string;
-  avaliacoes?: number;
-  totalAvaliacoes?: number;
+  categoria_id?: number | null;
+  tags?: string[] | null;
   em_estoque?: boolean;
+  imagens?: string[] | null;
+  media_urls?: string[] | null;
   slug?: string;
   variants?: any;
 }
 
+const SITE_URL = 'https://gringa-style.netlify.app';
+
+const resolveProductImage = (product: ProductData) => {
+  const rawImage = product.media_urls?.find(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
+    || product.imagens?.find(url => typeof url === 'string');
+
+  if (!rawImage) {
+    return `${SITE_URL}/imagens/logo_gringa_style.png`;
+  }
+
+  if (rawImage.startsWith('http')) return rawImage;
+  if (rawImage.startsWith('/')) return `${SITE_URL}${rawImage}`;
+  return `${SITE_URL}/${rawImage}`;
+};
+
 export const ProductSchema = ({ product }: { product: ProductData }) => {
-  const imagemUrl = product.imagem || "https://gringa-style.netlify.app/imagens/logo_gringa_style.png";
+  const imageUrl = resolveProductImage(product);
   const precoFinal = product.preco_promocional || product.preco;
-  const has_promo = product.preco_promocional && product.preco_promocional < product.preco;
+  const productUrl = `${SITE_URL}/produto/${product.slug || product.id}`;
+  const hasPromo = !!product.preco_promocional && product.preco_promocional < product.preco;
 
   const offers: any = {
-    "@type": "Offer",
-    "url": `https://gringa-style.netlify.app/produto/${product.slug || product.id}`,
-    "priceCurrency": "BRL",
-    "price": precoFinal.toString(),
-    "availability": product.em_estoque ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+    '@type': 'Offer',
+    'url': productUrl,
+    'priceCurrency': 'BRL',
+    'price': precoFinal.toString(),
+    'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    'priceValidUntil': new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
   };
 
-  // Se tem variantes, adicionar AggregateOffer
-  const offersStructure = product.variants ? {
-    "@type": "AggregateOffer",
-    "priceCurrency": "BRL",
-    "lowPrice": precoFinal.toString(),
-    "highPrice": product.preco.toString(),
-    "offerCount": Array.isArray(product.variants?.opcoes) ? product.variants.opcoes.length : 1,
-    "offers": [offers]
-  } : offers;
-
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": product.nome,
-    "description": product.descricao || `Compre ${product.nome} na Gringa Style`,
-    "image": imagemUrl,
-    "brand": {
-      "@type": "Brand",
-      "name": "Gringa Style"
+  const schema: any = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    'name': product.nome,
+    'description': product.descricao || `Compre ${product.nome} na Gringa Style`,
+    'image': imageUrl,
+    'url': productUrl,
+    'sku': String(product.id),
+    'brand': {
+      '@type': 'Brand',
+      'name': 'Gringa Style'
     },
-    "offers": offersStructure,
-    ...(has_promo && {
-      "priceSpecification": [
+    'offers': product.variants ? {
+      '@type': 'AggregateOffer',
+      'priceCurrency': 'BRL',
+      'lowPrice': precoFinal.toString(),
+      'highPrice': product.preco.toString(),
+      'offerCount': Array.isArray(product.variants?.opcoes) ? product.variants.opcoes.length : 1,
+      'offers': [offers]
+    } : offers,
+    ...(hasPromo && {
+      'priceSpecification': [
         {
-          "@type": "PriceSpecification",
-          "price": product.preco.toString(),
-          "priceCurrency": "BRL",
-          "priceType": "ListPrice"
+          '@type': 'PriceSpecification',
+          'price': product.preco.toString(),
+          'priceCurrency': 'BRL',
+          'priceType': 'ListPrice'
         },
         {
-          "@type": "PriceSpecification",
-          "price": product.preco_promocional != null ? product.preco_promocional.toString() : product.preco.toString(),
-          "priceCurrency": "BRL",
-          "priceType": "SalePrice"
+          '@type': 'PriceSpecification',
+          'price': product.preco_promocional?.toString() || product.preco.toString(),
+          'priceCurrency': 'BRL',
+          'priceType': 'SalePrice'
         }
       ]
-    }),
-    ...(product.avaliacoes && product.totalAvaliacoes && {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": product.avaliacoes.toString(),
-        "reviewCount": product.totalAvaliacoes.toString()
-      }
     })
   };
 

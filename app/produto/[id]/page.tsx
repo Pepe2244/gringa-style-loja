@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
-import { BreadcrumbSchema } from '@/components/SEO/StructuredData';
+import { BreadcrumbSchema, ProductSchema } from '@/components/SEO/StructuredData';
 import { notFound } from 'next/navigation';
 
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -132,82 +132,25 @@ export default async function ProductPage({ params }: Props) {
 
     const productUrl = `https://gringa-style.netlify.app/produto/${product.slug || product.id}`;
 
-    const jsonLd = {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.nome,
-        image: resolveAbsoluteUrl(product.media_urls?.[0] || product.imagens?.[0]),
-        description: product.descricao,
-        sku: String(product.id),
-        // 1. Matando o aviso de Identificador Global
-        brand: {
-            '@type': 'Brand',
-            name: 'Gringa Style'
-        },
-        offers: {
-            '@type': 'Offer',
-            url: productUrl,
-            priceCurrency: 'BRL',
-            price: product.preco_promocional || product.preco,
-            availability: product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-            // 2. Matando os avisos de Frete e Devolução
-            hasMerchantReturnPolicy: {
-                '@type': 'MerchantReturnPolicy',
-                applicableCountry: 'BR',
-                returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
-                merchantReturnDays: 7,
-                returnMethod: 'https://schema.org/ReturnByMail',
-                returnFees: 'https://schema.org/CustomerResponsibility'
-            },
-            shippingDetails: {
-                '@type': 'OfferShippingDetails',
-                shippingRate: {
-                    '@type': 'MonetaryAmount',
-                    value: '0.00', // Ou um valor base caso não ofereça frete grátis sempre
-                    currency: 'BRL'
-                },
-                shippingDestination: {
-                    '@type': 'DefinedRegion',
-                    addressCountry: 'BR'
-                },
-                deliveryTime: {
-                    '@type': 'ShippingDeliveryTime',
-                    handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 2, unitCode: 'd' },
-                    transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 12, unitCode: 'd' }
-                }
-            }
-        },
-        // 3. Matando as exigências de Avaliação
-        aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: '5.0',
-            reviewCount: String((product.id % 50) + 15),
-        },
-        review: {
-            '@type': 'Review',
-            reviewRating: {
-                '@type': 'Rating',
-                ratingValue: '5',
-                bestRating: '5'
-            },
-            author: {
-                '@type': 'Person',
-                name: 'Cliente Verificado'
-            }
-        }
-    };
-
     return (
         <>
             <BreadcrumbSchema items={[
                 { name: 'Gringa Style', url: '/' },
                 { name: product.nome, url: productUrl }
             ]} />
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
+            <ProductSchema product={{
+                id: product.id,
+                nome: product.nome,
+                descricao: product.descricao,
+                preco: product.preco,
+                preco_promocional: product.preco_promocional,
+                slug: product.slug,
+                em_estoque: product.em_estoque,
+                imagens: product.imagens,
+                media_urls: product.media_urls,
+                variants: product.variants,
+                tags: product.tags
+            }} />
             {/* Mantive a sua prop id=productId para não quebrar o Client Component */}
             <ProductPageContent id={product.id} initialProduct={product} />
         </>
