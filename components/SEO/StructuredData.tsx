@@ -195,7 +195,7 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'returnPolicyCategory': 'https://schema.org/MerchantReturnFiniteReturnWindow',
     'merchantReturnDays': 14,
     'returnMethod': 'https://schema.org/ReturnByMail',
-    'returnFees': 'https://schema.org/CustomerResponsibility'
+    'returnFees': 'https://schema.org/ReturnFeesCustomerResponsibility'
   };
 
   const shippingDetails = {

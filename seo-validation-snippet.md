@@ -39,7 +39,7 @@ Copie o conteúdo abaixo e cole na ferramenta de teste de rich results ou no val
       "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
       "merchantReturnDays": 14,
       "returnMethod": "https://schema.org/ReturnByMail",
-      "returnFees": "https://schema.org/CustomerResponsibility"
+      "returnFees": "https://schema.org/ReturnFeesCustomerResponsibility"
     },
     "shippingDetails": {
       "@type": "OfferShippingDetails",
