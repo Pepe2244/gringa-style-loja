@@ -59,15 +59,15 @@ export async function GET() {
             <g:id>${produto.id}</g:id>
             <g:title>${escapeXml(produto.nome)}</g:title>
             <g:description>${escapeXml(produto.descricao)}</g:description>
-            <g:link>${productUrl}</g:link>
+            <g:link>${escapeXml(productUrl)}</g:link>
             <g:image_link>${escapeXml(imageLink)}</g:image_link>
             <g:condition>new</g:condition>
             <g:availability>${produto.em_estoque ? 'in_stock' : 'out_of_stock'}</g:availability>
             <g:price>${precoBase} BRL</g:price>
             <g:price_effective_date>${priceEffectiveStart}/${priceEffectiveEnd}</g:price_effective_date>
-            <g:google_product_category>Apparel & Accessories > Safety Apparel</g:google_product_category>
-            <g:product_type>Equipamentos de Solda > Máscaras de Solda</g:product_type>
-            <g:brand>Gringa Style</g:brand>
+            <g:google_product_category>${escapeXml('Apparel & Accessories > Safety Apparel')}</g:google_product_category>
+            <g:product_type>${escapeXml('Equipamentos de Solda > Máscaras de Solda')}</g:product_type>
+            <g:brand>${escapeXml('Gringa Style')}</g:brand>
             <g:mpn>${escapeXml(produto.slug || String(produto.id))}</g:mpn>
             <g:shipping>
                 <g:country>BR</g:country>
