@@ -155,34 +155,20 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         playsInline
                     />
                 ) : (
-                    <>
-                        <Image
-                            src={displayImages[0]}
-                            alt={`Produto ${product.nome}`}
-                            fill
-                            sizes="(max-width: 639px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                            className="card-imagem visivel"
-                            style={{ objectFit: 'cover' }}
-                            priority={priority}
-                            fetchPriority={priority ? 'high' : 'auto'}
-                            placeholder="blur"
-                            blurDataURL={BLUR_DATA_URL}
-                            quality={60}
-                        />
-                        {displayImages[1] && (
-                            <Image
-                                src={displayImages[1]}
-                                alt={`Produto ${product.nome} Hover`}
-                                fill
-                                sizes="(max-width: 639px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                                className="card-imagem hover"
-                                style={{ objectFit: 'cover' }}
-                                placeholder="blur"
-                                blurDataURL={BLUR_DATA_URL}
-                                quality={60}
-                            />
-                        )}
-                    </>
+                    <Image
+                        src={displayImages[currentImageIndex]}
+                        alt={`Produto ${product.nome}`}
+                        fill
+                        sizes="(max-width: 639px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        className="card-imagem visivel"
+                        style={{ objectFit: 'cover' }}
+                        priority={priority}
+                        fetchPriority={priority ? 'high' : 'auto'}
+                        loading={priority ? 'eager' : 'lazy'}
+                        placeholder="blur"
+                        blurDataURL={BLUR_DATA_URL}
+                        quality={45}
+                    />
                 )}
             </div>
 
