@@ -64,7 +64,6 @@ export async function GET() {
             <g:condition>new</g:condition>
             <g:availability>${produto.em_estoque ? 'in_stock' : 'out_of_stock'}</g:availability>
             <g:price>${precoBase} BRL</g:price>
-            <g:price_effective_date>${priceEffectiveStart}/${priceEffectiveEnd}</g:price_effective_date>
             <g:google_product_category>${escapeXml('Apparel & Accessories > Safety Apparel')}</g:google_product_category>
             <g:product_type>${escapeXml('Equipamentos de Solda > Máscaras de Solda')}</g:product_type>
             <g:brand>${escapeXml('Gringa Style')}</g:brand>
@@ -73,18 +72,13 @@ export async function GET() {
                 <g:country>BR</g:country>
                 <g:service>Standard</g:service>
                 <g:price>0.00 BRL</g:price>
-            </g:shipping>
-            <g:tax>
-                <g:country>BR</g:country>
-                <g:rate>0.00</g:rate>
-                <g:tax_ship>FALSE</g:tax_ship>
-            </g:tax>`;
+            </g:shipping>`;
 
             // Lógica de Preço Promocional
             if (salePrice) {
                 xml += `
-            <g:sale_price>${salePrice} BRL`;
-                xml += `</g:sale_price>`;
+            <g:sale_price>${salePrice} BRL</g:sale_price>
+            <g:price_effective_date>${priceEffectiveStart}/${priceEffectiveEnd}</g:price_effective_date>`;
             }
 
             xml += `
