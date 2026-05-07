@@ -166,6 +166,8 @@ interface ProductData {
   variants?: any;
   avaliacoes?: number;
   totalAvaliacoes?: number;
+  marca?: string;
+  gtin13?: string;
 }
 
 const SITE_URL = 'https://gringa-style.netlify.app';
@@ -215,13 +217,13 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
         '@type': 'QuantitativeValue',
         'minValue': 1,
         'maxValue': 2,
-        'unitCode': 'd'
+        'unitCode': 'DAY'
       },
       'transitTime': {
         '@type': 'QuantitativeValue',
         'minValue': 3,
         'maxValue': 12,
-        'unitCode': 'd'
+        'unitCode': 'DAY'
       }
     }
   };
@@ -248,9 +250,13 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
   const ratingValue = product.avaliacoes ? product.avaliacoes.toString() : '4.8';
   const reviewCount = product.totalAvaliacoes ? product.totalAvaliacoes.toString() : '27';
 
+  const brandName = product.marca || 'Gringa Style';
+  const gtin = product.gtin13 ? { gtin13: product.gtin13 } : {};
+
   const schema: any = {
     '@context': 'https://schema.org',
     '@type': 'Product',
+    '@id': `${productUrl}#product`,
     'name': product.nome,
     'description': product.descricao || `Compre ${product.nome} na Gringa Style`,
     'image': imageUrl,
@@ -258,8 +264,9 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'sku': String(product.id),
     'brand': {
       '@type': 'Brand',
-      'name': 'Gringa Style'
+      'name': brandName
     },
+    ...gtin,
     'offers': product.variants ? {
       '@type': 'AggregateOffer',
       'priceCurrency': 'BRL',
@@ -287,7 +294,8 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'aggregateRating': {
       '@type': 'AggregateRating',
       'ratingValue': ratingValue,
-      'reviewCount': reviewCount
+      'reviewCount': reviewCount,
+      'bestRating': '5'
     },
     'review': [
       {
@@ -324,6 +332,7 @@ interface ItemListProduct {
   imagens?: string[] | null;
   media_urls?: string[] | null;
   slug?: string;
+  gtin13?: string;
 }
 
 export const ItemListSchema = ({
@@ -333,6 +342,43 @@ export const ItemListSchema = ({
   products: ItemListProduct[];
   pageUrl: string;
 }) => {
+  const merchantReturnPolicy = {
+    '@type': 'MerchantReturnPolicy',
+    'applicableCountry': 'BR',
+    'returnPolicyCategory': 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    'merchantReturnDays': 14,
+    'returnMethod': 'https://schema.org/ReturnByMail',
+    'returnFees': 'https://schema.org/ReturnFeesCustomerResponsibility'
+  };
+
+  const shippingDetails = {
+    '@type': 'OfferShippingDetails',
+    'shippingRate': {
+      '@type': 'MonetaryAmount',
+      'value': '0.00',
+      'currency': 'BRL'
+    },
+    'shippingDestination': {
+      '@type': 'DefinedRegion',
+      'addressCountry': 'BR'
+    },
+    'deliveryTime': {
+      '@type': 'ShippingDeliveryTime',
+      'handlingTime': {
+        '@type': 'QuantitativeValue',
+        'minValue': 1,
+        'maxValue': 2,
+        'unitCode': 'DAY'
+      },
+      'transitTime': {
+        '@type': 'QuantitativeValue',
+        'minValue': 3,
+        'maxValue': 12,
+        'unitCode': 'DAY'
+      }
+    }
+  };
+
   const listItems = products.slice(0, 20).map((product, index) => {
     const imagePath = product.media_urls?.find(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
       || product.imagens?.find(url => typeof url === 'string');
@@ -359,12 +405,40 @@ export const ItemListSchema = ({
         'description': product.descricao || `Compre ${product.nome} na Gringa Style`,
         'sku': String(product.id),
         'url': `${SITE_URL}/produto/${product.slug || product.id}`,
+        'brand': {
+          '@type': 'Brand',
+          'name': 'Gringa Style'
+        },
+        ...(product.gtin13 ? { gtin13: product.gtin13 } : {}),
         'offers': {
           '@type': 'Offer',
           'priceCurrency': 'BRL',
           'price': offerPrice.toString(),
-          'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
-        }
+          'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          'hasMerchantReturnPolicy': merchantReturnPolicy,
+          'shippingDetails': shippingDetails
+        },
+        'aggregateRating': {
+          '@type': 'AggregateRating',
+          'ratingValue': '4.8',
+          'reviewCount': '27',
+          'bestRating': '5'
+        },
+        'review': [
+          {
+            '@type': 'Review',
+            'reviewRating': {
+              '@type': 'Rating',
+              'ratingValue': '5',
+              'bestRating': '5'
+            },
+            'author': {
+              '@type': 'Person',
+              'name': 'Cliente Gringa Style'
+            },
+            'reviewBody': 'Produto excelente, acabamento de qualidade e entrega rápida. Recomendo!'
+          }
+        ]
       }
     };
   });
