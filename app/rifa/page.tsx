@@ -206,8 +206,6 @@ export default function RifaPage() {
 
             router.push(`/pagamento?participante_id=${participantId}`);
         } catch (error: any) {
-            showToast(error.message || 'Erro ao reservar. Tente novamente.', 'error');
-        } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erro ao reservar. Tente novamente.';
             showToast(errorMessage, 'error');
             await fetchRifa(false);
