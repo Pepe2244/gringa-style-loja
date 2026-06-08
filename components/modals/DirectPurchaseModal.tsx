@@ -73,10 +73,13 @@ export default function DirectPurchaseModal({
     if (!product) return null;
 
     const getPrecoFinal = (p: Product) => {
-        if (!p.preco_promocional || p.preco_promocional >= p.preco) {
-            return p.preco;
+        if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0) {
+            return p.preco_pix;
         }
-        return p.preco_promocional;
+        if (p.preco_promocional && p.preco_promocional < p.preco) {
+            return p.preco_promocional;
+        }
+        return p.preco;
     };
 
     const calcularFrete = async (postalCode: string, selectedCountry: string) => {
@@ -256,6 +259,9 @@ export default function DirectPurchaseModal({
                         <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--cor-destaque)', marginTop: '4px' }}>
                             R$ {getPrecoFinal(product).toFixed(2).replace('.', ',')}
                         </p>
+                        {paymentMethod === 'PIX' && product.preco_pix && product.preco_pix > 0 && (
+                            <p style={{ fontSize: '0.85rem', color: '#fff', margin: '4px 0 0', fontWeight: '700' }}>Preço PIX</p>
+                        )}
                     </div>
                 </div>
             </div>

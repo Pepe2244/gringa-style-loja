@@ -137,6 +137,17 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
     const addItem = useCartStore((state: CartState) => state.addItem);
 
+    const getDisplayedPrice = (p: Product, method: string) => {
+        const normalizedMethod = method.toLowerCase();
+        if (normalizedMethod === 'pix' && p.preco_pix && p.preco_pix > 0) {
+            return p.preco_pix;
+        }
+        if (p.preco_promocional && p.preco_promocional < p.preco) {
+            return p.preco_promocional;
+        }
+        return p.preco;
+    };
+
     const addToCart = () => {
         if (!product) return;
 
@@ -146,7 +157,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             return;
         }
 
-        const price = product.preco_promocional || product.preco;
+        const price = getDisplayedPrice(product, paymentMethod);
 
         if (typeof window !== 'undefined' && (window as any).gtag) {
             (window as any).gtag('event', 'add_to_cart', {
@@ -179,7 +190,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             return;
         }
 
-        const price = product.preco_promocional || product.preco;
+        const price = getDisplayedPrice(product, paymentMethod);
 
         if (typeof window !== 'undefined' && (window as any).gtag) {
             (window as any).gtag('event', 'purchase', {
@@ -203,8 +214,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         message += `*Produto:* ${product.nome}${variantInfo}\n`;
         message += `*Valor:* R$ ${price.toFixed(2).replace('.', ',')}\n\n`;
 
-        if (product.preco_promocional) {
-            message += `_(Valor promocional)_\n\n`;
+        if (price < product.preco) {
+            message += `_(Valor especial selecionado)_\n\n`;
         }
 
         message += `*Pagamento:* ${paymentMethod}`;
@@ -276,10 +287,10 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
     const MAX_DESC_LENGTH = 150;
     const isLongDescription = product.descricao && product.descricao.length > MAX_DESC_LENGTH;
 
-    const isPromo = product.preco_promocional && product.preco_promocional < product.preco;
-    const precoFinal = isPromo ? product.preco_promocional! : product.preco;
+    const displayedPrice = getDisplayedPrice(product, paymentMethod);
+    const isPromo = displayedPrice < product.preco;
     const descontoPercentual = isPromo 
-        ? Math.round(((product.preco - precoFinal) / product.preco) * 100) 
+        ? Math.round(((product.preco - displayedPrice) / product.preco) * 100) 
         : 0;
 
     return (
@@ -419,19 +430,28 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     </div>
 
                     <div className="produto-detalhe-preco" style={{ margin: '10px 0 25px 0' }}>
-                        {product.preco_promocional ? (
+                        {isPromo ? (
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <span className="preco-antigo" style={{ fontSize: '1.1rem', color: '#888', textDecoration: 'line-through' }}>
                                     De R$ {product.preco.toFixed(2).replace('.', ',')}
                                 </span>
                                 <span className="preco-novo" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
-                                    R$ {product.preco_promocional.toFixed(2).replace('.', ',')}
+                                    R$ {displayedPrice.toFixed(2).replace('.', ',')}
                                 </span>
                             </div>
                         ) : (
                             <span className="preco-normal" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
-                                R$ {product.preco.toFixed(2).replace('.', ',')}
+                                R$ {displayedPrice.toFixed(2).replace('.', ',')}
                             </span>
+                        )}
+                        {paymentMethod === 'PIX' && product.preco_pix && product.preco_pix > 0 ? (
+                            <p style={{ marginTop: '8px', color: '#fff', fontSize: '0.95rem', fontWeight: '700' }}>
+                                Preço PIX
+                            </p>
+                        ) : (
+                            <p style={{ marginTop: '8px', color: '#aaa', fontSize: '0.95rem' }}>
+                                Pagamento padrão
+                            </p>
                         )}
                         <PaymentMethods showLabel={true} compact={false} />
                         <p style={{ fontSize: '0.9rem', color: '#aaa', marginTop: '5px' }}>💳 Em até 12x no cartão de crédito</p>
@@ -587,7 +607,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         <h3 style={{ fontSize: '1rem', margin: '0 0 5px 0', color: '#fff' }}>{product.nome}</h3>
                         {selectedVariant && <p style={{ fontSize: '0.85rem', color: '#aaa', margin: '0 0 5px 0' }}>{variants?.tipo}: {selectedVariant}</p>}
                         <p style={{ fontWeight: '900', color: 'var(--cor-destaque)', fontSize: '1.2rem', margin: 0 }}>
-                            R$ {(product.preco_promocional || product.preco).toFixed(2).replace('.', ',')}
+                            R$ {displayedPrice.toFixed(2).replace('.', ',')}
                         </p>
                     </div>
                 </div>
