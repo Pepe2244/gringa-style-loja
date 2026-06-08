@@ -81,6 +81,10 @@ export const productSchema = z.object({
         .positive('Preço original deve ser positivo')
         .optional(),
 
+    preco_pix: z.number()
+        .positive('Preço PIX deve ser positivo')
+        .optional(),
+
     categoria: z.string()
         .min(2, 'Categoria deve ter pelo menos 2 caracteres')
         .max(100, 'Categoria muito longa'),
@@ -122,6 +126,15 @@ export const productSchema = z.object({
 }, {
     message: 'Preço original deve ser maior que o preço atual',
     path: ['preco_original']
+}).refine((data) => {
+    // Se houver preço pix, ele não pode ser maior ou igual ao preço normal do cartão
+    if (data.preco_pix && data.preco_pix >= data.preco) {
+        return false;
+    }
+    return true;
+}, {
+    message: 'Preço PIX deve ser menor que o preço normal (cartão)',
+    path: ['preco_pix']
 });
 
 // Validação de pedido
@@ -135,7 +148,7 @@ export const orderSchema = z.object({
 
     endereco_entrega: addressSchema,
 
-    metodo_pagamento: z.enum(['cartao_credito', 'cartao_debito', 'boleto', 'pix', 'paypal']).catch('cartao_credito'),
+    metodo_pagamento: z.enum(['cartao_credito', 'pix']).catch('cartao_credito'),
 
     dados_pagamento: z.discriminatedUnion('tipo', [
         z.object({
@@ -147,23 +160,8 @@ export const orderSchema = z.object({
             parcelas: z.number().int().min(1).max(12).default(1)
         }),
         z.object({
-            tipo: z.literal('cartao_debito'),
-            numero_cartao: z.string().regex(/^\d{4}\s\d{4}\s\d{4}\s\d{4}$/, 'Número do cartão inválido'),
-            nome_titular: z.string().min(2).max(100),
-            data_expiracao: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Data de expiração inválida'),
-            cvv: z.string().regex(/^\d{3,4}$/, 'CVV inválido')
-        }),
-        z.object({
-            tipo: z.literal('boleto'),
-            cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido')
-        }),
-        z.object({
             tipo: z.literal('pix'),
             chave_pix: z.string().min(1).max(255)
-        }),
-        z.object({
-            tipo: z.literal('paypal'),
-            email_paypal: z.string().email()
         })
     ]),
 
@@ -199,7 +197,9 @@ export const couponSchema = z.object({
 
     uso_atual: z.number().int().min(0).default(0),
 
-    ativo: z.boolean().default(true)
+    ativo: z.boolean().default(true),
+
+    metodo_pagamento_restrito: z.enum(['pix', 'cartao_credito']).optional()
 }).refine((data) => {
     if (data.tipo === 'percentual' && data.valor > 100) {
         return false;

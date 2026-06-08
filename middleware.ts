@@ -37,9 +37,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
 }
 
-// Executa o middleware em todas as rotas, exceto arquivos estáticos
+// Executa o middleware em todas as rotas, exceto arquivos estáticos e recursos públicos
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|favicon.ico).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|.*\..*).*)',
     ],
 };

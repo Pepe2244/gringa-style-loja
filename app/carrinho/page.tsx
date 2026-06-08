@@ -71,7 +71,7 @@ export default function CartPage() {
         };
 
         fetchCartData();
-    }, [items]);
+    }, [items, paymentMethod]);
 
     useEffect(() => {
         if (items.length > 0 && products.length > 0 && typeof window !== 'undefined' && (window as any).gtag) {
@@ -93,14 +93,31 @@ export default function CartPage() {
                 items: gtagItems
             });
         }
-    }, [products, items]); 
+    }, [products, items, paymentMethod]);
+
+    // Valida automaticamente se o cupom aplicado ainda é válido caso a forma de pagamento mude
+    useEffect(() => {
+        if (appliedCoupon && appliedCoupon.metodo_pagamento_restrito) {
+            const metodoExigido = appliedCoupon.metodo_pagamento_restrito === 'pix' ? 'PIX' : 'Cartão de Crédito';
+            if (paymentMethod !== metodoExigido) {
+                setAppliedCoupon(null);
+                setCouponMessage({ text: `O cupom ${appliedCoupon.codigo} é válido apenas para ${metodoExigido}.`, type: 'error' });
+            }
+        }
+    }, [paymentMethod, appliedCoupon]);
+
+    useEffect(() => {
+        if (appliedCoupon && !appliedCoupon.metodo_pagamento_restrito && couponCode.trim()) {
+            handleApplyCoupon();
+        }
+    }, [paymentMethod]);
 
     const validateTotal = async (cartItems: CartItem[]) => {
         try {
             const response = await fetch('/api/calculate-total', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itens: cartItems })
+                body: JSON.stringify({ itens: cartItems, metodo_pagamento: paymentMethod })
             });
             const data = await response.json();
             if (data.total !== undefined) {
@@ -134,6 +151,9 @@ export default function CartPage() {
     };
 
     const getPrecoFinal = (p: Product) => {
+        if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0) {
+            return p.preco_pix;
+        }
         if (!p.preco_promocional || p.preco_promocional >= p.preco) {
             return p.preco;
         }
@@ -248,7 +268,8 @@ export default function CartPage() {
                 },
                 body: JSON.stringify({
                     codigo_cupom: couponCode.toUpperCase(),
-                    itens_carrinho: itemsToValidate
+                    itens_carrinho: itemsToValidate,
+                    metodo_pagamento: paymentMethod
                 })
             });
 
@@ -294,6 +315,7 @@ export default function CartPage() {
         const getPrecoAtual = (produtoId: number) => {
             const p = currentProducts.find(p => p.id === produtoId);
             if (!p) return 0;
+            if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0) return p.preco_pix;
             if (!p.preco_promocional || p.preco_promocional >= p.preco) return p.preco;
             return p.preco_promocional;
         };

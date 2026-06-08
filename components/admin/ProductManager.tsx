@@ -23,6 +23,7 @@ export default function ProductManager() {
     const [descricao, setDescricao] = useState('');
     const [preco, setPreco] = useState('');
     const [precoPromocional, setPrecoPromocional] = useState('');
+    const [precoPix, setPrecoPix] = useState('');
     const [categoriaId, setCategoriaId] = useState('');
     const [tags, setTags] = useState('');
     const [em_estoque, setEmEstoque] = useState(true);
@@ -69,6 +70,7 @@ export default function ProductManager() {
             setDescricao(product.descricao);
             setPreco(String(product.preco));
             setPrecoPromocional(product.preco_promocional ? String(product.preco_promocional) : '');
+            setPrecoPix(product.preco_pix ? String(product.preco_pix) : '');
             setCategoriaId(product.categoria_id ? String(product.categoria_id) : '');
             setTags(product.tags ? product.tags.join(', ') : '');
             setEmEstoque(product.em_estoque);
@@ -90,6 +92,7 @@ export default function ProductManager() {
         setDescricao('');
         setPreco('');
         setPrecoPromocional('');
+        setPrecoPix('');
         setCategoriaId('');
         setTags('');
         setEmEstoque(true);
@@ -166,6 +169,7 @@ export default function ProductManager() {
             descricao,
             preco: parseFloat(preco),
             preco_promocional: precoPromocional ? parseFloat(precoPromocional) : null,
+            preco_pix: precoPix ? parseFloat(precoPix) : null,
             categoria_id: categoriaId ? parseInt(categoriaId) : null,
             tags: tags.split(',').map(s => s.trim()).filter(Boolean),
             em_estoque,
@@ -242,7 +246,9 @@ export default function ProductManager() {
                             <div key={prod.id} style={{ background: '#111', padding: '12px 16px', borderRadius: '12px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1rem' }}>{prod.nome}</h3>
-                                    <span style={{ fontSize: '0.8rem', color: '#666' }}>R$ {prod.preco.toFixed(2)} | {prod.em_estoque ? 'Em Stock' : 'Esgotado'}</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                                    R$ {prod.preco.toFixed(2)}{prod.preco_pix ? ` | PIX R$ ${prod.preco_pix.toFixed(2)}` : ''} | {prod.em_estoque ? 'Em Stock' : 'Esgotado'}
+                                </span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <label className="switch" style={{ transform: 'scale(0.7)' }}>
@@ -270,7 +276,7 @@ export default function ProductManager() {
                                 <input type="text" value={nome} onChange={e => setNome(e.target.value)} required />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
                                 <div className="form-campo">
                                     <label>Preço Base (R$)</label>
                                     <input type="number" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} required />
@@ -278,6 +284,10 @@ export default function ProductManager() {
                                 <div className="form-campo">
                                     <label>Preço Promo (R$)</label>
                                     <input type="number" step="0.01" value={precoPromocional} onChange={e => setPrecoPromocional(e.target.value)} />
+                                </div>
+                                <div className="form-campo">
+                                    <label>Preço PIX (Opcional)</label>
+                                    <input type="number" step="0.01" value={precoPix} onChange={e => setPrecoPix(e.target.value)} placeholder="Ex: 79.90" />
                                 </div>
                             </div>
 

@@ -18,6 +18,7 @@ export default function CouponManager() {
     const [valorDesconto, setValorDesconto] = useState('');
     const [tipoAplicacao, setTipoAplicacao] = useState('geral');
     const [produtosAplicaveis, setProdutosAplicaveis] = useState<string[]>([]);
+    const [metodoPagamentoRestrito, setMetodoPagamentoRestrito] = useState('');
     const [dataValidade, setDataValidade] = useState('');
     const [limiteUso, setLimiteUso] = useState('');
 
@@ -52,6 +53,7 @@ export default function CouponManager() {
             setValorDesconto(coupon.valor_desconto);
             setTipoAplicacao(coupon.tipo_aplicacao);
             setProdutosAplicaveis(coupon.produtos_aplicaveis ? coupon.produtos_aplicaveis.map(String) : []);
+            setMetodoPagamentoRestrito(coupon.metodo_pagamento_restrito || '');
             setDataValidade(coupon.data_validade ? coupon.data_validade.slice(0, 16) : '');
             setLimiteUso(coupon.limite_uso || '');
         } else {
@@ -60,6 +62,7 @@ export default function CouponManager() {
             setValorDesconto('');
             setTipoAplicacao('geral');
             setProdutosAplicaveis([]);
+            setMetodoPagamentoRestrito('');
             setDataValidade('');
             setLimiteUso('');
         }
@@ -76,6 +79,7 @@ export default function CouponManager() {
             valor_desconto: parseFloat(valorDesconto),
             tipo_aplicacao: tipoAplicacao,
             produtos_aplicaveis: tipoAplicacao === 'produto' ? produtosAplicaveis.map(Number) : null,
+            metodo_pagamento_restrito: metodoPagamentoRestrito || null,
             data_validade: dataValidade || null,
             limite_uso: limiteUso ? parseInt(limiteUso) : null,
         };
@@ -135,6 +139,7 @@ export default function CouponManager() {
                         <th>Código</th>
                         <th>Tipo</th>
                         <th>Valor</th>
+                        <th>Restrição</th>
                         <th>Status</th>
                         <th>Ações</th>
                     </tr>
@@ -145,6 +150,7 @@ export default function CouponManager() {
                             <td>{coupon.codigo}</td>
                             <td>{coupon.tipo_desconto === 'percentual' ? '%' : 'R$'}</td>
                             <td>{coupon.valor_desconto}</td>
+                            <td>{coupon.metodo_pagamento_restrito ? (coupon.metodo_pagamento_restrito === 'pix' ? 'PIX' : 'Cartão') : 'Nenhuma'}</td>
                             <td>
                                 <label className="switch">
                                     <input
@@ -183,6 +189,7 @@ export default function CouponManager() {
                         <div className="admin-mobile-card-body">
                             <p><strong>Tipo:</strong> {coupon.tipo_desconto === 'percentual' ? 'Percentual (%)' : 'Fixo (R$)'}</p>
                             <p><strong>Valor:</strong> {coupon.valor_desconto}</p>
+                            <p><strong>Restrição:</strong> {coupon.metodo_pagamento_restrito ? (coupon.metodo_pagamento_restrito === 'pix' ? 'PIX' : 'Cartão') : 'Nenhuma'}</p>
                             <p><strong>Status:</strong> {coupon.ativo ? 'Ativo' : 'Inativo'}</p>
                         </div>
                         <div className="admin-mobile-card-actions">
@@ -246,6 +253,19 @@ export default function CouponManager() {
                                     <option value="geral">No carrinho inteiro</option>
                                     <option value="produto">Apenas em produtos específicos</option>
                                 </select>
+                            </div>
+
+                            <div className="form-campo">
+                                <label>Restrição de Pagamento</label>
+                                <select
+                                    value={metodoPagamentoRestrito}
+                                    onChange={e => setMetodoPagamentoRestrito(e.target.value)}
+                                >
+                                    <option value="">Nenhuma</option>
+                                    <option value="pix">PIX</option>
+                                    <option value="cartao_credito">Cartão de Crédito</option>
+                                </select>
+                                <small>Se selecionado, o cupom só pode ser usado com essa forma de pagamento.</small>
                             </div>
 
                             {tipoAplicacao === 'produto' && (

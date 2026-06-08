@@ -18,6 +18,7 @@ export interface Database {
                     descricao: string
                     preco: number
                     preco_promocional: number | null
+                    preco_pix: number | null
                     categoria_id: number | null
                     tags: string[] | null
                     em_estoque: boolean
@@ -35,6 +36,7 @@ export interface Database {
                     descricao: string
                     preco: number
                     preco_promocional?: number | null
+                    preco_pix?: number | null
                     categoria_id?: number | null
                     tags?: string[] | null
                     em_estoque?: boolean
@@ -52,6 +54,7 @@ export interface Database {
                     descricao?: string
                     preco?: number
                     preco_promocional?: number | null
+                    preco_pix?: number | null
                     categoria_id?: number | null
                     tags?: string[] | null
                     em_estoque?: boolean

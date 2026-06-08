@@ -1,9 +1,17 @@
 import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
+const normalizePaymentMethod = (value: unknown) => {
+    if (typeof value !== 'string') return 'cartao_credito';
+    const normalized = value.toLowerCase().trim();
+    if (normalized === 'pix') return 'pix';
+    return 'cartao_credito';
+};
+
 export async function POST(request: Request) {
     try {
-        const { itens } = await request.json();
+        const { itens, metodo_pagamento } = await request.json();
+        const paymentMethod = normalizePaymentMethod(metodo_pagamento);
 
         if (!itens || !Array.isArray(itens)) {
             return NextResponse.json({ error: 'Itens inválidos' }, { status: 400 });
@@ -13,7 +21,7 @@ export async function POST(request: Request) {
 
         const { data: products, error } = await supabase
             .from('produtos')
-            .select('id, preco, preco_promocional, "emEstoque"')
+            .select('id, preco, preco_promocional, preco_pix, "emEstoque"')
             .in('id', productIds);
 
         if (error) throw error;
@@ -22,7 +30,7 @@ export async function POST(request: Request) {
         const validatedItems = [];
 
         for (const item of itens) {
-            const product = products.find(p => p.id === item.produto_id);
+            const product = products.find((p: any) => p.id === item.produto_id);
 
             if (!product) continue;
 
@@ -32,9 +40,11 @@ export async function POST(request: Request) {
                 }, { status: 400 });
             }
 
-            const price = (product.preco_promocional && product.preco_promocional < product.preco)
-                ? product.preco_promocional
-                : product.preco;
+            const price = paymentMethod === 'pix' && product.preco_pix && product.preco_pix > 0
+                ? product.preco_pix
+                : ((product.preco_promocional && product.preco_promocional < product.preco)
+                    ? product.preco_promocional
+                    : product.preco);
 
             total += price * item.quantidade;
 
@@ -55,4 +65,5 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
     }
 }
+
 
