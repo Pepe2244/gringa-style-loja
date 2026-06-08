@@ -288,6 +288,15 @@ export default function RifaPage() {
     const isFinished = rifa.status === 'finalizada';
     const isSoldOut = soldSet.size >= rifa.total_numeros || isFinished;
 
+    const selectedCount = selectedNumbers.length;
+    const hasDiscountTier = Boolean(rifa.preco_numero_desconto_quantidade && rifa.preco_numero_desconto && rifa.preco_numero_desconto_quantidade > 0);
+    const discountThreshold = rifa.preco_numero_desconto_quantidade || 0;
+    const discountPrice = rifa.preco_numero_desconto ?? rifa.preco_numero;
+    const currentUnitPrice = hasDiscountTier && selectedCount >= discountThreshold
+        ? discountPrice
+        : rifa.preco_numero;
+    const totalPrice = selectedCount * currentUnitPrice;
+
     const imageUrl = getProxiedImageUrl(rifa.imagem_premio_url || '/imagens/gringa_style_logo.png');
 
     const censurarNome = (nome: string) => {
@@ -413,7 +422,13 @@ export default function RifaPage() {
                 {!isSoldOut && !isFinished && selectedNumbers.length > 0 && (
                     <div className="resumo-selecao" style={{ display: 'block' }}>
                         <h4>Resumo da sua Seleção</h4>
-                        <p>Total a pagar: <strong id="total-a-pagar">R$ {(selectedNumbers.length * rifa.preco_numero).toFixed(2).replace('.', ',')}</strong></p>
+                        <p>Preço por número: <strong>R$ {currentUnitPrice.toFixed(2).replace('.', ',')}</strong></p>
+                        {hasDiscountTier && selectedCount >= (rifa.preco_numero_desconto_quantidade || 0) && (
+                            <p style={{ color: 'var(--cor-destaque)', marginTop: '8px' }}>
+                                Desconto aplicado! Preço reduzido a R$ {rifa.preco_numero_desconto?.toFixed(2).replace('.', ',')} a partir de {rifa.preco_numero_desconto_quantidade} números.
+                            </p>
+                        )}
+                        <p>Total a pagar: <strong id="total-a-pagar">R$ {totalPrice.toFixed(2).replace('.', ',')}</strong></p>
                         <div className="form-cliente">
                             <motion.div
                                 animate={{ boxShadow: focusedInput === 'name' ? '0 0 10px rgba(255, 165, 0, 0.3)' : '0 0 0px rgba(255, 165, 0, 0)' }}

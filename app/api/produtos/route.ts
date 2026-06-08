@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const query = supabase
     .from('produtos')
-    .select('id, nome, preco, preco_promocional, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+    .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
     .order('created_at', { ascending: false })
     .range(from, to);
 

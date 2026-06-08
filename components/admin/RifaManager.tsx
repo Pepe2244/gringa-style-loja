@@ -25,6 +25,8 @@ export default function RifaManager() {
     const [nomePremio, setNomePremio] = useState('');
     const [descricao, setDescricao] = useState('');
     const [precoNumero, setPrecoNumero] = useState('');
+    const [precoNumeroDescontoQuantidade, setPrecoNumeroDescontoQuantidade] = useState('');
+    const [precoNumeroDesconto, setPrecoNumeroDesconto] = useState('');
     const [totalNumeros, setTotalNumeros] = useState('');
     const [imagemCapaFile, setImagemCapaFile] = useState<File | null>(null);
     const [imagemCapaPreview, setImagemCapaPreview] = useState('');
@@ -57,6 +59,8 @@ export default function RifaManager() {
             setNomePremio(rifa.nome_premio);
             setDescricao(rifa.descricao);
             setPrecoNumero(String(rifa.preco_numero));
+            setPrecoNumeroDescontoQuantidade(String(rifa.preco_numero_desconto_quantidade ?? ''));
+            setPrecoNumeroDesconto(String(rifa.preco_numero_desconto ?? ''));
             setTotalNumeros(String(rifa.total_numeros));
             setImagemCapaPreview(rifa.imagem_premio_url || '');
 
@@ -70,6 +74,8 @@ export default function RifaManager() {
             setNomePremio('');
             setDescricao('');
             setPrecoNumero('');
+            setPrecoNumeroDescontoQuantidade('');
+            setPrecoNumeroDesconto('');
             setTotalNumeros('');
             setImagemCapaPreview('');
             setPremios([{ descricao: '' }]);
@@ -126,6 +132,8 @@ export default function RifaManager() {
                 nome_premio: nomePremio,
                 descricao,
                 preco_numero: parseFloat(precoNumero),
+                preco_numero_desconto_quantidade: precoNumeroDescontoQuantidade ? parseInt(precoNumeroDescontoQuantidade) : null,
+                preco_numero_desconto: precoNumeroDesconto ? parseFloat(precoNumeroDesconto) : null,
                 total_numeros: parseInt(totalNumeros),
                 imagem_premio_url: capaUrl,
                 status: editingRifa ? editingRifa.status : 'ativa'
@@ -380,6 +388,8 @@ export default function RifaManager() {
                             <div className="form-campo"><label>Nome do Prêmio</label><input type="text" value={nomePremio} onChange={e => setNomePremio(e.target.value)} required /></div>
                             <div className="form-campo"><label>Descrição</label><textarea value={descricao} onChange={e => setDescricao(e.target.value)} required rows={3} /></div>
                             <div className="form-campo"><label>Preço por Número</label><input type="number" step="0.01" value={precoNumero} onChange={e => setPrecoNumero(e.target.value)} required /></div>
+                            <div className="form-campo"><label>Desconto por Quantidade (opcional)</label><input type="number" value={precoNumeroDescontoQuantidade} onChange={e => setPrecoNumeroDescontoQuantidade(e.target.value)} placeholder="A partir de quantos números" min="0" /></div>
+                            <div className="form-campo"><label>Preço por Número com Desconto</label><input type="number" step="0.01" value={precoNumeroDesconto} onChange={e => setPrecoNumeroDesconto(e.target.value)} placeholder="Preço por número após o limite" min="0" /></div>
                             <div className="form-campo"><label>Total de Números</label><input type="number" value={totalNumeros} onChange={e => setTotalNumeros(e.target.value)} required /></div>
                             <div className="form-campo"><label>Imagem de Capa</label><input type="file" accept="image/*" onChange={handleCapaChange} />{imagemCapaPreview && <img src={getProxiedImageUrl(imagemCapaPreview)} alt="Preview" loading="lazy" style={{ width: '100px', marginTop: '10px' }} />}</div>
                             <hr style={{ borderColor: '#555', margin: '25px 0' }} />

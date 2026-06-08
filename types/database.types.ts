@@ -135,6 +135,8 @@ export interface Database {
                     nome_premio: string
                     descricao: string
                     preco_numero: number
+                    preco_numero_desconto_quantidade: number | null
+                    preco_numero_desconto: number | null
                     total_numeros: number
                     status: 'ativa' | 'finalizada' | 'cancelada'
                     imagem_premio_url: string | null
@@ -149,6 +151,8 @@ export interface Database {
                     nome_premio: string
                     descricao: string
                     preco_numero: number
+                    preco_numero_desconto_quantidade?: number | null
+                    preco_numero_desconto?: number | null
                     total_numeros: number
                     status?: 'ativa' | 'finalizada' | 'cancelada'
                     imagem_premio_url?: string | null
@@ -163,6 +167,8 @@ export interface Database {
                     nome_premio?: string
                     descricao?: string
                     preco_numero?: number
+                    preco_numero_desconto_quantidade?: number | null
+                    preco_numero_desconto?: number | null
                     total_numeros?: number
                     status?: 'ativa' | 'finalizada' | 'cancelada'
                     imagem_premio_url?: string | null
