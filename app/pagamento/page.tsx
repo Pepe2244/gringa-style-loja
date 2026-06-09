@@ -22,6 +22,25 @@ function PaymentContent() {
     const pixKey = process.env.NEXT_PUBLIC_PIX_KEY || "";
 
     useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const result = await getPaymentDetails(Number(participanteId));
+
+                if (result.success) {
+                    setParticipante(result.participante);
+                    setRifa(result.rifa);
+                } else {
+                    console.error('Erro ao carregar pagamento:', result.error);
+                    setErro(result.error || 'Erro ao buscar reserva.');
+                }
+            } catch (error) {
+                console.error('Erro inesperado:', error);
+                setErro('Erro de conexão.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (participanteId) {
             fetchData();
         } else {
@@ -29,24 +48,6 @@ function PaymentContent() {
         }
     }, [participanteId]);
 
-    const fetchData = async () => {
-        try {
-            const result = await getPaymentDetails(Number(participanteId));
-
-            if (result.success) {
-                setParticipante(result.participante);
-                setRifa(result.rifa);
-            } else {
-                console.error('Erro ao carregar pagamento:', result.error);
-                setErro(result.error || 'Erro ao buscar reserva.');
-            }
-        } catch (error) {
-            console.error('Erro inesperado:', error);
-            setErro('Erro de conexão.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const copiarChavePix = () => {
         if (!pixKey) {

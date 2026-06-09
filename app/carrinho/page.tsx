@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
@@ -52,6 +52,23 @@ export default function CartPage() {
 
     const [validatedTotal, setValidatedTotal] = useState<number | null>(null);
 
+    const validateTotal = useCallback(async (cartItems: CartItem[]) => {
+        try {
+            const response = await fetch('/api/calculate-total', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itens: cartItems, metodo_pagamento: paymentMethod })
+            });
+            const data = await response.json();
+            if (data.total !== undefined) {
+                setValidatedTotal(data.total);
+            }
+        } catch (error) {
+            console.error('Error validating total:', error);
+            showToast('Não foi possível validar os preços. Os valores exibidos podem estar desatualizados.', 'error');
+        }
+    }, [paymentMethod, showToast]);
+
     useEffect(() => {
         const fetchCartData = async () => {
             setLoading(true);
@@ -71,29 +88,7 @@ export default function CartPage() {
         };
 
         fetchCartData();
-    }, [items, paymentMethod]);
-
-    useEffect(() => {
-        if (items.length > 0 && products.length > 0 && typeof window !== 'undefined' && (window as any).gtag) {
-            const currentTotal = calculateTotal();
-            const gtagItems = items.map(item => {
-                const product = products.find(p => p.id === item.produto_id);
-                return {
-                    item_id: item.produto_id,
-                    item_name: product?.nome || 'Produto',
-                    price: product ? getPrecoFinal(product) : 0,
-                    quantity: item.quantidade,
-                    item_variant: item.variante?.opcao
-                };
-            });
-
-            (window as any).gtag('event', 'view_cart', {
-                currency: 'BRL',
-                value: currentTotal,
-                items: gtagItems
-            });
-        }
-    }, [products, items, paymentMethod]);
+    }, [items, paymentMethod, validateTotal]);
 
     // Valida automaticamente se o cupom aplicado ainda é válido caso a forma de pagamento mude
     useEffect(() => {
@@ -105,29 +100,6 @@ export default function CartPage() {
             }
         }
     }, [paymentMethod, appliedCoupon]);
-
-    useEffect(() => {
-        if (appliedCoupon && !appliedCoupon.metodo_pagamento_restrito && couponCode.trim()) {
-            handleApplyCoupon();
-        }
-    }, [paymentMethod]);
-
-    const validateTotal = async (cartItems: CartItem[]) => {
-        try {
-            const response = await fetch('/api/calculate-total', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itens: cartItems, metodo_pagamento: paymentMethod })
-            });
-            const data = await response.json();
-            if (data.total !== undefined) {
-                setValidatedTotal(data.total);
-            }
-        } catch (error) {
-            console.error('Error validating total:', error);
-            showToast('Não foi possível validar os preços. Os valores exibidos podem estar desatualizados.', 'error');
-        }
-    };
 
     const handleUpdateQuantity = (index: number, newQuantity: number) => {
         updateQuantity(index, newQuantity);
@@ -150,7 +122,7 @@ export default function CartPage() {
         }
     };
 
-    const getPrecoFinal = (p: Product) => {
+    const getPrecoFinal = useCallback((p: Product) => {
         if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0) {
             return p.preco_pix;
         }
@@ -158,16 +130,16 @@ export default function CartPage() {
             return p.preco;
         }
         return p.preco_promocional;
-    };
+    }, [paymentMethod]);
 
-    const calculateSubtotal = () => {
+    const calculateSubtotal = useCallback(() => {
         return items.reduce((total, item) => {
             const product = products.find(p => p.id === item.produto_id);
             return product ? total + (getPrecoFinal(product) * item.quantidade) : total;
         }, 0);
-    };
+    }, [items, products, getPrecoFinal]);
 
-    const calculateTotal = () => {
+    const calculateTotal = useCallback(() => {
         const subtotal = calculateSubtotal();
         let discount = 0;
         if (appliedCoupon) {
@@ -181,9 +153,31 @@ export default function CartPage() {
         }
 
         return subtotal - discount + shippingCost;
-    };
+    }, [calculateSubtotal, appliedCoupon, selectedShipping]);
 
     const totalCalculado = calculateTotal();
+
+    useEffect(() => {
+        if (items.length > 0 && products.length > 0 && typeof window !== 'undefined' && (window as any).gtag) {
+            const currentTotal = calculateTotal();
+            const gtagItems = items.map(item => {
+                const product = products.find(p => p.id === item.produto_id);
+                return {
+                    item_id: item.produto_id,
+                    item_name: product?.nome || 'Produto',
+                    price: product ? getPrecoFinal(product) : 0,
+                    quantity: item.quantidade,
+                    item_variant: item.variante?.opcao
+                };
+            });
+
+            (window as any).gtag('event', 'view_cart', {
+                currency: 'BRL',
+                value: currentTotal,
+                items: gtagItems
+            });
+        }
+    }, [products, items, calculateTotal, getPrecoFinal]);
 
     const calcularFrete = async (postalCode: string, selectedCountry: string) => {
         if (!postalCode) return;
@@ -242,7 +236,7 @@ export default function CartPage() {
         }
     };
 
-    const handleApplyCoupon = async () => {
+    const handleApplyCoupon = useCallback(async () => {
         if (!couponCode.trim()) {
             setCouponMessage({ text: 'Digite um código de cupom.', type: 'error' });
             return;
@@ -290,7 +284,13 @@ export default function CartPage() {
         } finally {
             setValidatingCoupon(false);
         }
-    };
+    }, [couponCode, items, products, paymentMethod, getPrecoFinal]);
+
+    useEffect(() => {
+        if (appliedCoupon && !appliedCoupon.metodo_pagamento_restrito && couponCode.trim()) {
+            handleApplyCoupon();
+        }
+    }, [paymentMethod, appliedCoupon, couponCode, handleApplyCoupon]);
 
     const handleCheckout = () => {
         if (!clientName.trim()) {
@@ -788,5 +788,3 @@ export default function CartPage() {
         </div>
     );
 }
-
-

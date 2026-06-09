@@ -26,11 +26,6 @@ export default function Header() {
         prevItemsRef.current = totalItems;
     }, [totalItems, mounted]);
 
-    useEffect(() => {
-        setMounted(true);
-        checkActiveRaffles();
-    }, []);
-
     const checkActiveRaffles = async () => {
         const { count } = await supabase
             .from('rifas')
@@ -39,6 +34,11 @@ export default function Header() {
 
         setHasActiveRaffles(count !== null && count > 0);
     };
+
+    useEffect(() => {
+        setMounted(true);
+        checkActiveRaffles();
+    }, []);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);

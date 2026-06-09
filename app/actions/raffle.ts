@@ -18,7 +18,7 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
         }
 
         // 2. Extrai cada número comprado para um array de "bilhetes da urna"
-        let pool: { number: number, participantId: number, name: string, phone: string }[] = [];
+        const pool: { number: number, participantId: number, name: string, phone: string }[] = [];
 
         tickets.forEach(t => {
             if (t.numeros_escolhidos && Array.isArray(t.numeros_escolhidos)) {

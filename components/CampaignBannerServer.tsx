@@ -31,18 +31,13 @@ const getCachedCampaign = unstable_cache(
 );
 
 export default async function CampaignBannerServer() {
-    try {
-        // Agora o componente não bloqueia a renderização a ir ao Supabase a toda a hora
-        const camp = await getCachedCampaign();
+    const camp = await getCachedCampaign();
 
-        if (camp) {
-            return <CampaignBannerClient campaign={camp} />;
-        }
-    } catch (error) {
-        console.error('Error fetching campaign:', error);
+    if (!camp) {
+        return null;
     }
 
-    return null;
+    return <CampaignBannerClient campaign={camp} />;
 }
 
 

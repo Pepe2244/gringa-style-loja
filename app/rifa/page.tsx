@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import Link from 'next/link';
@@ -31,49 +31,11 @@ export default function RifaPage() {
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
-        let channel: ReturnType<typeof supabase.channel>;
-
-        // Busca inicial
-        fetchRifa(true);
-
-        // 1. Fallback de segurança: atualiza a cada 30 segundos (reduz a carga no servidor comparado aos 10s de antes)
-        const pollInterval = setInterval(() => { fetchRifa(false); }, 30000);
-
-        // 2. Assinatura do Supabase Realtime (Mágica acontecendo)
-        // Ouve qualquer alteração (INSERT ou UPDATE) na tabela 'rifas'
-        const setupRealtime = async () => {
-            channel = supabase
-                .channel('schema-db-changes')
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'rifas' },
-                    (payload) => {
-                        console.log('Alteração na Rifa detectada em tempo real!', payload);
-                        // Ao notar que o servidor mudou os dados, buscamos silenciosamente os novos números ocupados
-                        fetchRifa(false);
-                    }
-                )
-                .subscribe((status) => {
-                    console.log('Status de conexão do Supabase Realtime:', status);
-                });
-        };
-
-        setupRealtime();
-
-        return () => {
-            clearInterval(pollInterval);
-            if (channel) {
-                supabase.removeChannel(channel);
-            }
-        };
-    }, []);
-
-    const fetchRifa = async (showLoadingState = true): Promise<RifaFront | null> => {
+    const fetchRifa = useCallback(async (showLoadingState = true): Promise<RifaFront | null> => {
         if (showLoadingState) setLoading(true);
         let fetchedRifa: RifaFront | null = null;
         try {
-            let { data: rifaData, error: rifaError } = await supabase
+            let { data: rifaData } = await supabase
                 .from('rifas')
                 .select('*')
                 .eq('status', 'ativa')
@@ -120,7 +82,45 @@ export default function RifaPage() {
             if (showLoadingState) setLoading(false);
         }
         return fetchedRifa;
-    };
+    }, [showToast]);
+
+    useEffect(() => {
+        let channel: ReturnType<typeof supabase.channel>;
+
+        // Busca inicial
+        fetchRifa(true);
+
+        // 1. Fallback de segurança: atualiza a cada 30 segundos (reduz a carga no servidor comparado aos 10s de antes)
+        const pollInterval = setInterval(() => { fetchRifa(false); }, 30000);
+
+        // 2. Assinatura do Supabase Realtime (Mágica acontecendo)
+        // Ouve qualquer alteração (INSERT ou UPDATE) na tabela 'rifas'
+        const setupRealtime = async () => {
+            channel = supabase
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'rifas' },
+                    (payload) => {
+                        console.log('Alteração na Rifa detectada em tempo real!', payload);
+                        // Ao notar que o servidor mudou os dados, buscamos silenciosamente os novos números ocupados
+                        fetchRifa(false);
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('Status de conexão do Supabase Realtime:', status);
+                });
+        };
+
+        setupRealtime();
+
+        return () => {
+            clearInterval(pollInterval);
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
+        };
+    }, [fetchRifa]);
 
     const toggleNumber = (number: number) => {
         if (rifa?.status === 'finalizada') {
@@ -474,5 +474,3 @@ export default function RifaPage() {
     </>
     );
 }
-
-

@@ -38,7 +38,7 @@ export default function ConfigManager() {
 
             <div className="admin-container" style={{ marginTop: '20px', background: '#222', padding: '20px', borderRadius: '8px' }}>
                 <div className="form-campo">
-                    <label>Dias de Destaque "NOVO"</label>
+                    <label>Dias de Destaque &quot;NOVO&quot;</label>
                     <input
                         type="number"
                         value={diasNovo}
@@ -46,7 +46,7 @@ export default function ConfigManager() {
                         placeholder="Ex: 7"
                         style={{ maxWidth: '150px' }}
                     />
-                    <small>Produtos criados há menos de X dias receberão o selo "NOVO".</small>
+                    <small>Produtos criados há menos de X dias receberão o selo &quot;NOVO&quot;.</small>
                 </div>
 
                 <button className="btn-admin btn-adicionar" onClick={handleSave} disabled={loading}>

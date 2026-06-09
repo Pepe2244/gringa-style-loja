@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 interface AnalyticsEvent {
@@ -45,16 +45,70 @@ export default function AdvancedAnalytics({
     const searchParams = useSearchParams();
 
     useEffect(() => {
+        const initializeAnalytics = () => {
+            // Google Analytics 4
+            if (gaTrackingId && typeof window !== 'undefined') {
+                const script = document.createElement('script');
+                script.async = true;
+                script.src = `https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`;
+                document.head.appendChild(script);
+
+                const dataLayer = (window as any).dataLayer || [];
+                (window as any).dataLayer = dataLayer;
+
+                function gtag(...args: any[]) {
+                    dataLayer.push(args);
+                }
+
+                gtag('js', new Date());
+                gtag('config', gaTrackingId, {
+                    custom_map: {
+                        dimension1: 'user_type',
+                        dimension2: 'session_quality',
+                        dimension3: 'device_category',
+                        metric1: 'page_views_per_session',
+                        metric2: 'avg_session_duration'
+                    }
+                });
+
+                (window as any).gtag = gtag;
+            }
+
+            setIsInitialized(true);
+        };
+
+        const initializeSession = () => {
+            const sessionId = generateSessionId();
+            const deviceType = getDeviceType();
+            const screenResolution = `${window.screen.width}x${window.screen.height}`;
+
+            const newSession: UserSession = {
+                sessionId,
+                startTime: Date.now(),
+                pageViews: 0,
+                events: [],
+                userAgent: navigator.userAgent,
+                referrer: document.referrer,
+                deviceType,
+                screenResolution,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            };
+
+            setSession(newSession);
+            localStorage.setItem('analytics_session', JSON.stringify(newSession));
+        };
+
         initializeAnalytics();
         initializeSession();
+    }, [gaTrackingId]);
 
+    useEffect(() => {
         return () => {
-            // Cleanup
             if (session) {
                 saveSessionData(session);
             }
         };
-    }, []);
+    }, [session]);
 
     useEffect(() => {
         if (isInitialized && session) {
@@ -115,7 +169,7 @@ export default function AdvancedAnalytics({
         localStorage.setItem('analytics_session', JSON.stringify(newSession));
     };
 
-    const trackPageView = () => {
+    const trackPageView = useCallback(() => {
         const pageUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 
         // Google Analytics
@@ -165,7 +219,7 @@ export default function AdvancedAnalytics({
         if (enableA11yTracking) {
             trackAccessibilityMetrics();
         }
-    };
+    }, [pathname, searchParams, session, enablePerformanceTracking, enableHeatmaps, enableA11yTracking, gaTrackingId]);
 
     const trackEvent = (event: Omit<AnalyticsEvent, 'timestamp'>) => {
         const fullEvent: AnalyticsEvent & { timestamp: number } = {

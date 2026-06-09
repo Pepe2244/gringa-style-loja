@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useImageOptimization } from '../utils/imageOptimization';
 
@@ -39,47 +39,7 @@ export default function RecommendationEngine({
     const [loading, setLoading] = useState(true);
     const { optimizeImage } = useImageOptimization();
 
-    useEffect(() => {
-        fetchRecommendations();
-    }, [currentProductId, currentCategory, currentTags, cartItems, userHistory, type]);
-
-    const fetchRecommendations = async () => {
-        try {
-            setLoading(true);
-
-            // Buscar produtos relacionados baseado no tipo de recomendação
-            const response = await fetch('/api/recommendations', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    productId: currentProductId,
-                    category: currentCategory,
-                    tags: currentTags,
-                    cartItems: cartItems.map(item => item.id),
-                    userHistory,
-                    type,
-                    limit: maxRecommendations
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setRecommendations(data.products || []);
-            } else {
-                // Fallback para recomendações básicas
-                setRecommendations(await getFallbackRecommendations());
-            }
-        } catch (error) {
-            console.error('Erro ao buscar recomendações:', error);
-            setRecommendations(await getFallbackRecommendations());
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getFallbackRecommendations = async (): Promise<Product[]> => {
+    const getFallbackRecommendations = useCallback(async (): Promise<Product[]> => {
         // Buscar produtos da mesma categoria como fallback
         try {
             const response = await fetch(`/api/produtos?categoria=${encodeURIComponent(currentCategory)}&limit=${maxRecommendations}&exclude=${currentProductId}`);
@@ -91,7 +51,47 @@ export default function RecommendationEngine({
             console.error('Erro no fallback de recomendações:', error);
         }
         return [];
-    };
+    }, [currentCategory, currentProductId, maxRecommendations]);
+
+    useEffect(() => {
+        const fetchRecommendations = async () => {
+            try {
+                setLoading(true);
+
+                // Buscar produtos relacionados baseado no tipo de recomendação
+                const response = await fetch('/api/recommendations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        productId: currentProductId,
+                        category: currentCategory,
+                        tags: currentTags,
+                        cartItems: cartItems.map(item => item.id),
+                        userHistory,
+                        type,
+                        limit: maxRecommendations
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setRecommendations(data.products || []);
+                } else {
+                    // Fallback para recomendações básicas
+                    setRecommendations(await getFallbackRecommendations());
+                }
+            } catch (error) {
+                console.error('Erro ao buscar recomendações:', error);
+                setRecommendations(await getFallbackRecommendations());
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRecommendations();
+    }, [currentProductId, currentCategory, currentTags, cartItems, userHistory, type, maxRecommendations, getFallbackRecommendations]);
 
     const getRecommendationTitle = () => {
         switch (type) {

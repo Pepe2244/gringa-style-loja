@@ -31,25 +31,15 @@ const resolveMediaUrl = (path: string | unknown) => {
 };
 
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
-    // PROTEÇÃO CRÍTICA: Evita o erro "Cannot read properties of undefined" se o produto não existir.
-    if (!product) return null;
-
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
-    // LÓGICA DE RESOLUÇÃO DE URL: Garante que o src seja sempre uma URL válida.
-    const resolveMediaUrl = (path: any) => {
-        if (!path || typeof path !== 'string') return "";
-        if (path.startsWith('http') || path.startsWith('/')) return getProxiedImageUrl(path);
-        return getProxiedImageUrl(`${BUCKET_URL}${path}`);
-    };
-
     // Acesso seguro às propriedades do produto
-    const mediaUrls = Array.isArray(product.media_urls) ? product.media_urls :
-        (Array.isArray(product.imagens) ? product.imagens : []);
+    const mediaUrls = Array.isArray(product?.media_urls) ? product.media_urls :
+        (Array.isArray(product?.imagens) ? product.imagens : []);
 
-    const rawVideoUrl = product.video || mediaUrls.find(url => typeof url === 'string' && (url.includes('.mp4') || url.includes('.webm'))) || "";
+    const rawVideoUrl = product?.video || mediaUrls.find(url => typeof url === 'string' && (url.includes('.mp4') || url.includes('.webm'))) || "";
     // O Vídeo continuará passando pelo proxy pois next/image não suporta <video>
     const videoUrl = resolveMediaUrl(rawVideoUrl);
 
@@ -58,9 +48,10 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const imageUrls = mediaUrls
         .filter(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
         .map(url => {
-            if (url.startsWith('http') || url.startsWith('/')) return url;
-            return `${BUCKET_URL}${url}`;
-        });
+            if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) return url;
+            return typeof url === 'string' ? `${BUCKET_URL}${url}` : '';
+        })
+        .filter(Boolean) as string[];
 
     const displayImages = imageUrls.length > 0 ? imageUrls : ['/imagens/logo_gringa_style.png'];
 
@@ -86,6 +77,8 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         }
         return () => clearInterval(interval);
     }, [isHovered, displayImages.length, videoUrl, isMobile]);
+
+    if (!product) return null;
 
     const getPrecoFinal = (p: Product) => {
         if (!p || !p.preco) return 0;

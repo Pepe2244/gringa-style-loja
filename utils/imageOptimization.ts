@@ -107,8 +107,8 @@ export function generateOptimizedImageUrl(
     }
 
     // Ajustar dimensões para dispositivos de alta densidade
-    let width = config.width;
-    let height = config.height;
+    const width = config.width;
+    const height = config.height;
 
     if (capabilities.devicePixelRatio > 1 && !width && !height) {
         // Para telas retina, podemos manter o tamanho original

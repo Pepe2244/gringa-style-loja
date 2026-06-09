@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import Link from 'next/link';
 import { trackError } from '@/utils/analytics';
 
 interface Props {
@@ -128,7 +129,7 @@ const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> 
             >
                 Tentar Novamente
             </button>
-            <a
+            <Link
                 href="/"
                 style={{
                     backgroundColor: 'transparent',
@@ -141,7 +142,7 @@ const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> 
                 }}
             >
                 Voltar ao Início
-            </a>
+            </Link>
         </div>
     </div>
 );

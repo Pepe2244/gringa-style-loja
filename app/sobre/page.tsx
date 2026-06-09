@@ -47,7 +47,7 @@ export default function SobrePage() {
                             Tudo começou no início de 2025. Vivenciando o dia a dia das oficinas, percebemos uma carência enorme no mercado nacional: faltavam equipamentos de proteção que unissem a segurança rigorosa da solda com um visual verdadeiramente autêntico e agressivo. A maioria das opções eram ferramentas padronizadas, sem personalidade.
                         </p>
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
-                            Foi aí que decidimos criar a Gringa Style. Nossa proposta sempre foi oferecer muito mais do que "apenas" equipamento de EPI; nós queríamos que a máscara fosse uma extensão da identidade do soldador. O que começou com foco em máscaras de design exclusivo rapidamente se expandiu. 
+                            Foi aí que decidimos criar a Gringa Style. Nossa proposta sempre foi oferecer muito mais do que &quot;apenas&quot; equipamento de EPI; nós queríamos que a máscara fosse uma extensão da identidade do soldador. O que começou com foco em máscaras de design exclusivo rapidamente se expandiu. 
                         </p>
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
                             Com a força e a parceria da nossa comunidade de clientes — que abraçou o conceito de imediato —, passamos a fornecer também acessórios de alta precisão e inovamos ao criar um sistema de rifas 100% transparente para democratizar o acesso a equipamentos da mais alta performance. Hoje, a Gringa Style é mais que uma loja, é uma marca feita por quem entende de TIG para quem vive o cordão perfeito todos os dias.
@@ -93,15 +93,15 @@ export default function SobrePage() {
                     <h2 style={{ color: 'var(--cor-destaque)', marginBottom: '20px', fontSize: '1.8rem', textAlign: 'center' }}>O Que Nossos Clientes Dizem</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                         <blockquote style={{ borderLeft: '4px solid var(--cor-destaque)', paddingLeft: '20px', color: '#ccc', fontStyle: 'italic' }}>
-                            "A máscara Gringa Style mudou meu jogo na oficina. Estilo top e proteção impecável!"<br/>
+                            &quot;A máscara Gringa Style mudou meu jogo na oficina. Estilo top e proteção impecável!&quot;<br/>
                             <cite style={{ color: 'var(--cor-destaque)', fontWeight: 'bold' }}>— João, Soldador Profissional</cite>
                         </blockquote>
                         <blockquote style={{ borderLeft: '4px solid var(--cor-destaque)', paddingLeft: '20px', color: '#ccc', fontStyle: 'italic' }}>
-                            "Finalmente um equipamento que combina funcionalidade e atitude. Recomendo!"<br/>
+                            &quot;Finalmente um equipamento que combina funcionalidade e atitude. Recomendo!&quot;<br/>
                             <cite style={{ color: 'var(--cor-destaque)', fontWeight: 'bold' }}>— Maria, Técnica em Solda</cite>
                         </blockquote>
                         <blockquote style={{ borderLeft: '4px solid var(--cor-destaque)', paddingLeft: '20px', color: '#ccc', fontStyle: 'italic' }}>
-                            "Qualidade excepcional e design único. Orgulho de usar!"<br/>
+                            &quot;Qualidade excepcional e design único. Orgulho de usar!&quot;<br/>
                             <cite style={{ color: 'var(--cor-destaque)', fontWeight: 'bold' }}>— Pedro, Empreendedor</cite>
                         </blockquote>
                     </div>

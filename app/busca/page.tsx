@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
@@ -208,7 +209,7 @@ export default function SearchPage() {
                     marginBottom: '30px',
                     color: 'var(--cor-destaque)'
                 }}>
-                    Resultados para "{query}"
+                    Resultados para &quot;{query}&quot;
                 </h1>
 
                 {loading ? (
@@ -227,7 +228,7 @@ export default function SearchPage() {
                         <p style={{ color: '#666', marginBottom: '20px' }}>
                             Tente refinar sua busca ou navegue por categorias
                         </p>
-                        <a
+                        <Link
                             href="/"
                             style={{
                                 display: 'inline-block',
@@ -240,7 +241,7 @@ export default function SearchPage() {
                             }}
                         >
                             Voltar para Home
-                        </a>
+                        </Link>
                     </div>
                 ) : (
                     <>

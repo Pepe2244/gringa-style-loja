@@ -132,7 +132,7 @@ export default function ProductManager() {
         e.preventDefault();
         setLoading(true);
 
-        let finalMediaUrls = [...existingMedia];
+        const finalMediaUrls = [...existingMedia];
 
         for (const file of mediaFiles) {
             let fileToUpload = file;

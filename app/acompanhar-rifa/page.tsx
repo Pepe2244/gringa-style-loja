@@ -17,65 +17,65 @@ function TrackingContent() {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                let rifaData = null;
+
+                // 1. Tenta buscar pelo ID da URL
+                if (rifaIdParam) {
+                    const { data, error } = await supabase
+                        .from('rifas')
+                        .select('*')
+                        .eq('id', rifaIdParam)
+                        .single();
+
+                    if (!error) rifaData = data;
+                }
+
+                // 2. Se não achou por ID (ou não tem ID), busca a rifa ATIVA
+                if (!rifaData) {
+                    const { data, error } = await supabase
+                        .from('rifas')
+                        .select('*')
+                        .eq('status', 'ativa')
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (!error) rifaData = data;
+                }
+
+                if (rifaData) {
+                    setRifa(rifaData);
+
+                    // Busca participantes da rifa encontrada
+                    const { data: allPartData, error: partError } = await supabase
+                        .from('participantes_rifa')
+                        .select('nome, numeros_escolhidos, status_pagamento')
+                        .eq('rifa_id', rifaData.id);
+
+                    if (allPartData) {
+                        setParticipantes(allPartData);
+                    }
+
+                    if (rifaData.status === 'finalizada') {
+                        const { data: premiosData } = await supabase
+                            .from('premios')
+                            .select('vencedor_numero, vencedor_nome, vencedor_telefone')
+                            .eq('rifa_id', rifaData.id);
+                        
+                        if (premiosData) setPremios(premiosData);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching tracking data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchData();
     }, [rifaIdParam]);
-
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            let rifaData = null;
-
-            // 1. Tenta buscar pelo ID da URL
-            if (rifaIdParam) {
-                const { data, error } = await supabase
-                    .from('rifas')
-                    .select('*')
-                    .eq('id', rifaIdParam)
-                    .single();
-
-                if (!error) rifaData = data;
-            }
-
-            // 2. Se não achou por ID (ou não tem ID), busca a rifa ATIVA
-            if (!rifaData) {
-                const { data, error } = await supabase
-                    .from('rifas')
-                    .select('*')
-                    .eq('status', 'ativa')
-                    .limit(1)
-                    .maybeSingle();
-
-                if (!error) rifaData = data;
-            }
-
-            if (rifaData) {
-                setRifa(rifaData);
-
-                // Busca participantes da rifa encontrada
-                const { data: allPartData, error: partError } = await supabase
-                    .from('participantes_rifa')
-                    .select('nome, numeros_escolhidos, status_pagamento')
-                    .eq('rifa_id', rifaData.id);
-
-                if (allPartData) {
-                    setParticipantes(allPartData);
-                }
-
-                if (rifaData.status === 'finalizada') {
-                    const { data: premiosData } = await supabase
-                        .from('premios')
-                        .select('vencedor_numero, vencedor_nome, vencedor_telefone')
-                        .eq('rifa_id', rifaData.id);
-                        
-                    if (premiosData) setPremios(premiosData);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching tracking data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const filteredParticipantes = participantes.filter(p =>
         p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { Product } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
@@ -42,7 +43,7 @@ export default function FavoritosPage() {
                         <p style={{ fontSize: '1.1rem', marginBottom: '20px' }}>
                             Você ainda não adicionou nenhum produto aos favoritos
                         </p>
-                        <a href="/" style={{
+                        <Link href="/" style={{
                             display: 'inline-block',
                             backgroundColor: '#ff6b35',
                             color: 'white',
@@ -52,7 +53,7 @@ export default function FavoritosPage() {
                             fontSize: '1rem'
                         }}>
                             Voltar para a Loja
-                        </a>
+                        </Link>
                     </div>
                 ) : (
                     <ProductGrid

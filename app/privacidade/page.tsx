@@ -22,7 +22,7 @@ export default function PrivacyPage() {
                 <h2>3. Armazenamento Local (Cookies e LocalStorage)</h2>
                 <p>Para melhorar sua experiência de navegação, nós utilizamos tecnologias de mercado com seu consentimento:</p>
                 <ul>
-                    <li><strong>Carrinho de Compras:</strong> Utilizamos o "LocalStorage" do seu dispositivo para guardar os itens que você colocou no carrinho. Assim, mesmo que você feche a aba, seus produtos não se perdem. Nenhuma informação pessoal é enviada nesse processo passivo.</li>
+                    <li><strong>Carrinho de Compras:</strong> Utilizamos o &quot;LocalStorage&quot; do seu dispositivo para guardar os itens que você colocou no carrinho. Assim, mesmo que você feche a aba, seus produtos não se perdem. Nenhuma informação pessoal é enviada nesse processo passivo.</li>
                     <li><strong>Google Analytics e Ahrefs:</strong> Utilizamos ferramentas de métricas de forma agrupada e autônoma, com base em legítimo interesse após seu consentimento explícito. Coletamos dados de navegação base (como páginas visitadas e tempo no site) para otimizar velocidade e oferecer os melhores produtos. Você pode gerenciar consentimentos via banner de cookies no site.</li>
                     <li><strong>Cookies Essenciais:</strong> Utilizados para funcionamento básico do site (ex.: sessão de carrinho). Não requerem consentimento prévio e são sempre ativos.</li>
                 </ul>
