@@ -19,11 +19,10 @@ export default function PushNotificationButton() {
 
         try {
             const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.subscribe({
+            await registration.pushManager.subscribe({
                 userVisibleOnly: true,
             });
             setIsSubscribed(true);
-            console.log('Notificações ativadas:', subscription);
         } catch (error) {
             console.error('Erro ao ativar notificações:', error);
         }

@@ -2,6 +2,17 @@
 
 import { useEffect } from 'react';
 
+type WebVitalMetric = {
+    name: string;
+    value: number;
+    id: string;
+};
+
+interface ConnectionInfo {
+    effectiveType?: string;
+    saveData?: boolean;
+}
+
 // Core Web Vitals tracking
 export function useCoreWebVitals() {
     useEffect(() => {
@@ -9,21 +20,16 @@ export function useCoreWebVitals() {
         if (typeof window === 'undefined') return;
 
         // Função para enviar métricas para analytics
-        const reportWebVitals = (metric: any) => {
+        const reportWebVitals = (metric: WebVitalMetric) => {
             // Enviar para Google Analytics 4
-            const gtag = (window as any).gtag;
-            if (typeof gtag !== 'undefined') {
+            const gtag = (window as unknown as Window & { gtag?: (...args: unknown[]) => void }).gtag;
+            if (typeof gtag === 'function') {
                 gtag('event', metric.name, {
                     event_category: 'Web Vitals',
                     event_label: metric.id,
                     value: Math.round(metric.value),
                     custom_map: { metric_value: metric.value }
                 });
-            }
-
-            // Log no console em desenvolvimento
-            if (process.env.NODE_ENV === 'development') {
-                console.log('Web Vitals:', metric);
             }
         };
 
@@ -88,9 +94,14 @@ export function useImageOptimization() {
 
         // Verificar conexão do usuário
         const getConnectionInfo = () => {
-            const connection = (navigator as any).connection ||
-                             (navigator as any).mozConnection ||
-                             (navigator as any).webkitConnection;
+            const navigatorWithConnection = navigator as Navigator & {
+                connection?: ConnectionInfo;
+                mozConnection?: ConnectionInfo;
+                webkitConnection?: ConnectionInfo;
+            };
+            const connection = navigatorWithConnection.connection ||
+                             navigatorWithConnection.mozConnection ||
+                             navigatorWithConnection.webkitConnection;
 
             if (!connection) return { effectiveType: '4g', saveData: false };
 

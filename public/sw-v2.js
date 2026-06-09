@@ -43,8 +43,6 @@ const CACHE_STRATEGIES = {
 
 // Instalar Service Worker
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing Service Worker');
-
     event.waitUntil(
         Promise.all([
             // Cache recursos críticos
@@ -61,8 +59,6 @@ self.addEventListener('install', (event) => {
 
 // Ativar Service Worker
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating Service Worker');
-
     event.waitUntil(
         Promise.all([
             // Limpar caches antigos
@@ -73,7 +69,6 @@ self.addEventListener('activate', (event) => {
                             cacheName !== DYNAMIC_CACHE &&
                             cacheName !== API_CACHE &&
                             cacheName !== CACHE_NAME) {
-                            console.log('[SW] Deleting old cache:', cacheName);
                             return caches.delete(cacheName);
                         }
                     })
@@ -224,8 +219,7 @@ async function cacheFirst(request) {
             cache.put(request, networkResponse.clone());
         }
         return networkResponse;
-    } catch (error) {
-        console.log('[SW] Cache first failed:', error);
+    } catch (_error) {
         return new Response('Offline - Imagem não disponível', { status: 503 });
     }
 }
@@ -238,8 +232,7 @@ async function networkFirst(request) {
             cache.put(request, networkResponse.clone());
         }
         return networkResponse;
-    } catch (error) {
-        console.log('[SW] Network first failed, trying cache:', error);
+    } catch (_error) {
         const cachedResponse = await caches.match(request);
         if (cachedResponse) {
             return cachedResponse;
@@ -272,8 +265,7 @@ async function syncPedidos() {
             try {
                 await fetch(request);
                 await cache.delete(request);
-            } catch (error) {
-                console.log('[SW] Failed to sync pedido:', error);
+            } catch (_error) {
             }
         }
     } catch (error) {

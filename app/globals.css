@@ -429,22 +429,24 @@ main {
 /* --- Modais --- */
 .modal-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
     z-index: 2000;
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
     opacity: 0;
-    transition: opacity 0.3s ease, display 0.3s ease;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .modal-container.visivel {
-    display: flex;
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 /* Otimização: Evita scroll na página de fundo quando modal está aberto */

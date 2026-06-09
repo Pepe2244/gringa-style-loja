@@ -33,7 +33,8 @@ export default function PWAManager({ children }: PWAManagerProps) {
         const checkInstalled = () => {
             if (typeof window !== 'undefined') {
                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-                const isInWebAppiOS = (window.navigator as any).standalone === true;
+                const navigatorStandalone = window.navigator as Navigator & { standalone?: boolean };
+                const isInWebAppiOS = navigatorStandalone.standalone === true;
                 setIsInstalled(isStandalone || isInWebAppiOS);
             }
         };

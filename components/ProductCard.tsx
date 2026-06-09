@@ -16,10 +16,19 @@ interface ProductCardProps {
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
 
 // Componentes de fallback para evitar erros de compilação no Canvas (ambiente sem Next.js)
-const Link = ({ href, children, className, ...props }: any) => (
+interface AnchorProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+    href: string;
+}
+
+const Link = ({ href, children, className, ...props }: AnchorProps) => (
     <a href={href} className={className} {...props}>{children}</a>
 );
 
+const resolveMediaUrl = (path: string | unknown) => {
+    if (!path || typeof path !== 'string') return '';
+    if (path.startsWith('http') || path.startsWith('/')) return getProxiedImageUrl(path);
+    return getProxiedImageUrl(`${BUCKET_URL}${path}`);
+};
 
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
     // PROTEÇÃO CRÍTICA: Evita o erro "Cannot read properties of undefined" se o produto não existir.
