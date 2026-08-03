@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { loginAction, checkAuth, logoutAction } from '@/app/actions/auth';
 import { supabase } from '@/lib/supabase';
 import ProductManager from '@/components/admin/ProductManager';
 import RifaManager from '@/components/admin/RifaManager';
@@ -18,20 +17,34 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
-        checkAuth().then(isAuth => {
-            setIsAuthenticated(isAuth);
-            setLoading(false);
-        });
+        const checkAdminAuth = async () => {
+            try {
+                const response = await fetch('/api/admin/auth', { credentials: 'include' });
+                const data = await response.json();
+                setIsAuthenticated(data.authenticated);
+            } catch (error) {
+                console.error('Admin auth check failed:', error);
+                setIsAuthenticated(false);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        checkAdminAuth();
     }, []);
 
     const handleLogin = async (e?: React.FormEvent) => {
         e?.preventDefault();
 
-        const formData = new FormData();
-        formData.append('password', passwordInput);
-
         try {
-            const result = await loginAction(formData);
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ password: passwordInput }),
+            });
+
+            const result = await response.json();
 
             if (result.success) {
                 setIsAuthenticated(true);
@@ -47,7 +60,12 @@ export default function AdminPage() {
     };
 
     const handleLogout = async () => {
-        await logoutAction();
+        try {
+            await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+
         setIsAuthenticated(false);
         setPasswordInput('');
     };

@@ -17,9 +17,10 @@ import WishlistButton from '@/components/WishlistButton';
 import ImageZoom from '@/components/ImageZoom';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import SavingsBadge from '@/components/SavingsBadge';
+import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import { PaymentMethods, TrustBadges } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
-import { trackButtonClick, trackVariantSelection, trackProductShare } from '@/utils/analytics';
+import { trackButtonClick, trackVariantSelection, trackProductShare, trackEvent } from '@/utils/analytics';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -180,6 +181,12 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         };
 
         addItem(cartItem);
+        trackEvent('add_to_cart', {
+            product_id: product.id,
+            product_name: product.nome,
+            source: 'product_page',
+            variant: selectedVariant || 'default'
+        });
         showToast('Produto adicionado ao carrinho!', 'success');
     };
 
@@ -224,6 +231,12 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         }
         message += `\n\n*Aguardo o retorno!*`;
 
+        trackEvent('direct_purchase', {
+            product_id: product.id,
+            product_name: product.nome,
+            payment_method: paymentMethod,
+            installments: installments
+        });
         window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
         setShowPurchaseModal(false);
     };
@@ -295,6 +308,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
     return (
         <div className="container produto-page-container">
+            <CartRecoveryBanner context="product_page" />
+
             {/* BREADCRUMBS Navigation */}
             {product && (
                 <Breadcrumbs
@@ -444,6 +459,11 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                 R$ {displayedPrice.toFixed(2).replace('.', ',')}
                             </span>
                         )}
+                        {isPromo && (
+                            <p style={{ marginTop: '8px', color: '#8fe7a6', fontSize: '0.95rem', fontWeight: 700 }}>
+                                Economia de R$ {(product.preco - displayedPrice).toFixed(2).replace('.', ',')}
+                            </p>
+                        )}
                         {paymentMethod === 'PIX' && product.preco_pix && product.preco_pix > 0 ? (
                             <p style={{ marginTop: '8px', color: '#fff', fontSize: '0.95rem', fontWeight: '700' }}>
                                 Preço PIX
@@ -475,6 +495,20 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             </select>
                         </div>
                     )}
+
+                    <div style={{ marginBottom: '12px', padding: '12px 14px', borderRadius: '8px', backgroundColor: 'rgba(255, 107, 0, 0.1)', border: '1px solid rgba(255, 107, 0, 0.25)', color: '#ffd2ae' }}>
+                        <strong style={{ color: 'white' }}>Compra rápida e segura</strong>
+                        <div style={{ marginTop: '4px', fontSize: '0.92rem' }}>Envio rápido, pagamento confiável e atendimento direto no WhatsApp.</div>
+                    </div>
+
+                    <div style={{ marginBottom: '18px', padding: '14px 16px', borderRadius: '10px', backgroundColor: '#151515', border: '1px solid #2f2f2f' }}>
+                        <div style={{ fontWeight: 800, color: 'white', marginBottom: '6px' }}>Por que comprar aqui</div>
+                        <ul style={{ margin: 0, paddingLeft: '18px', color: '#ccc', lineHeight: 1.7 }}>
+                            <li>Atendimento direto e resposta rápida no WhatsApp</li>
+                            <li>Pagamento seguro com PIX ou cartão</li>
+                            <li>Produtos com valor destacado e pronta entrega</li>
+                        </ul>
+                    </div>
 
                     <div className="produto-detalhe-botoes" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {product.em_estoque ? (

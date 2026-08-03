@@ -3,9 +3,24 @@
  * Centraliza todos os eventos de tracking para Google Analytics
  */
 
+const pendingEvents: Array<{ eventName: string; params?: Record<string, any> }> = [];
+
 export const trackEvent = (eventName: string, params?: Record<string, any>) => {
+    const payload = { eventName, params: params || {} };
     if (typeof window !== 'undefined' && (window as any).gtag) {
         (window as any).gtag('event', eventName, params || {});
+    } else {
+        pendingEvents.push(payload);
+    }
+};
+
+export const flushPendingEvents = () => {
+    if (typeof window === 'undefined' || !(window as any).gtag) return;
+    while (pendingEvents.length > 0) {
+        const next = pendingEvents.shift();
+        if (next) {
+            (window as any).gtag('event', next.eventName, next.params || {});
+        }
     }
 };
 
@@ -148,6 +163,23 @@ export const trackBreadcrumbClick = (breadcrumbPath: string, level: number) => {
     trackEvent('breadcrumb_clicked', {
         breadcrumb_path: breadcrumbPath,
         level: level,
+        timestamp: new Date().toISOString()
+    });
+};
+
+export const trackCheckoutStart = (source: string, itemCount: number) => {
+    trackEvent('checkout_started', {
+        source,
+        item_count: itemCount,
+        timestamp: new Date().toISOString()
+    });
+};
+
+export const trackPurchaseIntent = (productId: number, productName: string, intent: 'quick_view' | 'buy_now' | 'wishlist' | 'favorite') => {
+    trackEvent('purchase_intent', {
+        product_id: productId,
+        product_name: productName,
+        intent,
         timestamp: new Date().toISOString()
     });
 };

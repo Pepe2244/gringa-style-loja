@@ -3,8 +3,13 @@ import HomeContent from '@/components/home/HomeContent';
 import { Product } from '@/types';
 import { WebPageSchema } from '@/components/SEO/StructuredData';
 import type { Metadata } from 'next';
+import { getCachedValue, invalidateCachePrefix } from '@/lib/cache';
 
 export const revalidate = 60;
+
+export async function revalidateHomeData() {
+  invalidateCachePrefix('home:');
+}
 
 export const metadata: Metadata = {
   title: 'Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG',
@@ -21,18 +26,24 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [productsRes, categoriesRes, configRes] = await Promise.all([
-    // Adicionamos media_urls e produtos_relacionados_ids para satisfazer o TypeScript
-    // Limitamos a 12 produtos para Lazy Loading inicial hiper-rápido.
-    supabase.from('produtos').select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids').order('created_at', { ascending: false }).limit(12),
-    supabase.from('categorias').select('*').order('nome'),
-    supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle()
+  const [products, categories, diasNovo] = await Promise.all([
+    getCachedValue('home:products', 30_000, async () => {
+      const { data } = await supabase
+        .from('produtos')
+        .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+        .order('created_at', { ascending: false })
+        .limit(12);
+      return (data || []) as Product[];
+    }),
+    getCachedValue('home:categories', 60_000, async () => {
+      const { data } = await supabase.from('categorias').select('*').order('nome');
+      return data || [];
+    }),
+    getCachedValue('home:dias-novo', 60_000, async () => {
+      const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle();
+      return data ? parseInt(data.valor) : 7;
+    })
   ]);
-
-  // Forçamos a tipagem para Product[] para o TypeScript aprovar a compilação
-  const products = (productsRes.data || []) as Product[];
-  const categories = categoriesRes.data || [];
-  const diasNovo = configRes.data ? parseInt(configRes.data.valor) : 7;
 
   return (
     <main>

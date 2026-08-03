@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { trackPurchaseIntent } from '@/utils/analytics';
 import Image from 'next/image';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -175,7 +176,10 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                     {!product.em_estoque ? (
                         <button
                             className="btn btn-avise-me"
-                            onClick={() => window.open(`https://wa.me/5515998608170?text=Olá, gostaria de ser avisado quando o produto *${productName}* estiver disponível novamente.`, '_blank')}
+                            onClick={() => {
+                                trackPurchaseIntent(product.id, productName, 'wishlist');
+                                window.open(`https://wa.me/5515998608170?text=Olá, gostaria de ser avisado quando o produto *${productName}* estiver disponível novamente.`, '_blank');
+                            }}
                             style={{ backgroundColor: '#555', color: 'white' }}
                         >
                             Avise-me
@@ -183,7 +187,10 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                     ) : (
                         <button
                             className="btn btn-quick-view"
-                            onClick={() => onQuickView(product)}
+                            onClick={() => {
+                                trackPurchaseIntent(product.id, productName, 'quick_view');
+                                onQuickView(product);
+                            }}
                             aria-label={`Compra rápida para ${productName}`}
                         >
                             {product.variants ? 'Ver Opções' : 'Compra Rápida'}
@@ -193,6 +200,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         href={`/produto/${productSlug}`}
                         className="btn btn-secundario"
                         aria-label={`Ver detalhes do produto ${productName}`}
+                        onClick={() => trackPurchaseIntent(product.id, productName, 'buy_now')}
                     >
                         Ver Detalhes
                     </Link>

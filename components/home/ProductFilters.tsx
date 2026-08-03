@@ -1,5 +1,5 @@
 import { Category } from '@/types';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, ChevronDown, ChevronUp, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface ProductFiltersProps {
@@ -19,6 +19,7 @@ interface ProductFiltersProps {
     setHasDiscountOnly?: (hasDiscount: boolean) => void;
     minRating?: number;
     setMinRating?: (rating: number) => void;
+    onResetFilters?: () => void;
 }
 
 export default function ProductFilters({
@@ -36,7 +37,8 @@ export default function ProductFilters({
     hasDiscountOnly = false,
     setHasDiscountOnly,
     minRating = 0,
-    setMinRating
+    setMinRating,
+    onResetFilters
 }: ProductFiltersProps) {
     const [isMobile, setIsMobile] = useState(false);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -147,10 +149,32 @@ export default function ProductFilters({
 
                 <div style={{
                     display: isMobile ? (showMobileFilters ? 'grid' : 'none') : 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
                     gap: '15px',
                     alignItems: 'center'
                 }}>
+                    {onResetFilters && (
+                        <button
+                            type="button"
+                            onClick={onResetFilters}
+                            style={{
+                                justifySelf: isMobile ? 'stretch' : 'end',
+                                padding: '10px 14px',
+                                backgroundColor: 'transparent',
+                                border: '1px solid #444',
+                                color: '#ddd',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            <RotateCcw size={16} />
+                            Limpar filtros
+                        </button>
+                    )}
                     {/* Filtro de Categoria */}
                     <div>
                         <label htmlFor="categoria-select" className="sr-only">Filtrar por Categoria</label>
@@ -200,6 +224,32 @@ export default function ProductFilters({
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* Filtros adicionais */}
+                    <div style={{ gridColumn: isMobile ? '1' : '1 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.9rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={inStockOnly}
+                                onChange={(e) => setInStockOnly?.(e.target.checked)}
+                            />
+                            Apenas em estoque
+                        </label>
+
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.9rem' }}>
+                            <input
+                                type="checkbox"
+                                checked={hasDiscountOnly}
+                                onChange={(e) => setHasDiscountOnly?.(e.target.checked)}
+                            />
+                            Com desconto
+                        </label>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.9rem' }}>
+                            <SlidersHorizontal size={16} />
+                            <span>Até R$ {priceRange[1].toLocaleString('pt-BR')}</span>
+                        </div>
                     </div>
                 </div>
             </div>

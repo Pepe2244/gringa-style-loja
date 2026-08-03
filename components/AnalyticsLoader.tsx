@@ -1,17 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
+import { getAnalyticsConfig } from '@/lib/site-config';
 
 interface AnalyticsLoaderProps {
     ahrefsKey?: string;
 }
 
 export default function AnalyticsLoader({ ahrefsKey }: AnalyticsLoaderProps) {
+    const analyticsConfig = getAnalyticsConfig();
+
     useEffect(() => {
         const handleConsent = () => {
             // Carregar Ahrefs Analytics via script externo
             if (!document.querySelector('script[src*="analytics.ahrefs.com"]')) {
-                const key = ahrefsKey || 'Sam0BvC3Nm1qohD+XzVeLA';
+                const key = ahrefsKey || analyticsConfig.ahrefsKey;
                 const ahrefsScript = document.createElement('script');
                 ahrefsScript.src = 'https://analytics.ahrefs.com/analytics.js';
                 ahrefsScript.setAttribute('data-key', key);
@@ -20,7 +23,7 @@ export default function AnalyticsLoader({ ahrefsKey }: AnalyticsLoaderProps) {
             }
 
             // Carregar Microsoft Clarity via tag externa
-            const clarityId = 'vybz5xptlm';
+            const clarityId = analyticsConfig.clarityId;
             if (!document.querySelector(`script[src*="clarity.ms/tag/${clarityId}"]`)) {
                 const clarityScript = document.createElement('script');
                 clarityScript.src = `https://www.clarity.ms/tag/${clarityId}`;

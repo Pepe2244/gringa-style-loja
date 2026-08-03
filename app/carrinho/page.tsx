@@ -443,6 +443,12 @@ export default function CartPage() {
 
     return (
         <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '40px 15px', boxSizing: 'border-box' }}>
+            <section style={{ marginBottom: '20px', padding: '16px 18px', borderRadius: '12px', backgroundColor: '#141414', border: '1px solid #2a2a2a' }}>
+                <div style={{ fontWeight: 800, color: 'white', marginBottom: '4px' }}>Seu carrinho está quase pronto</div>
+                <div style={{ color: '#ccc', lineHeight: 1.6 }}>
+                    Você tem {items.length} item{items.length > 1 ? 's' : ''} selecionado{items.length > 1 ? 's' : ''}. Finalize agora para garantir sua compra sem perder tempo.
+                </div>
+            </section>
             <h1 className="titulo-secao" style={{ borderBottom: '1px solid #333', paddingBottom: '15px', marginBottom: '30px' }}>Finalizar Compra</h1>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', alignItems: 'flex-start', width: '100%' }}>
