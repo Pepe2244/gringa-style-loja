@@ -346,6 +346,10 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             </div>
                         )}
 
+                        <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 20 }}>
+                            <WishlistButton product={product} variant="icon" size="md" />
+                        </div>
+
                         {videoUrl && currentImageIndex === 0 && product.video ? (
                             <video src={videoUrl} controls muted loop className="video-principal" />
                         ) : (
@@ -453,27 +457,17 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         </button>
                     </div>
 
-                    {/* Wishlist Button */}
-                    <div style={{ marginBottom: '20px' }}>
-                        <WishlistButton product={product} variant="button" />
-                    </div>
-
-                    {/* Savings Badge - Desktop spacing */}
-                    <div style={{ marginBottom: '20px' }}>
-                        <SavingsBadge originalPrice={product.preco} promotionalPrice={product.preco_promocional} />
-                    </div>
-
-                    {/* Status de Estoque - Desktop spacing */}
-                    <div style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '18px' }}>
                         {product.em_estoque ? (
-                            <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(40, 167, 69, 0.15)', color: '#4ade80', border: '1px solid rgba(40, 167, 69, 0.3)' }}>
+                            <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(40, 167, 69, 0.15)', color: '#4ade80', border: '1px solid rgba(40, 167, 69, 0.3)' }}>
                                 ✓ Pronta Entrega
                             </p>
                         ) : (
-                            <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(220, 53, 69, 0.15)', color: '#f87171', border: '1px solid rgba(220, 53, 69, 0.3)' }}>
+                            <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(220, 53, 69, 0.15)', color: '#f87171', border: '1px solid rgba(220, 53, 69, 0.3)' }}>
                                 ✕ Fora de Estoque
                             </p>
                         )}
+                        <SavingsBadge originalPrice={product.preco} promotionalPrice={product.preco_promocional} />
                     </div>
 
                     <div className="produto-detalhe-preco" style={{ margin: '10px 0 25px 0' }}>
@@ -491,11 +485,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                 R$ {displayedPrice.toFixed(2).replace('.', ',')}
                             </span>
                         )}
-                        {isPromo && (
-                            <p style={{ marginTop: '8px', color: '#8fe7a6', fontSize: '0.95rem', fontWeight: 700 }}>
-                                Economia de R$ {(product.preco - displayedPrice).toFixed(2).replace('.', ',')}
-                            </p>
-                        )}
                         {paymentMethod === 'PIX' && product.preco_pix && product.preco_pix > 0 ? (
                             <p style={{ marginTop: '8px', color: '#fff', fontSize: '0.95rem', fontWeight: '700' }}>
                                 Preço PIX
@@ -506,7 +495,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             </p>
                         )}
                         <PaymentMethods showLabel={true} compact={false} />
-                        <p style={{ fontSize: '0.9rem', color: '#aaa', marginTop: '5px' }}>💳 Em até 12x no cartão de crédito</p>
+                        <p style={{ fontSize: '0.9rem', color: '#aaa', marginTop: '5px' }}>💳 12x sem juros no cartão</p>
                     </div>
 
                     {variants && variants.opcoes && (
@@ -533,7 +522,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             <button
                                 className="btn btn-adicionar"
                                 onClick={addToCart}
-                                style={{ padding: '18px', fontSize: '1.2rem', fontWeight: '900', borderRadius: '8px', textTransform: 'uppercase', letterSpacing: '1px', boxShadow: '0 6px 20px rgba(255, 107, 0, 0.4)', transition: 'transform 0.2s', border: 'none' }}
+                                style={{ padding: '18px', fontSize: '1.2rem', fontWeight: '900', borderRadius: '12px', textTransform: 'uppercase', letterSpacing: '1px', boxShadow: '0 10px 24px rgba(255, 107, 0, 0.18)', transition: 'transform 0.2s', border: '1px solid rgba(255,255,255,0.12)', background: 'linear-gradient(135deg, rgba(255,165,0,0.95), rgba(255,140,0,0.9))', color: '#111', backdropFilter: 'blur(10px)' }}
                             >
                                 Adicionar ao Carrinho
                             </button>
@@ -551,11 +540,13 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             className="btn btn-secundario"
                             onClick={() => setShowPurchaseModal(true)}
                             disabled={!product.em_estoque}
-                            style={{ padding: '16px', fontSize: '1.05rem', backgroundColor: '#222', border: '1px solid #555', color: '#fff', borderRadius: '8px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                            style={{ padding: '16px', fontSize: '1.05rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)', color: '#fff', borderRadius: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', backdropFilter: 'blur(10px)' }}
                         >
                             Comprar Rápido via WhatsApp
                         </button>
                     </div>
+
+                    <ShippingEstimator productName={product.nome} />
 
                     <div style={{ marginTop: '16px', padding: '14px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(255, 107, 0, 0.12) 0%, rgba(255, 107, 0, 0.06) 100%)', border: '1px solid rgba(255, 107, 0, 0.25)' }}>
                         <div style={{ fontWeight: 800, color: 'white', marginBottom: '6px' }}>Compra rápida e segura</div>
@@ -596,7 +587,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         </div>
                     </div>
 
-                    <ShippingEstimator productName={product.nome} />
                 </div>
             </div>
 

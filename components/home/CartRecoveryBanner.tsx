@@ -12,8 +12,10 @@ interface CartRecoveryBannerProps {
 
 export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBannerProps) {
     const totalItems = useCartStore(state => state.totalItems());
+    const showBanner = useCartStore(state => state.showCartRecoveryBanner);
+    const dismissCartRecoveryBanner = useCartStore(state => state.dismissCartRecoveryBanner);
+    const setCartRecoveryBannerVisible = useCartStore(state => state.setCartRecoveryBannerVisible);
     const [mounted, setMounted] = useState(false);
-    const [visible, setVisible] = useState(true);
 
     useEffect(() => {
         setMounted(true);
@@ -24,11 +26,13 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
         const twentyFourHours = 24 * 60 * 60 * 1000;
 
         if (dismissedAt && now - dismissedAt < twentyFourHours) {
-            setVisible(false);
+            setCartRecoveryBannerVisible(false);
+        } else {
+            setCartRecoveryBannerVisible(true);
         }
-    }, []);
+    }, [setCartRecoveryBannerVisible]);
 
-    if (!mounted || !visible || totalItems === 0) return null;
+    if (!mounted || !showBanner || totalItems === 0) return null;
 
     const handleContinue = () => {
         trackEvent('cart_recovery_click', {
@@ -41,11 +45,23 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
         if (typeof window !== 'undefined') {
             window.localStorage.setItem('cart-recovery-dismissed-at', String(Date.now()));
         }
-        setVisible(false);
+        dismissCartRecoveryBanner();
     };
 
     return (
-        <section className="surface-card" style={{ marginBottom: '24px', padding: '18px 20px', borderRadius: '16px', position: 'relative' }}>
+        <section className="surface-card" style={{
+            marginBottom: '24px',
+            padding: '18px 20px',
+            borderRadius: '16px',
+            position: 'fixed',
+            top: '104px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1200,
+            width: 'min(92vw, 720px)',
+            boxShadow: '0 20px 45px rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(16px)'
+        }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ display: 'grid', placeItems: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255, 107, 0, 0.15)' }}>

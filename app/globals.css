@@ -150,6 +150,11 @@ a {
     font-size: 24px;
     cursor: pointer;
     color: var(--cor-texto);
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 999px;
+    padding: 8px;
 }
 
 .carrinho-contador {
@@ -171,6 +176,11 @@ a {
     color: var(--cor-texto);
     font-size: 24px;
     cursor: pointer;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 999px;
+    padding: 8px;
 }
 
 /* --- Push Notification Button --- */

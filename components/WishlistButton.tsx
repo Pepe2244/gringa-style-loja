@@ -62,18 +62,20 @@ export default function WishlistButton({ product, variant = 'icon', size = 'md' 
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 style={{
-                    background: 'none',
-                    border: 'none',
+                    background: 'rgba(8, 8, 8, 0.6)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255,255,255,0.16)',
                     cursor: 'pointer',
                     padding: '8px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderRadius: '50%',
-                    transition: 'background-color 0.2s',
+                    borderRadius: '999px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
                 }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 165, 0, 0.1)'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 165, 0, 0.2)'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(8, 8, 8, 0.6)'}
                 aria-label="Adicionar aos favoritos"
                 title={isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
             >

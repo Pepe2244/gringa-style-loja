@@ -189,46 +189,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
             <CartRecoveryBanner />
 
-            <section style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                    <TrendingUp size={18} color="var(--cor-destaque)" />
-                    <h3 style={{ margin: 0, color: 'white', fontSize: '1rem' }}>Explore por categoria</h3>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    <button
-                        type="button"
-                        onClick={() => handleCategorySelect(null)}
-                        style={{
-                            padding: '8px 14px',
-                            borderRadius: '999px',
-                            border: selectedCategory === null ? '1px solid var(--cor-destaque)' : '1px solid #333',
-                            backgroundColor: selectedCategory === null ? '#1d1d1d' : 'transparent',
-                            color: selectedCategory === null ? 'white' : '#ccc',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Todas
-                    </button>
-                    {featuredCategories.map(category => (
-                        <button
-                            key={category.id}
-                            type="button"
-                            onClick={() => handleCategorySelect(category.id)}
-                            style={{
-                                padding: '8px 14px',
-                                borderRadius: '999px',
-                                border: selectedCategory === category.id ? '1px solid var(--cor-destaque)' : '1px solid #333',
-                                backgroundColor: selectedCategory === category.id ? '#1d1d1d' : 'transparent',
-                                color: selectedCategory === category.id ? 'white' : '#ccc',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            {category.nome}
-                        </button>
-                    ))}
-                </div>
-            </section>
-
             <ProductFilters
                 searchTerm={searchTerm}
                 setSearchTerm={handleSearchChange}

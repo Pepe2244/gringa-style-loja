@@ -46,17 +46,19 @@ export default function StickyCTA({ product }: { product: Product }) {
             <style jsx>{`
                 .sticky-cta {
                     position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    background: #222;
-                    border-top: 1px solid #444;
-                    padding: 10px 15px;
+                    bottom: 12px;
+                    left: 12px;
+                    right: 12px;
+                    background: rgba(17, 17, 17, 0.78);
+                    backdrop-filter: blur(16px);
+                    border: 1px solid rgba(255,255,255,0.12);
+                    border-radius: 16px;
+                    padding: 12px 14px;
                     display: flex;
                     justifyContent: space-between;
                     alignItems: center;
                     z-index: 1000;
-                    box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+                    box-shadow: 0 16px 35px rgba(0,0,0,0.28);
                     animation: slideUp 0.3s ease-out;
                 }
                 .sticky-cta-info {
@@ -77,14 +79,15 @@ export default function StickyCTA({ product }: { product: Product }) {
                     font-size: 1rem;
                 }
                 .btn-sticky-buy {
-                    background: var(--cor-destaque);
+                    background: linear-gradient(135deg, rgba(255,165,0,0.95), rgba(255,140,0,0.9));
                     margin-left: auto;
-                    color: black;
+                    color: #111;
                     border: none;
-                    padding: 10px 20px;
-                    border-radius: 5px;
-                    font-weight: bold;
+                    padding: 10px 18px;
+                    border-radius: 999px;
+                    font-weight: 800;
                     cursor: pointer;
+                    box-shadow: 0 8px 20px rgba(255,165,0,0.18);
                 }
                 @keyframes slideUp {
                     from { transform: translateY(100%); }
