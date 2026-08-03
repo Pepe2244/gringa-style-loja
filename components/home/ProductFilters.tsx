@@ -60,67 +60,88 @@ export default function ProductFilters({
 
     return (
         <div className="search-container" style={{
-            backgroundColor: '#111',
-            borderRadius: '12px',
-            padding: '20px',
-            marginBottom: '30px',
-            border: '1px solid #222'
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+            borderRadius: '14px',
+            padding: '16px',
+            marginBottom: '24px',
+            border: '1px solid #2a2a2a',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.16)'
         }}>
-            {/* Campo de Busca */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr',
-                gap: '15px',
-                marginBottom: '15px'
-            }}>
-                <div style={{ position: 'relative', width: '100%' }}>
-                    <label htmlFor="search-input" className="sr-only">Buscar produtos</label>
-                    <input
-                        type="search"
-                        id="search-input"
-                        placeholder="Buscar por máscara, tocha, lente..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '12px 45px 12px 16px',
-                            backgroundColor: '#1a1a1a',
-                            border: '1px solid #333',
-                            borderRadius: '8px',
-                            color: '#fff',
-                            fontSize: '1rem'
-                        }}
-                    />
-                    {searchTerm && (
-                        <button
-                            className="search-clear-btn"
+            <div style={{ display: 'grid', gap: '12px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: '1 1 260px', minWidth: '220px' }}>
+                        <label htmlFor="search-input" className="sr-only">Buscar produtos</label>
+                        <input
+                            type="search"
+                            id="search-input"
+                            placeholder="Buscar por máscara, tocha, lente..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%',
+                                height: '44px',
+                                padding: '0 42px 0 14px',
+                                backgroundColor: '#171717',
+                                border: '1px solid #333',
+                                borderRadius: '10px',
+                                color: '#fff',
+                                fontSize: '0.95rem'
+                            }}
+                        />
+                        {searchTerm && (
+                            <button
+                                className="search-clear-btn"
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#888',
+                                    cursor: 'pointer',
+                                    padding: '4px'
+                                }}
+                                onClick={() => setSearchTerm('')}
+                                aria-label="Limpar busca"
+                            >
+                                <X size={18} />
+                            </button>
+                        )}
+                        <Search
+                            size={18}
                             style={{
                                 position: 'absolute',
-                                right: '12px',
+                                left: '12px',
                                 top: '50%',
                                 transform: 'translateY(-50%)',
-                                background: 'none',
-                                border: 'none',
-                                color: '#888',
-                                cursor: 'pointer',
-                                padding: '4px'
+                                color: '#666'
                             }}
-                            onClick={() => setSearchTerm('')}
-                            aria-label="Limpar busca"
+                        />
+                    </div>
+
+                    {onResetFilters && (
+                        <button
+                            type="button"
+                            onClick={onResetFilters}
+                            style={{
+                                padding: '10px 12px',
+                                backgroundColor: 'transparent',
+                                border: '1px solid #444',
+                                color: '#ddd',
+                                borderRadius: '10px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '0.85rem',
+                                whiteSpace: 'nowrap'
+                            }}
                         >
-                            <X size={20} />
+                            <RotateCcw size={15} />
+                            Limpar
                         </button>
                     )}
-                    <Search
-                        size={20}
-                        style={{
-                            position: 'absolute',
-                            left: '12px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: '#666'
-                        }}
-                    />
                 </div>
 
                 {isMobile && (
@@ -132,14 +153,15 @@ export default function ProductFilters({
                             backgroundColor: 'transparent',
                             border: '1px solid #555',
                             color: '#ccc',
-                            padding: '10px 14px',
-                            borderRadius: '8px',
+                            padding: '9px 12px',
+                            borderRadius: '10px',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            width: '100%'
+                            width: '100%',
+                            fontSize: '0.9rem'
                         }}
                     >
                         {showMobileFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
@@ -149,33 +171,10 @@ export default function ProductFilters({
 
                 <div style={{
                     display: isMobile ? (showMobileFilters ? 'grid' : 'none') : 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
-                    gap: '15px',
-                    alignItems: 'center'
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))',
+                    gap: '10px',
+                    alignItems: 'stretch'
                 }}>
-                    {onResetFilters && (
-                        <button
-                            type="button"
-                            onClick={onResetFilters}
-                            style={{
-                                justifySelf: isMobile ? 'stretch' : 'end',
-                                padding: '10px 14px',
-                                backgroundColor: 'transparent',
-                                border: '1px solid #444',
-                                color: '#ddd',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                fontSize: '0.9rem'
-                            }}
-                        >
-                            <RotateCcw size={16} />
-                            Limpar filtros
-                        </button>
-                    )}
-                    {/* Filtro de Categoria */}
                     <div>
                         <label htmlFor="categoria-select" className="sr-only">Filtrar por Categoria</label>
                         <select
@@ -184,10 +183,10 @@ export default function ProductFilters({
                             onChange={(e) => setSelectedCategory(e.target.value ? parseInt(e.target.value) : null)}
                             style={{
                                 width: '100%',
-                                padding: '12px 16px',
-                                backgroundColor: '#1a1a1a',
+                                padding: '10px 12px',
+                                backgroundColor: '#171717',
                                 border: '1px solid #333',
-                                borderRadius: '8px',
+                                borderRadius: '10px',
                                 color: '#fff',
                                 fontSize: '0.9rem'
                             }}
@@ -201,7 +200,6 @@ export default function ProductFilters({
                         </select>
                     </div>
 
-                    {/* Ordenação */}
                     <div>
                         <label htmlFor="sort-select" className="sr-only">Ordenar por</label>
                         <select
@@ -210,10 +208,10 @@ export default function ProductFilters({
                             onChange={(e) => setSortType(e.target.value)}
                             style={{
                                 width: '100%',
-                                padding: '12px 16px',
-                                backgroundColor: '#1a1a1a',
+                                padding: '10px 12px',
+                                backgroundColor: '#171717',
                                 border: '1px solid #333',
-                                borderRadius: '8px',
+                                borderRadius: '10px',
                                 color: '#fff',
                                 fontSize: '0.9rem'
                             }}
@@ -226,28 +224,37 @@ export default function ProductFilters({
                         </select>
                     </div>
 
-                    {/* Filtros adicionais */}
-                    <div style={{ gridColumn: isMobile ? '1' : '1 / -1', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.9rem' }}>
+                    <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        alignItems: 'center',
+                        padding: '10px 12px',
+                        backgroundColor: '#171717',
+                        border: '1px solid #2a2a2a',
+                        borderRadius: '10px',
+                        minHeight: '44px'
+                    }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ccc', fontSize: '0.82rem' }}>
                             <input
                                 type="checkbox"
                                 checked={inStockOnly}
                                 onChange={(e) => setInStockOnly?.(e.target.checked)}
                             />
-                            Apenas em estoque
+                            Estoque
                         </label>
 
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.9rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ccc', fontSize: '0.82rem' }}>
                             <input
                                 type="checkbox"
                                 checked={hasDiscountOnly}
                                 onChange={(e) => setHasDiscountOnly?.(e.target.checked)}
                             />
-                            Com desconto
+                            Desconto
                         </label>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', fontSize: '0.9rem' }}>
-                            <SlidersHorizontal size={16} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ccc', fontSize: '0.82rem' }}>
+                            <SlidersHorizontal size={14} />
                             <span>Até R$ {priceRange[1].toLocaleString('pt-BR')}</span>
                         </div>
                     </div>

@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Product, Category } from '@/types';
-import { Sparkles, TrendingUp, Package } from 'lucide-react';
+import { TrendingUp, Package } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
-import ProductCard from '@/components/ProductCard';
 import RetentionHighlights from '@/components/home/RetentionHighlights';
 import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import PersonalizedRecommendations from '@/components/home/PersonalizedRecommendations';
-import RecentlyViewed from '@/components/RecentlyViewed';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { trackEvent, trackFilterUsage, trackSearchQuery } from '@/utils/analytics';
 import { FAQSchema, ItemListSchema } from '@/components/SEO/StructuredData';
@@ -145,19 +143,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     const produtosComDesconto = filteredProducts.filter(product => product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < product.preco).length;
     const featuredCategories = categories.slice(0, 6);
 
-    const featuredProducts = [...products]
-        .filter(product => {
-            const isNew = product.created_at && new Date(product.created_at) > new Date(Date.now() - (diasNovo || 7) * 24 * 60 * 60 * 1000);
-            const hasPromo = Boolean(product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < product.preco);
-            return product.em_estoque && (hasPromo || isNew);
-        })
-        .sort((a, b) => {
-            const aScore = (a.preco_promocional && a.preco_promocional < a.preco ? 1 : 0) + (a.created_at ? 1 : 0);
-            const bScore = (b.preco_promocional && b.preco_promocional < b.preco ? 1 : 0) + (b.created_at ? 1 : 0);
-            return bScore - aScore;
-        })
-        .slice(0, 4);
-
     const resetFilters = () => {
         setSearchTerm('');
         setSelectedCategory(null);
@@ -202,38 +187,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 </p>
             </div>
 
-            <section style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)', border: '1px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <Sparkles size={20} color="var(--cor-destaque)" />
-                    <h2 style={{ margin: 0, color: 'white', fontSize: '1.1rem' }}>Destaques da semana</h2>
-                </div>
-                <p style={{ margin: 0, color: '#ccc', lineHeight: 1.6 }}>
-                    Produtos com melhor relação custo-benefício, novidades recentes e itens com desconto para você encontrar mais rápido.
-                </p>
-            </section>
-
             <CartRecoveryBanner />
-
-            <section style={{ marginBottom: '28px', padding: '20px', backgroundColor: '#111', border: '1px solid #2a2a2a', borderRadius: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Sparkles size={18} color="var(--cor-destaque)" />
-                    <h3 style={{ margin: 0, color: 'white', fontSize: '1rem' }}>Ofertas e novidades para você</h3>
-                </div>
-                <p style={{ margin: '0 0 16px 0', color: '#ccc', lineHeight: 1.6 }}>
-                    Itens com melhor valor, novidades recentes e disponibilidade imediata para reduzir o tempo de decisão.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-                    {featuredProducts.map((product, index) => (
-                        <ProductCard
-                            key={product.id}
-                            product={product}
-                            diasNovo={diasNovo}
-                            onQuickView={handleQuickView}
-                            priority={index < 2}
-                        />
-                    ))}
-                </div>
-            </section>
 
             <section style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
@@ -294,19 +248,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
             <RetentionHighlights diasNovo={diasNovo} onQuickView={handleQuickView} />
             <PersonalizedRecommendations products={products} diasNovo={diasNovo} onQuickView={handleQuickView} />
-            <RecentlyViewed diasNovo={diasNovo} limit={4} currentProductId={undefined} />
-
-            <section style={{ marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-                <div style={{ backgroundColor: '#111', border: '1px solid #2a2a2a', borderRadius: '999px', padding: '8px 14px', color: '#fff', fontSize: '0.95rem' }}>
-                    {filteredProducts.length} produtos encontrados
-                </div>
-                <div style={{ backgroundColor: '#111', border: '1px solid #2a2a2a', borderRadius: '999px', padding: '8px 14px', color: '#ccc', fontSize: '0.95rem' }}>
-                    {produtosEmEstoque} em estoque
-                </div>
-                <div style={{ backgroundColor: '#111', border: '1px solid #2a2a2a', borderRadius: '999px', padding: '8px 14px', color: '#ccc', fontSize: '0.95rem' }}>
-                    {produtosComDesconto} com desconto
-                </div>
-            </section>
 
             <ItemListSchema products={filteredProducts.map(product => ({
                 id: product.id,

@@ -18,7 +18,7 @@ import ImageZoom from '@/components/ImageZoom';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import SavingsBadge from '@/components/SavingsBadge';
 import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
-import { PaymentMethods, TrustBadges } from '@/components/PaymentMethods';
+import { PaymentMethods } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import { trackButtonClick, trackVariantSelection, trackProductShare, trackEvent } from '@/utils/analytics';
 
@@ -409,6 +409,38 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             />
                         ))}
                     </div>
+
+                    <div className="produto-descricao-container desktop-only-description" style={{ marginTop: '24px', borderTop: '1px solid #333', paddingTop: '24px' }}>
+                        <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
+                            Detalhes do Equipamento
+                        </h3>
+
+                        <div style={{ color: '#bbb', lineHeight: '1.7', fontSize: '0.95rem' }}>
+                            {isLongDescription && !isDescExpanded ? (
+                                <>
+                                    <p>{product.descricao?.substring(0, MAX_DESC_LENGTH)}...</p>
+                                    <button 
+                                        onClick={() => setIsDescExpanded(true)}
+                                        style={{ background: 'none', border: 'none', color: 'var(--cor-destaque)', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
+                                    >
+                                        Ler descrição completa <ChevronDown size={16} />
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <p style={{ whiteSpace: 'pre-wrap' }}>{product.descricao}</p>
+                                    {isLongDescription && (
+                                        <button 
+                                            onClick={() => setIsDescExpanded(false)}
+                                            style={{ background: 'none', border: 'none', color: '#888', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
+                                        >
+                                            Ocultar descrição <ChevronUp size={16} />
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* COLUNA DIREITA: INFORMAÇÃO & CONVERSÃO */}
@@ -496,20 +528,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         </div>
                     )}
 
-                    <div style={{ marginBottom: '12px', padding: '12px 14px', borderRadius: '8px', backgroundColor: 'rgba(255, 107, 0, 0.1)', border: '1px solid rgba(255, 107, 0, 0.25)', color: '#ffd2ae' }}>
-                        <strong style={{ color: 'white' }}>Compra rápida e segura</strong>
-                        <div style={{ marginTop: '4px', fontSize: '0.92rem' }}>Envio rápido, pagamento confiável e atendimento direto no WhatsApp.</div>
-                    </div>
-
-                    <div style={{ marginBottom: '18px', padding: '14px 16px', borderRadius: '10px', backgroundColor: '#151515', border: '1px solid #2f2f2f' }}>
-                        <div style={{ fontWeight: 800, color: 'white', marginBottom: '6px' }}>Por que comprar aqui</div>
-                        <ul style={{ margin: 0, paddingLeft: '18px', color: '#ccc', lineHeight: 1.7 }}>
-                            <li>Atendimento direto e resposta rápida no WhatsApp</li>
-                            <li>Pagamento seguro com PIX ou cartão</li>
-                            <li>Produtos com valor destacado e pronta entrega</li>
-                        </ul>
-                    </div>
-
                     <div className="produto-detalhe-botoes" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {product.em_estoque ? (
                             <button
@@ -539,25 +557,27 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         </button>
                     </div>
 
-                    <ShippingEstimator productName={product.nome} />
+                    <div style={{ marginTop: '16px', padding: '14px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(255, 107, 0, 0.12) 0%, rgba(255, 107, 0, 0.06) 100%)', border: '1px solid rgba(255, 107, 0, 0.25)' }}>
+                        <div style={{ fontWeight: 800, color: 'white', marginBottom: '6px' }}>Compra rápida e segura</div>
+                        <div style={{ color: '#ffd2ae', fontSize: '0.92rem', lineHeight: 1.6 }}>
+                            Envio rápido, pagamento confiável e atendimento direto no WhatsApp para você comprar com mais praticidade.
+                        </div>
+                    </div>
 
-                    {/* Trust Badges - New Component */}
-                    <TrustBadges />
-
-                    <div className="produto-descricao-container" style={{ marginTop: '40px', borderTop: '1px solid #333', paddingTop: '30px' }}>
-                        <h3 style={{ fontSize: '1.4rem', marginBottom: '20px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
+                    <div className="produto-descricao-container mobile-only-description" style={{ marginTop: '20px', borderTop: '1px solid #333', paddingTop: '20px' }}>
+                        <h3 style={{ fontSize: '1.1rem', marginBottom: '10px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
                             Detalhes do Equipamento
                         </h3>
 
-                        <div style={{ color: '#bbb', lineHeight: '1.8', fontSize: '1rem' }}>
+                        <div style={{ color: '#bbb', lineHeight: '1.6', fontSize: '0.95rem' }}>
                             {isLongDescription && !isDescExpanded ? (
                                 <>
                                     <p>{product.descricao?.substring(0, MAX_DESC_LENGTH)}...</p>
                                     <button 
                                         onClick={() => setIsDescExpanded(true)}
-                                        style={{ background: 'none', border: 'none', color: 'var(--cor-destaque)', fontWeight: 'bold', cursor: 'pointer', padding: '15px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '1rem' }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--cor-destaque)', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
                                     >
-                                        Ler descrição completa <ChevronDown size={18} />
+                                        Ler descrição completa <ChevronDown size={16} />
                                     </button>
                                 </>
                             ) : (
@@ -566,15 +586,17 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                     {isLongDescription && (
                                         <button 
                                             onClick={() => setIsDescExpanded(false)}
-                                            style={{ background: 'none', border: 'none', color: '#888', fontWeight: 'bold', cursor: 'pointer', padding: '20px 0 5px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '1rem' }}
+                                            style={{ background: 'none', border: 'none', color: '#888', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
                                         >
-                                            Ocultar descrição <ChevronUp size={18} />
+                                            Ocultar descrição <ChevronUp size={16} />
                                         </button>
                                     )}
                                 </>
                             )}
                         </div>
                     </div>
+
+                    <ShippingEstimator productName={product.nome} />
                 </div>
             </div>
 
@@ -706,7 +728,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 @media (max-width: 768px) {
                     .titulo-mobile-container {
                         display: flex !important;
-                        margin-top: 20px !important; /* Adicionado respiro superior para afastar do cabeçalho */
+                        margin-top: 20px !important;
                     }
                     .titulo-desktop-container {
                         display: none !important;
@@ -717,6 +739,18 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     }
                     .produto-detalhe-coluna-info {
                         padding-top: 0 !important;
+                    }
+                    .desktop-only-description {
+                        display: none !important;
+                    }
+                    .mobile-only-description {
+                        display: block !important;
+                    }
+                }
+
+                @media (min-width: 769px) {
+                    .mobile-only-description {
+                        display: none !important;
                     }
                 }
             `}} />

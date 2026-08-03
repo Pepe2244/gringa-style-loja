@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, X } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { trackEvent } from '@/utils/analytics';
 
@@ -13,12 +13,22 @@ interface CartRecoveryBannerProps {
 export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBannerProps) {
     const totalItems = useCartStore(state => state.totalItems());
     const [mounted, setMounted] = useState(false);
+    const [visible, setVisible] = useState(true);
 
     useEffect(() => {
         setMounted(true);
+        if (typeof window === 'undefined') return;
+
+        const dismissedAt = Number(window.localStorage.getItem('cart-recovery-dismissed-at'));
+        const now = Date.now();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+
+        if (dismissedAt && now - dismissedAt < twentyFourHours) {
+            setVisible(false);
+        }
     }, []);
 
-    if (!mounted || totalItems === 0) return null;
+    if (!mounted || !visible || totalItems === 0) return null;
 
     const handleContinue = () => {
         trackEvent('cart_recovery_click', {
@@ -27,8 +37,15 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
         });
     };
 
+    const handleDismiss = () => {
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem('cart-recovery-dismissed-at', String(Date.now()));
+        }
+        setVisible(false);
+    };
+
     return (
-        <section className="surface-card" style={{ marginBottom: '24px', padding: '18px 20px', borderRadius: '16px' }}>
+        <section className="surface-card" style={{ marginBottom: '24px', padding: '18px 20px', borderRadius: '16px', position: 'relative' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ display: 'grid', placeItems: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255, 107, 0, 0.15)' }}>
@@ -42,23 +59,45 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
                     </div>
                 </div>
 
-                <Link
-                    href="/carrinho"
-                    onClick={handleContinue}
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '10px 16px',
-                        borderRadius: '999px',
-                        backgroundColor: 'var(--cor-destaque)',
-                        color: '#000',
-                        textDecoration: 'none',
-                        fontWeight: 800
-                    }}
-                >
-                    Continuar compra
-                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button
+                        type="button"
+                        onClick={handleDismiss}
+                        aria-label="Fechar aviso"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '999px',
+                            border: '1px solid #444',
+                            backgroundColor: 'transparent',
+                            color: '#ccc',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <X size={16} />
+                    </button>
+
+                    <Link
+                        href="/carrinho"
+                        onClick={handleContinue}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '10px 16px',
+                            borderRadius: '999px',
+                            backgroundColor: 'var(--cor-destaque)',
+                            color: '#000',
+                            textDecoration: 'none',
+                            fontWeight: 800
+                        }}
+                    >
+                        Continuar compra
+                    </Link>
+                </div>
             </div>
         </section>
     );
