@@ -90,7 +90,6 @@ export default function CartPage() {
         fetchCartData();
     }, [items, paymentMethod, validateTotal]);
 
-    // Valida automaticamente se o cupom aplicado ainda é válido caso a forma de pagamento mude
     useEffect(() => {
         if (appliedCoupon && appliedCoupon.metodo_pagamento_restrito) {
             const metodoExigido = appliedCoupon.metodo_pagamento_restrito === 'pix' ? 'PIX' : 'Cartão de Crédito';
