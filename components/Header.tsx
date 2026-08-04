@@ -57,16 +57,16 @@ export default function Header() {
     return (
         <header className="cabecalho">
             <div className="container">
-                <Link href="/" className="logo" onClick={closeMenu} style={{ position: 'relative', width: '120px', height: '40px', display: 'block' }}>
-                    <Image
-                        src="/imagens/logo_gringa_style.png"
-                        alt="Gringa Style Logo"
-                        fill
-                        priority
-                        sizes="(max-width: 768px) 120px, 120px"
-                        style={{ objectFit: 'contain' }}
-                    />
-                </Link>
+               <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: 0, textDecoration: 'none' }}>
+    <Image
+        src="/imagens/logo_gringa_style.png"
+        alt="Gringa Style Logo"
+        width={180}
+        height={54}
+        priority
+        style={{ width: 'auto', height: '130px', objectFit: 'contain' }}
+    />
+</Link>
 
                 <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`} style={isMenuOpen ? { backgroundColor: 'rgba(18, 18, 18, 0.85)', backdropFilter: 'blur(16px)' } : {}}>
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
