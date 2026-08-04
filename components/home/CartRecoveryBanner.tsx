@@ -14,23 +14,21 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
     const totalItems = useCartStore(state => state.totalItems());
     const showBanner = useCartStore(state => state.showCartRecoveryBanner);
     const dismissCartRecoveryBanner = useCartStore(state => state.dismissCartRecoveryBanner);
-    const setCartRecoveryBannerVisible = useCartStore(state => state.setCartRecoveryBannerVisible);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        if (typeof window === 'undefined') return;
+    }, []);
 
-        const dismissedAt = Number(window.localStorage.getItem('cart-recovery-dismissed-at'));
-        const now = Date.now();
-        const twentyFourHours = 24 * 60 * 60 * 1000;
+    useEffect(() => {
+        if (!mounted || !showBanner || totalItems === 0) return;
 
-        if (dismissedAt && now - dismissedAt < twentyFourHours) {
-            setCartRecoveryBannerVisible(false);
-        } else {
-            setCartRecoveryBannerVisible(true);
-        }
-    }, [setCartRecoveryBannerVisible]);
+        const timeoutId = window.setTimeout(() => {
+            dismissCartRecoveryBanner();
+        }, 8000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [dismissCartRecoveryBanner, mounted, showBanner, totalItems]);
 
     if (!mounted || !showBanner || totalItems === 0) return null;
 
@@ -42,9 +40,6 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
     };
 
     const handleDismiss = () => {
-        if (typeof window !== 'undefined') {
-            window.localStorage.setItem('cart-recovery-dismissed-at', String(Date.now()));
-        }
         dismissCartRecoveryBanner();
     };
 
@@ -111,7 +106,7 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
                             fontWeight: 800
                         }}
                     >
-                        Continuar compra
+                        Ir ao carrinho
                     </Link>
                 </div>
             </div>
