@@ -57,14 +57,14 @@ export default function Header() {
     return (
         <header className="cabecalho">
             <div className="container">
-               <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: 0, textDecoration: 'none' }}>
+               <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none' }}>
     <Image
         src="/imagens/logo_gringa_style.png"
         alt="Gringa Style Logo"
-        width={180}
-        height={54}
+        width={120}
+        height={120}
         priority
-        style={{ width: 'auto', height: '130px', objectFit: 'contain' }}
+        style={{ width: '125px !important', height: '125px !important', maxWidth: 'none', objectFit: 'contain' }}
     />
 </Link>
 
