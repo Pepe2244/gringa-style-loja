@@ -1,3 +1,4 @@
+// Arquivo: components/ProductPageContent.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -63,10 +64,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             setupProductState(initialProduct);
             fetchRelatedProducts(initialProduct);
             setLoading(false);
-            // Add to recently viewed
             addRecentlyViewed(initialProduct);
         }
-        // Load categories
         loadCategories();
     }, [id, initialProduct, addRecentlyViewed]);
 
@@ -187,7 +186,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             source: 'product_page',
             variant: selectedVariant || 'default'
         });
-        showToast('Produto adicionado ao carrinho!', 'success');
+        
+        // Chamada do toast de sucesso removida para evitar popup desformatado inferior
     };
 
     const handleDirectPurchase = () => {
@@ -310,7 +310,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         <div className="container produto-page-container">
             <CartRecoveryBanner context="product_page" />
 
-            {/* BREADCRUMBS Navigation */}
             {product && (
                 <Breadcrumbs
                     items={[
@@ -323,7 +322,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 />
             )}
 
-            {/* TÍTULO MOBILE (Estilo Mercado Livre) - Corrigido o respiro superior (marginTop: 20px) */}
             <div className="titulo-mobile-container" style={{ display: 'none', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', marginTop: '20px' }}>
                 <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product?.nome}</h1>
                 <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', padding: '0 0 0 10px' }}>
@@ -332,7 +330,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             </div>
 
             <div className="detalhe-produto-container">
-                {/* COLUNA ESQUERDA: GALERIA */}
                 <div className="produto-detalhe-coluna-img" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div
                         style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#111' }}
@@ -365,7 +362,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                     placeholder="blur"
                                     blurDataURL={BLUR_DATA_URL}
                                 />
-                                {/* Image Zoom Button */}
                                 <ImageZoom 
                                     src={currentMedia ? resolveOriginalUrl(currentMedia) : fallbackImage}
                                     alt={product.nome}
@@ -447,9 +443,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     </div>
                 </div>
 
-                {/* COLUNA DIREITA: INFORMAÇÃO & CONVERSÃO */}
+                {}
                 <div className="produto-detalhe-coluna-info">
-                    {/* TÍTULO DESKTOP - Só aparece no PC */}
                     <div className="titulo-desktop-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                         <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2.5rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product.nome}</h1>
                         <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', padding: '0 0 0 10px' }}>
@@ -590,6 +585,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 </div>
             </div>
 
+            {}
             {relatedProducts.length > 0 && (
                 <section className="related-products-container" style={{ display: 'block', marginTop: '60px', borderTop: '1px solid #222', paddingTop: '40px' }}>
                     <h2 className="related-title" style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', marginBottom: '30px', color: 'var(--cor-destaque)' }}>Você também pode gostar</h2>
@@ -633,7 +629,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 </section>
             )}
 
-            {/* Recently Viewed Products */}
+            {}
             <RecentlyViewed currentProductId={product?.id} limit={5} />
 
             <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido Rápido">
@@ -713,7 +709,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
             {product && <StickyCTA product={product} />}
 
-            {/* ESTILO RESPONSIVO PARA O LAYOUT MERCADO LIVRE */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media (max-width: 768px) {
                     .titulo-mobile-container {
@@ -747,5 +742,3 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         </div>
     );
 }
-
-
