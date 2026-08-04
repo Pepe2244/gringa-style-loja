@@ -14,7 +14,7 @@ export default function Header() {
     const pathname = usePathname();
     const totalItems = useCartStore(state => state.totalItems());
     const wishlistItems = useWishlistStore(state => state.items) || [];
-    const wishlistCount = wishlistItems.length; // Quantidade de produtos únicos favoritados
+    const wishlistCount = wishlistItems.length;
     
     const [mounted, setMounted] = useState(false);
     const [hasActiveRaffles, setHasActiveRaffles] = useState(false);
@@ -57,16 +57,18 @@ export default function Header() {
     return (
         <header className="cabecalho">
             <div className="container">
-               <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none' }}>
-    <Image
-        src="/imagens/logo_gringa_style.png"
-        alt="Gringa Style Logo"
-        width={120}
-        height={120}
-        priority
-        style={{ width: '125px !important', height: '125px !important', maxWidth: 'none', objectFit: 'contain' }}
-    />
-</Link>
+                <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none' }}>
+                    <div style={{ position: 'relative', width: '220px', height: '80px', maxWidth: 'none' }} className="sm:w-[280px] sm:h-[95px] lg:w-[360px] lg:h-[120px]">
+                        <Image
+                            src="/imagens/logo_gringa_style.png"
+                            alt="Gringa Style Logo"
+                            fill
+                            priority
+                            sizes="(max-width: 640px) 220px, (max-width: 1024px) 280px, 360px"
+                            style={{ objectFit: 'contain', objectPosition: 'left' }}
+                        />
+                    </div>
+                </Link>
 
                 <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`} style={isMenuOpen ? { backgroundColor: 'rgba(18, 18, 18, 0.85)', backdropFilter: 'blur(16px)' } : {}}>
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
@@ -83,7 +85,6 @@ export default function Header() {
                 </nav>
 
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-                    {/* Atalho de Favoritos (à esquerda do carrinho) */}
                     <Link 
                         href="/favoritos" 
                         className="favoritos" 
@@ -118,7 +119,6 @@ export default function Header() {
                         </span>
                     </Link>
 
-                    {/* Atalho do Carrinho */}
                     <Link href="/carrinho" className="carrinho" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                         <ShoppingCart size={28} />
                         <span 
@@ -147,7 +147,7 @@ export default function Header() {
                     </button>
                 </div>
             </div>
-            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu} style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.6)' }}></div>}
+            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu} style={{ backdropFilter: 'blurpx', backgroundColor: 'rgba(0,0,0,0.6)' }}></div>}
         </header>
     );
 }
