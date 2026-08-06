@@ -29,7 +29,7 @@ export const LocalBusinessSchema = () => {
     "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
     "image": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
     "description": "Equipamentos de alta performance para soldadores profissionais. Máscaras personalizadas, tochas e acessórios.",
-    "telephone": "+5515998608170",
+    "telephone": "+5515998462118",
     "email": "nalessogtaw015@gmail.com",
     "address": {
       "@type": "PostalAddress",
@@ -121,7 +121,7 @@ export const OrganizationSchema = () => {
     "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
     "image": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
     "description": "Especialista em equipamentos de solda TIG de alta performance com design exclusivo",
-    "telephone": "+5515998608170",
+    "telephone": "+5515998462118",
     "email": "nalessogtaw015@gmail.com",
     "address": {
       "@type": "PostalAddress",
@@ -137,7 +137,7 @@ export const OrganizationSchema = () => {
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "Sales",
-      "telephone": "+5515998608170",
+      "telephone": "+5515998462118",
       "Email": "nalessogtaw015@gmail.com"
     }
   };

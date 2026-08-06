@@ -178,7 +178,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             className="btn btn-avise-me"
                             onClick={() => {
                                 trackPurchaseIntent(product.id, productName, 'wishlist');
-                                window.open(`https://wa.me/5515998608170?text=Olá, gostaria de ser avisado quando o produto *${productName}* estiver disponível novamente.`, '_blank');
+                                window.open(`https://wa.me/5515998462118?text=Olá, gostaria de ser avisado quando o produto *${productName}* estiver disponível novamente.`, '_blank');
                             }}
                             style={{ backgroundColor: '#555', color: 'white' }}
                         >

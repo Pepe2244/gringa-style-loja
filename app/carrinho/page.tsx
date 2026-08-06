@@ -407,7 +407,7 @@ export default function CartPage() {
         message += `Aguardo as instruções finais!`;
 
         clearCart();
-        window.location.href = `https://wa.me/5515998608170?text=${encodeURIComponent(message)}`;
+        window.location.href = `https://wa.me/https://mail-attachment.googleusercontent.com/attachment/u/0/?ui=2&ik=bec98f0a6d&jsver=GO9rMumjmU4.pt_BR.L.es5&cbl=gmail.pinto-server_20260801.21_p0&view=att&th=%23msg-a:r2411763995910930004&disp=zip&permmsgid=msg-a:r2411763995910930004&saddbat=ANGjdJ_RQx4SRLK4m_tbJxQ2VfJkWUHuMEeOXea_TB6Ucn8B2chXCylmgy6uEYWxNTzN4yJVEixWf2zc2pJ4cgf67ZznpBmL_vvTDCtAVuFt9ezu4A_qMkEoH3aYxh_V1JXlbPL9vap1E_O4yQ3zVcBTdWx8r5_EBW4zM1mNNcFGf6jHNxZXyFZrnduijbtPvCAbHYN9qyxRvcx1IXFOppLJmPg0w-23nwx2nbDKljHi54omRNfpAQ3qQz9mONsNa75fVkNvL1MbAUDtaWhmpiu_o7myNkvL-KlBx3htL4lTgO3f4LfffzikLyBrFQQO6G_JKv-o9cS8q9i4yPftKI78BXDhOVRZD5XfpZUDlfMBYOuRJ8xIQvNmX5OQQ_3Is8Agkkc7OOjY_qvy3cZu_MkUoFQalYUr3MCQ3ItOY3xMkjYTuRdozdZKh6BdN0DXOBpM-zkZMRy-9THN1lmz7Ea-YtfYdE7Fyah3_hrNiiBBxO6utPEfPMy3MvEEmH8miP15kb4GAqIJtC-8ZZRg13Vexu2rgmwwkSauQSsmp7J1CLMLEdAolq-zipxm-L5KPi4Hi47s_GOzg5x8voMYVHxNTgHM4bUDRHkf_pexRw7muL-JI3qRUkZaEUuulu7VH9H707fRw34D6EWXw3ordcoro6llE8F6ahvJFZ2f0PI_1AUn9Xnnk7-mcci8x8JROQpKSjxaT-VavVOoFmp1YA4HGQmNGQM4hI5TrLHkWjS6Kwxg0LNZwe-e0L4CU62e1auVa1Ko0-p4rKMFFoCuHB2nMLn8lLnzQqQRyvLMUs-vA8S1j25ZytFbSTEFSLmXxLPmXkaHGfV5RP7gVmaYjNw66oXy0Z3p1ZOOQui03uGZduHo_yxxJ9dK4M0T0gKbyLaf0Bgpxj8VdHiRu7V4xzRgeH1jzVerm7TWIOEXeFHVkeur5Xlt1tVmdij9pDu_MSIsjgPVXZXyjxW3QbPF22XkEFu9fFJTa2GOUepuDjWpKrtrGlCJ7hcIbN-_EEEy4pv0O81x5eMC22Qp8lG5?text=${encodeURIComponent(message)}`;
     };
 
     if (loading && items.length > 0 && products.length === 0) {

@@ -47,7 +47,7 @@ export default function PrivacyPage() {
                     <li><strong>Portabilidade:</strong> Solicitar uma cópia dos seus dados em formato estruturado.</li>
                     <li><strong>Revogação de Consentimento:</strong> Para rifas ou comunicações de marketing.</li>
                 </ul>
-                <p>Para qualquer uma dessas solicitações, basta entrar em contato conosco pelo nosso WhatsApp de Suporte: <a href="https://wa.me/5515998608170" target="_blank">+55 15 99860-8170</a>.</p>
+                <p>Para qualquer uma dessas solicitações, basta entrar em contato conosco pelo nosso WhatsApp de Suporte: <a href="https://wa.me/5515998462118" target="_blank">+55 15 99846-2118</a>.</p>
 
                 <h2>7. Retenção de Dados</h2>
                 <p>Retemos dados apenas pelo tempo necessário:</p>

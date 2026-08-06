@@ -101,11 +101,11 @@ Copie o conteúdo abaixo e cole na ferramenta de teste de rich results ou no val
   "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
   "url": "https://gringa-style.netlify.app",
   "description": "Equipamentos de alta performance para soldadores profissionais. Máscaras personalizadas, tochas e acessórios.",
-  "telephone": "+5515998608170",
+  "telephone": "+5515998462118",
   "email": "nalessogtaw015@gmail.com",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "rua judith caroinelli vilaça , 505",
+    "streetAddress": "rua judith carpinelli vilaça , 505",
     "addressLocality": "Itapetininga",
     "addressRegion": "SP",
     "postalCode": "18208450",

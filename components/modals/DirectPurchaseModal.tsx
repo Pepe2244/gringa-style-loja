@@ -225,7 +225,7 @@ export default function DirectPurchaseModal({
 
         message += `Aguardo as instruções finais!`;
 
-        window.open(`https://wa.me/5515998608170?text=${encodeURIComponent(message)}`, '_blank');
+        window.open(`https://wa.me/5515998462118?text=${encodeURIComponent(message)}`, '_blank');
         onClose();
     };
 
