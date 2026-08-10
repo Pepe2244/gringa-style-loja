@@ -237,7 +237,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             payment_method: paymentMethod,
             installments: installments
         });
-        window.open(`https://wa.me/5515998462118?text=${encodeURIComponent(message)}`, '_blank');
+        window.open(`https://wa.me/5515998092548?text=${encodeURIComponent(message)}`, '_blank');
         setShowPurchaseModal(false);
     };
 
@@ -524,7 +524,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         ) : (
                             <button
                                 className="btn btn-avise-me"
-                                onClick={() => window.open(`https://wa.me/5515998462118?text=Olá, gostaria de ser avisado quando o produto *${product.nome}* estiver disponível novamente.`, '_blank')}
+                                onClick={() => window.open(`https://wa.me/5515998092548?text=Olá, gostaria de ser avisado quando o produto *${product.nome}* estiver disponível novamente.`, '_blank')}
                                 style={{ backgroundColor: '#444', color: 'white', width: '100%', padding: '18px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem' }}
                             >
                                 Avise-me quando chegar

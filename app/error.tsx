@@ -30,7 +30,7 @@ export default function Error({
           Tentar Novamente
         </button>
         <a 
-          href="https://wa.me/5515998462118?text=Olá, o site da Gringa Style apresentou um erro técnico." 
+          href="https://wa.me/5515998092548?text=Olá, o site da Gringa Style apresentou um erro técnico." 
           target="_blank" 
           rel="noopener noreferrer"
           className="btn btn-secundario"

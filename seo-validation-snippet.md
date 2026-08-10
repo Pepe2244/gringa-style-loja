@@ -101,7 +101,7 @@ Copie o conteúdo abaixo e cole na ferramenta de teste de rich results ou no val
   "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
   "url": "https://gringa-style.netlify.app",
   "description": "Equipamentos de alta performance para soldadores profissionais. Máscaras personalizadas, tochas e acessórios.",
-  "telephone": "+5515998462118",
+  "telephone": "+5515998092548",
   "email": "nalessogtaw015@gmail.com",
   "address": {
     "@type": "PostalAddress",
