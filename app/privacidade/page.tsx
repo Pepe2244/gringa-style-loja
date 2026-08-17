@@ -1,10 +1,16 @@
-'use client';
-
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
+
+export const metadata: Metadata = {
+  title: 'Política de Privacidade',
+  description: 'Conheça nossa política de privacidade e como tratamos seus dados com segurança na Gringa Style, em conformidade com a LGPD.',
+  alternates: { canonical: '/privacidade' },
+};
 
 export default function PrivacyPage() {
     return (
-        <main>
+        <>
             <div className="container privacy-container">
                 <h1 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '20px' }}>Política de Privacidade</h1>
                 <p>Sua privacidade é importante para nós. Esta política explica, em linguagem simples, como tratamos seus dados no site da Gringa Style.</p>
@@ -71,6 +77,6 @@ export default function PrivacyPage() {
                     </Link>
                 </div>
             </div>
-        </main>
+        </>
     );
 }

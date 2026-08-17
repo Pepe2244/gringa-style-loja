@@ -223,7 +223,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
             <ProductGrid
                 products={filteredProducts}
-                loading={false}
+                loading={products.length === 0}
                 diasNovo={diasNovo}
                 onQuickView={handleQuickView}
                 hasMore={hasMore && searchTerm === '' && selectedCategory === null} // Only show Load More if not filtering aggressively
@@ -286,4 +286,3 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         </div>
     );
 }
-

@@ -28,7 +28,7 @@ export default function SobrePage() {
                 </p>
                 
                 <div style={{ backgroundColor: '#111', padding: '40px', borderRadius: '15px', border: '1px solid #333', marginBottom: '40px' }}>
-                    <h2 style={{ color: 'var(--cor-destaque)', marginBottom: '20px', fontSize: '1.8rem', textAlign: 'center' }}>Nossa História</h2>
+                    <h2 className="titulo-secao" style={{ fontSize: '2.5rem', textAlign: 'center' }}>Nossa História</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
                         <Image 
                             src="/imagens/logo_gringa_style.png" 
@@ -57,19 +57,19 @@ export default function SobrePage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '40px' }}>
                     <div style={{ backgroundColor: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', textAlign: 'center' }}>
-                        <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px', fontSize: '1.5rem' }}>Missão</h3>
+                        <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px', fontSize: '1.8rem', fontFamily: 'var(--fonte-titulos)' }}>Missão</h3>
                         <p style={{ color: '#ccc', lineHeight: '1.6' }}>
                             Proporcionar equipamentos de solda TIG que combinem proteção superior, conforto e estilo personalizado, elevando o padrão da profissão.
                         </p>
                     </div>
                     <div style={{ backgroundColor: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', textAlign: 'center' }}>
-                        <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px', fontSize: '1.5rem' }}>Visão</h3>
+                        <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px', fontSize: '1.8rem', fontFamily: 'var(--fonte-titulos)' }}>Visão</h3>
                         <p style={{ color: '#ccc', lineHeight: '1.6' }}>
                             Ser a referência nacional em acessórios de solda personalizados, inspirando soldadores a expressarem sua paixão através do equipamento.
                         </p>
                     </div>
                     <div style={{ backgroundColor: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333', textAlign: 'center' }}>
-                        <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px', fontSize: '1.5rem' }}>Valores</h3>
+                        <h3 style={{ color: 'var(--cor-destaque)', marginBottom: '15px', fontSize: '1.8rem', fontFamily: 'var(--fonte-titulos)' }}>Valores</h3>
                         <ul style={{ color: '#ccc', lineHeight: '1.6', listStyle: 'none', padding: 0 }}>
                             <li>• Paixão pela excelência</li>
                             <li>• Inovação constante</li>
@@ -80,7 +80,7 @@ export default function SobrePage() {
                 </div>
 
                 <div style={{ backgroundColor: '#111', padding: '40px', borderRadius: '15px', border: '1px solid #333', marginBottom: '40px' }}>
-                    <h2 style={{ color: 'var(--cor-destaque)', marginBottom: '20px', fontSize: '1.8rem', textAlign: 'center' }}>Nossas Máscaras e Lentes</h2>
+                    <h2 className="titulo-secao" style={{ fontSize: '2.5rem', textAlign: 'center' }}>Nossas Máscaras e Lentes</h2>
                     <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
                         Trabalhamos com <strong>máscaras de solda personalizadas passivas</strong>, desenvolvidas com tecnologia de ponta para garantir uma visibilidade cristalina da poça de fusão.
                     </p>
@@ -90,7 +90,7 @@ export default function SobrePage() {
                 </div>
 
                 <div style={{ backgroundColor: '#111', padding: '40px', borderRadius: '15px', border: '1px solid #333' }}>
-                    <h2 style={{ color: 'var(--cor-destaque)', marginBottom: '20px', fontSize: '1.8rem', textAlign: 'center' }}>O Que Nossos Clientes Dizem</h2>
+                    <h2 className="titulo-secao" style={{ fontSize: '2.5rem', textAlign: 'center' }}>O Que Nossos Clientes Dizem</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                         <blockquote style={{ borderLeft: '4px solid var(--cor-destaque)', paddingLeft: '20px', color: '#ccc', fontStyle: 'italic' }}>
                             &quot;A máscara Gringa Style mudou meu jogo na oficina. Estilo top e proteção impecável!&quot;<br/>
