@@ -1,6 +1,6 @@
 import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
-import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton';
+import ProductCardSkeleton from '@/components/home/ProductCardSkeleton'; // Caminho corrigido
 
 interface ProductGridProps {
     products: Product[];
@@ -66,4 +66,3 @@ export default function ProductGrid({
         </div>
     );
 }
-

@@ -10,8 +10,9 @@ import RetentionHighlights from '@/components/home/RetentionHighlights';
 import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import PersonalizedRecommendations from '@/components/home/PersonalizedRecommendations';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
+import ProductFAQ from '@/components/home/ProductFAQ'; // Caminho corrigido
 import { trackEvent, trackFilterUsage, trackSearchQuery } from '@/utils/analytics';
-import { FAQSchema, ItemListSchema } from '@/components/SEO/StructuredData';
+import { ItemListSchema } from '@/components/SEO/StructuredData';
 
 interface HomeContentProps {
     initialProducts: Product[];
@@ -231,43 +232,23 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 onLoadMore={handleLoadMore}
             />
 
-            <section id="faq" className="secao-info" style={{ marginTop: '40px', padding: '20px', backgroundColor: '#111', borderRadius: '10px' }}>
-                <FAQSchema questions={[
-                    {
-                        q: "A lente escura da máscara é substituível?",
-                        a: "Sim, a lente escura (passiva) das nossas máscaras Gringa Style pode ser facilmente removida e substituída, garantindo conveniência e durabilidade para a sua máscara na hora da manutenção."
-                    },
-                    {
-                        q: "Vocês enviam para todo o Brasil?",
-                        a: "Com certeza! Enviamos via Correios (PAC e Sedex) para todas as regiões do Brasil. O cálculo do frete pode ser feito diretamente no carrinho de compras informando o seu CEP."
-                    },
-                    {
-                        q: "Como funcionam as opções de pagamento?",
-                        a: "Aceitamos pagamento seguro via PIX (com aprovação imediata) ou Cartão de Crédito em até 12x. Toda a finalização pode ser acompanhada pelo nosso atendimento VIP no WhatsApp."
-                    }
-                ]} />
-                <h2 className="titulo-secao" style={{ marginBottom: '15px' }}>Dúvidas Frequentes (FAQ)</h2>
-                
-                <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
-                        <span style={{ marginRight: '10px' }}>›</span> A lente escura da máscara é substituível?
-                    </summary>
-                    <p style={{ color: '#ccc', lineHeight: '1.5', marginTop: '10px', paddingLeft: '20px' }}>Sim, a lente escura (passiva) das nossas máscaras Gringa Style pode ser facilmente removida e substituída, garantindo conveniência e durabilidade para a sua máscara na hora da manutenção.</p>
-                </details>
-                
-                <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
-                        <span style={{ marginRight: '10px' }}>›</span> Vocês enviam para todo o Brasil?
-                    </summary>
-                    <p style={{ color: '#ccc', lineHeight: '1.5', marginTop: '10px', paddingLeft: '20px' }}>Com certeza! Enviamos via Correios (PAC e Sedex) para todas as regiões do Brasil. O cálculo do frete pode ser feito diretamente no carrinho de compras informando o seu CEP.</p>
-                </details>
-                
-                <details style={{ paddingBottom: '10px' }}>
-                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
-                        <span style={{ marginRight: '10px' }}>›</span> Como funcionam as opções de pagamento?
-                    </summary>
-                    <p style={{ color: '#ccc', lineHeight: '1.5', marginTop: '10px', paddingLeft: '20px' }}>Aceitamos pagamento seguro via PIX (com aprovação imediata) ou Cartão de Crédito em até 12x. Toda a finalização pode ser acompanhada pelo nosso atendimento VIP no WhatsApp.</p>
-                </details>
+            <section id="faq" className="secao-info" style={{ marginTop: '40px', padding: '40px', backgroundColor: 'rgba(17,17,17,0.7)', borderRadius: '10px', border: '1px solid #333' }}>
+                <ProductFAQ
+                    faqs={[
+                        {
+                            q: "A lente escura da máscara é substituível?",
+                            a: "Sim, a lente escura (passiva) das nossas máscaras Gringa Style pode ser facilmente removida e substituída, garantindo conveniência e durabilidade para a sua máscara na hora da manutenção."
+                        },
+                        {
+                            q: "Vocês enviam para todo o Brasil?",
+                            a: "Com certeza! Enviamos via Correios (PAC e Sedex) para todas as regiões do Brasil. O cálculo do frete pode ser feito diretamente no carrinho de compras informando o seu CEP."
+                        },
+                        {
+                            q: "Como funcionam as opções de pagamento?",
+                            a: "Aceitamos pagamento seguro via PIX (com aprovação imediata) ou Cartão de Crédito em até 12x. Toda a finalização pode ser acompanhada pelo nosso atendimento VIP no WhatsApp."
+                        }
+                    ]}
+                />
             </section>
 
             <section id="contato" className="secao-info" style={{ marginTop: '20px', padding: '20px', backgroundColor: '#111', borderRadius: '10px', marginBottom: '40px' }}>
