@@ -7,19 +7,25 @@ const cspValue = isDevelopment
 
 const nextConfig: NextConfig = {
   images: {
-    // 1. RESOLUÇÃO DE ERROS DE LOG: Qualidades otimizadas para performance
     qualities: [35, 60, 75],
-
-    // 2. MÁGICA DA COMPRESSÃO: Converte para formatos ultra-leves (AVIF é 20% menor que WebP)
     formats: ['image/avif', 'image/webp'],
-
-    // 3. CACHE AGRESSIVO: 1 ano de cache para passar no Google PageSpeed
     minimumCacheTTL: 31536000,
-
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'tsilaaurmpahookyanbe.supabase.co', // ID Corrigido e funcional
+        hostname: 'pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'evgabdhvekmdhfvzteow.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tsilaaurmpahookyanbe.supabase.co',
         port: '',
         pathname: '/storage/v1/object/public/**',
       },
@@ -28,11 +34,10 @@ const nextConfig: NextConfig = {
         hostname: 'res.cloudinary.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
 
-  // SEGURANÇA ENTERPRISE: Cabeçalhos HTTP para proteção contra Hackers
   async headers() {
     return [
       {
@@ -40,34 +45,34 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-DNS-Prefetch-Control',
-            value: 'on'
+            value: 'on',
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY'
+            value: 'DENY',
           },
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            value: 'nosniff',
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
+            value: 'origin-when-cross-origin',
           },
           {
             key: 'Content-Security-Policy',
-            value: cspValue
+            value: cspValue,
           },
           {
             key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups'
-          }
-        ]
-      }
+            value: 'same-origin-allow-popups',
+          },
+        ],
+      },
     ];
   },
 };
