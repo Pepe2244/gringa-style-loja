@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase, uploadFileToSupabaseStorage } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Trash2, Edit, Plus, X, Upload } from 'lucide-react';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 
@@ -76,16 +76,30 @@ export default function CampaignManager() {
         let bannerUrl = editingCampaign ? editingCampaign.banner_url : null;
 
         if (bannerFile) {
-            const fileName = `banner-${Date.now()}-${bannerFile.name}`;
-            const { publicUrl, error: uploadError } = await uploadFileToSupabaseStorage(bannerFile, fileName, 'gringa-style-produtos');
+            try {
+                const formData = new FormData();
+                formData.append('file', bannerFile);
 
-            if (uploadError) {
-                alert('Erro no upload: ' + uploadError.message);
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error || `HTTP ${response.status}: Falha no upload para Cloudflare R2`);
+                }
+
+                const result = await response.json();
+                if (result.url) {
+                    bannerUrl = result.url;
+                }
+            } catch (uploadErr: any) {
+                console.error('Erro no upload do banner:', uploadErr);
+                alert(`Erro no upload: ${uploadErr.message}`);
                 setLoading(false);
                 return;
             }
-
-            bannerUrl = publicUrl;
         }
 
         const campaignData = {
@@ -138,8 +152,6 @@ export default function CampaignManager() {
         try {
             const newId = isActivating ? id : null;
 
-            // SOLUÇÃO DO BUG: UPSERT substitui a necessidade de checar se o ID=1 existe. 
-            // Ele insere se não existir, ou atualiza se já existir. À prova de falhas.
             const { error } = await supabase
                 .from('configuracoes_site')
                 .upsert({ id: 1, campanha_ativa_id: newId });
@@ -147,7 +159,6 @@ export default function CampaignManager() {
             if (error) throw error;
             await fetch('/api/admin/revalidate-campaigns', { method: 'POST', credentials: 'include' });
 
-            // Atualiza o estado da UI instantaneamente sem precisar esperar o fetchCampaigns()
             setActiveCampaignId(newId);
 
         } catch (error: any) {
@@ -338,5 +349,3 @@ export default function CampaignManager() {
         </div>
     );
 }
-
-

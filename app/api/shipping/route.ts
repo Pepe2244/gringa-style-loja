@@ -7,36 +7,64 @@ const SUPERFRETE_TOKEN =
 const ORIGIN_CEP = '18207185'; // Itapetininga Centro
 
 // Credenciais dos Correios (CWS)
-// Gere em: https://cws.correios.com.br/ → Gestão de Acesso a APIs
 const CORREIOS_TOKEN = process.env.CORREIOS_TOKEN || '';
-const CORREIOS_CARTAO = process.env.CORREIOS_CARTAO || ''; // Número do Cartão de Postagem
+const CORREIOS_CARTAO = process.env.CORREIOS_CARTAO || '';
 
-// Serviços do Exporta Fácil por código (para exibição ao cliente)
 const CORREIOS_SERVICOS = [
     { codigo: '45209', nome: 'Exporta Fácil Econômico' },
     { codigo: '45110', nome: 'Exporta Fácil Expresso (EMS)' },
 ];
 
-// Códigos de países aceitos pela API dos Correios (coPaisDestino)
-// Tabela completa: https://cws.correios.com.br (manual da API)
 const COUNTRY_CODES: Record<string, string> = {
-    US: '249', // EUA
-    PT: '620', // Portugal
-    DE: '276', // Alemanha
-    ES: '724', // Espanha
-    FR: '250', // França
-    IT: '380', // Itália
-    GB: '826', // Reino Unido
-    NL: '528', // Países Baixos
-    BE: '056', // Bélgica
-    AR: '032', // Argentina
-    CL: '152', // Chile
-    MX: '484', // México
-    JP: '392', // Japão
-    AU: '036', // Austrália
-    CA: '124', // Canadá
-    INT: '249', // Fallback genérico → EUA
+    US: '249',
+    PT: '620',
+    DE: '276',
+    ES: '724',
+    FR: '250',
+    IT: '380',
+    GB: '826',
+    NL: '528',
+    BE: '056',
+    AR: '032',
+    CL: '152',
+    MX: '484',
+    JP: '392',
+    AU: '036',
+    CA: '124',
+    INT: '249',
 };
+
+// Fallback Seguro Nacional (Garante checkout fluido se a SuperFrete falhar)
+function getNationalFallback() {
+    return [
+        {
+            id: 1,
+            name: 'PAC (Correios)',
+            price: '28.90',
+            discount: '0.00',
+            currency: 'R$',
+            delivery_time: 6,
+            delivery_range: { min: 5, max: 8 },
+            packages: [],
+            additional_services: { receipt: false, own_hand: false, collect: false },
+            company: { id: 1, name: 'Correios', picture: 'https://app.superfrete.com/images/correios.png' },
+            has_error: false
+        },
+        {
+            id: 2,
+            name: 'SEDEX (Correios)',
+            price: '46.50',
+            discount: '0.00',
+            currency: 'R$',
+            delivery_time: 2,
+            delivery_range: { min: 1, max: 3 },
+            packages: [],
+            additional_services: { receipt: false, own_hand: false, collect: false },
+            company: { id: 1, name: 'Correios', picture: 'https://app.superfrete.com/images/correios.png' },
+            has_error: false
+        }
+    ];
+}
 
 export async function POST(request: Request) {
     try {
@@ -58,52 +86,65 @@ export async function POST(request: Request) {
         );
         const effectiveOriginCep = isMask ? MASKS_ORIGIN_CEP : ORIGIN_CEP;
 
-        console.log(`[Shipping] Product: ${product_name}, isMask: ${isMask}, Origin CEP: ${effectiveOriginCep}`);
-
-        // ─── Lógica Nacional – SuperFrete ─────────────────────────────────────
+        // ─── Lógica Nacional – SuperFrete com Fallback Automático ──────────────
         if (country === 'BR') {
-            const sfRes = await fetch('https://api.superfrete.com/api/v0/calculator', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${SUPERFRETE_TOKEN}`,
-                },
-                body: JSON.stringify({
-                    from: { postal_code: effectiveOriginCep },
-                    to: { postal_code: to_postal_code.replace(/\D/g, '') },
-                    services: '1,2', // 1 = PAC, 2 = SEDEX
-                    options: { own_hand: false, receipt: false, insurance_value: 0 },
-                    package: { format: 1, weight: '1.00', length: 35, height: 35, width: 35 },
-                }),
-            });
+            const cleanDestinationCep = to_postal_code.replace(/\D/g, '');
 
-            const sfData = await sfRes.json();
-
-            if (!sfRes.ok) {
-                console.error('SuperFrete API Error:', sfData);
+            if (cleanDestinationCep.length !== 8) {
                 return NextResponse.json(
-                    { error: 'Erro na API do SuperFrete' },
-                    { status: sfRes.status }
+                    { error: 'CEP de destino inválido' },
+                    { status: 400 }
                 );
             }
 
-            return NextResponse.json(sfData);
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+
+                const sfRes = await fetch('https://api.superfrete.com/api/v0/calculator', {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${SUPERFRETE_TOKEN}`,
+                    },
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        from: { postal_code: effectiveOriginCep },
+                        to: { postal_code: cleanDestinationCep },
+                        services: '1,2', // 1 = PAC, 2 = SEDEX
+                        options: { own_hand: false, receipt: false, insurance_value: 0 },
+                        package: { format: 1, weight: '0.80', length: 25, height: 20, width: 20 },
+                    }),
+                });
+
+                clearTimeout(timeoutId);
+
+                if (sfRes.ok) {
+                    const sfData = await sfRes.json();
+                    if (Array.isArray(sfData) && sfData.length > 0 && !sfData[0].has_error) {
+                        return NextResponse.json(sfData);
+                    }
+                }
+                
+                console.warn('[Shipping] SuperFrete indisponível ou recusada. Usando fallback padrão.');
+                return NextResponse.json(getNationalFallback());
+            } catch (err) {
+                console.warn('[Shipping] Timeout/Falha na SuperFrete. Acionando fallback.');
+                return NextResponse.json(getNationalFallback());
+            }
         }
 
         // ─── Lógica Internacional – Correios Exporta Fácil ────────────────────
         const coPaisDestino = COUNTRY_CODES[country] ?? COUNTRY_CODES.INT;
 
-        // Sem token → devolve estimativa fixa para não quebrar o site
         if (!CORREIOS_TOKEN) {
-            console.warn('[Shipping] Token dos Correios não configurado. Usando mock.');
             return NextResponse.json([
                 { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '320.00', delivery_time: 20 },
                 { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', price: '400.00', delivery_time: 8 },
             ]);
         }
 
-        // Consulta cada serviço em paralelo
         const resultados = await Promise.all(
             CORREIOS_SERVICOS.map(async (servico, idx) => {
                 try {
@@ -120,8 +161,8 @@ export async function POST(request: Request) {
                                 coPaisDestino,
                                 nuCepOrigem: effectiveOriginCep,
                                 nuCartaoPostagem: CORREIOS_CARTAO,
-                                psObjeto: '2000',    // 1 kg em gramas
-                                tpObjeto: '2',       // 2 = Caixa/Pacote
+                                psObjeto: '2000',
+                                tpObjeto: '2',
                                 comprimento: '25',
                                 largura: '15',
                                 altura: '10',
@@ -133,7 +174,6 @@ export async function POST(request: Request) {
                     if (!correiosRes.ok) return null;
                     const data = await correiosRes.json();
 
-                    // A API devolve pcFinal (preço final em reais)
                     const preco = data.pcFinal ?? data.vlTotal ?? data.preco;
                     const prazo = data.prazoEntrega ?? data.nuPrazoEntrega ?? 20;
 
@@ -153,7 +193,6 @@ export async function POST(request: Request) {
 
         const validos = resultados.filter(Boolean);
 
-        // Fallback se nenhum serviço retornar
         if (validos.length === 0) {
             return NextResponse.json([
                 { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '320.00', delivery_time: 20 },
@@ -164,6 +203,6 @@ export async function POST(request: Request) {
         return NextResponse.json(validos);
     } catch (error) {
         console.error('Erro na rota de frete:', error);
-        return NextResponse.json({ error: 'Erro interno ao calcular frete' }, { status: 500 });
+        return NextResponse.json(getNationalFallback());
     }
 }
