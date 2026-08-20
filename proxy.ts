@@ -17,7 +17,7 @@ const MALICIOUS_PATHS = [
     'config.json', 'phpinfo.php', 'xmlrpc.php'
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || '';
     const pathname = request.nextUrl.pathname;
 

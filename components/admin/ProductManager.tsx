@@ -105,7 +105,6 @@ export default function ProductManager() {
         if (e.target.files) {
             const files = Array.from(e.target.files);
             mediaPreviews.forEach(url => URL.revokeObjectURL(url));
-            // Substitui a seleção atual pela nova
             setMediaFiles(files);
             const newPreviews = files.map(file => URL.createObjectURL(file));
             setMediaPreviews(newPreviews);
@@ -144,16 +143,28 @@ export default function ProductManager() {
                 }
             }
 
-            let fileExt = fileToUpload.name.split('.').pop();
-            if (fileToUpload.type.startsWith('image/')) {
-                fileExt = 'webp';
-            }
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const { error: uploadError } = await supabase.storage.from('gringa-style-produtos').upload(fileName, fileToUpload);
+            try {
+                const formData = new FormData();
+                formData.append('file', fileToUpload);
 
-            if (uploadError) continue;
-            const { data } = supabase.storage.from('gringa-style-produtos').getPublicUrl(fileName);
-            finalMediaUrls.push(data.publicUrl);
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Falha no upload para o Cloudflare R2');
+                }
+
+                const result = await response.json();
+                if (result.url) {
+                    finalMediaUrls.push(result.url);
+                }
+            } catch (uploadErr: any) {
+                console.error('Erro ao enviar imagem:', uploadErr);
+                alert(`Erro ao subir imagem: ${uploadErr.message}`);
+            }
         }
 
         const variants = (variantTipo && variantOpcoes) ? {
@@ -240,7 +251,6 @@ export default function ProductManager() {
                 </div>
             ) : (
                 <>
-                    {/* Lista Mobile e Desktop Unificada para estabilidade */}
                     <div className="admin-items-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {products.map(prod => (
                             <div key={prod.id} style={{ background: '#111', padding: '12px 16px', borderRadius: '12px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
