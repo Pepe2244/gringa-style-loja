@@ -134,10 +134,15 @@ export default function ProductManager() {
         const finalMediaUrls = [...existingMedia];
 
         for (const file of mediaFiles) {
-            let fileToUpload = file;
+            let fileToUpload: File = file;
+            let fileName = file.name;
+
             if (file.type.startsWith('image/')) {
                 try {
-                    fileToUpload = await compressImage(file);
+                    const compressedBlob = await compressImage(file);
+                    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'image';
+                    fileName = `${baseName}.webp`;
+                    fileToUpload = new File([compressedBlob], fileName, { type: 'image/webp' });
                 } catch (error) {
                     console.error('Erro na compressão:', error);
                 }
@@ -145,7 +150,7 @@ export default function ProductManager() {
 
             try {
                 const formData = new FormData();
-                formData.append('file', fileToUpload);
+                formData.append('file', fileToUpload, fileName);
 
                 const response = await fetch('/api/upload', {
                     method: 'POST',
@@ -154,7 +159,7 @@ export default function ProductManager() {
 
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.error || 'Falha no upload para o Cloudflare R2');
+                    throw new Error(errData.error || `HTTP ${response.status}: Falha no upload`);
                 }
 
                 const result = await response.json();

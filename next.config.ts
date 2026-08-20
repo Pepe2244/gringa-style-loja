@@ -6,6 +6,16 @@ const cspValue = isDevelopment
   : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      allowedOrigins: [
+        'probable-trout-979jr97rr7q53x7qx-3000.app.github.dev',
+        '*.app.github.dev',
+        'localhost:3000',
+      ],
+    },
+  },
+
   images: {
     qualities: [35, 60, 75],
     formats: ['image/avif', 'image/webp'],
@@ -19,15 +29,9 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'evgabdhvekmdhfvzteow.supabase.co',
+        hostname: '**.supabase.co',
         port: '',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'tsilaaurmpahookyanbe.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
+        pathname: '/**',
       },
       {
         protocol: 'https',
