@@ -59,8 +59,13 @@ export default function ProductManager() {
     };
 
     const fetchCategories = async () => {
-        const { data } = await supabase.from('categorias').select('*').order('nome');
-        if (data) setCategories(data);
+        try {
+            const { data, error } = await supabase.from('categorias').select('*').order('nome');
+            if (error) throw error;
+            if (data) setCategories(data);
+        } catch (err: any) {
+            console.error('Erro ao buscar categorias:', err);
+        }
     };
 
     const openModal = (product: Product | null = null) => {
@@ -197,33 +202,67 @@ export default function ProductManager() {
             if (editingProduct) {
                 const { error } = await supabase.from('produtos').update(productData as any).eq('id', editingProduct.id);
                 if (error) throw error;
-                alert('Produto atualizado!');
+                alert('Produto atualizado com sucesso!');
             } else {
-                const { data, error } = await supabase.from('produtos').insert([productData as any]).select().single();
+                const { error } = await supabase.from('produtos').insert([productData as any]);
                 if (error) throw error;
-                alert('Produto criado!');
+                alert('Produto criado com sucesso!');
             }
+            
+            // Revalida o cache APÓS o sucesso no banco
             await revalidateProductCache();
             setShowModal(false);
             fetchProducts();
         } catch (error: any) {
-            alert(`Erro: ${error.message}`);
+            console.error('Erro ao salvar produto:', error);
+            alert(`Erro ao salvar: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Excluir este produto?')) return;
-        await supabase.from('produtos').delete().eq('id', id);
-        await revalidateProductCache();
-        fetchProducts();
+        if (!confirm('Tem certeza que deseja excluir este produto definitivamente? A ação não pode ser desfeita.')) return;
+        
+        // Atualização Otimista: Remove da UI imediatamente para sensação de fluidez
+        const previousProducts = [...products];
+        setProducts(products.filter(p => p.id !== id));
+
+        try {
+            // Executa a deleção no banco
+            const { error } = await supabase.from('produtos').delete().eq('id', id);
+            if (error) throw error;
+
+            // Purga os caches do Next e Custom
+            await revalidateProductCache();
+            
+            // Feedback silencioso (opcional, pode usar um toast aqui se preferir)
+            console.log(`Produto ${id} excluído com sucesso e cache limpo.`);
+        } catch (error: any) {
+            console.error('Erro na exclusão do produto:', error);
+            alert(`Falha ao excluir o produto: ${error.message}`);
+            // Reverte a atualização otimista caso falhe
+            setProducts(previousProducts);
+        }
     };
 
     const toggleStock = async (id: number, currentStatus: boolean) => {
-        await supabase.from('produtos').update({ em_estoque: !currentStatus }).eq('id', id);
-        await revalidateProductCache();
-        fetchProducts();
+        const newStatus = !currentStatus;
+        
+        // Atualização otimista
+        setProducts(products.map(p => p.id === id ? { ...p, em_estoque: newStatus } : p));
+
+        try {
+            const { error } = await supabase.from('produtos').update({ em_estoque: newStatus }).eq('id', id);
+            if (error) throw error;
+            
+            await revalidateProductCache();
+        } catch (error: any) {
+            console.error('Erro ao alterar estoque:', error);
+            alert('Falha ao atualizar o status de estoque.');
+            // Reverte a atualização otimista caso falhe
+            setProducts(products.map(p => p.id === id ? { ...p, em_estoque: currentStatus } : p));
+        }
     };
 
     return (
@@ -241,18 +280,18 @@ export default function ProductManager() {
             {loading && products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '100px 20px', color: 'white' }}>
                     <Loader2 className="animate-spin" style={{ margin: '0 auto' }} size={40} />
-                    <p style={{ marginTop: '10px' }}>Sincronizando...</p>
+                    <p style={{ marginTop: '10px' }}>Sincronizando banco de dados...</p>
                 </div>
             ) : error ? (
                 <div style={{ background: '#300', border: '1px solid red', padding: '20px', borderRadius: '10px', color: '#ff8888', textAlign: 'center' }}>
                     <AlertCircle style={{ margin: '0 auto 10px' }} />
                     <p>{error}</p>
-                    <button onClick={() => fetchProducts()} style={{ marginTop: '10px', background: 'red', color: 'white', border: 'none', padding: '5px 15px', borderRadius: '5px' }}>Recarregar</button>
+                    <button onClick={() => fetchProducts()} style={{ marginTop: '10px', background: 'red', color: 'white', border: 'none', padding: '5px 15px', borderRadius: '5px', cursor: 'pointer' }}>Recarregar</button>
                 </div>
             ) : products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '80px 20px', color: '#666', border: '2px dashed #222', borderRadius: '15px' }}>
-                    <Package size={48} style={{ marginBottom: '10px' }} />
-                    <p>Nenhum produto encontrado.</p>
+                    <Package size={48} style={{ margin: '0 auto 10px' }} />
+                    <p>Nenhum produto encontrado. Adicione o primeiro.</p>
                 </div>
             ) : (
                 <>
@@ -262,16 +301,16 @@ export default function ProductManager() {
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1rem' }}>{prod.nome}</h3>
                                     <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                                    R$ {prod.preco.toFixed(2)}{prod.preco_pix ? ` | PIX R$ ${prod.preco_pix.toFixed(2)}` : ''} | {prod.em_estoque ? 'Em Stock' : 'Esgotado'}
+                                    R$ {prod.preco.toFixed(2)}{prod.preco_pix ? ` | PIX R$ ${prod.preco_pix.toFixed(2)}` : ''} | {prod.em_estoque ? 'Em Estoque' : 'Esgotado'}
                                 </span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <label className="switch" style={{ transform: 'scale(0.7)' }}>
+                                    <label className="switch" style={{ transform: 'scale(0.7)', cursor: 'pointer' }}>
                                         <input type="checkbox" checked={prod.em_estoque} onChange={() => toggleStock(prod.id, prod.em_estoque)} />
                                         <span className="slider"></span>
                                     </label>
-                                    <button onClick={() => openModal(prod)} style={{ background: '#222', border: 'none', color: 'white', padding: '8px', borderRadius: '6px' }}><Edit size={16} /></button>
-                                    <button onClick={() => handleDelete(prod.id)} style={{ background: '#311', border: 'none', color: '#ff4444', padding: '8px', borderRadius: '6px' }}><Trash2 size={16} /></button>
+                                    <button onClick={() => openModal(prod)} style={{ background: '#222', border: 'none', color: 'white', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}><Edit size={16} /></button>
+                                    <button onClick={() => handleDelete(prod.id)} style={{ background: '#311', border: 'none', color: '#ff4444', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={16} /></button>
                                 </div>
                             </div>
                         ))}
@@ -282,7 +321,7 @@ export default function ProductManager() {
             {showModal && (
                 <div className="modal-admin-container visivel" style={{ zIndex: 1000 }}>
                     <div className="modal-admin" style={{ maxHeight: '95vh', overflowY: 'auto', padding: '20px', background: '#111', borderRadius: '15px', width: '95%', maxWidth: '600px' }}>
-                        <button className="modal-fechar-btn" onClick={() => setShowModal(false)} style={{ fontSize: '2rem' }}>&times;</button>
+                        <button className="modal-fechar-btn" onClick={() => setShowModal(false)} style={{ fontSize: '2rem', cursor: 'pointer' }}>&times;</button>
                         <h2 className="titulo-secao" style={{ fontSize: '1.3rem', marginBottom: '20px' }}>{editingProduct ? 'Editar' : 'Novo'} Produto</h2>
 
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -317,7 +356,7 @@ export default function ProductManager() {
                                 <div className="form-campo">
                                     <label>Em Estoque?</label>
                                     <div style={{ display: 'flex', alignItems: 'center', height: '45px' }}>
-                                        <label className="switch">
+                                        <label className="switch" style={{ cursor: 'pointer' }}>
                                             <input type="checkbox" checked={em_estoque} onChange={e => setEmEstoque(e.target.checked)} />
                                             <span className="slider"></span>
                                         </label>
@@ -348,20 +387,20 @@ export default function ProductManager() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                     <label>Imagens/Vídeos ({existingMedia.length + mediaFiles.length})</label>
                                     {existingMedia.length > 0 && (
-                                        <button type="button" onClick={clearAllExistingMedia} style={{ background: '#ff4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>Resetar Fotos</button>
+                                        <button type="button" onClick={clearAllExistingMedia} style={{ background: '#ff4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}>Resetar Fotos</button>
                                     )}
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', background: '#000', padding: '8px', borderRadius: '8px' }}>
                                     {existingMedia.map((url, i) => (
                                         <div key={`ex-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
                                             <img src={getProxiedImageUrl(url)} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--cor-destaque)' }} />
-                                            <button type="button" onClick={() => removeExistingMedia(url)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'red', borderRadius: '50%', color: 'white', border: 'none', width: '18px', height: '18px', fontSize: '10px' }}>&times;</button>
+                                            <button type="button" onClick={() => removeExistingMedia(url)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'red', borderRadius: '50%', color: 'white', border: 'none', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer' }}>&times;</button>
                                         </div>
                                     ))}
                                     {mediaPreviews.map((url, i) => (
                                         <div key={`nw-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
                                             <img src={url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #00ff88', opacity: 0.8 }} />
-                                            <button type="button" onClick={() => removeNewMedia(i)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#00ff88', borderRadius: '50%', color: 'black', border: 'none', width: '18px', height: '18px', fontSize: '10px' }}>&times;</button>
+                                            <button type="button" onClick={() => removeNewMedia(i)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#00ff88', borderRadius: '50%', color: 'black', border: 'none', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer' }}>&times;</button>
                                         </div>
                                     ))}
                                     <label style={{ border: '1px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', aspectRatio: '1/1' }}>
@@ -372,8 +411,8 @@ export default function ProductManager() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-admin" style={{ flex: 1, background: '#333' }}>Cancelar</button>
-                                <button type="submit" className="btn-admin" style={{ flex: 2, background: 'var(--cor-destaque)', color: 'black', fontWeight: 'bold' }} disabled={loading}>
+                                <button type="button" onClick={() => setShowModal(false)} className="btn-admin" style={{ flex: 1, background: '#333', cursor: 'pointer' }}>Cancelar</button>
+                                <button type="submit" className="btn-admin" style={{ flex: 2, background: 'var(--cor-destaque)', color: 'black', fontWeight: 'bold', cursor: 'pointer' }} disabled={loading}>
                                     {loading ? 'A Guardar...' : 'Salvar Alterações'}
                                 </button>
                             </div>

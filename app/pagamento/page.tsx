@@ -7,11 +7,16 @@ import Image from 'next/image';
 import { getPaymentDetails } from '@/app/actions/pagamento';
 import { Copy, Check, MessageCircle } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+// Importação vital para injetar o faturamento no Analytics
+import { useAnalytics } from '@/components/AdvancedAnalytics';
 
 function PaymentContent() {
     const { showToast } = useToast();
     const searchParams = useSearchParams();
     const participanteId = searchParams.get('participante_id');
+    
+    // Injeta as funções do Analytics
+    const { trackConversion, trackEvent } = useAnalytics();
 
     const [loading, setLoading] = useState(true);
     const [participante, setParticipante] = useState<any>(null);
@@ -48,6 +53,27 @@ function PaymentContent() {
         }
     }, [participanteId]);
 
+    // Rastreia o abandono vs início de checkout
+    useEffect(() => {
+        if (participante && rifa) {
+            const total = participante.numeros_escolhidos.length * rifa.preco_numero;
+            trackEvent({
+                event: 'begin_checkout',
+                category: 'ecommerce',
+                action: 'begin_checkout',
+                value: total,
+                customParameters: {
+                    currency: 'BRL',
+                    items: [{
+                        item_id: `RIFA-${rifa.id}`,
+                        item_name: `Rifa: ${rifa.nome_premio}`,
+                        price: rifa.preco_numero,
+                        quantity: participante.numeros_escolhidos.length
+                    }]
+                }
+            });
+        }
+    }, [participante, rifa, trackEvent]);
 
     const copiarChavePix = () => {
         if (!pixKey) {
@@ -57,6 +83,15 @@ function PaymentContent() {
         navigator.clipboard.writeText(pixKey).then(() => {
             setCopiado(true);
             showToast('Chave PIX copiada!', 'success');
+            
+            // Medir interação com a chave PIX (indicador de intenção altíssima)
+            trackEvent({
+                event: 'interaction',
+                category: 'payment',
+                action: 'copy_pix',
+                label: `RIFA-${rifa?.id}`
+            });
+
             setTimeout(() => setCopiado(false), 2000);
         }).catch(() => {
             showToast('Não foi possível copiar a chave. Copie manualmente.', 'error');
@@ -67,6 +102,11 @@ function PaymentContent() {
         if (!participante || !rifa) return;
 
         const total = participante.numeros_escolhidos.length * rifa.preco_numero;
+        const transactionId = `RIFA-PIX-${participante.id}-${Date.now()}`;
+
+        // OBLITERA A CEGUEIRA DE CONVERSÃO: Dispara a venda no GA4 e Supabase
+        trackConversion('purchase', total, 'BRL', transactionId);
+
         const mensagem = `Olá! Acabei de fazer o pagamento da Rifa *${rifa.nome_premio}*.\n\n` +
             `*Nome:* ${participante.nome}\n` +
             `*Números:* ${participante.numeros_escolhidos.join(', ')}\n` +
@@ -157,16 +197,14 @@ function PaymentContent() {
                     </div>
 
                     <div className="qr-code-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                        {/* Fallback inteligente para imagem */}
                         <div style={{ background: 'white', padding: '10px', borderRadius: '8px' }}>
                             <Image
                                 src="/imagens/pix-qrcode-placeholder.png"
                                 alt="QR Code Pix"
                                 width={200}
                                 height={200}
-                                style={{ width: '200px', height: 'auto' }} // Fix do warning de aspect ratio
+                                style={{ width: '200px', height: 'auto' }}
                                 onError={(e) => {
-                                    // Se falhar, esconde (fallback visual via CSS ou estado seria ideal, mas isso resolve o crash)
                                     (e.target as HTMLImageElement).style.display = 'none';
                                 }}
                             />
@@ -197,8 +235,10 @@ function PaymentContent() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '10px',
-                        background: '#25D366', // Cor oficial WhatsApp
-                        color: 'white'
+                        background: '#25D366',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
                     }}
                 >
                     <MessageCircle size={24} />

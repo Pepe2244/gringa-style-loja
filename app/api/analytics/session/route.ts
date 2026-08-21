@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// OBRIGATÓRIO: Garante que o dashboard do admin leia dados reais e não o cache de ontem.
+export const dynamic = 'force-dynamic';
+
 interface SessionData {
     sessionId: string;
     startTime: number;
@@ -46,7 +49,6 @@ export async function POST(request: NextRequest) {
 
         if (sessionError) {
             console.error('Erro ao salvar sessão:', sessionError);
-            // Não retornar erro para não quebrar a experiência do usuário
         }
 
         // Processar eventos da sessão
@@ -76,7 +78,7 @@ async function processSessionEvents(sessionId: string, events: any[]) {
             event_category: event.category,
             event_action: event.action,
             event_label: event.label,
-            event_value: event.value,
+            event_value: event.value || 0, // Proteção contra valores nulos em cálculos matemáticos
             custom_parameters: event.customParameters || {},
             timestamp: event.timestamp ? new Date(event.timestamp).toISOString() : new Date().toISOString(),
             created_at: new Date().toISOString()
@@ -121,7 +123,8 @@ async function updateAggregatedMetrics(sessionData: SessionData) {
             device_types: {},
             top_pages: {},
             conversion_rate: 0,
-            avg_session_duration: 0
+            avg_session_duration: 0,
+            total_revenue: 0 // Métrica vital para ROI adicionada
         };
 
         // Atualizar contadores
@@ -147,12 +150,20 @@ async function updateAggregatedMetrics(sessionData: SessionData) {
             metrics.top_pages[page] = (metrics.top_pages[page] || 0) + 1;
         });
 
-        // Verificar conversões
+        // Verificar conversões de venda reais e faturamento
+        const purchaseEvents = sessionData.events.filter(e => e.category === 'ecommerce' && e.action === 'purchase');
         const hasConversion = sessionData.events.some(e =>
             e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
         );
+        
         if (hasConversion) {
             metrics.conversion_rate = ((metrics.conversion_rate * (metrics.total_sessions - 1)) + 1) / metrics.total_sessions;
+        }
+
+        // Somar receita das vendas da sessão
+        const sessionRevenue = purchaseEvents.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
+        if (sessionRevenue > 0) {
+            metrics.total_revenue = (metrics.total_revenue || 0) + sessionRevenue;
         }
 
         // Salvar ou atualizar métricas
@@ -185,7 +196,7 @@ export async function GET(request: NextRequest) {
 
         if (error) throw error;
 
-        return NextResponse.json({ metrics: data });
+        return NextResponse.json({ metrics: data || [] });
     } catch (error) {
         console.error('Erro ao buscar métricas:', error);
         return NextResponse.json(

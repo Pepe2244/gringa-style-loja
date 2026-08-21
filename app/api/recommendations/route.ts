@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// Força o Next.js a nunca fazer cache desta rota, garantindo dados em tempo real
+export const dynamic = 'force-dynamic';
+
 interface RecommendationRequest {
     productId: string;
     category: string;
@@ -51,13 +54,13 @@ async function getUpsellProducts(category: string, tags: string[], limit: number
         .from('produtos')
         .select('*')
         .eq('categoria', category)
-        .eq('ativo', true)
+        .eq('em_estoque', true) // Correção do schema
         .order('preco', { ascending: false })
-        .limit(limit * 2); // Buscar mais para filtrar
+        .limit(limit * 2);
 
     if (error) throw error;
+    if (!data || data.length === 0) return [];
 
-    // Filtrar produtos premium (preço acima da média)
     const prices = data.map(p => p.preco);
     const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
 
@@ -68,21 +71,20 @@ async function getUpsellProducts(category: string, tags: string[], limit: number
 
 // Produtos complementares baseados em tags e carrinho
 async function getCrossSellProducts(category: string, tags: string[], cartItems: string[], limit: number) {
-    // Buscar produtos com tags relacionadas
     const relatedTags = getRelatedTags(tags);
 
     const { data, error } = await supabase
         .from('produtos')
         .select('*')
-        .eq('ativo', true)
+        .eq('em_estoque', true) // Correção do schema
         .or(`categoria.eq.${category},tags.cs.{${relatedTags.join(',')}}`)
-        .not('id', 'in', `(${cartItems.join(',')})`)
+        .not('id', 'in', `(${cartItems.length > 0 ? cartItems.join(',') : '0'})`) // Previne erro de sintaxe se cartItems for vazio
         .order('total_vendas', { ascending: false })
         .limit(limit);
 
     if (error) throw error;
 
-    return data;
+    return data || [];
 }
 
 // Produtos relacionados (mesma categoria e tags similares)
@@ -91,14 +93,14 @@ async function getRelatedProducts(category: string, tags: string[], excludeId: s
         .from('produtos')
         .select('*')
         .eq('categoria', category)
-        .eq('ativo', true)
+        .eq('em_estoque', true) // Correção do schema
         .neq('id', excludeId)
         .order('total_vendas', { ascending: false })
         .limit(limit * 2);
 
     if (error) throw error;
+    if (!data) return [];
 
-    // Priorizar produtos com tags em comum
     const scoredProducts = data.map(product => ({
         ...product,
         score: calculateRelevanceScore(product.tags || [], tags)
@@ -111,7 +113,6 @@ async function getRelatedProducts(category: string, tags: string[], excludeId: s
 
 // Produtos frequentemente comprados juntos
 async function getFrequentlyBoughtTogether(productId: string, limit: number) {
-    // Buscar pedidos que contenham este produto
     const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
         .select('itens')
@@ -119,25 +120,24 @@ async function getFrequentlyBoughtTogether(productId: string, limit: number) {
 
     if (ordersError) throw ordersError;
 
-    // Contar frequência de produtos comprados juntos
     const productFrequency: { [key: string]: number } = {};
 
-    orders.forEach(order => {
-        order.itens.forEach((item: any) => {
-            if (item.produto_id !== productId) {
-                productFrequency[item.produto_id] = (productFrequency[item.produto_id] || 0) + 1;
-            }
+    if (orders) {
+        orders.forEach(order => {
+            order.itens.forEach((item: any) => {
+                if (item.produto_id !== productId) {
+                    productFrequency[item.produto_id] = (productFrequency[item.produto_id] || 0) + 1;
+                }
+            });
         });
-    });
+    }
 
-    // Buscar os produtos mais frequentes
     const frequentProductIds = Object.entries(productFrequency)
         .sort(([,a], [,b]) => b - a)
         .slice(0, limit)
         .map(([id]) => id);
 
     if (frequentProductIds.length === 0) {
-        // Fallback para produtos da mesma categoria
         const { data: product } = await supabase
             .from('produtos')
             .select('categoria')
@@ -154,24 +154,24 @@ async function getFrequentlyBoughtTogether(productId: string, limit: number) {
         .from('produtos')
         .select('*')
         .in('id', frequentProductIds)
-        .eq('ativo', true);
+        .eq('em_estoque', true); // Correção do schema
 
     if (error) throw error;
 
-    // Ordenar pela frequência
-    return data.sort((a, b) =>
+    return (data || []).sort((a, b) =>
         (productFrequency[b.id] || 0) - (productFrequency[a.id] || 0)
     );
 }
 
-// Calcular score de relevância baseado em tags compartilhadas
 function calculateRelevanceScore(productTags: string[], userTags: string[]): number {
+    if (!productTags || !userTags) return 0;
     const sharedTags = productTags.filter(tag => userTags.includes(tag));
     return sharedTags.length;
 }
 
-// Obter tags relacionadas (expansão de tags)
 function getRelatedTags(tags: string[]): string[] {
+    if (!tags || tags.length === 0) return [];
+    
     const tagRelations: { [key: string]: string[] } = {
         'vestido': ['blusa', 'saia', 'acessorio', 'bolsa'],
         'blusa': ['vestido', 'calca', 'saia', 'acessorio'],

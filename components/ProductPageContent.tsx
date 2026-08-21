@@ -1,4 +1,3 @@
-// Arquivo: components/ProductPageContent.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -21,7 +20,8 @@ import SavingsBadge from '@/components/SavingsBadge';
 import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import { PaymentMethods } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
-import { trackButtonClick, trackVariantSelection, trackProductShare, trackEvent } from '@/utils/analytics';
+// Importa o hook poderoso que consolida GA4 e Supabase
+import { useAnalytics } from '@/components/AdvancedAnalytics'; 
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
@@ -40,6 +40,9 @@ interface ProductPageContentProps {
 export default function ProductPageContent({ id, initialProduct }: ProductPageContentProps) {
     const { showToast } = useToast();
     const addRecentlyViewed = useRecentlyViewedStore(state => state.addView);
+    
+    // Injeção do Analytics
+    const { trackProductView, trackAddToCart, trackConversion, trackEvent } = useAnalytics();
 
     const [product, setProduct] = useState<Product | null>(initialProduct || null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -78,19 +81,18 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         }
     };
 
+    // Rastreamento consolidado de visualização
     useEffect(() => {
-        if (product && typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'view_item', {
-                currency: 'BRL',
-                value: product.preco_promocional || product.preco,
-                items: [{
-                    item_id: product.id,
-                    item_name: product.nome,
-                    price: product.preco_promocional || product.preco
-                }]
-            });
+        if (product) {
+            const price = product.preco_promocional || product.preco;
+            trackProductView(
+                String(product.id), 
+                product.nome, 
+                String(product.categoria_id || 'sem-categoria'), 
+                price
+            );
         }
-    }, [product]);
+    }, [product, trackProductView]);
 
     const setupProductState = (data: Product) => {
         const variants = data.variants as unknown as ProductVariant | null;
@@ -159,19 +161,8 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
         const price = getDisplayedPrice(product, paymentMethod);
 
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'add_to_cart', {
-                currency: 'BRL',
-                value: price,
-                items: [{
-                    item_id: product.id,
-                    item_name: product.nome,
-                    price: price,
-                    quantity: 1,
-                    item_variant: selectedVariant || undefined
-                }]
-            });
-        }
+        // Dispara o evento consolidado do Analytics
+        trackAddToCart(String(product.id), product.nome, 1, price);
 
         const cartItem: CartItem = {
             produto_id: product.id,
@@ -180,14 +171,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         };
 
         addItem(cartItem);
-        trackEvent('add_to_cart', {
-            product_id: product.id,
-            product_name: product.nome,
-            source: 'product_page',
-            variant: selectedVariant || 'default'
-        });
-        
-        // Chamada do toast de sucesso removida para evitar popup desformatado inferior
     };
 
     const handleDirectPurchase = () => {
@@ -198,21 +181,10 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         }
 
         const price = getDisplayedPrice(product, paymentMethod);
+        const transactionId = `ZAP-DIRECT-${Date.now()}`;
 
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'purchase', {
-                transaction_id: `ZAP-DIRECT-${Date.now()}`,
-                value: price,
-                currency: 'BRL',
-                items: [{
-                    item_id: product.id,
-                    item_name: product.nome,
-                    price: price,
-                    quantity: 1,
-                    item_variant: selectedVariant || undefined
-                }]
-            });
-        }
+        // Dispara o evento consolidado de conversão (faturamento)
+        trackConversion('purchase', price, 'BRL', transactionId);
 
         const variants = product.variants as unknown as ProductVariant | null;
         const variantInfo = variants ? ` (${variants.tipo}: ${selectedVariant})` : '';
@@ -231,12 +203,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         }
         message += `\n\n*Aguardo o retorno!*`;
 
-        trackEvent('direct_purchase', {
-            product_id: product.id,
-            product_name: product.nome,
-            payment_method: paymentMethod,
-            installments: installments
-        });
         window.open(`https://wa.me/5515998092548?text=${encodeURIComponent(message)}`, '_blank');
         setShowPurchaseModal(false);
     };
@@ -247,7 +213,12 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         const title = `${product.nome} | Gringa Style`;
         const text = `Confira ${product.nome} na Gringa Style!`;
 
-        trackProductShare(product.id, product.nome, 'web');
+        trackEvent({
+            event: 'share',
+            category: 'engagement',
+            action: 'share',
+            label: product.nome
+        });
 
         if (navigator.share) {
             try {
@@ -295,7 +266,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
     const isVideo = currentMedia?.includes('.mp4') || currentMedia?.includes('.webm') || !!product.video;
     const videoUrl = product.video || (isVideo ? currentMedia : null);
     const variants = product.variants as unknown as ProductVariant | null;
-    const fallbackImage = '/imagens/gringa_style_logo.png';
+    const fallbackImage = '/imagens/logo_gringa_style.png';
 
     const MAX_DESC_LENGTH = 150;
     const isLongDescription = product.descricao && product.descricao.length > MAX_DESC_LENGTH;
@@ -443,7 +414,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     </div>
                 </div>
 
-                {}
                 <div className="produto-detalhe-coluna-info">
                     <div className="titulo-desktop-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                         <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2.5rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product.nome}</h1>
@@ -585,7 +555,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 </div>
             </div>
 
-            {}
             {relatedProducts.length > 0 && (
                 <section className="related-products-container" style={{ display: 'block', marginTop: '60px', borderTop: '1px solid #222', paddingTop: '40px' }}>
                     <h2 className="related-title" style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', marginBottom: '30px', color: 'var(--cor-destaque)' }}>Você também pode gostar</h2>
@@ -629,7 +598,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 </section>
             )}
 
-            {}
             <RecentlyViewed currentProductId={product?.id} limit={5} />
 
             <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido Rápido">

@@ -5,9 +5,15 @@ export const revalidate = 3600; // Revalida a cada 1 hora
 
 export async function GET() {
   try {
+    // JOIN com a tabela de categorias para obter a taxonomia real da loja
     const { data: produtos, error } = await supabase
       .from('produtos')
-      .select('*')
+      .select(`
+        *,
+        categorias (
+          nome
+        )
+      `)
       .eq('em_estoque', true)
       .not('media_urls', 'is', null);
 
@@ -34,7 +40,7 @@ export async function GET() {
 
     let itemsXml = '';
 
-    (produtos || []).forEach((produto) => {
+    (produtos || []).forEach((produto: any) => {
       if (!Array.isArray(produto.media_urls) || produto.media_urls.length === 0) return;
       const rawImage = produto.media_urls[0];
       if (!rawImage || typeof rawImage !== 'string' || !rawImage.trim()) return;
@@ -50,6 +56,11 @@ export async function GET() {
         : null;
 
       const descricaoText = produto.descricao?.trim() || produto.nome;
+      
+      // Extração de dados dinâmicos
+      const categoriaNome = produto.categorias?.nome || 'Diversos';
+      const brandName = produto.marca || 'Gringa Style';
+      const hasGtin = !!produto.gtin13;
 
       itemsXml += `
         <item>
@@ -59,12 +70,21 @@ export async function GET() {
             <g:link>${escapeXml(productUrl)}</g:link>
             <g:image_link>${escapeXml(imageLink)}</g:image_link>
             <g:condition>new</g:condition>
-            <g:availability>${produto.em_estoque ? 'in_stock' : 'out_of_stock'}</g:availability>
+            <g:availability>in_stock</g:availability>
             <g:price>${precoBase} BRL</g:price>
-            <g:google_product_category>Apparel &amp; Accessories &gt; Safety Apparel</g:google_product_category>
-            <g:product_type>Equipamentos de Solda &gt; Máscaras de Solda</g:product_type>
-            <g:brand>Gringa Style</g:brand>
-            <g:mpn>${escapeXml(produto.slug || String(produto.id))}</g:mpn>
+            <g:product_type>${escapeXml(`Equipamentos > ${categoriaNome}`)}</g:product_type>
+            <g:brand>${escapeXml(brandName)}</g:brand>
+            <g:mpn>${escapeXml(produto.slug || String(produto.id))}</g:mpn>`;
+      
+      // Validação de Identificadores (Crucial para o ROI no Google Ads)
+      if (hasGtin) {
+          itemsXml += `\n            <g:gtin>${escapeXml(produto.gtin13)}</g:gtin>`;
+          itemsXml += `\n            <g:identifier_exists>yes</g:identifier_exists>`;
+      } else {
+          itemsXml += `\n            <g:identifier_exists>no</g:identifier_exists>`;
+      }
+
+      itemsXml += `
             <g:shipping>
                 <g:country>BR</g:country>
                 <g:service>Standard</g:service>
@@ -80,14 +100,13 @@ export async function GET() {
       }
 
       itemsXml += `
-            <g:identifier_exists>false</g:identifier_exists>
         </item>`;
     });
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
     <channel>
-        <title>Gringa Style - Equipamentos TIG</title>
+        <title>Gringa Style</title>
         <link>${SITE_URL}</link>
         <description>Catálogo Oficial de Produtos Gringa Style</description>
 ${itemsXml}

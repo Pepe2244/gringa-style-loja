@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Product } from '@/types';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import ProductCard from '@/components/ProductCard';
+import { supabase } from '@/lib/supabase';
 
 interface RecentlyViewedProps {
     currentProductId?: number;
@@ -17,11 +18,38 @@ export default function RecentlyViewed({ currentProductId, diasNovo = 7, limit =
     const getRecent = useRecentlyViewedStore(state => state.getRecent);
 
     useEffect(() => {
-        setMounted(true);
-        const recent = getRecent(limit + 1)
-            .filter(p => p.id !== currentProductId)
-            .slice(0, limit);
-        setRecentProducts(recent);
+        const fetchValidProducts = async () => {
+            const recent = getRecent(limit + 1)
+                .filter(p => p.id !== currentProductId)
+                .slice(0, limit);
+
+            if (recent.length === 0) {
+                setMounted(true);
+                return;
+            }
+
+            const ids = recent.map(p => p.id);
+
+            try {
+                const { data, error } = await supabase
+                    .from('produtos')
+                    .select('id')
+                    .in('id', ids);
+
+                if (error) throw error;
+
+                const validIds = data.map(p => p.id);
+                const validProducts = recent.filter(p => validIds.includes(p.id));
+
+                setRecentProducts(validProducts);
+            } catch (error) {
+                setRecentProducts(recent);
+            } finally {
+                setMounted(true);
+            }
+        };
+
+        fetchValidProducts();
     }, [currentProductId, getRecent, limit]);
 
     if (!mounted || recentProducts.length === 0) {

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Product } from '@/types';
 
@@ -247,11 +246,11 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'seller': seller
   };
 
-  const ratingValue = product.avaliacoes ? product.avaliacoes.toString() : '4.8';
-  const reviewCount = product.totalAvaliacoes ? product.totalAvaliacoes.toString() : '27';
-
   const brandName = product.marca || 'Gringa Style';
   const gtin = product.gtin13 ? { gtin13: product.gtin13 } : {};
+
+  // Verifica se o produto REALMENTE tem avaliações no banco
+  const hasValidRatings = product.avaliacoes && product.totalAvaliacoes && product.totalAvaliacoes > 0;
 
   const schema: any = {
     '@context': 'https://schema.org',
@@ -291,27 +290,15 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
         }
       ]
     }),
-    'aggregateRating': {
-      '@type': 'AggregateRating',
-      'ratingValue': ratingValue,
-      'reviewCount': reviewCount,
-      'bestRating': '5'
-    },
-    'review': [
-      {
-        '@type': 'Review',
-        'reviewRating': {
-          '@type': 'Rating',
-          'ratingValue': '5',
-          'bestRating': '5'
-        },
-        'author': {
-          '@type': 'Person',
-          'name': 'Cliente Gringa Style'
-        },
-        'reviewBody': 'Produto excelente, acabamento de qualidade e entrega rápida. Recomendo!'
+    // Só insere o AggregateRating se for real e existir no banco
+    ...(hasValidRatings && {
+      'aggregateRating': {
+        '@type': 'AggregateRating',
+        'ratingValue': product.avaliacoes!.toString(),
+        'reviewCount': product.totalAvaliacoes!.toString(),
+        'bestRating': '5'
       }
-    ]
+    })
   };
 
   return (
@@ -417,28 +404,8 @@ export const ItemListSchema = ({
           'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
           'hasMerchantReturnPolicy': merchantReturnPolicy,
           'shippingDetails': shippingDetails
-        },
-        'aggregateRating': {
-          '@type': 'AggregateRating',
-          'ratingValue': '4.8',
-          'reviewCount': '27',
-          'bestRating': '5'
-        },
-        'review': [
-          {
-            '@type': 'Review',
-            'reviewRating': {
-              '@type': 'Rating',
-              'ratingValue': '5',
-              'bestRating': '5'
-            },
-            'author': {
-              '@type': 'Person',
-              'name': 'Cliente Gringa Style'
-            },
-            'reviewBody': 'Produto excelente, acabamento de qualidade e entrega rápida. Recomendo!'
-          }
-        ]
+        }
+        // Falsificações de avaliações removidas para proteger a integridade do domínio
       }
     };
   });
