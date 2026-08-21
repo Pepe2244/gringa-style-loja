@@ -6,6 +6,11 @@ const cspValue = isDevelopment
   : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;";
 
 const nextConfig: NextConfig = {
+  // Força o compilador a alvejar navegadores modernos, eliminando polyfills legados desnecessários
+  compiler: {
+    removeConsole: !isDevelopment,
+  },
+  
   experimental: {
     serverActions: {
       allowedOrigins: [
@@ -17,7 +22,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    qualities: [35, 60, 75],
+    qualities: [75, 85], // Qualidade ajustada para melhor balanço visual/performance sem reprocessamentos excessivos
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
     remotePatterns: [
