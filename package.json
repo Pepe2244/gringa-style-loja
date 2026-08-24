@@ -1,44 +1,50 @@
 {
-  "name": "temp_app",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "format": "prettier --write ."
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1113.0",
-    "@next/third-parties": "^16.1.6",
-    "@supabase/supabase-js": "^2.98.0",
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^0.555.0",
-    "next": "^16.0.7",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "sharp": "^0.35.3",
-    "web-vitals": "^3.0.0",
-    "zustand": "^5.0.9"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "baseline-browser-mapping": "^2.11.15",
-    "dotenv": "^17.4.2",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.5",
-    "eslint-config-prettier": "^9.0.0",
-    "prettier": "^3.0.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
-  "browserslist": [
-    "> 0.5%",
-    "not dead",
-    "not op_mini all"
-  ]
+"name": "temp_app",
+"version": "0.1.0",
+"private": true,
+"scripts": {
+"dev": "next dev",
+"build": "next build",
+"start": "next start",
+"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+"format": "prettier --write ."
+},
+"dependencies": {
+"@aws-sdk/client-s3": "^3.1113.0",
+"@next/third-parties": "^16.1.6",
+"@supabase/supabase-js": "^2.98.0",
+"framer-motion": "^12.38.0",
+"lucide-react": "^0.555.0",
+"next": "^16.0.7",
+"react": "^19.2.1",
+"react-dom": "^19.2.1",
+"sharp": "^0.35.3",
+"web-vitals": "^3.0.0",
+"zustand": "^5.0.9"
+},
+"devDependencies": {
+"@tailwindcss/postcss": "^4",
+"@types/node": "^20",
+"@types/react": "^19",
+"@types/react-dom": "^19",
+"baseline-browser-mapping": "^2.11.15",
+"dotenv": "^17.4.2",
+"eslint": "^9",
+"eslint-config-next": "16.0.5",
+"eslint-config-prettier": "^9.0.0",
+"prettier": "^3.0.0",
+"tailwindcss": "^4",
+"typescript": "^5"
+},
+"browserslist": [
+"last 2 major versions",
+"chrome >= 95",
+"firefox >= 95",
+"safari >= 15.4",
+"ios >= 15.4",
+"edge >= 95",
+"not dead",
+"not IE 11",
+"not op_mini all"
+]
 }

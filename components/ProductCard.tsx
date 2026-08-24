@@ -146,7 +146,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         src={displayImages[currentImageIndex]}
                         alt={`Produto ${product.nome}`}
                         fill
-                        sizes="(max-width: 639px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        sizes="(max-width: 639px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="card-imagem visivel"
                         style={{ objectFit: 'cover' }}
                         priority={priority}
@@ -154,7 +154,6 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                         loading={priority ? 'eager' : 'lazy'}
                         placeholder="blur"
                         blurDataURL={BLUR_DATA_URL}
-                        quality={35}
                     />
                 )}
             </div>

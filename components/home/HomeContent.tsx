@@ -1,18 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Product, Category } from '@/types';
-import { TrendingUp, Package } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
-import RetentionHighlights from '@/components/home/RetentionHighlights';
-import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
-import PersonalizedRecommendations from '@/components/home/PersonalizedRecommendations';
-import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
-import ProductFAQ from '@/components/home/ProductFAQ'; // Caminho corrigido
 import { trackEvent, trackFilterUsage, trackSearchQuery } from '@/utils/analytics';
 import { ItemListSchema } from '@/components/SEO/StructuredData';
+
+// IMPORTAÇÕES DINÂMICAS: Cortam drasticamente o JavaScript inicial carregado na tela.
+// Só baixam quando o usuário chega perto delas ou precisa delas.
+const RetentionHighlights = dynamic(() => import('@/components/home/RetentionHighlights'), { ssr: false });
+const CartRecoveryBanner = dynamic(() => import('@/components/home/CartRecoveryBanner'), { ssr: false });
+const PersonalizedRecommendations = dynamic(() => import('@/components/home/PersonalizedRecommendations'), { ssr: false });
+const DirectPurchaseModal = dynamic(() => import('@/components/modals/DirectPurchaseModal'), { ssr: false });
+const ProductFAQ = dynamic(() => import('@/components/home/ProductFAQ'), { ssr: false });
 
 interface HomeContentProps {
     initialProducts: Product[];
@@ -140,9 +143,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     ].reduce((sum, value) => sum + value, 0);
 
     const hasActiveFilters = activeFilterCount > 0;
-    const produtosEmEstoque = filteredProducts.filter(product => product.em_estoque).length;
-    const produtosComDesconto = filteredProducts.filter(product => product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < product.preco).length;
-    const featuredCategories = categories.slice(0, 6);
 
     const resetFilters = () => {
         setSearchTerm('');
@@ -227,7 +227,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 loading={products.length === 0}
                 diasNovo={diasNovo}
                 onQuickView={handleQuickView}
-                hasMore={hasMore && searchTerm === '' && selectedCategory === null} // Only show Load More if not filtering aggressively
+                hasMore={hasMore && searchTerm === '' && selectedCategory === null}
                 loadingMore={loadingMore}
                 onLoadMore={handleLoadMore}
             />
@@ -258,12 +258,14 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 </p>
             </section>
 
-            <DirectPurchaseModal
-                isOpen={isPurchaseModalOpen}
-                onClose={() => setIsPurchaseModalOpen(false)}
-                product={selectedProduct}
-                initialVariant={selectedVariant}
-            />
+            {isPurchaseModalOpen && (
+                <DirectPurchaseModal
+                    isOpen={isPurchaseModalOpen}
+                    onClose={() => setIsPurchaseModalOpen(false)}
+                    product={selectedProduct}
+                    initialVariant={selectedVariant}
+                />
+            )}
         </div>
     );
 }

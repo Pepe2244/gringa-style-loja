@@ -6,12 +6,12 @@ const cspValue = isDevelopment
   : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;";
 
 const nextConfig: NextConfig = {
-  // Força o compilador a alvejar navegadores modernos, eliminando polyfills legados desnecessários
   compiler: {
     removeConsole: !isDevelopment,
   },
   
   experimental: {
+    inlineCss: true, // Injeta o CSS crítico direto no HTML, zerando o bloqueio de renderização
     serverActions: {
       allowedOrigins: [
         'probable-trout-979jr97rr7q53x7qx-3000.app.github.dev',
@@ -22,9 +22,10 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    qualities: [75, 85], // Qualidade ajustada para melhor balanço visual/performance sem reprocessamentos excessivos
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
+    deviceSizes: [320, 428, 540, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: 'https',

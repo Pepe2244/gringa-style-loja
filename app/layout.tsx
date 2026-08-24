@@ -17,17 +17,19 @@ const roboto = Roboto({
   variable: "--font-roboto",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: "swap",
 });
 
 const teko = Teko({
   variable: "--font-teko",
   subsets: ["latin"],
   weight: ["700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://gringa-style.netlify.app'),
-  alternates: { 
+  alternates: {
     canonical: '/',
   },
   title: {
@@ -76,14 +78,11 @@ export default async function RootLayout({
     <html lang="pt-BR">
       <head>
         {/* DADOS ESTRUTURADOS GLOBAIS - A autoridade da marca no Google */}
-        <LocalBusinessSchema />
-        <WebSiteSchema />
-        <OrganizationSchema />
-
+        
         {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (
           <>
-            <link rel="preconnect" href={supabaseOrigin} />
+            <link rel="preconnect" href={supabaseOrigin} crossOrigin="anonymous" />
             <link rel="dns-prefetch" href={supabaseOrigin} />
           </>
         )}
