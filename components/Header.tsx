@@ -14,7 +14,7 @@ export default function Header() {
     const pathname = usePathname();
     const totalItems = useCartStore(state => state.totalItems());
     const wishlistItems = useWishlistStore(state => state.items) || [];
-    const wishlistCount = wishlistItems.length; // Quantidade de produtos únicos favoritados
+    const wishlistCount = wishlistItems.length;
     
     const [mounted, setMounted] = useState(false);
     const [hasActiveRaffles, setHasActiveRaffles] = useState(false);
@@ -68,21 +68,7 @@ export default function Header() {
                     />
                 </Link>
 
-                <nav 
-                    className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`} 
-                    style={isMenuOpen ? { 
-                        backgroundColor: 'rgba(18, 18, 18, 0.95)', 
-                        backdropFilter: 'blur(16px)',
-                        position: 'fixed',
-                        top: '85px', // Alinha exatamente abaixo do header no mobile
-                        left: 0,
-                        width: '100%',
-                        height: 'calc(100vh - 85px)',
-                        paddingTop: '20px',
-                        overflowY: 'auto',
-                        zIndex: 999
-                    } : {}}
-                >
+                <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`}>
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
                     <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
                     <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
@@ -97,7 +83,7 @@ export default function Header() {
                 </nav>
 
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-                    {/* Atalho de Favoritos (à esquerda do carrinho) */}
+                    {/* Atalho de Favoritos */}
                     <Link 
                         href="/favoritos" 
                         className="favoritos" 
@@ -161,7 +147,7 @@ export default function Header() {
                     </button>
                 </div>
             </div>
-            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu} style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.6)', top: '85px', zIndex: 998 }}></div>}
+            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu}></div>}
         </header>
     );
 }
