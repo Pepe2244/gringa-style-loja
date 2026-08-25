@@ -55,9 +55,9 @@ export default function Header() {
     const isActive = (path: string) => pathname === path ? 'active' : '';
 
     return (
-        <header className="cabecalho" style={{ position: 'relative', zIndex: 50 }}>
-            <div className="container">
-               <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none' }}>
+        <header className="cabecalho !relative !z-50 !w-full" style={{ position: 'relative', zIndex: 50 }}>
+            <div className="container !relative flex items-center justify-between">
+               <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
                     <Image
                         src="/imagens/logo_gringa_style.png"
                         alt="Gringa Style Logo"
@@ -68,7 +68,11 @@ export default function Header() {
                     />
                 </Link>
 
-                <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`} style={isMenuOpen ? { zIndex: 50 } : {}}>
+                {/* Correção de UX: Ancoragem top-full e efeito Glassmorphism forçado */}
+                <nav 
+                    className={`navegacao ${isMenuOpen ? 'menu-aberto !absolute !top-full !left-0 !w-full !flex !flex-col !bg-black/80 !backdrop-blur-md !py-6 !gap-6 !border-t !border-white/10 !shadow-2xl' : 'hidden md:flex'}`} 
+                    style={isMenuOpen ? { zIndex: 49 } : {}}
+                >
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
                     <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
                     <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
@@ -139,7 +143,7 @@ export default function Header() {
 
                     <button
                         id="hamburger-btn"
-                        className="hamburger-btn"
+                        className="hamburger-btn md:hidden"
                         aria-label="Abrir menu de navegação"
                         onClick={toggleMenu}
                     >
@@ -147,7 +151,8 @@ export default function Header() {
                     </button>
                 </div>
             </div>
-            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu} style={{ position: 'fixed', inset: 0, zIndex: 40, backgroundColor: 'rgba(0,0,0,0.6)' }}></div>}
+            {/* Overlay mantido, mas com blur leve para manter o aspecto premium */}
+            {isMenuOpen && <div className="overlay-menu !fixed !inset-0 !bg-black/50 !backdrop-blur-sm" onClick={closeMenu} style={{ zIndex: 40 }}></div>}
         </header>
     );
 }
