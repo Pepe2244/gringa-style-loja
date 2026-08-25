@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { FAQSchema } from '@/components/SEO/StructuredData';
 
@@ -16,37 +18,73 @@ const ProductFAQ: React.FC<ProductFAQProps> = ({ faqs }) => {
   }
 
   return (
-    <div className="my-12 px-4 sm:px-0">
+    <>
       <FAQSchema questions={faqs} />
-      
-      <div className="text-center mb-8">
-        <h3 className="text-3xl font-bold text-white font-teko tracking-wide uppercase">
+      <div 
+        className="product-faq-section" 
+        style={{ 
+          marginTop: '50px', 
+          background: '#111', 
+          padding: '35px', 
+          borderRadius: '12px', 
+          border: '1px solid #27272a', 
+          textAlign: 'left' 
+        }}
+      >
+        <h3 
+          style={{ 
+            fontSize: '1.8rem', 
+            marginBottom: '25px', 
+            color: 'white', 
+            borderBottom: '2px solid var(--cor-destaque)', 
+            paddingBottom: '12px', 
+            display: 'inline-block',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}
+        >
           Perguntas Frequentes
         </h3>
-        <p className="text-zinc-400 text-sm sm:text-base mt-1">
-          Tire suas dúvidas sobre o produto, especificações e prazos.
-        </p>
-      </div>
 
-      <div className="space-y-6 max-w-3xl mx-auto">
-        {faqs.map((faq, index) => (
-          <details 
-            key={index} 
-            className="group bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-lg transition-all duration-200 hover:border-zinc-700"
-          >
-            <summary className="font-semibold text-lg text-amber-500 cursor-pointer flex justify-between items-center select-none focus:outline-none">
-              <span className="pr-4">{faq.q}</span>
-              <span className="text-amber-500 font-bold transition-transform duration-200 group-open:rotate-180">
-                ↓
-              </span>
-            </summary>
-            <p className="mt-4 text-zinc-300 text-sm sm:text-base leading-relaxed border-t border-zinc-800/80 pt-4">
-              {faq.a}
-            </p>
-          </details>
-        ))}
+        {faqs.map((faq, index) => {
+          const isLast = index === faqs.length - 1;
+          return (
+            <details 
+              key={index} 
+              style={{ 
+                marginBottom: isLast ? '0px' : '20px', 
+                borderBottom: isLast ? 'none' : '1px solid #27272a', 
+                paddingBottom: isLast ? '5px' : '15px' 
+              }}
+            >
+              <summary 
+                style={{ 
+                  color: 'var(--cor-destaque)', 
+                  fontWeight: 'bold', 
+                  fontSize: '1.2rem', 
+                  cursor: 'pointer', 
+                  listStyle: 'none', 
+                  display: 'flex', 
+                  alignItems: 'center' 
+                }}
+              >
+                <span style={{ marginRight: '10px' }}>›</span> {faq.q}
+              </summary>
+              <p 
+                style={{ 
+                  color: '#ccc', 
+                  lineHeight: '1.7', 
+                  marginTop: '12px', 
+                  paddingLeft: '20px' 
+                }}
+              >
+                {faq.a}
+              </p>
+            </details>
+          );
+        })}
       </div>
-    </div>
+    </>
   );
 };
 
