@@ -55,7 +55,7 @@ export default function Header() {
     const isActive = (path: string) => pathname === path ? 'active' : '';
 
     return (
-        <header className="cabecalho">
+        <header className="cabecalho" style={{ position: 'relative', zIndex: 50 }}>
             <div className="container">
                <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none' }}>
                     <Image
@@ -68,7 +68,7 @@ export default function Header() {
                     />
                 </Link>
 
-                <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`}>
+                <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`} style={isMenuOpen ? { zIndex: 50 } : {}}>
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
                     <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
                     <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
@@ -82,7 +82,7 @@ export default function Header() {
                     )}
                 </nav>
 
-                <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+                <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '18px', zIndex: 51, position: 'relative' }}>
                     {/* Atalho de Favoritos */}
                     <Link 
                         href="/favoritos" 
@@ -147,7 +147,7 @@ export default function Header() {
                     </button>
                 </div>
             </div>
-            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu}></div>}
+            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu} style={{ position: 'fixed', inset: 0, zIndex: 40, backgroundColor: 'rgba(0,0,0,0.6)' }}></div>}
         </header>
     );
 }
