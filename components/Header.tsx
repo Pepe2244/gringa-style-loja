@@ -55,7 +55,7 @@ export default function Header() {
     const isActive = (path: string) => pathname === path ? 'active' : '';
 
     return (
-        <header className="cabecalho !relative !z-50 !w-full" style={{ position: 'relative', zIndex: 50 }}>
+        <header className="cabecalho !sticky !top-0 !z-50 !w-full !bg-black/80 !backdrop-blur-md !border-b !border-white/5" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
             <div className="container !relative flex items-center justify-between">
                <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
                     <Image
@@ -68,9 +68,8 @@ export default function Header() {
                     />
                 </Link>
 
-                {/* Correção de UX: Ancoragem top-full e efeito Glassmorphism forçado */}
                 <nav 
-                    className={`navegacao ${isMenuOpen ? 'menu-aberto !absolute !top-full !left-0 !w-full !flex !flex-col !bg-black/80 !backdrop-blur-md !py-6 !gap-6 !border-t !border-white/10 !shadow-2xl' : 'hidden md:flex'}`} 
+                    className={`navegacao ${isMenuOpen ? 'menu-aberto !absolute !top-full !left-0 !w-full !flex !flex-col !bg-black/80 !backdrop-blur-md !py-4 !gap-3 !border-t !border-white/10 !shadow-2xl' : 'hidden md:flex'}`} 
                     style={isMenuOpen ? { zIndex: 49 } : {}}
                 >
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
@@ -87,7 +86,6 @@ export default function Header() {
                 </nav>
 
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '18px', zIndex: 51, position: 'relative' }}>
-                    {/* Atalho de Favoritos */}
                     <Link 
                         href="/favoritos" 
                         className="favoritos" 
@@ -122,7 +120,6 @@ export default function Header() {
                         </span>
                     </Link>
 
-                    {/* Atalho do Carrinho */}
                     <Link href="/carrinho" className="carrinho" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                         <ShoppingCart size={28} />
                         <span 
@@ -151,7 +148,7 @@ export default function Header() {
                     </button>
                 </div>
             </div>
-            {/* Overlay mantido, mas com blur leve para manter o aspecto premium */}
+            
             {isMenuOpen && <div className="overlay-menu !fixed !inset-0 !bg-black/50 !backdrop-blur-sm" onClick={closeMenu} style={{ zIndex: 40 }}></div>}
         </header>
     );
