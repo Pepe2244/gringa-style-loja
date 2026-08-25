@@ -3,13 +3,10 @@ import HomeContent from '@/components/home/HomeContent';
 import { Product } from '@/types';
 import { WebPageSchema } from '@/components/SEO/StructuredData';
 import type { Metadata } from 'next';
-import { getCachedValue, invalidateCachePrefix } from '@/lib/cache';
+import { getCachedValue } from '@/lib/cache';
 
+// ISR a nível de página garantido
 export const revalidate = 60;
-
-export async function revalidateHomeData() {
-  invalidateCachePrefix('home:');
-}
 
 export const metadata: Metadata = {
   title: 'Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG',
@@ -27,22 +24,37 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const [products, categories, diasNovo] = await Promise.all([
-    getCachedValue('home:products', 30_000, async () => {
-      const { data } = await supabase
-        .from('produtos')
-        .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
-        .order('created_at', { ascending: false })
-        .limit(12);
-      return (data || []) as Product[];
-    }),
-    getCachedValue('home:categories', 60_000, async () => {
-      const { data } = await supabase.from('categorias').select('*').order('nome');
-      return data || [];
-    }),
-    getCachedValue('home:dias-novo', 60_000, async () => {
-      const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle();
-      return data ? parseInt(data.valor) : 7;
-    })
+    getCachedValue(
+      async () => {
+        const { data } = await supabase
+          .from('produtos')
+          .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+          .order('created_at', { ascending: false })
+          .limit(12);
+        return (data || []) as Product[];
+      },
+      ['home-products-list'], // Key exclusiva
+      ['produtos', 'home'],   // Tags para revalidação nas Actions
+      30                      // TTL em Segundos
+    ),
+    getCachedValue(
+      async () => {
+        const { data } = await supabase.from('categorias').select('*').order('nome');
+        return data || [];
+      },
+      ['home-categories-list'],
+      ['categorias', 'home'],
+      60
+    ),
+    getCachedValue(
+      async () => {
+        const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle();
+        return data ? parseInt(data.valor) : 7;
+      },
+      ['home-config-dias-novo'],
+      ['configuracoes', 'home'],
+      60
+    )
   ]);
 
   return (
@@ -60,5 +72,3 @@ export default async function Home() {
     </main>
   );
 }
-
-

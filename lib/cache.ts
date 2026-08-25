@@ -1,37 +1,36 @@
-const inMemoryCache = new Map<string, { value: any; expiresAt: number }>();
+import { unstable_cache } from 'next/cache';
 
-export async function getCachedValue<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promise<T> {
-  const now = Date.now();
-  const cached = inMemoryCache.get(key);
-
-  if (cached && cached.expiresAt > now) {
-    return cached.value as T;
-  }
-
+/**
+ * Cache distribuído nativo do Next.js.
+ * Substitui o Map() in-memory para funcionar perfeitamente em Serverless/Edge.
+ * 
+ * @param fetcher Função assíncrona que busca os dados (ex: chamadas do Supabase)
+ * @param keys Array de strings para identificar o cache internamente
+ * @param tags Array de tags para permitir invalidação sob demanda
+ * @param ttlSeconds Segundos que o cache deve durar (revalidação baseada em tempo)
+ */
+export async function getCachedValue<T>(
+  fetcher: () => Promise<T>,
+  keys: string[],
+  tags: string[],
+  ttlSeconds: number = 3600 // Padrão: 1 hora
+): Promise<T> {
   try {
-    const value = await fetcher();
-    // Só grava no cache se a busca for bem sucedida (evita cachear erros)
-    inMemoryCache.set(key, { value, expiresAt: now + ttlMs });
-    return value;
+    const getCachedData = unstable_cache(
+      async () => {
+        const data = await fetcher();
+        return data;
+      },
+      keys,
+      {
+        tags: tags,
+        revalidate: ttlSeconds,
+      }
+    );
+
+    return await getCachedData();
   } catch (error) {
-    console.error(`Falha ao processar fetcher para o cache [${key}]:`, error);
+    console.error(`Falha no cache distribuído para as keys [${keys.join(', ')}]:`, error);
     throw error;
   }
-}
-
-export function invalidateCache(key: string): void {
-  inMemoryCache.delete(key);
-}
-
-export function invalidateCachePrefix(prefix: string): void {
-  for (const cachedKey of inMemoryCache.keys()) {
-    if (cachedKey.startsWith(prefix)) {
-      inMemoryCache.delete(cachedKey);
-    }
-  }
-}
-
-// Botão de pânico para limpar toda a memória (Usado após deletar produtos)
-export function clearAllCache(): void {
-  inMemoryCache.clear();
 }

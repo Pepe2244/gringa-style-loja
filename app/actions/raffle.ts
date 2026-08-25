@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { revalidatePath } from 'next/cache';
 
 export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: string) {
     try {
@@ -53,6 +54,12 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
 
         if (rifaError) throw rifaError;
 
+        // 6. DESTRUIÇÃO DO CACHE: Atualizar vitrine e painel instantaneamente
+        revalidatePath('/', 'layout');
+        revalidatePath('/rifa', 'page');
+        revalidatePath('/acompanhar-rifa', 'page');
+        revalidatePath('/admin', 'layout');
+
         // Sucesso absoluto. Devolve o vencedor para a tela.
         return { success: true, winner };
 
@@ -61,4 +68,3 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
         return { success: false, message: error.message || 'Erro interno no sorteio.' };
     }
 }
-

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { revalidatePath } from 'next/cache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -66,6 +67,11 @@ export async function reservarNumerosRifa(
 
         if (error) throw error;
 
+        // OBLITERAÇÃO DE CACHE: Garante que os números sumam da tela dos outros usuários instantaneamente
+        revalidatePath('/rifa', 'layout');
+        revalidatePath('/acompanhar-rifa', 'page');
+        revalidatePath('/admin', 'layout');
+
         return { success: true, data };
     } catch (error: any) {
         console.error('Erro ao reservar rifa (Server Action):', error);
@@ -92,7 +98,6 @@ export async function manageRaffle(rifaData: any, premios: any[]) {
         }
 
         // 2. Sincronizar Prêmios
-        // Primeiro, limpamos prêmios que não estão mais na lista (se for edição)
         if (rifaData.id) {
             const { data: existing } = await supabase.from('premios').select('id').eq('rifa_id', rifaId);
             const existingIds = existing?.map(p => p.id) || [];
@@ -116,6 +121,11 @@ export async function manageRaffle(rifaData: any, premios: any[]) {
             if (premiosError) throw new Error('Erro ao salvar prêmios: ' + premiosError.message);
         }
 
+        // OBLITERAÇÃO DE CACHE: Garante que a nova rifa ou edições apareçam na loja
+        revalidatePath('/', 'layout');
+        revalidatePath('/rifa', 'layout');
+        revalidatePath('/admin', 'layout');
+
         return { success: true, rifaId };
     } catch (error: any) {
         console.error('Erro ao gerenciar rifa (Server Action):', error);
@@ -138,6 +148,11 @@ export async function deleteRaffle(id: number) {
         const { error } = await supabase.from('rifas').delete().eq('id', id);
         if (error) throw error;
 
+        // OBLITERAÇÃO DE CACHE: Remove a rifa deletada da interface imediatamente
+        revalidatePath('/', 'layout');
+        revalidatePath('/rifa', 'layout');
+        revalidatePath('/admin', 'layout');
+
         return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };
@@ -151,6 +166,12 @@ export async function toggleRaffleStatus(id: number, currentStatus: string) {
     try {
         const { error } = await supabase.from('rifas').update({ status: newStatus }).eq('id', id);
         if (error) throw error;
+
+        // OBLITERAÇÃO DE CACHE: Reflete a mudança de status na vitrine
+        revalidatePath('/', 'layout');
+        revalidatePath('/rifa', 'layout');
+        revalidatePath('/admin', 'layout');
+
         return { success: true, newStatus };
     } catch (error: any) {
         return { success: false, error: error.message };
