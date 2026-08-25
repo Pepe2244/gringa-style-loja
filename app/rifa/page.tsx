@@ -90,11 +90,10 @@ export default function RifaPage() {
         // Busca inicial
         fetchRifa(true);
 
-        // 1. Fallback de segurança: atualiza a cada 30 segundos (reduz a carga no servidor comparado aos 10s de antes)
+        // 1. Fallback de segurança: atualiza a cada 30 segundos
         const pollInterval = setInterval(() => { fetchRifa(false); }, 30000);
 
-        // 2. Assinatura do Supabase Realtime (Mágica acontecendo)
-        // Ouve qualquer alteração (INSERT ou UPDATE) na tabela 'rifas'
+        // 2. Assinatura do Supabase Realtime
         const setupRealtime = async () => {
             channel = supabase
                 .channel('schema-db-changes')
@@ -103,7 +102,6 @@ export default function RifaPage() {
                     { event: '*', schema: 'public', table: 'rifas' },
                     (payload) => {
                         console.log('Alteração na Rifa detectada em tempo real!', payload);
-                        // Ao notar que o servidor mudou os dados, buscamos silenciosamente os novos números ocupados
                         fetchRifa(false);
                     }
                 )
@@ -242,30 +240,30 @@ export default function RifaPage() {
                     a: "Se você for o ganhador, nossa equipe entrará em contato imediatamente pelo WhatsApp cadastrado na hora da reserva. O envio do equipamento de solda TIG (máscara, tocha ou acessórios) é feito via transportadora ou Correios, totalmente documentado, e entregue direto na sua casa em qualquer lugar do Brasil."
                 }
             ]} />
-            <div className="rifa-faq" style={{ marginTop: '40px', background: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333', textAlign: 'left' }}>
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '25px', color: 'white', borderBottom: '2px solid var(--cor-destaque)', paddingBottom: '10px', display: 'inline-block' }}>Como funciona a Rifa Gringa Style? (Transparência e Regras)</h2>
-            
-            <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-                <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ marginRight: '10px' }}>›</span> Sobre a Transparência do Sorteio
-                </summary>
-                <p style={{ color: '#ccc', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é sempre baseado nos números da Loteria Federal (geralmente os últimos dígitos do 1º prêmio). Isso garante que o sorteio é imune a qualquer tipo de fraude ou manipulação por parte da Gringa Style.</p>
-            </details>
+            <div className="rifa-faq" style={{ marginTop: '50px', background: '#111', padding: '35px', borderRadius: '12px', border: '1px solid #27272a', textAlign: 'left' }}>
+                <h2 style={{ fontSize: '1.8rem', marginBottom: '25px', color: 'white', borderBottom: '2px solid var(--cor-destaque)', paddingBottom: '12px', display: 'inline-block' }}>Como funciona a Rifa Gringa Style? (Transparência e Regras)</h2>
+                
+                <details style={{ marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '15px' }}>
+                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px' }}>›</span> Sobre a Transparência do Sorteio
+                    </summary>
+                    <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é sempre baseado nos números da Loteria Federal (geralmente os últimos dígitos do 1º prêmio). Isso garante que o sorteio é imune a qualquer tipo de fraude ou manipulação por parte da Gringa Style.</p>
+                </details>
 
-            <details style={{ marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-                <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ marginRight: '10px' }}>›</span> Datas e Prazos
-                </summary>
-                <p style={{ color: '#ccc', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>A data exata do sorteio é marcada e comunicada em nossos grupos de WhatsApp e Instagram (<strong>@gringastyle_br</strong>) logo após a venda da última cota. Assim que você reservar seu número, é fundamental enviar o comprovante de pagamento via WhatsApp no prazo estipulado (geralmente 24 horas), caso contrário, o número voltará a ficar disponível para o público.</p>
-            </details>
+                <details style={{ marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '15px' }}>
+                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px' }}>›</span> Datas e Prazos
+                    </summary>
+                    <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>A data exata do sorteio é marcada e comunicada em nossos grupos de WhatsApp e Instagram (<strong>@gringastyle_br</strong>) logo após a venda da última cota. Assim que você reservar seu número, é fundamental enviar o comprovante de pagamento via WhatsApp no prazo estipulado (geralmente 24 horas), caso contrário, o número voltará a ficar disponível para o público.</p>
+                </details>
 
-            <details style={{ paddingBottom: '10px' }}>
-                <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ marginRight: '10px' }}>›</span> Como recebo meu prêmio?
-                </summary>
-                <p style={{ color: '#ccc', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>Se você for o ganhador, nossa equipe entrará em contato imediatamente pelo WhatsApp cadastrado na hora da reserva. O envio do equipamento de solda TIG (máscara, tocha ou acessórios) é feito via transportadora ou Correios, totalmente documentado, e entregue direto na sua casa em qualquer lugar do Brasil.</p>
-            </details>
-        </div>
+                <details style={{ paddingBottom: '5px' }}>
+                    <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px' }}>›</span> Como recebo meu prêmio?
+                    </summary>
+                    <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>Se você for o ganhador, nossa equipe entrará em contato imediatamente pelo WhatsApp cadastrado na hora da reserva. O envio do equipamento de solda TIG (máscara, tocha ou acessórios) é feito via transportadora ou Correios, totalmente documentado, e entregue direto na sua casa em qualquer lugar do Brasil.</p>
+                </details>
+            </div>
         </>
     );
 
@@ -297,7 +295,9 @@ export default function RifaPage() {
         : rifa.preco_numero;
     const totalPrice = selectedCount * currentUnitPrice;
 
-    const imageUrl = getProxiedImageUrl(rifa.imagem_premio_url || '/imagens/gringa_style_logo.png');
+    // Tratamento seguro da URL da imagem garantindo fallback para o Cloudflare/Local caso venha vazia
+    const rawImage = rifa.imagem_premio_url?.trim() ? rifa.imagem_premio_url : '/imagens/gringa_style_logo.png';
+    const imageUrl = getProxiedImageUrl(rawImage);
 
     const censurarNome = (nome: string) => {
         if (!nome) return '';
@@ -326,8 +326,15 @@ export default function RifaPage() {
             <div className="rifa-card">
                 <h1 className="titulo-secao">{rifa.nome_premio}</h1>
 
-                <div className="relative w-full max-w-[600px] h-auto aspect-square mx-auto mb-5">
-                    <Image src={imageUrl} alt="Prêmio da Rifa" fill priority sizes="(max-width: 768px) 100vw, 600px" className="rifa-imagem-premio object-cover rounded-lg" />
+                <div className="relative w-full max-w-[600px] h-auto aspect-square mx-auto mb-6 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-lg">
+                    <Image 
+                        src={imageUrl} 
+                        alt={rifa.nome_premio || 'Prêmio da Rifa'} 
+                        fill 
+                        priority 
+                        sizes="(max-width: 768px) 100vw, 600px" 
+                        className="object-cover" 
+                    />
                 </div>
 
                 {isFinished && (
