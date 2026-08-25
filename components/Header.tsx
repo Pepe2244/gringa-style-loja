@@ -58,17 +58,31 @@ export default function Header() {
         <header className="cabecalho">
             <div className="container">
                <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none' }}>
-    <Image
-        src="/imagens/logo_gringa_style.png"
-        alt="Gringa Style Logo"
-        width={120}
-        height={120}
-        priority
-        style={{ width: '125px !important', height: '125px !important', maxWidth: 'none', objectFit: 'contain' }}
-    />
-</Link>
+                    <Image
+                        src="/imagens/logo_gringa_style.png"
+                        alt="Gringa Style Logo"
+                        width={120}
+                        height={120}
+                        priority
+                        style={{ width: '125px !important', height: '125px !important', maxWidth: 'none', objectFit: 'contain' }}
+                    />
+                </Link>
 
-                <nav className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`} style={isMenuOpen ? { backgroundColor: 'rgba(18, 18, 18, 0.85)', backdropFilter: 'blur(16px)' } : {}}>
+                <nav 
+                    className={`navegacao ${isMenuOpen ? 'menu-aberto' : ''}`} 
+                    style={isMenuOpen ? { 
+                        backgroundColor: 'rgba(18, 18, 18, 0.95)', 
+                        backdropFilter: 'blur(16px)',
+                        position: 'fixed',
+                        top: '85px', // Alinha exatamente abaixo do header no mobile
+                        left: 0,
+                        width: '100%',
+                        height: 'calc(100vh - 85px)',
+                        paddingTop: '20px',
+                        overflowY: 'auto',
+                        zIndex: 999
+                    } : {}}
+                >
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
                     <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
                     <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
@@ -147,7 +161,7 @@ export default function Header() {
                     </button>
                 </div>
             </div>
-            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu} style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.6)' }}></div>}
+            {isMenuOpen && <div className="overlay-menu" onClick={closeMenu} style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.6)', top: '85px', zIndex: 998 }}></div>}
         </header>
     );
 }
