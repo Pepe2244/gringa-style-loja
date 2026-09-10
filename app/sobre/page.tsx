@@ -38,19 +38,19 @@ export default function SobrePage() {
                             style={{ borderRadius: '10px', border: '2px solid var(--cor-destaque)' }} 
                         />
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
-                            A Gringa Style nasceu puramente da paixão pela solda TIG de alta performance e pelo desejo de trazer mais atitude para o chão de fábrica e oficinas de todo o Brasil.
+                            Equipamentos de proteção e estilo de alto desempenho para o soldador moderno e exigente, que não se contenta com o básico e quer estampar o orgulho da profissão no próprio equipamento.
                         </p>
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
-                            Somos especialistas em oferecer equipamentos que unem <strong>estilo único, conforto absoluto e proteção máxima</strong> para o soldador moderno e exigente, que não se contenta com o básico e quer estampar o orgulho da profissão no próprio equipamento.
+                            Tudo começou no início de 2025. Vivenciando o dia a dia das oficinas, percebemos uma carência enorme no mercado nacional: faltavam EPIs que unissem a segurança rigorosa da solda com um visual verdadeiramente autêntico e agressivo, já que a maioria das opções eram ferramentas padronizadas e sem personalidade.
                         </p>
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
-                            Tudo começou no início de 2025. Vivenciando o dia a dia das oficinas, percebemos uma carência enorme no mercado nacional: faltavam equipamentos de proteção que unissem a segurança rigorosa da solda com um visual verdadeiramente autêntico e agressivo. A maioria das opções eram ferramentas padronizadas, sem personalidade.
+                            Foi aí que decidimos criar a Gringa Style. Nossa proposta sempre foi oferecer muito mais do que &quot;apenas&quot; equipamento de proteção; queríamos que a máscara fosse uma extensão da identidade do soldador. O que começou com foco em máscaras de design exclusivo rapidamente se expandiu.
                         </p>
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
-                            Foi aí que decidimos criar a Gringa Style. Nossa proposta sempre foi oferecer muito mais do que &quot;apenas&quot; equipamento de EPI; nós queríamos que a máscara fosse uma extensão da identidade do soldador. O que começou com foco em máscaras de design exclusivo rapidamente se expandiu. 
+                            Com a força e a parceria da nossa comunidade de clientes que abraçou o conceito de imediato, passamos a fornecer também acessórios de alta precisão e inovamos ao criar um sistema de rifas 100% transparente para democratizar o acesso a equipamentos da mais alta performance.
                         </p>
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
-                            Com a força e a parceria da nossa comunidade de clientes — que abraçou o conceito de imediato —, passamos a fornecer também acessórios de alta precisão e inovamos ao criar um sistema de rifas 100% transparente para democratizar o acesso a equipamentos da mais alta performance. Hoje, a Gringa Style é mais que uma loja, é uma marca feita por quem entende de TIG para quem vive o cordão perfeito todos os dias.
+                            Hoje, a Gringa Style é mais do que uma loja: é uma marca feita por quem entende de TIG para quem vive o cordão perfeito todos os dias.
                         </p>
                     </div>
                 </div>
