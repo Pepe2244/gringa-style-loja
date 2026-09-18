@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useImageOptimization } from '../utils/imageOptimization';
 
 interface Product {
@@ -155,14 +156,17 @@ export default function RecommendationEngine({
                         className="recommendation-card"
                     >
                         <div className="recommendation-image">
-                            <img
+                            <Image
                                 src={optimizeImage(product.imagem_principal, {
                                     width: 200,
                                     height: 200,
                                     fit: 'cover'
                                 })}
                                 alt={product.nome}
-                                loading="lazy"
+                                width={200}
+                                height={200}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                unoptimized
                             />
                         </div>
                         <div className="recommendation-info">

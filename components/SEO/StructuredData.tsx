@@ -22,14 +22,14 @@ export const LocalBusinessSchema = () => {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Store",
-    "@id": "https://gringa-style.netlify.app/#store",
+    "@id": "https://www.gringastylebr.com.br/#store",
     "name": "Gringa Style",
-    "url": "https://gringa-style.netlify.app",
-    "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
-    "image": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
+    "url": "https://www.gringastylebr.com.br",
+    "logo": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png",
+    "image": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png",
     "description": "Equipamentos de alta performance para soldadores profissionais. Máscaras personalizadas, tochas e acessórios.",
     "telephone": "+5515998092548",
-    "email": "nalessogtaw015@gmail.com",
+    "email": "contato@gringastylebr.com.br",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "rua judith caroinelli vilaça , 505",
@@ -40,8 +40,8 @@ export const LocalBusinessSchema = () => {
     },
     "geo": {
       "@type": "GeoCoordinates",
-      "latitude": -23.5505,
-      "longitude": -46.6333
+      "latitude": -23.5917,
+      "longitude": -48.0531
     },
     "priceRange": "$$",
     "openingHoursSpecification": [
@@ -71,10 +71,10 @@ export const WebSiteSchema = () => {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Gringa Style",
-    "url": "https://gringa-style.netlify.app",
+    "url": "https://www.gringastylebr.com.br",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://gringa-style.netlify.app/busca?q={search_term_string}",
+      "target": "https://www.gringastylebr.com.br/busca?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };
@@ -116,12 +116,12 @@ export const OrganizationSchema = () => {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Gringa Style",
-    "url": "https://gringa-style.netlify.app",
-    "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
-    "image": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
+    "url": "https://www.gringastylebr.com.br",
+    "logo": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png",
+    "image": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png",
     "description": "Especialista em equipamentos de solda TIG de alta performance com design exclusivo",
     "telephone": "+5515998092548",
-    "email": "nalessogtaw015@gmail.com",
+    "email": "contato@gringastylebr.com.br",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "rua judith caroinelli vilaça , 505",
@@ -137,7 +137,7 @@ export const OrganizationSchema = () => {
       "@type": "ContactPoint",
       "contactType": "Sales",
       "telephone": "+5515998092548",
-      "Email": "nalessogtaw015@gmail.com"
+      "email": "contato@gringastylebr.com.br"
     }
   };
 
@@ -169,7 +169,7 @@ interface ProductData {
   gtin13?: string;
 }
 
-const SITE_URL = 'https://gringa-style.netlify.app';
+const SITE_URL = 'https://www.gringastylebr.com.br';
 
 const resolveProductImage = (product: ProductData) => {
   const rawImage = product.media_urls?.find(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
@@ -434,7 +434,7 @@ export const BreadcrumbSchema = ({ items }: { items: BreadcrumbItem[] }) => {
       "@type": "ListItem",
       "position": index + 1,
       "name": item.name,
-      "item": item.url.startsWith('http') ? item.url : `https://gringa-style.netlify.app${item.url}`
+      "item": item.url.startsWith('http') ? item.url : `https://www.gringastylebr.com.br${item.url}`
     }))
   };
 
@@ -459,11 +459,11 @@ export const WebPageSchema = ({ page }: { page: WebPageData }) => {
     "@type": "WebPage",
     "name": page.name,
     "description": page.description,
-    "url": page.url.startsWith('http') ? page.url : `https://gringa-style.netlify.app${page.url}`,
+    "url": page.url.startsWith('http') ? page.url : `https://www.gringastylebr.com.br${page.url}`,
     "isPartOf": {
       "@type": "WebSite",
       "name": "Gringa Style",
-      "url": "https://gringa-style.netlify.app"
+      "url": "https://www.gringastylebr.com.br"
     },
     "publisher": {
       "@type": "Organization",

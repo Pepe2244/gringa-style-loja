@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
 const OLD_SUPABASE_URL = 'https://tsilaaurmpahookyanbe.supabase.co';
-const OLD_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzaWxhYXVybXBhaG9va3lhbmJlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjU3NzkyNCwiZXhwIjoyMDg4MTUzOTI0fQ.6SsJHkYKSmRZwuSuTVe8EcLzS3YaAv_FOzbk8hD8gH0';
+const OLD_SERVICE_KEY = process.env.OLD_SUPABASE_SERVICE_KEY;
+
+if (!OLD_SERVICE_KEY) {
+  throw new Error('Defina OLD_SUPABASE_SERVICE_KEY antes de executar este script.');
+}
 
 const oldSupabase = createClient(OLD_SUPABASE_URL, OLD_SERVICE_KEY);
 

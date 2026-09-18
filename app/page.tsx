@@ -5,7 +5,6 @@ import { WebPageSchema } from '@/components/SEO/StructuredData';
 import type { Metadata } from 'next';
 import { getCachedValue } from '@/lib/cache';
 
-// ISR a nível de página garantido
 export const revalidate = 60;
 
 export const metadata: Metadata = {
@@ -15,10 +14,17 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Gringa Style | Máscaras de Solda Personalizadas',
     description: 'Estilo e proteção para soldadores profissionais.',
-    url: 'https://gringa-style.netlify.app',
+    url: 'https://www.gringastylebr.com.br',
+    siteName: 'Gringa Style',
     images: [{ url: '/imagens/logo_gringa_style.png', width: 800, height: 600 }],
     locale: 'pt_BR',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Gringa Style',
+    description: 'Máscaras de solda personalizadas e acessórios para TIG.',
+    images: ['/imagens/logo_gringa_style.png'],
   },
 };
 
@@ -33,9 +39,9 @@ export default async function Home() {
           .limit(12);
         return (data || []) as Product[];
       },
-      ['home-products-list'], // Key exclusiva
-      ['produtos', 'home'],   // Tags para revalidação nas Actions
-      30                      // TTL em Segundos
+      ['home-products-list'],
+      ['produtos', 'home'],
+      30
     ),
     getCachedValue(
       async () => {

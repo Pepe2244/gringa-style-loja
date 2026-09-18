@@ -1,5 +1,6 @@
 export const siteConfig = {
-  appUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://gringa-style.netlify.app',
+  appUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gringastylebr.com.br',
+  supportEmail: 'contato@gringastylebr.com.br',
   supabase: {
     storageBucket: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'gringa-style-produtos',
     imageBaseUrl: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BASE_URL || 'https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public',

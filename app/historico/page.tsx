@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
@@ -107,10 +108,11 @@ export default function HistoricoPage() {
                                     borderBottom: '1px solid #555',
                                     paddingBottom: '15px'
                                 }}>
-                                    <img
+                                    <Image
                                         src={rifaImagem}
                                         alt={rifa.nome_premio}
-                                        loading="lazy"
+                                        width={80}
+                                        height={80}
                                         style={{
                                             width: '80px',
                                             height: '80px',
@@ -140,10 +142,11 @@ export default function HistoricoPage() {
                                             gap: '15px'
                                         }}>
                                             {premio.imagem_url ? (
-                                                <img
+                                                <Image
                                                     src={`${getProxiedImageUrl(premio.imagem_url)}?format=webp&width=60&quality=75`}
                                                     alt={premio.descricao}
-                                                    loading="lazy"
+                                                    width={50}
+                                                    height={50}
                                                     style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
                                                 />
                                             ) : (

@@ -3,3 +3,33 @@
   for = "/_next/image*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[redirects]]
+  from = "http://gringastylebr.com.br/*"
+  to = "https://www.gringastylebr.com.br/:splat"
+  status = 301
+
+[[redirects]]
+  from = "https://gringastylebr.com.br/*"
+  to = "https://www.gringastylebr.com.br/:splat"
+  status = 301
+
+[[redirects]]
+  from = "https://gringa-style.netlify.app/*"
+  to = "https://www.gringastylebr.com.br/:splat"
+  status = 301
+
+[[redirects]]
+  from = "https://gringastyle.netlify.app/*"
+  to = "https://www.gringastylebr.com.br/:splat"
+  status = 301
+
+[[redirects]]
+  from = "https://*.netlify.app/*"
+  to = "https://www.gringastylebr.com.br/:splat"
+  status = 301
+
+[[redirects]]
+  from = "http://www.gringastylebr.com.br/*"
+  to = "https://www.gringastylebr.com.br/:splat"
+  status = 301

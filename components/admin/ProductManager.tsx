@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 // Caminhos relativos para compatibilidade com o ambiente atual
 import { supabase } from '../../lib/supabase';
 import { Product, Category, ProductVariant } from '../../types';
@@ -393,13 +394,13 @@ export default function ProductManager() {
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', background: '#000', padding: '8px', borderRadius: '8px' }}>
                                     {existingMedia.map((url, i) => (
                                         <div key={`ex-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
-                                            <img src={getProxiedImageUrl(url)} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--cor-destaque)' }} />
+                                            <Image src={getProxiedImageUrl(url)} alt="Imagem do produto" width={160} height={160} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--cor-destaque)' }} />
                                             <button type="button" onClick={() => removeExistingMedia(url)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'red', borderRadius: '50%', color: 'white', border: 'none', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer' }}>&times;</button>
                                         </div>
                                     ))}
                                     {mediaPreviews.map((url, i) => (
                                         <div key={`nw-${i}`} style={{ position: 'relative', aspectRatio: '1/1' }}>
-                                            <img src={url} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #00ff88', opacity: 0.8 }} />
+                                            <Image src={url} alt="Pré-visualização da imagem" width={160} height={160} unoptimized style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #00ff88', opacity: 0.8 }} />
                                             <button type="button" onClick={() => removeNewMedia(i)} style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#00ff88', borderRadius: '50%', color: 'black', border: 'none', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer' }}>&times;</button>
                                         </div>
                                     ))}

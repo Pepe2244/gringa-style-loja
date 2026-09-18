@@ -78,7 +78,7 @@ export default function DevolucaoReembolsoPage() {
                             Entre em contato direto com quem entende:
                         </p>
                         <ul className="list-disc pl-6 space-y-2 text-zinc-300">
-                            <li><strong>E-mail Oficial:</strong> nalessogtaw015@gmail.com</li>
+                            <li><strong>E-mail Oficial:</strong> contato@gringastylebr.com.br</li>
                             <li><strong>WhatsApp:</strong> Suporte Gringa Style</li>
                         </ul>
 

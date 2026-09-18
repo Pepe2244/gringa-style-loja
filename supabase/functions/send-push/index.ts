@@ -20,7 +20,7 @@ serve(async (req) => {
     // 2. CONFIGURAÇÃO VAPID (Blindada contra chaves inválidas)
     const publicKey = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
     const privateKey = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
-    const subject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:contato@gringastyle.com.br'
+    const subject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:contato@gringastylebr.com.br'
 
     if (!publicKey || !privateKey) {
       throw new Error("Chaves VAPID não configuradas nas Secrets!")

@@ -35,7 +35,7 @@ export default function Footer() {
                             (15) 99809-2548
                         </a>
                     </p>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Mail size={16} /> nalessogtaw015@gmail.com</p>
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Mail size={16} /> contato@gringastylebr.com.br</p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP (Loja Online)</p>
                     <p><Link href="/devolucao-e-reembolso">Devolução e Reembolso</Link></p>
                     <p><Link href="/privacidade">Política de Privacidade</Link></p>

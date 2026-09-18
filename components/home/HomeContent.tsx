@@ -220,7 +220,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 imagens: product.imagens,
                 media_urls: product.media_urls,
                 slug: product.slug
-            }))} pageUrl='https://gringa-style.netlify.app/' />
+            }))} pageUrl='https://www.gringastylebr.com.br/' />
 
             <ProductGrid
                 products={filteredProducts}

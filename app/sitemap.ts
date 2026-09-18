@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 export const revalidate = 3600; // Revalida o sitemap a cada 1 hora
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gringa-style.netlify.app';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gringastylebr.com.br';
 
   // 1. Rotas Estáticas Reais da Aplicação
   const staticUrls: MetadataRoute.Sitemap = [

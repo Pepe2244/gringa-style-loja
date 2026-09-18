@@ -53,34 +53,6 @@ export default function AdvancedAnalytics({
 
     useEffect(() => {
         const initAnalytics = () => {
-            // Inicialização do Google Analytics 4
-            if (gaTrackingId && typeof window !== 'undefined' && !(window as any).gtag) {
-                const script = document.createElement('script');
-                script.async = true;
-                script.src = `https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`;
-                document.head.appendChild(script);
-
-                const dataLayer = (window as any).dataLayer || [];
-                (window as any).dataLayer = dataLayer;
-
-                function gtag(...args: any[]) {
-                    dataLayer.push(args);
-                }
-
-                gtag('js', new Date());
-                gtag('config', gaTrackingId, {
-                    custom_map: {
-                        dimension1: 'user_type',
-                        dimension2: 'session_quality',
-                        dimension3: 'device_category',
-                        metric1: 'page_views_per_session',
-                        metric2: 'avg_session_duration'
-                    }
-                });
-
-                (window as any).gtag = gtag;
-            }
-
             // Inicialização da Sessão
             const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
             const width = window.innerWidth;
@@ -206,10 +178,10 @@ export default function AdvancedAnalytics({
     }, [pathname, searchParams, trackEvent, gaTrackingId, enablePerformanceTracking]);
 
     useEffect(() => {
-        if (isInitialized && session) {
+        if (isInitialized) {
             trackPageView();
         }
-    }, [pathname, searchParams, isInitialized, trackPageView]);
+    }, [isInitialized, trackPageView]);
 
     // Rastreamento de Rolagem e Heatmap Otimizado
     useEffect(() => {

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const SUPERFRETE_TOKEN =
-    process.env.SUPERFRETE_TOKEN ||
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NzMyNjQ1NjQsInN1YiI6Imo2SXRKM3J4QXVXeEdCdzlHOERxc1BxdTY0eTIifQ.V8I1ZQySq2xJihO9Q7HtEh0iP4St22j7-06vyAgTHCg';
+const SUPERFRETE_TOKEN = process.env.SUPERFRETE_TOKEN || '';
 
 const ORIGIN_CEP = '18207185'; // Itapetininga Centro
 
@@ -95,6 +93,10 @@ export async function POST(request: Request) {
                     { error: 'CEP de destino inválido' },
                     { status: 400 }
                 );
+            }
+
+            if (!SUPERFRETE_TOKEN) {
+                return NextResponse.json(getNationalFallback());
             }
 
             try {

@@ -11,17 +11,17 @@ Copie o conteúdo abaixo e cole na ferramenta de teste de rich results ou no val
   "@type": "Product",
   "name": "Máscara de Solda Personalizada Gringa Style",
   "description": "Máscara de solda TIG personalizada com proteção e estilo para profissionais.",
-  "image": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
+  "image": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png",
   "sku": "GS-001",
   "mpn": "GS-2026",
-  "url": "https://gringa-style.netlify.app/produto/mascara-personalizada",
+  "url": "https://www.gringastylebr.com.br/produto/mascara-personalizada",
   "brand": {
     "@type": "Brand",
     "name": "Gringa Style"
   },
   "offers": {
     "@type": "Offer",
-    "url": "https://gringa-style.netlify.app/produto/mascara-personalizada",
+    "url": "https://www.gringastylebr.com.br/produto/mascara-personalizada",
     "priceCurrency": "BRL",
     "price": "249.90",
     "priceValidUntil": "2027-12-31",
@@ -30,8 +30,8 @@ Copie o conteúdo abaixo e cole na ferramenta de teste de rich results ou no val
     "seller": {
       "@type": "Organization",
       "name": "Gringa Style",
-      "url": "https://gringa-style.netlify.app",
-      "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png"
+      "url": "https://www.gringastylebr.com.br",
+      "logo": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png"
     },
     "hasMerchantReturnPolicy": {
       "@type": "MerchantReturnPolicy",
@@ -97,12 +97,12 @@ Copie o conteúdo abaixo e cole na ferramenta de teste de rich results ou no val
   "@context": "https://schema.org",
   "@type": "Store",
   "name": "Gringa Style",
-  "image": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
-  "logo": "https://gringa-style.netlify.app/imagens/logo_gringa_style.png",
-  "url": "https://gringa-style.netlify.app",
+  "image": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png",
+  "logo": "https://www.gringastylebr.com.br/imagens/logo_gringa_style.png",
+  "url": "https://www.gringastylebr.com.br",
   "description": "Equipamentos de alta performance para soldadores profissionais. Máscaras personalizadas, tochas e acessórios.",
   "telephone": "+5515998092548",
-  "email": "nalessogtaw015@gmail.com",
+  "email": "contato@gringastylebr.com.br",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "rua judith carpinelli vilaça , 505",

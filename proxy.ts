@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 // ==========================================
 // 1. CONFIGURAÇÕES DE FIREWALL (EDGE)
@@ -33,6 +35,10 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
 };
 
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
+const upstashRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? Redis.fromEnv()
+    : null;
+const distributedLimiters = new Map<string, Ratelimit>();
 
 function getClientIP(request: NextRequest): string {
     const forwarded = request.headers.get('x-forwarded-for');
@@ -85,10 +91,49 @@ function cleanupExpiredCounters() {
     toDelete.forEach(key => requestCounts.delete(key));
 }
 
+function getDistributedLimiter(path: string, config: { maxRequests: number; windowMs: number }) {
+    if (!upstashRedis) return null;
+
+    const existingLimiter = distributedLimiters.get(path);
+    if (existingLimiter) return existingLimiter;
+
+    const limiter = new Ratelimit({
+        redis: upstashRedis,
+        limiter: Ratelimit.slidingWindow(config.maxRequests, `${Math.ceil(config.windowMs / 1000)} s`),
+        prefix: 'gringa-style:ratelimit',
+    });
+    distributedLimiters.set(path, limiter);
+    return limiter;
+}
+
+function localRateLimit(key: string, config: { maxRequests: number; windowMs: number }) {
+    const now = Date.now();
+    let counter = requestCounts.get(key);
+
+    if (!counter || now > counter.resetTime) {
+        counter = {
+            count: 0,
+            resetTime: now + config.windowMs
+        };
+    }
+
+    counter.count++;
+    requestCounts.set(key, counter);
+
+    if (Math.random() < 0.01) cleanupExpiredCounters();
+
+    return {
+        success: counter.count <= config.maxRequests,
+        limit: config.maxRequests,
+        remaining: Math.max(0, config.maxRequests - counter.count),
+        reset: counter.resetTime,
+    };
+}
+
 // ==========================================
 // 3. FUNÇÃO PRINCIPAL EXPORTADA COMO PROXY
 // ==========================================
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || '';
     const pathname = request.nextUrl.pathname;
     const method = request.method;
@@ -111,21 +156,21 @@ export function proxy(request: NextRequest) {
     const ip = getClientIP(request);
     const key = `${ip}:${pathname}`;
     const config = getRateLimitConfig(pathname);
-    const now = Date.now();
+    const limiter = getDistributedLimiter(pathname, config);
+    let result;
 
-    let counter = requestCounts.get(key);
-    if (!counter || now > counter.resetTime) {
-        counter = {
-            count: 0,
-            resetTime: now + config.windowMs
-        };
+    try {
+        result = limiter
+            ? await limiter.limit(key)
+            : localRateLimit(key, config);
+    } catch (error) {
+        console.error('[RateLimit] Upstash indisponível; usando fallback local.', error);
+        result = localRateLimit(key, config);
     }
 
-    counter.count++;
-
-    if (counter.count > config.maxRequests) {
-        const resetTime = new Date(counter.resetTime);
-        const remainingTime = Math.ceil((counter.resetTime - now) / 1000);
+    if (!result.success) {
+        const resetTime = new Date(result.reset);
+        const remainingTime = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000));
 
         return NextResponse.json(
             {
@@ -137,7 +182,7 @@ export function proxy(request: NextRequest) {
                 status: 429,
                 headers: {
                     'Retry-After': remainingTime.toString(),
-                    'X-RateLimit-Limit': config.maxRequests.toString(),
+                    'X-RateLimit-Limit': result.limit.toString(),
                     'X-RateLimit-Remaining': '0',
                     'X-RateLimit-Reset': resetTime.toISOString(),
                 }
@@ -145,18 +190,11 @@ export function proxy(request: NextRequest) {
         );
     }
 
-    requestCounts.set(key, counter);
-
-    if (Math.random() < 0.01) {
-        cleanupExpiredCounters();
-    }
-
     const response = NextResponse.next();
-    const remaining = Math.max(0, config.maxRequests - counter.count);
 
-    response.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
-    response.headers.set('X-RateLimit-Remaining', remaining.toString());
-    response.headers.set('X-RateLimit-Reset', new Date(counter.resetTime).toISOString());
+    response.headers.set('X-RateLimit-Limit', result.limit.toString());
+    response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
+    response.headers.set('X-RateLimit-Reset', new Date(result.reset).toISOString());
 
     return response;
 }

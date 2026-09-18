@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Roboto, Teko } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ToastProvider } from '@/context/ToastContext';
@@ -10,7 +9,6 @@ import CookieConsent from "@/components/CookieConsent";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { cookies } from "next/headers";
-import { GoogleAnalytics } from '@next/third-parties/google';
 import { LocalBusinessSchema, WebSiteSchema, OrganizationSchema } from '@/components/SEO/StructuredData';
 
 const roboto = Roboto({
@@ -28,7 +26,7 @@ const teko = Teko({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://gringa-style.netlify.app'),
+  metadataBase: new URL('https://www.gringastylebr.com.br'),
   alternates: {
     canonical: '/',
   },
@@ -41,11 +39,17 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Gringa Style | Máscaras de Solda Personalizadas",
     description: "Estilo e proteção para soldadores profissionais.",
-    url: "https://gringa-style.netlify.app",
+    url: "https://www.gringastylebr.com.br",
     siteName: "Gringa Style",
     images: [{ url: "/imagens/logo_gringa_style.png", width: 800, height: 600 }],
     locale: "pt_BR",
     type: "website",
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Gringa Style',
+    description: 'Máscaras de solda personalizadas e acessórios para TIG.',
+    images: ['/imagens/logo_gringa_style.png'],
   },
 };
 
@@ -70,10 +74,6 @@ export default async function RootLayout({
     }
   }
 
-  // CONFIGURAÇÕES DE ANALYTICS
-  const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-2L2F9CY9JN";
-  const AHREFS_KEY = process.env.AHREFS_KEY || "Sam0BvC3Nm1qohD+XzVeLA";
-
   return (
     <html lang="pt-BR">
       <head>
@@ -88,29 +88,9 @@ export default async function RootLayout({
         )}
       </head>
       <body className={`${roboto.variable} ${teko.variable} antialiased`}>
-        {/* Scripts de Terceiros com carregamento condicional baseado em consentimento */}
-        {hasConsent && (
-          <>
-            <Script 
-              src="https://analytics.ahrefs.com/analytics.js" 
-              data-key={AHREFS_KEY} 
-              strategy="lazyOnload" 
-            />
-            
-            <GoogleAnalytics gaId={GA_ID} />
-
-            {/* Microsoft Clarity para análise de comportamento de conversão */}
-            <Script id="microsoft-clarity" strategy="afterInteractive">
-              {`
-                (function(c,l,a,r,i,t,y){
-                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-                })(window, document, "clarity", "script", "vybz5xptlm");
-              `}
-            </Script>
-          </>
-        )}
+        <LocalBusinessSchema />
+        <WebSiteSchema />
+        <OrganizationSchema />
 
         <ToastProvider>
           <ErrorBoundary>
@@ -122,7 +102,7 @@ export default async function RootLayout({
               </main>
               {/* Renderização condicional para economia de recursos */}
               {!hasConsent && <CookieConsent />}
-              <AnalyticsLoader ahrefsKey={AHREFS_KEY} />
+              <AnalyticsLoader hasConsent={hasConsent} />
               <Footer />
             </div>
           </ErrorBoundary>
