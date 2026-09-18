@@ -26,7 +26,7 @@ export default function ProductGrid({
             <div
                 id="vitrine-produtos"
                 className="vitrine"
-                style={{ minHeight: '300px', width: '100%' }}
+                style={{ minHeight: 'calc(4 * 360px + 3 * 25px)', width: '100%' }}
             >
                 {loading ? (
                     Array.from({ length: 8 }).map((_, i) => (
@@ -43,7 +43,7 @@ export default function ProductGrid({
                             product={product}
                             diasNovo={diasNovo}
                             onQuickView={onQuickView}
-                            priority={index <= 3} 
+                            priority={index === 0}
                         />
                     ))
                 )}

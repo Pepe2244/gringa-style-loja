@@ -208,7 +208,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
             />
 
             <RetentionHighlights diasNovo={diasNovo} onQuickView={handleQuickView} />
-            <PersonalizedRecommendations products={products} diasNovo={diasNovo} onQuickView={handleQuickView} />
 
             <ItemListSchema products={filteredProducts.map(product => ({
                 id: product.id,
@@ -231,6 +230,8 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 loadingMore={loadingMore}
                 onLoadMore={handleLoadMore}
             />
+
+            <PersonalizedRecommendations products={products} diasNovo={diasNovo} onQuickView={handleQuickView} />
 
             <section id="faq" className="secao-info" style={{ marginTop: '40px', padding: '40px', backgroundColor: 'rgba(17,17,17,0.7)', borderRadius: '10px', border: '1px solid #333' }}>
                 <ProductFAQ
