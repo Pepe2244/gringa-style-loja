@@ -266,7 +266,7 @@ export default function SearchPage() {
                         <WebPageSchema page={{
                             name: 'Resultados de Busca | Gringa Style',
                             description: `Página de resultados de busca para ${query || 'produtos Gringa Style'}`,
-                            url: `https://www.gringastylebr.com.br/busca?q=${encodeURIComponent(query || '')}`
+                            url: `https://gringastylebr.com.br/busca?q=${encodeURIComponent(query || '')}`
                         }} />
                         <ItemListSchema
                             products={filteredProducts.map(product => ({
@@ -280,7 +280,7 @@ export default function SearchPage() {
                                 media_urls: product.media_urls,
                                 slug: product.slug
                             }))}
-                            pageUrl={`https://www.gringastylebr.com.br/busca?q=${encodeURIComponent(query || '')}`}
+                            pageUrl={`https://gringastylebr.com.br/busca?q=${encodeURIComponent(query || '')}`}
                         />
 
                         <div style={{ marginTop: '30px', marginBottom: '20px', color: '#888' }}>

@@ -26,7 +26,7 @@ const teko = Teko({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.gringastylebr.com.br'),
+  metadataBase: new URL('https://gringastylebr.com.br'),
   alternates: {
     canonical: '/',
   },
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Gringa Style | Máscaras de Solda Personalizadas",
     description: "Estilo e proteção para soldadores profissionais.",
-    url: "https://www.gringastylebr.com.br",
+    url: "https://gringastylebr.com.br",
     siteName: "Gringa Style",
     images: [{ url: "/imagens/logo_gringa_style.png", width: 800, height: 600 }],
     locale: "pt_BR",

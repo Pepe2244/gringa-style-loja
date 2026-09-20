@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Gringa Style | Máscaras de Solda Personalizadas',
     description: 'Estilo e proteção para soldadores profissionais.',
-    url: 'https://www.gringastylebr.com.br',
+    url: 'https://gringastylebr.com.br',
     siteName: 'Gringa Style',
     images: [{ url: '/imagens/logo_gringa_style.png', width: 800, height: 600 }],
     locale: 'pt_BR',

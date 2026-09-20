@@ -5,7 +5,7 @@ import { BreadcrumbSchema, ProductSchema } from '@/components/SEO/StructuredData
 import { notFound } from 'next/navigation';
 
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
-const SITE_URL = "https://www.gringastylebr.com.br";
+const SITE_URL = "https://gringastylebr.com.br";
 
 const resolveAbsoluteUrl = (path: string) => {
     if (!path) return `${SITE_URL}/imagens/logo_gringa_style.png`;
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
     const descricaoLimpa = product.descricao?.substring(0, 160).replace(/<[^>]*>?/gm, '') || `Compre ${product.nome} na Gringa Style - Equipamentos de solda de qualidade.`;
 
-    const productUrl = `https://www.gringastylebr.com.br/produto/${product.slug || slug}`;
+    const productUrl = `${SITE_URL}/produto/${product.slug || slug}`;
     const precoFinal = product.preco_promocional || product.preco;
 
     return {
@@ -130,7 +130,7 @@ export default async function ProductPage({ params }: Props) {
         notFound();
     }
 
-    const productUrl = `https://www.gringastylebr.com.br/produto/${product.slug || product.id}`;
+    const productUrl = `${SITE_URL}/produto/${product.slug || product.id}`;
 
     return (
         <>

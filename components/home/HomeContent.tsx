@@ -219,7 +219,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 imagens: product.imagens,
                 media_urls: product.media_urls,
                 slug: product.slug
-            }))} pageUrl='https://www.gringastylebr.com.br/' />
+            }))} pageUrl='https://gringastylebr.com.br/' />
 
             <ProductGrid
                 products={filteredProducts}

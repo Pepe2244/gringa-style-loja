@@ -6,12 +6,7 @@
 
 [[redirects]]
   from = "http://gringastylebr.com.br/*"
-  to = "https://www.gringastylebr.com.br/:splat"
-  status = 301
-
-[[redirects]]
-  from = "https://gringastylebr.com.br/*"
-  to = "https://www.gringastylebr.com.br/:splat"
+  to = "https://gringastylebr.com.br/:splat"
   status = 301
 
 [[redirects]]
@@ -31,5 +26,5 @@
 
 [[redirects]]
   from = "http://www.gringastylebr.com.br/*"
-  to = "https://www.gringastylebr.com.br/:splat"
+  to = "https://gringastylebr.com.br/:splat"
   status = 301

@@ -22,7 +22,7 @@ export async function GET() {
       throw error;
     }
 
-    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gringastylebr.com.br';
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gringastylebr.com.br';
 
     const escapeXml = (unsafe: string | null | undefined) => {
       if (!unsafe) return '';

@@ -1,5 +1,5 @@
 export const siteConfig = {
-  appUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gringastylebr.com.br',
+  appUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://gringastylebr.com.br',
   supportEmail: 'contato@gringastylebr.com.br',
   supabase: {
     storageBucket: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'gringa-style-produtos',
