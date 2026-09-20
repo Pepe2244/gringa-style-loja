@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: 'Política de Privacidade',
   description: 'Conheça nossa política de privacidade e como tratamos seus dados com segurança na Gringa Style, em conformidade com a LGPD.',
   alternates: { canonical: '/privacidade' },
+    robots: {
+        index: false,
+        follow: true,
+    },
 };
 
 export default function PrivacyPage() {
