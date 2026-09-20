@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function GrupoHubPage() {
   return (
@@ -16,7 +17,9 @@ export default function GrupoHubPage() {
 
           <div className="dual-path-grid">
             <article className="dual-path-card dual-path-card-b2c">
-              <div className="dual-path-visual dual-path-visual-store" />
+              <div className="dual-path-visual dual-path-visual-store">
+                <Image src="/imagens/mascara personalizada 1.jpg" alt="Máscara de solda personalizada Gringa Style" fill sizes="(max-width: 768px) 92vw, 42vw" />
+              </div>
               <span className="dual-path-badge">B2C</span>
               <h2>LOJA GRINGA STYLE</h2>
               <p>
@@ -28,7 +31,9 @@ export default function GrupoHubPage() {
             </article>
 
             <article className="dual-path-card dual-path-card-b2b">
-              <div className="dual-path-visual dual-path-visual-b2b" />
+              <div className="dual-path-visual dual-path-visual-b2b">
+                <Image src="/imagens/tocha 1.jpg" alt="Equipamento para soldagem profissional" fill sizes="(max-width: 768px) 92vw, 42vw" />
+              </div>
               <span className="dual-path-badge dual-path-badge-industrial">B2B</span>
               <h2>SOLDAS ESPECIAIS B2B</h2>
               <p>

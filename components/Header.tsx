@@ -15,6 +15,8 @@ export default function Header() {
     const totalItems = useCartStore(state => state.totalItems());
     const wishlistItems = useWishlistStore(state => state.items) || [];
     const wishlistCount = wishlistItems.length;
+    const isPortal = pathname === '/';
+    const isServices = pathname.startsWith('/soldas-especiais');
     
     const [mounted, setMounted] = useState(false);
     const [hasActiveRaffles, setHasActiveRaffles] = useState(false);
@@ -73,12 +75,27 @@ export default function Header() {
                     style={isMenuOpen ? { zIndex: 49 } : {}}
                 >
                     <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
-                    <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
-                    <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
-                    <Link href="#contato" className="nav-item" onClick={closeMenu}>Contato</Link>
-                    <Link href="/sobre" className={`nav-item ${isActive('/sobre')}`} onClick={closeMenu}>Sobre</Link>
+                    {isPortal ? (
+                        <>
+                            <Link href="/loja" className="nav-item" onClick={closeMenu}>Loja</Link>
+                            <Link href="/soldas-especiais" className="nav-item" onClick={closeMenu}>Soldas Especiais</Link>
+                        </>
+                    ) : isServices ? (
+                        <>
+                            <Link href="/soldas-especiais" className={`nav-item ${isActive('/soldas-especiais')}`} onClick={closeMenu}>Serviços</Link>
+                            <Link href="/soldas-especiais#contato" className="nav-item" onClick={closeMenu}>Orçamento</Link>
+                            <Link href="/loja" className="nav-item" onClick={closeMenu}>Conheça a Loja</Link>
+                        </>
+                    ) : (
+                        <>
+                            <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
+                            <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
+                        </>
+                    )}
+                    {!isServices && <Link href="#contato" className="nav-item" onClick={closeMenu}>Contato</Link>}
+                    {!isServices && <Link href="/sobre" className={`nav-item ${isActive('/sobre')}`} onClick={closeMenu}>Sobre</Link>}
 
-                    {hasActiveRaffles && (
+                    {!isPortal && !isServices && hasActiveRaffles && (
                         <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={closeMenu}>
                             Meus Números
                         </Link>
@@ -86,7 +103,7 @@ export default function Header() {
                 </nav>
 
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '18px', zIndex: 51, position: 'relative' }}>
-                    <Link 
+                    {!isPortal && !isServices && <Link
                         href="/favoritos" 
                         className="favoritos" 
                         onClick={closeMenu}
@@ -118,9 +135,9 @@ export default function Header() {
                         >
                             {mounted ? wishlistCount : 0}
                         </span>
-                    </Link>
+                    </Link>}
 
-                    <Link href="/carrinho" className="carrinho" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                    {!isPortal && !isServices && <Link href="/carrinho" className="carrinho" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                         <ShoppingCart size={28} />
                         <span 
                             className="carrinho-contador" 
@@ -136,7 +153,7 @@ export default function Header() {
                         >
                             {mounted ? totalItems : 0}
                         </span>
-                    </Link>
+                    </Link>}
 
                     <button
                         id="hamburger-btn"

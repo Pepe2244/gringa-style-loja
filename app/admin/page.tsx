@@ -7,6 +7,7 @@ import CouponManager from '@/components/admin/CouponManager';
 import CampaignManager from '@/components/admin/CampaignManager';
 import CategoryManager from '@/components/admin/CategoryManager';
 import ConfigManager from '@/components/admin/ConfigManager';
+import B2BMediaManager from '@/components/admin/B2BMediaManager';
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -156,6 +157,12 @@ export default function AdminPage() {
                 >
                     Configurações
                 </button>
+                <button
+                    className={`btn ${activeTab === 'b2b-media' ? '' : 'btn-secundario'}`}
+                    onClick={() => setActiveTab('b2b-media')}
+                >
+                    Mídia B2B
+                </button>
             </div>
 
             <div className="admin-content">
@@ -165,6 +172,7 @@ export default function AdminPage() {
                 {activeTab === 'campanhas' && <CampaignManager />}
                 {activeTab === 'categorias' && <CategoryManager />}
                 {activeTab === 'config' && <ConfigManager />}
+                {activeTab === 'b2b-media' && <B2BMediaManager />}
             </div>
         </div>
     );

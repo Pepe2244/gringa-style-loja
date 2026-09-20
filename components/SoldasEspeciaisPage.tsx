@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 
 const diferenciais = [
@@ -15,15 +15,15 @@ const projetos = [
     title: 'Recuperação de eixo de máquina industrial',
     detail: 'Recuperação estrutural com solda especializada em aço e alta resistência.',
     meta: 'Norma / Procedimento técnico atendido',
-    before: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=900&q=80',
-    after: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=80',
+    before: '/imagens/tocha 1.jpg',
+    after: '/imagens/tocha 3.jpg',
   },
   {
     title: 'Estrutura metálica em altura',
     detail: 'Execução em campo com equipe especializada, EPIs e monitoramento de segurança.',
     meta: 'Execução em obra / inspeção de qualidade',
-    before: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80',
-    after: 'https://images.unsplash.com/photo-1531834685032-c34bf0d84c77?auto=format&fit=crop&w=900&q=80',
+    before: '/imagens/mascara 2.jpg',
+    after: '/imagens/mascara personalizada 3.jpg',
   },
 ];
 
@@ -75,6 +75,10 @@ export default function SoldasEspeciaisPage() {
                 </a>
               </div>
             </div>
+              <div className="b2b-hero-visual">
+                <Image src="/imagens/tocha 2.jpg" alt="Soldagem profissional em equipamento industrial" fill priority sizes="(max-width: 768px) 92vw, 42vw" />
+                <span>PRECISÃO EM CADA JUNTA</span>
+              </div>
           </div>
         </section>
 
@@ -110,11 +114,11 @@ export default function SoldasEspeciaisPage() {
                   <div className="b2b-before-after">
                     <div className="b2b-compare-item">
                       <span>Antes</span>
-                      <img src={projeto.before} alt={`${projeto.title} antes`} />
+                      <Image src={projeto.before} alt={`${projeto.title} antes`} fill sizes="(max-width: 768px) 90vw, 24vw" />
                     </div>
                     <div className="b2b-compare-item">
                       <span>Depois</span>
-                      <img src={projeto.after} alt={`${projeto.title} depois`} />
+                      <Image src={projeto.after} alt={`${projeto.title} depois`} fill sizes="(max-width: 768px) 90vw, 24vw" />
                     </div>
                   </div>
                   <div className="b2b-project-copy">
