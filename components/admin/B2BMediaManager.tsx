@@ -1,347 +1,272 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Edit, Image as ImageIcon, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Trash2, Plus, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 
+type B2BSection = 'galeria' | 'cliente' | 'hero' | 'projetos';
+type B2BTab = B2BSection | 'clientes';
+
 interface B2BAsset {
-id: string;
-section: string; // 'hero', 'cliente', 'projetos', 'galeria'
-title?: string;
-url: string;
-secondary_url?: string;
+  id: string;
+  section: B2BSection;
+  title?: string | null;
+  url: string;
+  secondary_url?: string | null;
 }
+
+const tabLabels: Record<B2BTab, string> & { cliente: string } = {
+  galeria: 'Galeria de obras',
+  clientes: 'Clientes',
+  hero: 'Imagem do hero',
+  projetos: 'Projetos antes/depois',
+  cliente: 'Clientes',
+};
+
+const visibleTabs: B2BTab[] = ['galeria', 'clientes', 'hero', 'projetos'];
 
 export default function B2BMediaManager() {
-const [assets, setAssets] = useState<B2BAsset[]>([]);
-const [loading, setLoading] = useState(false);
-const [activeTab, setActiveTab] = useState<'galeria' | 'clientes' | 'hero' | 'projetos'>('galeria');
+  const [assets, setAssets] = useState<B2BAsset[]>([]);
+  const [activeTab, setActiveTab] = useState<B2BTab>('galeria');
+  const [editingAsset, setEditingAsset] = useState<B2BAsset | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [inputTitle, setInputTitle] = useState('');
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+  const [secondaryFileToUpload, setSecondaryFileToUpload] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-// Formulários
-const [inputTitle, setInputTitle] = useState('');
-const [fileToUpload, setFileToUpload] = useState<File | null>(null);
-const [secondaryFileToUpload, setSecondaryFileToUpload] = useState<File | null>(null); // Para Antes/Depois
-const [uploading, setUploading] = useState(false);
+  const fetchAssets = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('b2b_assets')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-const fetchAssets = async () => {
-setLoading(true);
-try {
-const { data, error } = await supabase
-.from('b2b_assets')
-.select('*')
-.order('created_at', { ascending: false });
-
-  if (error) throw error;
-  setAssets(data || []);
-} catch (err) {
-  console.error('Erro ao buscar ativos B2B:', err);
-} finally {
-  setLoading(false);
-}
-
-
-};
-
-useEffect(() => {
-fetchAssets();
-}, []);
-
-// Função auxiliar para comprimir e enviar arquivo para o Cloudflare via /api/upload
-const uploadFileToCloudflare = async (file: File): Promise<string> => {
-let fileToUpload: File = file;
-let fileName = file.name;
-
-if (file.type.startsWith('image/')) {
-  try {
-    const compressedBlob = await compressImage(file);
-    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'image';
-    fileName = `${baseName}.webp`;
-    fileToUpload = new File([compressedBlob], fileName, { type: 'image/webp' });
-  } catch (error) {
-    console.error('Erro na compressão:', error);
-  }
-}
-
-const formData = new FormData();
-formData.append('file', fileToUpload, fileName);
-
-const response = await fetch('/api/upload', {
-  method: 'POST',
-  body: formData,
-});
-
-if (!response.ok) {
-  const errData = await response.json().catch(() => ({}));
-  throw new Error(errData.error || `HTTP ${response.status}: Falha no upload`);
-}
-
-const result = await response.json();
-if (!result.url) throw new Error('A API de upload não retornou a URL da imagem.');
-return result.url;
-
-
-};
-
-const handleSaveAsset = async (e: React.FormEvent, sectionType: string) => {
-e.preventDefault();
-if (!fileToUpload && sectionType !== 'projetos') {
-alert('Selecione um arquivo de imagem.');
-return;
-}
-
-setUploading(true);
-try {
-  let mainUrl = '';
-  let secondaryUrl = '';
-
-  if (fileToUpload) {
-    mainUrl = await uploadFileToCloudflare(fileToUpload);
-  }
-
-  if (sectionType === 'projetos' && secondaryFileToUpload) {
-    secondaryUrl = await uploadFileToCloudflare(secondaryFileToUpload);
-  }
-
-  // Se for o Hero, removemos o anterior ou atualizamos para manter apenas 1 ativo principal no topo
-  if (sectionType === 'hero') {
-    await supabase.from('b2b_assets').delete().eq('section', 'hero');
-  }
-
-  const newRecord: any = {
-    section: sectionType,
-    url: mainUrl,
-    title: inputTitle.trim() || null,
+      if (fetchError) throw fetchError;
+      setAssets((data || []) as B2BAsset[]);
+    } catch (fetchError: any) {
+      console.error('Erro ao buscar mídias B2B:', fetchError);
+      setError(`Não foi possível carregar as mídias: ${fetchError.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (sectionType === 'projetos') {
-    if (secondaryUrl) newRecord.secondary_url = secondaryUrl;
-  }
+  useEffect(() => {
+    fetchAssets();
+  }, []);
 
-  const { error } = await supabase.from('b2b_assets').insert([newRecord]);
-  if (error) throw error;
+  const uploadFile = async (file: File) => {
+    let preparedFile = file;
+    let fileName = file.name;
 
-  // Limpar campos
-  setFileToUpload(null);
-  setSecondaryFileToUpload(null);
-  setInputTitle('');
-  await fetchAssets();
-  alert('Imagem enviada e salva com sucesso!');
-} catch (err: any) {
-  console.error('Erro ao salvar:', err);
-  alert(`Erro ao salvar: ${err.message}`);
-} finally {
-  setUploading(false);
-}
+    if (file.type.startsWith('image/')) {
+      try {
+        const compressedBlob = await compressImage(file);
+        const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'image';
+        fileName = `${baseName}.webp`;
+        preparedFile = new File([compressedBlob], fileName, { type: 'image/webp' });
+      } catch (compressionError) {
+        console.error('Erro na compressão da imagem:', compressionError);
+      }
+    }
 
+    const formData = new FormData();
+    formData.append('file', preparedFile, fileName);
+    const response = await fetch('/api/upload', { method: 'POST', body: formData });
+    const result = await response.json().catch(() => ({}));
 
-};
+    if (!response.ok || !result.url) {
+      throw new Error(result.error || `HTTP ${response.status}: falha no upload`);
+    }
+    return result.url as string;
+  };
 
-const handleDelete = async (id: string) => {
-if (!window.confirm('Deseja realmente remover este elemento?')) return;
+  const openModal = (section: B2BSection, asset: B2BAsset | null = null) => {
+    setActiveTab(section);
+    setEditingAsset(asset);
+    setInputTitle(asset?.title || '');
+    setFileToUpload(null);
+    setSecondaryFileToUpload(null);
+    setError(null);
+    setShowModal(true);
+  };
 
-try {
-  const { error } = await supabase
-    .from('b2b_assets')
-    .delete()
-    .eq('id', id);
+  const closeModal = () => {
+    if (uploading) return;
+    setShowModal(false);
+    setEditingAsset(null);
+    setInputTitle('');
+    setFileToUpload(null);
+    setSecondaryFileToUpload(null);
+  };
 
-  if (error) throw error;
-  await fetchAssets();
-} catch (err) {
-  console.error('Erro ao excluir:', err);
-  alert('Erro ao excluir o item.');
-}
+  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const section = activeTab === 'clientes' ? 'cliente' : activeTab;
+    const isProject = section === 'projetos';
+    const mainFileRequired = !editingAsset && !fileToUpload;
 
+    if (mainFileRequired || (isProject && !editingAsset && !secondaryFileToUpload)) {
+      setError(isProject ? 'Selecione as duas imagens do projeto.' : 'Selecione uma imagem.');
+      return;
+    }
 
-};
+    setUploading(true);
+    setError(null);
+    try {
+      const mainUrl = fileToUpload ? await uploadFile(fileToUpload) : editingAsset?.url;
+      const secondaryUrl = secondaryFileToUpload
+        ? await uploadFile(secondaryFileToUpload)
+        : editingAsset?.secondary_url;
 
-return (
-<div className="space-y-6" style={{ color: 'white' }}>
+      if (!mainUrl) throw new Error('A imagem principal não foi definida.');
 
-Gerenciador Visual - Soldas Especiais
-Faça upload de arquivos do seu dispositivo para atualizar automaticamente o site B2B.
+      if (section === 'hero' && !editingAsset) {
+        const { error: deleteError } = await supabase.from('b2b_assets').delete().eq('section', 'hero');
+        if (deleteError) throw deleteError;
+      }
 
+      const record = {
+        section,
+        url: mainUrl,
+        title: inputTitle.trim() || null,
+        ...(isProject ? { secondary_url: secondaryUrl || null } : {}),
+      };
 
-  {/* Abas */}
-  <div className="flex flex-wrap gap-2 border-b border-zinc-800 pb-4">
-    <button
-      onClick={() => setActiveTab('galeria')}
-      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors cursor-pointer ${activeTab === 'galeria' ? 'bg-[#ff6b00] text-black font-bold' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-    >
-      Galeria de Obras
-    </button>
-    <button
-      onClick={() => setActiveTab('clientes')}
-      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors cursor-pointer ${activeTab === 'clientes' ? 'bg-[#ff6b00] text-black font-bold' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-    >
-      Carrossel de Clientes
-    </button>
-    <button
-      onClick={() => setActiveTab('hero')}
-      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors cursor-pointer ${activeTab === 'hero' ? 'bg-[#ff6b00] text-black font-bold' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-    >
-      Imagem do Hero (Topo)
-    </button>
-    <button
-      onClick={() => setActiveTab('projetos')}
-      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors cursor-pointer ${activeTab === 'projetos' ? 'bg-[#ff6b00] text-black font-bold' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-    >
-      Projetos (Antes / Depois)
-    </button>
-  </div>
+      const result = editingAsset
+        ? await supabase.from('b2b_assets').update(record).eq('id', editingAsset.id)
+        : await supabase.from('b2b_assets').insert([record]);
 
-  {/* GALERIA */}
-  {activeTab === 'galeria' && (
-    <div className="space-y-6">
-      <form onSubmit={(e) => handleSaveAsset(e, 'galeria')} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center">
-        <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 rounded-lg p-4 cursor-pointer hover:border-[#ff6b00] transition-colors w-full">
-          <Upload size={20} />
-          <span className="text-sm truncate">{fileToUpload ? fileToUpload.name : 'Escolher imagem para a Galeria...'}</span>
-          <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setFileToUpload(e.target.files[0])} className="hidden" />
-        </label>
-        <button type="submit" disabled={uploading || !fileToUpload} className="bg-[#ff6b00] hover:bg-[#ff8c33] text-black px-6 py-3 rounded-lg font-bold transition-colors disabled:opacity-50 cursor-pointer w-full md:w-auto">
-          {uploading ? <Loader2 className="animate-spin" size={20} /> : 'Enviar Imagem'}
-        </button>
-      </form>
+      if (result.error) throw result.error;
+      await fetchAssets();
+      closeModal();
+    } catch (saveError: any) {
+      console.error('Erro ao salvar mídia B2B:', saveError);
+      setError(`Não foi possível salvar: ${saveError.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {assets.filter(a => a.section === 'galeria').map((item) => (
-          <div key={item.id} className="relative group bg-zinc-800 rounded-lg overflow-hidden aspect-square border border-zinc-700">
-            <img src={item.url} alt="Galeria B2B" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button onClick={() => handleDelete(item.id)} className="bg-red-500 hover:bg-red-600 p-3 rounded-full text-white cursor-pointer">
-                <Trash2 size={20} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
+  const handleDelete = async (asset: B2BAsset) => {
+    if (!window.confirm('Deseja realmente remover esta mídia?')) return;
+    setError(null);
+    try {
+      const { error: deleteError } = await supabase.from('b2b_assets').delete().eq('id', asset.id);
+      if (deleteError) throw deleteError;
+      setAssets((current) => current.filter((item) => item.id !== asset.id));
+    } catch (deleteError: any) {
+      console.error('Erro ao excluir mídia B2B:', deleteError);
+      setError(`Não foi possível excluir: ${deleteError.message}`);
+    }
+  };
 
-  {/* CLIENTES */}
-  {activeTab === 'clientes' && (
-    <div className="space-y-6">
-      <form onSubmit={(e) => handleSaveAsset(e, 'cliente')} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center">
-        <input 
-          type="text" 
-          placeholder="Nome da Empresa / Cliente"
-          value={inputTitle}
-          onChange={(e) => setInputTitle(e.target.value)}
-          className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#ff6b00] w-full md:w-1/3"
-        />
-        <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 rounded-lg p-4 cursor-pointer hover:border-[#ff6b00] transition-colors w-full">
-          <Upload size={20} />
-          <span className="text-sm truncate">{fileToUpload ? fileToUpload.name : 'Escolher Logo do Cliente...'}</span>
-          <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setFileToUpload(e.target.files[0])} className="hidden" />
-        </label>
-        <button type="submit" disabled={uploading || !fileToUpload} className="bg-[#ff6b00] hover:bg-[#ff8c33] text-black px-6 py-3 rounded-lg font-bold transition-colors disabled:opacity-50 cursor-pointer w-full md:w-auto">
-          {uploading ? <Loader2 className="animate-spin" size={20} /> : 'Adicionar Logo'}
-        </button>
-      </form>
+  const visibleAssets = assets.filter((asset) => asset.section === (activeTab === 'clientes' ? 'cliente' : activeTab));
+  const modalSection = activeTab === 'clientes' ? 'cliente' : activeTab;
+  const isProjectModal = modalSection === 'projetos';
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {assets.filter(a => a.section === 'cliente').map((item) => (
-          <div key={item.id} className="relative group bg-zinc-800 p-4 rounded-lg flex flex-col items-center justify-center border border-zinc-700">
-            <img src={item.url} alt={item.title || 'Cliente'} className="h-16 object-contain mb-2" />
-            <span className="text-xs text-zinc-400">{item.title || 'Sem Nome'}</span>
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button onClick={() => handleDelete(item.id)} className="bg-red-500 hover:bg-red-600 p-3 rounded-full text-white cursor-pointer">
-                <Trash2 size={20} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-
-  {/* HERO */}
-  {activeTab === 'hero' && (
-    <div className="space-y-6">
-      <form onSubmit={(e) => handleSaveAsset(e, 'hero')} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center">
-        <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 rounded-lg p-4 cursor-pointer hover:border-[#ff6b00] transition-colors w-full">
-          <Upload size={20} />
-          <span className="text-sm truncate">{fileToUpload ? fileToUpload.name : 'Escolher nova Imagem Principal (Hero)...'}</span>
-          <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setFileToUpload(e.target.files[0])} className="hidden" />
-        </label>
-        <button type="submit" disabled={uploading || !fileToUpload} className="bg-[#ff6b00] hover:bg-[#ff8c33] text-black px-6 py-3 rounded-lg font-bold transition-colors disabled:opacity-50 cursor-pointer w-full md:w-auto">
-          {uploading ? <Loader2 className="animate-spin" size={20} /> : 'Atualizar Hero'}
-        </button>
-      </form>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {assets.filter(a => a.section === 'hero').map((item) => (
-          <div key={item.id} className="relative group bg-zinc-800 rounded-lg overflow-hidden aspect-video border border-zinc-700">
-            <img src={item.url} alt="Hero B2B" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button onClick={() => handleDelete(item.id)} className="bg-red-500 hover:bg-red-600 p-3 rounded-full text-white cursor-pointer">
-                <Trash2 size={20} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-
-  {/* PROJETOS (ANTES E DEPOIS) */}
-  {activeTab === 'projetos' && (
-    <div className="space-y-6">
-      <form onSubmit={(e) => handleSaveAsset(e, 'projetos')} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-4">
-        <input 
-          type="text" 
-          placeholder="Título do Projeto (Ex: Recuperação de Eixo)"
-          value={inputTitle}
-          onChange={(e) => setInputTitle(e.target.value)}
-          required
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#ff6b00]"
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-700 rounded-lg p-4 cursor-pointer hover:border-[#ff6b00] transition-colors">
-            <span className="text-xs text-zinc-400 font-bold">FOTO ANTES</span>
-            <span className="text-sm truncate">{fileToUpload ? fileToUpload.name : 'Selecionar arquivo...'}</span>
-            <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setFileToUpload(e.target.files[0])} className="hidden" />
-          </label>
-
-          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-700 rounded-lg p-4 cursor-pointer hover:border-[#ff6b00] transition-colors">
-            <span className="text-xs text-zinc-400 font-bold">FOTO DEPOIS</span>
-            <span className="text-sm truncate">{secondaryFileToUpload ? secondaryFileToUpload.name : 'Selecionar arquivo...'}</span>
-            <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && setSecondaryFileToUpload(e.target.files[0])} className="hidden" />
-          </label>
+  return (
+    <div className="admin-container" style={{ maxWidth: '1100px', color: 'white' }}>
+      <div className="admin-header">
+        <div>
+          <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Mídia B2B</h1>
+          <p style={{ color: '#888', fontSize: '0.85rem', margin: '6px 0 0' }}>
+            Gerencie as imagens exibidas em Soldas Especiais.
+          </p>
         </div>
-        <button type="submit" disabled={uploading || !fileToUpload || !secondaryFileToUpload} className="w-full bg-[#ff6b00] hover:bg-[#ff8c33] text-black py-3 rounded-lg font-bold transition-colors disabled:opacity-50 cursor-pointer">
-          {uploading ? <Loader2 className="animate-spin inline" size={20} /> : 'Adicionar Projeto Antes/Depois'}
+        <button className="btn-admin btn-adicionar" onClick={() => openModal(modalSection)}>
+          <Plus size={18} /> Adicionar mídia
         </button>
-      </form>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {assets.filter(a => a.section === 'projetos').map((item) => (
-          <div key={item.id} className="relative group bg-zinc-800 p-4 rounded-lg border border-zinc-700 space-y-2">
-            <h4 className="font-bold text-white text-lg">{item.title || 'Projeto Industrial'}</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="text-xs text-zinc-400 block mb-1">Antes</span>
-                <img src={item.url} alt="Antes" className="w-full h-32 object-cover rounded" />
-              </div>
-              <div>
-                <span className="text-xs text-zinc-400 block mb-1">Depois</span>
-                <img src={item.secondary_url || ''} alt="Depois" className="w-full h-32 object-cover rounded" />
-              </div>
-            </div>
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button onClick={() => handleDelete(item.id)} className="bg-red-500 hover:bg-red-600 p-3 rounded-full text-white cursor-pointer">
-                <Trash2 size={20} />
-              </button>
-            </div>
-          </div>
+      <div className="admin-tabs" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {visibleTabs.map((tab) => (
+          <button key={tab} className={`btn ${activeTab === tab ? '' : 'btn-secundario'}`} onClick={() => setActiveTab(tab)}>
+            {tabLabels[tab]}
+          </button>
         ))}
       </div>
+
+      {error && (
+        <div style={{ background: '#3a1515', border: '1px solid #a33', color: '#ffb0b0', padding: '12px 15px', borderRadius: '8px', marginBottom: '20px' }}>
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '70px 20px', color: '#aaa' }}><Loader2 className="animate-spin" style={{ margin: '0 auto 10px' }} /> Carregando mídias...</div>
+      ) : visibleAssets.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '70px 20px', color: '#777', border: '2px dashed #333', borderRadius: '12px' }}>
+          <ImageIcon size={42} style={{ margin: '0 auto 10px' }} />
+          <p>Nenhuma mídia cadastrada nesta seção.</p>
+          <button className="btn-admin btn-adicionar" onClick={() => openModal(modalSection)}>Adicionar a primeira</button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: isProjectModal ? 'repeat(auto-fit, minmax(280px, 1fr))' : 'repeat(auto-fit, minmax(190px, 1fr))', gap: '15px' }}>
+          {visibleAssets.map((asset) => (
+            <article key={asset.id} style={{ background: '#111', border: '1px solid #2b2b2b', borderRadius: '10px', overflow: 'hidden' }}>
+              {isProjectModal ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', padding: '5px' }}>
+                  <img src={asset.url} alt="Antes" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '5px' }} />
+                  <img src={asset.secondary_url || asset.url} alt="Depois" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '5px' }} />
+                </div>
+              ) : (
+                <img src={asset.url} alt={asset.title || tabLabels[activeTab]} style={{ width: '100%', aspectRatio: activeTab === 'hero' ? '16 / 9' : '1', objectFit: 'cover' }} />
+              )}
+              <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <strong style={{ color: '#ddd', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.title || tabLabels[activeTab]}</strong>
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <button aria-label="Editar mídia" title="Editar mídia" onClick={() => openModal(asset.section, asset)} className="btn-admin" style={{ background: '#222', color: 'white', padding: '8px' }}><Edit size={16} /></button>
+                  <button aria-label="Excluir mídia" title="Excluir mídia" onClick={() => handleDelete(asset)} className="btn-admin" style={{ background: '#311', color: '#ff7777', padding: '8px' }}><Trash2 size={16} /></button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <div className="modal-admin-container visivel" style={{ zIndex: 1000 }} onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>
+          <div className="modal-admin" style={{ maxWidth: '650px', background: '#111', border: '1px solid #333' }}>
+            <button className="modal-fechar-btn" onClick={closeModal} aria-label="Fechar modal"><X size={24} /></button>
+            <h2 className="titulo-secao" style={{ fontSize: '1.3rem', marginBottom: '6px' }}>{editingAsset ? 'Editar mídia' : 'Adicionar mídia'}</h2>
+            <p style={{ color: '#888', marginBottom: '20px' }}>{tabLabels[activeTab]}</p>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {(modalSection === 'cliente' || isProjectModal) && (
+                <div className="form-campo" style={{ marginBottom: 0 }}>
+                  <label>{isProjectModal ? 'Título do projeto' : 'Nome da empresa'}</label>
+                  <input value={inputTitle} onChange={(event) => setInputTitle(event.target.value)} required={isProjectModal} placeholder={isProjectModal ? 'Ex.: Recuperação de eixo' : 'Nome do cliente'} />
+                </div>
+              )}
+              <FilePicker label={isProjectModal ? 'Foto antes' : 'Imagem'} file={fileToUpload} currentUrl={editingAsset?.url} onChange={setFileToUpload} />
+              {isProjectModal && <FilePicker label="Foto depois" file={secondaryFileToUpload} currentUrl={editingAsset?.secondary_url || undefined} onChange={setSecondaryFileToUpload} />}
+              {error && <p style={{ color: '#ff8888', margin: 0 }}>{error}</p>}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                <button type="button" onClick={closeModal} className="btn-admin" style={{ flex: 1, background: '#333', color: 'white' }}>Cancelar</button>
+                <button type="submit" className="btn-admin" style={{ flex: 2, background: 'var(--cor-destaque)', color: 'black' }} disabled={uploading}>
+                  {uploading ? <Loader2 className="animate-spin" style={{ margin: '0 auto' }} size={18} /> : editingAsset ? 'Salvar alterações' : 'Adicionar mídia'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
-  )}
-</div>
+  );
+}
 
-
-);
+function FilePicker({ label, file, currentUrl, onChange }: { label: string; file: File | null; currentUrl?: string | null; onChange: (file: File | null) => void }) {
+  return (
+    <label className="form-campo" style={{ marginBottom: 0, border: '1px dashed #555', borderRadius: '8px', padding: '12px', cursor: 'pointer' }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Upload size={17} /> {label}</span>
+      <span style={{ display: 'block', color: '#888', fontSize: '0.8rem', marginTop: '7px' }}>{file?.name || (currentUrl ? 'Imagem atual mantida. Clique para substituir.' : 'Selecione uma imagem')}</span>
+      <input type="file" accept="image/*" onChange={(event) => onChange(event.target.files?.[0] || null)} style={{ display: 'none' }} />
+    </label>
+  );
 }
