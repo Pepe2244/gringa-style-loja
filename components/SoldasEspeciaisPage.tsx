@@ -218,23 +218,23 @@ export default function SoldasEspeciaisPage() {
               <h2>Clientes que confiam em nossa execução.</h2>
             </div>
 
-            <div className="relative w-full max-w-[100vw] mt-8">
-              <div className="group flex overflow-x-auto no-scrollbar snap-x snap-mandatory">
-                <div className="flex shrink-0 animate-marquee gap-8 md:gap-16 pr-8 md:pr-16 group-hover:[animation-play-state:paused]">
+            <div className="b2b-marquee mt-8">
+              <div className="b2b-marquee-track group-hover:[animation-play-state:paused]">
+                <div className="b2b-marquee-group">
                   {clientesFinais.map((cliente, index) => (
                     <div 
                       key={`cliente-1-${index}`} 
-                      className="snap-center flex items-center justify-center w-48 h-24 bg-zinc-900/50 rounded-lg border border-white/10 grayscale hover:grayscale-0 transition-all duration-300 shrink-0"
+                      className="b2b-marquee-item"
                     >
                       <Image src={cliente.src} alt={cliente.name} width={120} height={48} className="object-contain opacity-70 hover:opacity-100" />
                     </div>
                   ))}
                 </div>
-                <div className="flex shrink-0 animate-marquee gap-8 md:gap-16 pr-8 md:pr-16 group-hover:[animation-play-state:paused]" aria-hidden="true">
+                <div className="b2b-marquee-group" aria-hidden="true">
                   {clientesFinais.map((cliente, index) => (
                     <div 
                       key={`cliente-2-${index}`} 
-                      className="snap-center flex items-center justify-center w-48 h-24 bg-zinc-900/50 rounded-lg border border-white/10 grayscale hover:grayscale-0 transition-all duration-300 shrink-0"
+                      className="b2b-marquee-item"
                     >
                       <Image src={cliente.src} alt={cliente.name} width={120} height={48} className="object-contain opacity-70 hover:opacity-100" />
                     </div>

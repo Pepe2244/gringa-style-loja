@@ -29,14 +29,26 @@ export default function Footer() {
             <div className="container">
                 <div className="rodape-coluna">
                     <div style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '15px', fontWeight: 'bold' }}>
-                        {isServices ? 'Gringa Style Soldas Especiais' : 'Gringa Style'}
+                        {isServices ? 'Gringa Style Soldas Especiais' : isPortal ? 'Grupo Gringa Style' : 'Gringa Style'}
                     </div>
                     <p>
                         {isServices
                             ? 'Engenharia de soldagem, manutenção industrial, caldeiraria pesada e serviços técnicos para sua planta.'
-                            : 'Equipamentos e acessórios para solda com a mais alta qualidade e estilo.'}
+                            : isPortal
+                                ? 'Duas frentes para transformar a soldagem: equipamentos e acessórios para profissionais, além de soluções técnicas para operações industriais.'
+                                : 'Equipamentos e acessórios para solda com a mais alta qualidade e estilo.'}
                     </p>
                 </div>
+
+                {isPortal && (
+                    <div className="rodape-coluna">
+                        <h2>Conheça o grupo</h2>
+                        <p><Link href="/sobre">Sobre nós</Link></p>
+                        <p><Link href="/loja">Loja Gringa Style</Link></p>
+                        <p><Link href="/soldas-especiais">Soldas Especiais</Link></p>
+                        <p><Link href="#contato">Fale com o grupo</Link></p>
+                    </div>
+                )}
                 
                 <div className="rodape-coluna">
                     <h2>Contato</h2>
@@ -51,13 +63,13 @@ export default function Footer() {
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Mail size={16} /> contato@gringastylebr.com.br</p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP {!isServices && '(Loja Online)'}</p>
                     
-                    {/* Conditionally render E-commerce specific links */}
-                    {!isServices && (
+                    {!isServices && !isPortal && (
                         <>
                             <p><Link href="/devolucao-e-reembolso">Devolução e Reembolso</Link></p>
                             <p><Link href="/privacidade">Política de Privacidade</Link></p>
                         </>
                     )}
+                    {isPortal && <p><Link href="/privacidade">Política de Privacidade</Link></p>}
                 </div>
 
                 <div className="rodape-coluna">

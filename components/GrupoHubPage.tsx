@@ -91,16 +91,16 @@ return (
   <section className="dual-path-trust">
     <div className="container dual-path-trust-grid">
       <div>
-        <strong>+15 anos</strong>
-        <span>de experiência com soldagem</span>
+          <strong>+15 anos de experiência</strong>
+          <span>vivendo a rotina da soldagem, da oficina à operação industrial</span>
       </div>
       <div>
         <strong>Atendimento</strong>
-        <span>comercial e técnico em todo o Brasil</span>
+          <span>comercial e técnico para clientes em todo o Brasil</span>
       </div>
       <div>
         <strong>Qualidade</strong>
-        <span>com foco em desempenho e confiabilidade</span>
+          <span>com foco em desempenho, segurança e confiabilidade</span>
       </div>
     </div>
   </section>

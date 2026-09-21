@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 
 export const metadata: Metadata = {
-  title: 'Sobre a Gringa Style | Especialistas em Solda TIG',
-  description: 'Conheça a história da Gringa Style. Somos apaixonados por solda TIG, oferecendo máscaras passivas e acessórios de alta durabilidade e estilo exclusivo.',
+    title: 'Sobre o Grupo Gringa Style | Loja e Soldas Especiais',
+    description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela operação de soldas especiais para a indústria.',
   alternates: { canonical: '/sobre' },
 };
 
@@ -13,8 +13,8 @@ export default function SobrePage() {
     return (
         <>
             <WebPageSchema page={{
-                name: 'Sobre a Gringa Style',
-                description: 'Conheça a história da Gringa Style. Somos apaixonados por solda TIG, oferecendo máscaras passivas e acessórios de alta durabilidade e estilo exclusivo.',
+                name: 'Sobre o Grupo Gringa Style',
+                description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela operação de soldas especiais para a indústria.',
                 url: '/sobre'
             }} />
             <BreadcrumbSchema items={[
@@ -22,10 +22,25 @@ export default function SobrePage() {
                 { name: 'Sobre', url: '/sobre' }
             ]} />
             <main className="container" style={{ padding: '60px 15px', maxWidth: '1000px', margin: '0 auto' }}>
-                <h1 className="titulo-secao" style={{ textAlign: 'center', marginBottom: '20px' }}>Sobre a Gringa Style</h1>
+                <h1 className="titulo-secao" style={{ textAlign: 'center', marginBottom: '20px' }}>Sobre o Grupo Gringa Style</h1>
                 <p className="subtitulo-secao" style={{ textAlign: 'center', marginBottom: '60px', color: '#ccc', fontSize: '1.2rem' }}>
-                    Paixão pela solda TIG, estilo único e proteção máxima para soldadores que não se contentam com o básico.
+                    Duas frentes que trabalham com o mesmo compromisso: tornar a soldagem mais segura, eficiente e respeitada.
                 </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+                    <section style={{ backgroundColor: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333' }}>
+                        <span style={{ color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)', letterSpacing: '1px' }}>B2C | PARA QUEM VIVE A SOLDAGEM</span>
+                        <h2 style={{ fontFamily: 'var(--fonte-titulos)', color: '#fff', fontSize: '2rem', margin: '12px 0' }}>Loja Gringa Style</h2>
+                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>Máscaras, acessórios e EPIs escolhidos para soldadores que exigem proteção, conforto e personalidade no trabalho.</p>
+                        <Link href="/loja" style={{ display: 'inline-block', marginTop: '18px', color: 'var(--cor-destaque)', fontWeight: 'bold' }}>Conheça a loja</Link>
+                    </section>
+                    <section style={{ backgroundColor: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333' }}>
+                        <span style={{ color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)', letterSpacing: '1px' }}>B2B | PARA OPERAÇÕES INDUSTRIAIS</span>
+                        <h2 style={{ fontFamily: 'var(--fonte-titulos)', color: '#fff', fontSize: '2rem', margin: '12px 0' }}>Soldas Especiais</h2>
+                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>Engenharia de soldagem, recuperação de ativos, manutenção e execução técnica para reduzir riscos e tempo parado.</p>
+                        <Link href="/soldas-especiais" style={{ display: 'inline-block', marginTop: '18px', color: 'var(--cor-destaque)', fontWeight: 'bold' }}>Conheça os serviços</Link>
+                    </section>
+                </div>
                 
                 <div style={{ backgroundColor: '#111', padding: '40px', borderRadius: '15px', border: '1px solid #333', marginBottom: '40px' }}>
                     <h2 className="titulo-secao" style={{ fontSize: '2.5rem', textAlign: 'center' }}>Nossa História</h2>
@@ -50,7 +65,7 @@ export default function SobrePage() {
                             Com a força e a parceria da nossa comunidade de clientes que abraçou o conceito de imediato, passamos a fornecer também acessórios de alta precisão e inovamos ao criar um sistema de rifas 100% transparente para democratizar o acesso a equipamentos da mais alta performance.
                         </p>
                         <p style={{ marginBottom: '20px', color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', textAlign: 'center' }}>
-                            Hoje, a Gringa Style é mais do que uma loja: é uma marca feita por quem entende de TIG para quem vive o cordão perfeito todos os dias.
+                            Hoje, o Grupo Gringa Style conecta a experiência de quem vive o cordão perfeito todos os dias com soluções técnicas para os desafios reais da indústria.
                         </p>
                     </div>
                 </div>

@@ -1184,6 +1184,7 @@ text-align: center;
 }
 
 .dual-path-shell h1 {
+width: 100%;
 font-family: var(--fonte-titulos);
 font-size: clamp(42px, 7vw, 76px);
 line-height: 0.95;
@@ -1264,6 +1265,7 @@ letter-spacing: 1px;
 .dual-path-trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding-top: 30px; text-align: center; }
 .dual-path-trust-grid strong { display: block; color: var(--cor-destaque); font-family: var(--fonte-titulos); font-size: 28px; }
 .dual-path-trust-grid span { color: #ccc; }
+.dual-path-trust .container { margin-bottom: 0; padding-bottom: 30px; }
 .dual-path-contact { padding: 50px 0 10px; }
 .dual-path-contact-box { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding-top: 30px; }
 .dual-path-contact-box h3 { font-family: var(--fonte-titulos); font-size: 32px; color: var(--cor-texto); margin-top: 8px; }
@@ -1308,6 +1310,12 @@ letter-spacing: 1px;
 .b2b-project-copy small { display: inline-block; margin-top: 16px; color: var(--cor-destaque); }
 .b2b-client-logos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
 .b2b-client-logo { padding: 20px 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #bbb; text-align: center; font-family: var(--fonte-titulos); font-size: 22px; }
+.b2b-marquee { width: 100%; overflow: hidden; }
+.b2b-marquee-track { display: flex; width: max-content; animation: b2b-marquee 28s linear infinite; }
+.b2b-marquee-group { display: flex; flex-shrink: 0; gap: 32px; padding-right: 32px; }
+.b2b-marquee-item { display: flex; width: 192px; height: 96px; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(24,24,24,0.8); filter: grayscale(1); transition: filter 0.3s ease; }
+.b2b-marquee-item:hover { filter: grayscale(0); }
+@keyframes b2b-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .b2b-footer { padding: 72px 0; background: radial-gradient(circle at 80% 50%, rgba(255,165,0,0.08), transparent 30%), #111; }
 .b2b-footer-grid { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 48px; align-items: start; }
 .b2b-footer-copy h3 { margin: 12px 0 18px; font-family: var(--fonte-titulos); font-size: 42px; line-height: 1; }
@@ -1317,6 +1325,14 @@ letter-spacing: 1px;
 .b2b-contact-form input, .b2b-contact-form textarea { width: 100%; padding: 14px 16px; border: 1px solid #555; border-radius: 5px; background: #202020; color: var(--cor-texto); font: inherit; }
 .b2b-contact-form input:focus, .b2b-contact-form textarea:focus { border-color: var(--cor-destaque); outline: none; box-shadow: 0 0 10px rgba(255,165,0,0.2); }
 .b2b-contact-form button { cursor: pointer; }
+
+@media (max-width: 768px) {
+.dual-path-trust-grid { gap: 18px; padding-top: 24px; }
+.dual-path-trust-grid strong { font-size: 25px; }
+.dual-path-trust-grid span { display: block; max-width: 320px; margin: 0 auto; }
+.b2b-marquee-group { gap: 20px; padding-right: 20px; }
+.b2b-marquee-item { width: 160px; height: 84px; }
+}
 
 @media (max-width: 768px) {
 /* Modifiquei a classe abaixo para resolver o bug de sobreposição */
