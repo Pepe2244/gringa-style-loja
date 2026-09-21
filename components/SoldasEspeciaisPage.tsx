@@ -2,38 +2,13 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase'; // Certifique-se que o caminho está correto
+import { supabase } from '@/lib/supabase';
 
 const diferenciais = [
   { title: 'Time Qualificado', text: 'Equipe técnica com experiência real em soldagem industrial.' },
   { title: 'Atendimento em Todo o Brasil', text: 'Execução e suporte em plantas, caldeiraria e manutenção.' },
   { title: 'Cumprimento de Normas', text: 'Processos alinhados com exigências técnicas e de segurança.' },
   { title: 'Laudo Técnico', text: 'Documentação técnica para tomada de decisão e rastreabilidade.' },
-];
-
-const projetos = [
-  {
-    title: 'Recuperação de eixo de máquina industrial',
-    detail: 'Recuperação estrutural com solda especializada em aço e alta resistência.',
-    meta: 'Norma / Procedimento técnico atendido',
-    before: '/imagens/tocha 1.jpg',
-    after: '/imagens/tocha 3.jpg',
-  },
-  {
-    title: 'Estrutura metálica em altura',
-    detail: 'Execução em campo com equipe especializada, EPIs e monitoramento de segurança.',
-    meta: 'Execução em obra / inspeção de qualidade',
-    before: '/imagens/mascara 2.jpg',
-    after: '/imagens/mascara personalizada 3.jpg',
-  },
-];
-
-const clientes = [
-  { name: 'Cliente A', src: '/imagens/logo_gringa_style.png' },
-  { name: 'Cliente B', src: '/imagens/logo_gringa_style.png' },
-  { name: 'Cliente C', src: '/imagens/logo_gringa_style.png' },
-  { name: 'Cliente D', src: '/imagens/logo_gringa_style.png' },
-  { name: 'Cliente E', src: '/imagens/logo_gringa_style.png' },
 ];
 
 export default function SoldasEspeciaisPage() {
@@ -45,22 +20,76 @@ export default function SoldasEspeciaisPage() {
     mensagem: '',
   });
 
-  // Estado para armazenar as imagens dinâmicas da galeria
-  const [galeriaImagens, setGaleriaImagens] = useState<{id: string, url: string}[]>([]);
+  // Estados para os dados vindos do Supabase
+  const [heroImage, setHeroImage] = useState('/imagens/tocha 2.jpg');
+  const [projetosDinamicos, setProjetosDinamicos] = useState<any[]>([]);
+  const [clientesDinamicos, setClientesDinamicos] = useState<any[]>([]);
+  const [galeriaImagens, setGaleriaImagens] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchGaleria = async () => {
-      const { data } = await supabase
-        .from('galeria_b2b')
-        .select('id, url')
+    const fetchB2BAssets = async () => {
+      const { data, error } = await supabase
+        .from('b2b_assets')
+        .select('*')
         .order('created_at', { ascending: false });
-      
-      if (data) {
-        setGaleriaImagens(data);
+
+      if (!error && data) {
+        // 1. Hero Image
+        const hero = data.find(item => item.section === 'hero');
+        if (hero) setHeroImage(hero.url);
+
+        // 2. Projetos Antes / Depois
+        const proj = data.filter(item => item.section === 'projetos');
+        if (proj.length > 0) {
+          setProjetosDinamicos(proj.map(p => ({
+            title: p.title || 'Projeto Industrial',
+            detail: 'Execução com solda especializada de alto desempenho.',
+            meta: 'Norma / Procedimento técnico atendido',
+            before: p.url,
+            after: p.secondary_url || p.url,
+          })));
+        }
+
+        // 3. Clientes (Confiança)
+        const cl = data.filter(item => item.section === 'cliente');
+        if (cl.length > 0) {
+          setClientesDinamicos(cl.map(c => ({ name: c.title || 'Cliente', src: c.url })));
+        }
+
+        // 4. Galeria
+        const gal = data.filter(item => item.section === 'galeria');
+        setGaleriaImagens(gal);
       }
     };
-    fetchGaleria();
+
+    fetchB2BAssets();
   }, []);
+
+  // Fallbacks caso o admin ainda não tenha cadastrado nada
+  const projetosFinais = projetosDinamicos.length > 0 ? projetosDinamicos : [
+    {
+      title: 'Recuperação de eixo de máquina industrial',
+      detail: 'Recuperação estrutural com solda especializada em aço e alta resistência.',
+      meta: 'Norma / Procedimento técnico atendido',
+      before: '/imagens/tocha 1.jpg',
+      after: '/imagens/tocha 3.jpg',
+    },
+    {
+      title: 'Estrutura metálica em altura',
+      detail: 'Execução em campo com equipe especializada, EPIs e monitoramento de segurança.',
+      meta: 'Execução em obra / inspeção de qualidade',
+      before: '/imagens/mascara 2.jpg',
+      after: '/imagens/mascara personalizada 3.jpg',
+    },
+  ];
+
+  const clientesFinais = clientesDinamicos.length > 0 ? clientesDinamicos : [
+    { name: 'Cliente A', src: '/imagens/logo_gringa_style.png' },
+    { name: 'Cliente B', src: '/imagens/logo_gringa_style.png' },
+    { name: 'Cliente C', src: '/imagens/logo_gringa_style.png' },
+    { name: 'Cliente D', src: '/imagens/logo_gringa_style.png' },
+    { name: 'Cliente E', src: '/imagens/logo_gringa_style.png' },
+  ];
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -100,7 +129,7 @@ export default function SoldasEspeciaisPage() {
               </div>
             </div>
               <div className="b2b-hero-visual">
-                <Image src="/imagens/tocha 2.jpg" alt="Soldagem profissional em equipamento industrial" fill priority sizes="(max-width: 768px) 92vw, 42vw" />
+                <Image src={heroImage} alt="Soldagem profissional em equipamento industrial" fill priority sizes="(max-width: 768px) 92vw, 42vw" />
                 <span>PRECISÃO EM CADA JUNTA</span>
               </div>
           </div>
@@ -133,8 +162,8 @@ export default function SoldasEspeciaisPage() {
             </div>
 
             <div className="b2b-projects-grid">
-              {projetos.map((projeto) => (
-                <article key={projeto.title} className="b2b-project-card">
+              {projetosFinais.map((projeto, idx) => (
+                <article key={idx} className="b2b-project-card">
                   <div className="b2b-before-after">
                     <div className="b2b-compare-item">
                       <span>Antes</span>
@@ -156,7 +185,7 @@ export default function SoldasEspeciaisPage() {
           </div>
         </section>
 
-        {/* NOVA SEÇÃO: Galeria de Imagens Dinâmicas */}
+        {/* Galeria Dinâmica de Obras */}
         {galeriaImagens.length > 0 && (
           <section className="b2b-section">
             <div className="container">
@@ -192,7 +221,7 @@ export default function SoldasEspeciaisPage() {
             <div className="relative w-full max-w-[100vw] mt-8">
               <div className="group flex overflow-x-auto no-scrollbar snap-x snap-mandatory">
                 <div className="flex shrink-0 animate-marquee gap-8 md:gap-16 pr-8 md:pr-16 group-hover:[animation-play-state:paused]">
-                  {clientes.map((cliente, index) => (
+                  {clientesFinais.map((cliente, index) => (
                     <div 
                       key={`cliente-1-${index}`} 
                       className="snap-center flex items-center justify-center w-48 h-24 bg-zinc-900/50 rounded-lg border border-white/10 grayscale hover:grayscale-0 transition-all duration-300 shrink-0"
@@ -202,7 +231,7 @@ export default function SoldasEspeciaisPage() {
                   ))}
                 </div>
                 <div className="flex shrink-0 animate-marquee gap-8 md:gap-16 pr-8 md:pr-16 group-hover:[animation-play-state:paused]" aria-hidden="true">
-                  {clientes.map((cliente, index) => (
+                  {clientesFinais.map((cliente, index) => (
                     <div 
                       key={`cliente-2-${index}`} 
                       className="snap-center flex items-center justify-center w-48 h-24 bg-zinc-900/50 rounded-lg border border-white/10 grayscale hover:grayscale-0 transition-all duration-300 shrink-0"

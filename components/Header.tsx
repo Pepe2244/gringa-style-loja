@@ -57,6 +57,52 @@ export default function Header() {
         setIsMenuOpen(false);
     };
 
+    // Função inteligente para lidar com scroll na mesma página
+    const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        const href = e.currentTarget.getAttribute('href');
+        if (!href) return;
+
+        let targetPath = href;
+        let targetHash = '';
+        
+        if (href.includes('#')) {
+            const parts = href.split('#');
+            targetPath = parts[0];
+            targetHash = parts[1];
+        }
+
+        if (targetPath === '') {
+            targetPath = pathname;
+        }
+
+        // Se o destino for a própria página em que o usuário está
+        if (pathname === targetPath) {
+            e.preventDefault(); 
+            
+            if (targetHash) {
+                // Rolar para a seção específica com compensação do Header
+                const element = document.getElementById(targetHash);
+                if (element) {
+                    const headerOffset = 100; // Altura do seu header fixo
+                    const elementPosition = element.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.scrollY - headerOffset;
+                  
+                    window.scrollTo({
+                         top: offsetPosition,
+                         behavior: "smooth"
+                    });
+                }
+            } else {
+                // Rolar para o topo da página suavemente
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            closeMenu();
+        } else {
+            // Se for pra outra página, deixa o Next.js fazer o trabalho normal
+            closeMenu();
+        }
+    };
+
     const isActive = (path: string) => pathname === path ? 'active' : '';
 
     // Determine the contextual "Home" link
@@ -71,7 +117,7 @@ export default function Header() {
         <header className="cabecalho !sticky !top-0 !z-50 !w-full !bg-black/80 !backdrop-blur-md !border-b !border-white/5" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
             <div className="container !relative flex items-center justify-between">
                {/* Contextual Logo Link */}
-               <Link href={homeLink} className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
+               <Link href={homeLink} className="logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
                     <Image
                         src="/imagens/logo_gringa_style.png"
                         alt="Gringa Style Logo"
@@ -87,33 +133,32 @@ export default function Header() {
                     style={isMenuOpen ? { zIndex: 49 } : {}}
                 >
                     {/* Contextual "Início" Link */}
-                    <Link href={homeLink} className={`nav-item ${isActive(homeLink)}`} onClick={closeMenu}>Início</Link>
+                    <Link href={homeLink} className={`nav-item ${isActive(homeLink)}`} onClick={handleNavClick}>Início</Link>
                     
                     {isPortal ? (
                         <>
-                            <Link href="/loja" className="nav-item" onClick={closeMenu}>Loja</Link>
-                            <Link href="/soldas-especiais" className="nav-item" onClick={closeMenu}>Soldas Especiais</Link>
+                            <Link href="/loja" className="nav-item" onClick={handleNavClick}>Loja</Link>
+                            <Link href="/soldas-especiais" className="nav-item" onClick={handleNavClick}>Soldas Especiais</Link>
                         </>
                     ) : isServices ? (
                         <>
-                            <Link href="/soldas-especiais" className={`nav-item ${isActive('/soldas-especiais')}`} onClick={closeMenu}>Serviços</Link>
-                            <Link href="/soldas-especiais#contato" className="nav-item" onClick={closeMenu}>Orçamento</Link>
-                            <Link href="/loja" className="nav-item" onClick={closeMenu}>Conheça a Loja</Link>
-                            <Link href="/" className="nav-item" onClick={closeMenu}>Portal Gringa</Link>
+                            <Link href="/soldas-especiais#servicos" className={`nav-item ${isActive('/soldas-especiais#servicos')}`} onClick={handleNavClick}>Serviços</Link>
+                            <Link href="/soldas-especiais#contato" className="nav-item" onClick={handleNavClick}>Orçamento</Link>
+                            <Link href="/loja" className="nav-item" onClick={handleNavClick}>Conheça a Loja</Link>
+                            <Link href="/" className="nav-item" onClick={handleNavClick}>Portal Gringa</Link>
                         </>
                     ) : (
                         <>
-                            {/* Adjusted Products Link */}
-                            <Link href="/loja" className={`nav-item ${isActive('/loja')}`} onClick={closeMenu}>Produtos</Link>
-                            <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
-                            <Link href="/" className="nav-item" onClick={closeMenu}>Portal Gringa</Link>
+                            <Link href="/loja#produtos" className={`nav-item ${isActive('/loja#produtos')}`} onClick={handleNavClick}>Produtos</Link>
+                            <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={handleNavClick}>Rifa</Link>
+                            <Link href="/" className="nav-item" onClick={handleNavClick}>Portal Gringa</Link>
                         </>
                     )}
-                    {!isServices && <Link href="#contato" className="nav-item" onClick={closeMenu}>Contato</Link>}
-                    {!isServices && <Link href="/sobre" className={`nav-item ${isActive('/sobre')}`} onClick={closeMenu}>Sobre</Link>}
+                    {!isServices && <Link href="/#contato" className="nav-item" onClick={handleNavClick}>Contato</Link>}
+                    {!isServices && <Link href="/sobre" className={`nav-item ${isActive('/sobre')}`} onClick={handleNavClick}>Sobre</Link>}
 
                     {!isPortal && !isServices && hasActiveRaffles && (
-                        <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={closeMenu}>
+                        <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={handleNavClick}>
                             Meus Números
                         </Link>
                     )}
@@ -123,7 +168,7 @@ export default function Header() {
                     {!isPortal && !isServices && <Link
                         href="/favoritos" 
                         className="favoritos" 
-                        onClick={closeMenu}
+                        onClick={handleNavClick}
                         style={{ display: 'flex', alignItems: 'center', position: 'relative', color: 'inherit' }} 
                         title="Meus Favoritos"
                     >
@@ -154,7 +199,7 @@ export default function Header() {
                         </span>
                     </Link>}
 
-                    {!isPortal && !isServices && <Link href="/carrinho" className="carrinho" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                    {!isPortal && !isServices && <Link href="/carrinho" className="carrinho" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                         <ShoppingCart size={28} />
                         <span 
                             className="carrinho-contador" 
