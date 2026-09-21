@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+/* --- Animações Tailwind Adicionais --- */
+@layer utilities {
+  .animate-marquee {
+    animation: marquee 25s linear infinite;
+  }
+  
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-100%); }
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
 /* --- Otimizações de Performance e Reset --- */
 :root {
 --cor-fundo: #1A1A1A;
@@ -1299,11 +1319,13 @@ letter-spacing: 1px;
 .b2b-contact-form button { cursor: pointer; }
 
 @media (max-width: 768px) {
+/* Modifiquei a classe abaixo para resolver o bug de sobreposição */
+.dual-path-card { width: 100%; min-height: auto; padding-bottom: 40px; }
+.dual-path-card p { height: auto; margin-bottom: 20px; }
+
 .dual-path-hero { min-height: auto; padding-top: 42px; }
 .dual-path-grid { flex-direction: column; }
 .dual-path-trust-grid { grid-template-columns: 1fr; }
-.dual-path-card { width: 100%; }
-.dual-path-card { min-height: 390px; }
 .dual-path-contact-box { flex-direction: column; text-align: center; }
 .b2b-hero { padding-top: 42px; }
 .b2b-hero-content.container, .b2b-footer-grid { grid-template-columns: 1fr; gap: 30px; }

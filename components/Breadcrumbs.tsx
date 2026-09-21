@@ -29,8 +29,8 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             flexWrap: 'wrap'
         }}>
             <Link 
-                href="/"
-                onClick={() => handleClick('/', 0)}
+                href="/loja"
+                onClick={() => handleClick('/loja', 0)}
                 style={{
                     color: 'var(--cor-destaque)',
                     textDecoration: 'none',

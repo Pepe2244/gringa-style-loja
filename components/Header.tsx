@@ -15,8 +15,11 @@ export default function Header() {
     const totalItems = useCartStore(state => state.totalItems());
     const wishlistItems = useWishlistStore(state => state.items) || [];
     const wishlistCount = wishlistItems.length;
+    
+    // Determine the context based on the pathname
     const isPortal = pathname === '/';
     const isServices = pathname.startsWith('/soldas-especiais');
+    const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
     
     const [mounted, setMounted] = useState(false);
     const [hasActiveRaffles, setHasActiveRaffles] = useState(false);
@@ -56,10 +59,19 @@ export default function Header() {
 
     const isActive = (path: string) => pathname === path ? 'active' : '';
 
+    // Determine the contextual "Home" link
+    let homeLink = '/';
+    if (isStore) {
+        homeLink = '/loja';
+    } else if (isServices) {
+        homeLink = '/soldas-especiais';
+    }
+
     return (
         <header className="cabecalho !sticky !top-0 !z-50 !w-full !bg-black/80 !backdrop-blur-md !border-b !border-white/5" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
             <div className="container !relative flex items-center justify-between">
-               <Link href="/" className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
+               {/* Contextual Logo Link */}
+               <Link href={homeLink} className="logo" onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
                     <Image
                         src="/imagens/logo_gringa_style.png"
                         alt="Gringa Style Logo"
@@ -74,7 +86,9 @@ export default function Header() {
                     className={`navegacao ${isMenuOpen ? 'menu-aberto !absolute !top-full !left-0 !w-full !flex !flex-col !bg-black/80 !backdrop-blur-md !py-4 !gap-3 !border-t !border-white/10 !shadow-2xl' : 'hidden md:flex'}`} 
                     style={isMenuOpen ? { zIndex: 49 } : {}}
                 >
-                    <Link href="/" className={`nav-item ${isActive('/')}`} onClick={closeMenu}>Início</Link>
+                    {/* Contextual "Início" Link */}
+                    <Link href={homeLink} className={`nav-item ${isActive(homeLink)}`} onClick={closeMenu}>Início</Link>
+                    
                     {isPortal ? (
                         <>
                             <Link href="/loja" className="nav-item" onClick={closeMenu}>Loja</Link>
@@ -85,11 +99,14 @@ export default function Header() {
                             <Link href="/soldas-especiais" className={`nav-item ${isActive('/soldas-especiais')}`} onClick={closeMenu}>Serviços</Link>
                             <Link href="/soldas-especiais#contato" className="nav-item" onClick={closeMenu}>Orçamento</Link>
                             <Link href="/loja" className="nav-item" onClick={closeMenu}>Conheça a Loja</Link>
+                            <Link href="/" className="nav-item" onClick={closeMenu}>Portal Gringa</Link>
                         </>
                     ) : (
                         <>
-                            <Link href="/#produtos" className="nav-item" onClick={closeMenu}>Produtos</Link>
+                            {/* Adjusted Products Link */}
+                            <Link href="/loja" className={`nav-item ${isActive('/loja')}`} onClick={closeMenu}>Produtos</Link>
                             <Link href="/rifa" className={`nav-item ${isActive('/rifa')}`} onClick={closeMenu}>Rifa</Link>
+                            <Link href="/" className="nav-item" onClick={closeMenu}>Portal Gringa</Link>
                         </>
                     )}
                     {!isServices && <Link href="#contato" className="nav-item" onClick={closeMenu}>Contato</Link>}

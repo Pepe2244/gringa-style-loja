@@ -2,12 +2,18 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Mail, MapPin } from 'lucide-react';
 
 export default function Footer() {
     const [clickCount, setClickCount] = useState(0);
     const router = useRouter();
+    const pathname = usePathname();
+
+    // Determine context based on the current path
+    const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
+    const isServices = pathname.startsWith('/soldas-especiais');
+    const isPortal = pathname === '/';
 
     const handleSecretClick = () => {
         const newCount = clickCount + 1;
@@ -22,9 +28,16 @@ export default function Footer() {
         <footer className="rodape">
             <div className="container">
                 <div className="rodape-coluna">
-                    <div style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '15px', fontWeight: 'bold' }}>Gringa Style</div>
-                    <p>Equipamentos e acessórios para solda com a mais alta qualidade e estilo.</p>
+                    <div style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '15px', fontWeight: 'bold' }}>
+                        {isServices ? 'Gringa Style Soldas Especiais' : 'Gringa Style'}
+                    </div>
+                    <p>
+                        {isServices
+                            ? 'Engenharia de soldagem, manutenção industrial, caldeiraria pesada e serviços técnicos para sua planta.'
+                            : 'Equipamentos e acessórios para solda com a mais alta qualidade e estilo.'}
+                    </p>
                 </div>
+                
                 <div className="rodape-coluna">
                     <h2>Contato</h2>
                     <p>
@@ -36,10 +49,17 @@ export default function Footer() {
                         </a>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Mail size={16} /> contato@gringastylebr.com.br</p>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP (Loja Online)</p>
-                    <p><Link href="/devolucao-e-reembolso">Devolução e Reembolso</Link></p>
-                    <p><Link href="/privacidade">Política de Privacidade</Link></p>
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP {!isServices && '(Loja Online)'}</p>
+                    
+                    {/* Conditionally render E-commerce specific links */}
+                    {!isServices && (
+                        <>
+                            <p><Link href="/devolucao-e-reembolso">Devolução e Reembolso</Link></p>
+                            <p><Link href="/privacidade">Política de Privacidade</Link></p>
+                        </>
+                    )}
                 </div>
+
                 <div className="rodape-coluna">
                     <h2>Siga-nos</h2>
                     <a href="https://www.instagram.com/gringastyle_br" target="_blank" className="social-link" aria-label="Siga-nos no Instagram" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -50,8 +70,11 @@ export default function Footer() {
                     </a>
                 </div>
             </div>
+            
             <div className="rodape-base">
-                <p>Usamos armazenamento local para salvar seu carrinho. Ao navegar, você concorda com nossa <Link href="/privacidade" style={{ textDecoration: 'underline', color: 'var(--cor-destaque)' }}>Política de Privacidade</Link>.</p>
+                {!isServices && (
+                    <p>Usamos armazenamento local para salvar seu carrinho. Ao navegar, você concorda com nossa <Link href="/privacidade" style={{ textDecoration: 'underline', color: 'var(--cor-destaque)' }}>Política de Privacidade</Link>.</p>
+                )}
                 <p style={{ marginTop: '10px' }}>
                     &copy; <span onClick={handleSecretClick} style={{ cursor: 'default', userSelect: 'none' }}>2025</span> Gringa Style. Todos os direitos reservados.
                 </p>

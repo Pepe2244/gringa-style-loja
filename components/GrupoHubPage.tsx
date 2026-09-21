@@ -79,8 +79,11 @@ export default function GrupoHubPage() {
             >
               FALAR NO WHATSAPP
             </a>
-            <a href="mailto:contato@gringastylebr.com.br" className="dual-path-email">
-              contato@gringastylebr.com.br
+            <a 
+              href="mailto:contato@gringastylebr.com.br" 
+              className="dual-path-cta dual-path-cta-secondary"
+            >
+              ENVIAR E-MAIL
             </a>
           </div>
         </div>

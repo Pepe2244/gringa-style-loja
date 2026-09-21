@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase'; // Certifique-se que o caminho está correto
 
 const diferenciais = [
   { title: 'Time Qualificado', text: 'Equipe técnica com experiência real em soldagem industrial.' },
@@ -27,7 +28,13 @@ const projetos = [
   },
 ];
 
-const clientes = ['Aços', 'Industria', 'Metalúrgica', 'Logística', 'Energia'];
+const clientes = [
+  { name: 'Cliente A', src: '/imagens/logo_gringa_style.png' },
+  { name: 'Cliente B', src: '/imagens/logo_gringa_style.png' },
+  { name: 'Cliente C', src: '/imagens/logo_gringa_style.png' },
+  { name: 'Cliente D', src: '/imagens/logo_gringa_style.png' },
+  { name: 'Cliente E', src: '/imagens/logo_gringa_style.png' },
+];
 
 export default function SoldasEspeciaisPage() {
   const [formData, setFormData] = useState({
@@ -37,6 +44,23 @@ export default function SoldasEspeciaisPage() {
     telefone: '',
     mensagem: '',
   });
+
+  // Estado para armazenar as imagens dinâmicas da galeria
+  const [galeriaImagens, setGaleriaImagens] = useState<{id: string, url: string}[]>([]);
+
+  useEffect(() => {
+    const fetchGaleria = async () => {
+      const { data } = await supabase
+        .from('galeria_b2b')
+        .select('id, url')
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        setGaleriaImagens(data);
+      }
+    };
+    fetchGaleria();
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -132,19 +156,62 @@ export default function SoldasEspeciaisPage() {
           </div>
         </section>
 
-        <section className="b2b-section">
+        {/* NOVA SEÇÃO: Galeria de Imagens Dinâmicas */}
+        {galeriaImagens.length > 0 && (
+          <section className="b2b-section">
+            <div className="container">
+               <div className="b2b-section-header text-center">
+                  <span className="b2b-kicker">Galeria de Obras</span>
+                  <h2>Nossas Execuções em Campo</h2>
+               </div>
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-8">
+                  {galeriaImagens.map((img) => (
+                    <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-white/10 group">
+                      <Image 
+                        src={img.url} 
+                        alt="Galeria de serviços de solda" 
+                        fill 
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                      />
+                    </div>
+                  ))}
+               </div>
+            </div>
+          </section>
+        )}
+
+        {/* CARROSSEL CONFIANÇA */}
+        <section className="b2b-section overflow-hidden bg-black/40 border-y border-white/5">
           <div className="container">
-            <div className="b2b-section-header">
+            <div className="b2b-section-header text-center">
               <span className="b2b-kicker">Confiança</span>
               <h2>Clientes que confiam em nossa execução.</h2>
             </div>
 
-            <div className="b2b-client-logos" aria-label="Clientes e parceiros">
-              {clientes.map((cliente) => (
-                <div key={cliente} className="b2b-client-logo">
-                  {cliente}
+            <div className="relative w-full max-w-[100vw] mt-8">
+              <div className="group flex overflow-x-auto no-scrollbar snap-x snap-mandatory">
+                <div className="flex shrink-0 animate-marquee gap-8 md:gap-16 pr-8 md:pr-16 group-hover:[animation-play-state:paused]">
+                  {clientes.map((cliente, index) => (
+                    <div 
+                      key={`cliente-1-${index}`} 
+                      className="snap-center flex items-center justify-center w-48 h-24 bg-zinc-900/50 rounded-lg border border-white/10 grayscale hover:grayscale-0 transition-all duration-300 shrink-0"
+                    >
+                      <Image src={cliente.src} alt={cliente.name} width={120} height={48} className="object-contain opacity-70 hover:opacity-100" />
+                    </div>
+                  ))}
                 </div>
-              ))}
+                <div className="flex shrink-0 animate-marquee gap-8 md:gap-16 pr-8 md:pr-16 group-hover:[animation-play-state:paused]" aria-hidden="true">
+                  {clientes.map((cliente, index) => (
+                    <div 
+                      key={`cliente-2-${index}`} 
+                      className="snap-center flex items-center justify-center w-48 h-24 bg-zinc-900/50 rounded-lg border border-white/10 grayscale hover:grayscale-0 transition-all duration-300 shrink-0"
+                    >
+                      <Image src={cliente.src} alt={cliente.name} width={120} height={48} className="object-contain opacity-70 hover:opacity-100" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
