@@ -15,7 +15,7 @@ export default function AnalyticsLoader({ hasConsent }: AnalyticsLoaderProps) {
             const { gaId: configGaId, ahrefsKey, clarityId } = analyticsConfig;
             
             // Prioriza o novo ID informado ou usa o das configurações
-            const gaId = 'G-8YVY9NP9VR' || configGaId;
+            const gaId = 'G-8YVY9NP9VR';
 
             // 1. GOOGLE ANALYTICS (G-8YVY9NP9VR)
             if (gaId && !document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)) {
