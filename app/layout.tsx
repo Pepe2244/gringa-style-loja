@@ -87,6 +87,15 @@ export default async function RootLayout({
             <link rel="dns-prefetch" href={supabaseOrigin} />
           </>
         )}
+        <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8YVY9NP9VR"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8YVY9NP9VR');
+</script>
       </head>
       <body className={`${roboto.variable} ${teko.variable} antialiased`}>
         <LocalBusinessSchema />
