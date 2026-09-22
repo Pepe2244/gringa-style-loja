@@ -12,14 +12,19 @@ export default function AnalyticsLoader({ hasConsent }: AnalyticsLoaderProps) {
 
     useEffect(() => {
         const loadAnalytics = () => {
-            const { gaId, ahrefsKey, clarityId } = analyticsConfig;
+            const { gaId: configGaId, ahrefsKey, clarityId } = analyticsConfig;
+            
+            // Prioriza o novo ID informado ou usa o das configurações
+            const gaId = 'G-8YVY9NP9VR' || configGaId;
 
-            // Um único inicializador evita duplicar scripts ou pageviews.
+            // 1. GOOGLE ANALYTICS (G-8YVY9NP9VR)
             if (gaId && !document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)) {
                 const dataLayer = (window as Window & { dataLayer?: unknown[] }).dataLayer || [];
                 (window as Window & { dataLayer?: unknown[] }).dataLayer = dataLayer;
+                
                 const gtag = (...args: unknown[]) => dataLayer.push(args);
                 (window as Window & { gtag?: (...args: unknown[]) => void }).gtag = gtag;
+                
                 gtag('js', new Date());
                 gtag('config', gaId);
 
@@ -29,7 +34,8 @@ export default function AnalyticsLoader({ hasConsent }: AnalyticsLoaderProps) {
                 document.head.appendChild(gaScript);
             }
 
-            if (!document.querySelector('script[src*="analytics.ahrefs.com"]')) {
+            // 2. AHREFS ANALYTICS
+            if (ahrefsKey && !document.querySelector('script[src*="analytics.ahrefs.com"]')) {
                 const ahrefsScript = document.createElement('script');
                 ahrefsScript.src = 'https://analytics.ahrefs.com/analytics.js';
                 ahrefsScript.setAttribute('data-key', ahrefsKey);
@@ -37,7 +43,8 @@ export default function AnalyticsLoader({ hasConsent }: AnalyticsLoaderProps) {
                 document.head.appendChild(ahrefsScript);
             }
 
-            if (!document.querySelector(`script[src*="clarity.ms/tag/${clarityId}"]`)) {
+            // 3. MICROSOFT CLARITY
+            if (clarityId && !document.querySelector(`script[src*="clarity.ms/tag/${clarityId}"]`)) {
                 const clarityScript = document.createElement('script');
                 clarityScript.src = `https://www.clarity.ms/tag/${clarityId}`;
                 clarityScript.async = true;
@@ -45,8 +52,12 @@ export default function AnalyticsLoader({ hasConsent }: AnalyticsLoaderProps) {
             }
         };
 
-        if (hasConsent) loadAnalytics();
+        // Carrega se já houver consentimento via cookie no carregamento inicial
+        if (hasConsent) {
+            loadAnalytics();
+        }
 
+        // Carrega no momento em que o usuário clica em aceitar no banner
         const handleConsent = () => loadAnalytics();
         window.addEventListener('cookieConsentGranted', handleConsent);
 
