@@ -210,7 +210,7 @@ export default function SoldasEspeciaisPage() {
           </section>
         )}
 
-        {/* CARROSSEL CONFIANÇA */}
+        {/* CARROSSEL CONFIANÇA CORRIGIDO */}
         <section className="b2b-section overflow-hidden bg-black/40 border-y border-white/5">
           <div className="container">
             <div className="b2b-section-header text-center">
@@ -218,30 +218,43 @@ export default function SoldasEspeciaisPage() {
               <h2>Clientes que confiam em nossa execução.</h2>
             </div>
 
-            <div className="b2b-marquee mt-8">
-              <div className="b2b-marquee-track group-hover:[animation-play-state:paused]">
-                <div className="b2b-marquee-group">
-                  {clientesFinais.map((cliente, index) => (
-                    <div 
-                      key={`cliente-1-${index}`} 
-                      className="b2b-marquee-item"
-                    >
-                      <Image src={cliente.src} alt={cliente.name} width={120} height={48} className="object-contain opacity-70 hover:opacity-100" />
-                    </div>
-                  ))}
-                </div>
-                <div className="b2b-marquee-group" aria-hidden="true">
-                  {clientesFinais.map((cliente, index) => (
-                    <div 
-                      key={`cliente-2-${index}`} 
-                      className="b2b-marquee-item"
-                    >
-                      <Image src={cliente.src} alt={cliente.name} width={120} height={48} className="object-contain opacity-70 hover:opacity-100" />
-                    </div>
-                  ))}
-                </div>
+            <div className="group relative flex overflow-hidden mt-8 pt-4 pb-4 [mask-image:_linear-gradient(to_right,transparent_0,_black_15%,_black_85%,transparent_100%)]">
+              <div className="flex w-max animate-infinite-scroll">
+                {/* Duplicamos a lista e usamos map nela inteira para o cálculo de -50% funcionar com precisão */}
+                {[...clientesFinais, ...clientesFinais].map((cliente, index) => (
+                  <div 
+                    key={`cliente-${index}`} 
+                    className="flex-shrink-0 px-6 md:px-12 flex items-center justify-center"
+                  >
+                    <Image 
+                      src={cliente.src} 
+                      alt={cliente.name} 
+                      width={120} 
+                      height={48} 
+                      className="object-contain opacity-70 hover:opacity-100 transition-opacity w-[100px] md:w-[120px] h-[40px] md:h-[48px]" 
+                    />
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* CSS injetado especificamente para este componente para evitar conflitos e bugs no Mobile */}
+            <style dangerouslySetInnerHTML={{__html: `
+              @keyframes infinite-scroll {
+                from { transform: translateX(0); }
+                to { transform: translateX(-50%); }
+              }
+              .animate-infinite-scroll {
+                animation: infinite-scroll 25s linear infinite;
+              }
+              /* Pausa no hover APENAS se o dispositivo tiver mouse (evita travamento no toque do celular) */
+              @media (hover: hover) and (pointer: fine) {
+                .group:hover .animate-infinite-scroll {
+                  animation-play-state: paused;
+                }
+              }
+            `}} />
+
           </div>
         </section>
       </main>

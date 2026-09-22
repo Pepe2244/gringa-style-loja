@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Edit, Image as ImageIcon, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+import Image from 'next/image';
 
 type B2BSection = 'galeria' | 'cliente' | 'hero' | 'projetos';
 type B2BTab = B2BSection | 'clientes';
@@ -213,11 +214,17 @@ export default function B2BMediaManager() {
             <article key={asset.id} style={{ background: '#111', border: '1px solid #2b2b2b', borderRadius: '10px', overflow: 'hidden' }}>
               {isProjectModal ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', padding: '5px' }}>
-                  <img src={asset.url} alt="Antes" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '5px' }} />
-                  <img src={asset.secondary_url || asset.url} alt="Depois" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '5px' }} />
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '5px', overflow: 'hidden' }}>
+                    <Image src={asset.url} alt="Antes" fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '5px', overflow: 'hidden' }}>
+                    <Image src={asset.secondary_url || asset.url} alt="Depois" fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} />
+                  </div>
                 </div>
               ) : (
-                <img src={asset.url} alt={asset.title || tabLabels[activeTab]} style={{ width: '100%', aspectRatio: activeTab === 'hero' ? '16 / 9' : '1', objectFit: 'cover' }} />
+                <div style={{ position: 'relative', width: '100%', aspectRatio: activeTab === 'hero' ? '16 / 9' : '1', overflow: 'hidden' }}>
+                  <Image src={asset.url} alt={asset.title || tabLabels[activeTab]} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: 'cover' }} />
+                </div>
               )}
               <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                 <strong style={{ color: '#ddd', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.title || tabLabels[activeTab]}</strong>

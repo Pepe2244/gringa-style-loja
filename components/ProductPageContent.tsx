@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
@@ -20,7 +20,6 @@ import SavingsBadge from '@/components/SavingsBadge';
 import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import { PaymentMethods } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
-// Importa o hook poderoso que consolida GA4 e Supabase
 import { useAnalytics } from '@/components/AdvancedAnalytics'; 
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -40,8 +39,6 @@ interface ProductPageContentProps {
 export default function ProductPageContent({ id, initialProduct }: ProductPageContentProps) {
     const { showToast } = useToast();
     const addRecentlyViewed = useRecentlyViewedStore(state => state.addView);
-    
-    // Injeção do Analytics
     const { trackProductView, trackAddToCart, trackConversion, trackEvent } = useAnalytics();
 
     const [product, setProduct] = useState<Product | null>(initialProduct || null);
@@ -60,63 +57,14 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
 
-    useEffect(() => {
-        if (!initialProduct && id) {
-            fetchProduct(id);
-        } else if (initialProduct) {
-            setupProductState(initialProduct);
-            fetchRelatedProducts(initialProduct);
-            setLoading(false);
-            addRecentlyViewed(initialProduct);
-        }
-        loadCategories();
-    }, [id, initialProduct, addRecentlyViewed]);
-
-    const loadCategories = async () => {
-        try {
-            const { data } = await supabase.from('categorias').select('*').order('nome');
-            setCategories(data || []);
-        } catch (error) {
-            console.error('Error loading categories:', error);
-        }
-    };
-
-    // Rastreamento consolidado de visualização
-    useEffect(() => {
-        if (product) {
-            const price = product.preco_promocional || product.preco;
-            trackProductView(
-                String(product.id), 
-                product.nome, 
-                String(product.categoria_id || 'sem-categoria'), 
-                price
-            );
-        }
-    }, [product, trackProductView]);
-
-    const setupProductState = (data: Product) => {
+    const setupProductState = useCallback((data: Product) => {
         const variants = data.variants as unknown as ProductVariant | null;
         if (variants && variants.opcoes && variants.opcoes.length > 0) {
             setSelectedVariant(variants.opcoes[0]);
         }
-    };
+    }, []);
 
-    const fetchProduct = async (productId: number) => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase.from('produtos').select('*').eq('id', productId).single();
-            if (error) throw error;
-            setProduct(data);
-            setupProductState(data);
-            fetchRelatedProducts(data);
-        } catch (error) {
-            console.error('Error fetching product:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchRelatedProducts = async (currentProduct: Product) => {
+    const fetchRelatedProducts = useCallback(async (currentProduct: Product) => {
         let query = supabase.from('produtos').select('*').neq('id', currentProduct.id).limit(10);
 
         if (currentProduct.produtos_relacionados_ids && currentProduct.produtos_relacionados_ids.length > 0) {
@@ -135,7 +83,55 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 setRelatedProducts(sorted);
             }
         }
-    };
+    }, []);
+
+    const fetchProduct = useCallback(async (productId: number) => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase.from('produtos').select('*').eq('id', productId).single();
+            if (error) throw error;
+            setProduct(data);
+            setupProductState(data);
+            fetchRelatedProducts(data);
+        } catch (error) {
+            console.error('Error fetching product:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [setupProductState, fetchRelatedProducts]);
+
+    const loadCategories = useCallback(async () => {
+        try {
+            const { data } = await supabase.from('categorias').select('*').order('nome');
+            setCategories(data || []);
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!initialProduct && id) {
+            fetchProduct(id);
+        } else if (initialProduct) {
+            setupProductState(initialProduct);
+            fetchRelatedProducts(initialProduct);
+            setLoading(false);
+            addRecentlyViewed(initialProduct);
+        }
+        loadCategories();
+    }, [id, initialProduct, addRecentlyViewed, fetchProduct, setupProductState, fetchRelatedProducts, loadCategories]);
+
+    useEffect(() => {
+        if (product) {
+            const price = product.preco_promocional || product.preco;
+            trackProductView(
+                String(product.id), 
+                product.nome, 
+                String(product.categoria_id || 'sem-categoria'), 
+                price
+            );
+        }
+    }, [product, trackProductView]);
 
     const addItem = useCartStore((state: CartState) => state.addItem);
 
@@ -161,7 +157,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
         const price = getDisplayedPrice(product, paymentMethod);
 
-        // Dispara o evento consolidado do Analytics
         trackAddToCart(String(product.id), product.nome, 1, price);
 
         const cartItem: CartItem = {
@@ -183,7 +178,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         const price = getDisplayedPrice(product, paymentMethod);
         const transactionId = `ZAP-DIRECT-${Date.now()}`;
 
-        // Dispara o evento consolidado de conversão (faturamento)
         trackConversion('purchase', price, 'BRL', transactionId);
 
         const variants = product.variants as unknown as ProductVariant | null;

@@ -10,6 +10,7 @@ import AnalyticsLoader from "@/components/AnalyticsLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { cookies } from "next/headers";
 import { LocalBusinessSchema, WebSiteSchema, OrganizationSchema } from '@/components/SEO/StructuredData';
+import ScrollToTop from "@/components/ScrollToTop";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -104,6 +105,9 @@ export default async function RootLayout({
               {!hasConsent && <CookieConsent />}
               <AnalyticsLoader hasConsent={hasConsent} />
               <Footer />
+              
+              {/* Botão de voltar ao topo global */}
+              <ScrollToTop />
             </div>
           </ErrorBoundary>
         </ToastProvider>
