@@ -138,6 +138,13 @@ export async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
     const method = request.method;
 
+    // --- ETAPA 0: FORÇAR HTTPS 301 PERMANENTE ---
+    const proto = request.headers.get('x-forwarded-proto');
+    if (proto === 'http') {
+        const httpsUrl = new URL(`https://${request.nextUrl.host}${request.nextUrl.pathname}${request.nextUrl.search}`);
+        return NextResponse.redirect(httpsUrl, 301);
+    }
+
     // --- ETAPA 1: FIREWALL (Bloqueio de Bots e Paths Maliciosos) ---
     const isMaliciousPath = MALICIOUS_PATHS.some(path => pathname.includes(path));
     const isBadBot = !userAgent || BLOCKED_BOTS.some(bot =>

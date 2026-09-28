@@ -59,7 +59,7 @@ return (
       <div className="dual-path-grid">
         <article className="dual-path-card dual-path-card-b2c">
           <div className="dual-path-visual dual-path-visual-store">
-            <Image src="/imagens/mascara personalizada 1.jpg" alt="Máscara de solda personalizada Gringa Style" fill sizes="(max-width: 768px) 92vw, 42vw" />
+            <Image src="/imagens/mascara personalizada 1.jpg" alt="Máscara de solda personalizada Gringa Style" fill sizes="(max-width: 768px) 92vw, 42vw" priority />
           </div>
           <span className="dual-path-badge">B2C</span>
           <h2>LOJA GRINGA STYLE</h2>
@@ -73,7 +73,7 @@ return (
 
         <article className="dual-path-card dual-path-card-b2b">
           <div className="dual-path-visual dual-path-visual-b2b">
-            <Image src="/imagens/tocha 1.jpg" alt="Equipamento para soldagem profissional" fill sizes="(max-width: 768px) 92vw, 42vw" />
+            <Image src="/imagens/tocha 1.jpg" alt="Equipamento para soldagem profissional" fill sizes="(max-width: 768px) 92vw, 42vw" priority />
           </div>
           <span className="dual-path-badge dual-path-badge-industrial">B2B</span>
           <h2>SOLDAS ESPECIAIS B2B</h2>

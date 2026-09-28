@@ -8,6 +8,7 @@ const cspValue = isDevelopment
 const nextConfig: NextConfig = {
   compiler: {
     removeConsole: !isDevelopment,
+  reactRemoveProperties: !isDevelopment,
   },
   
   experimental: {
@@ -19,6 +20,7 @@ const nextConfig: NextConfig = {
         'localhost:3000',
       ],
     },
+    optimizePackageImports: ['lucide-react'],
   },
 
   images: {

@@ -478,3 +478,51 @@ export const WebPageSchema = ({ page }: { page: WebPageData }) => {
     />
   );
 };
+
+// 8. CollectionPage: Schema para páginas de categoria/coleção
+interface CollectionPageData {
+  name: string;
+  description: string;
+  url: string;
+  products?: ItemListProduct[];
+}
+
+export const CollectionPageSchema = ({ page }: { page: CollectionPageData }) => {
+  const baseUrl = 'https://gringastylebr.com.br';
+
+  const schema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": page.name,
+    "description": page.description,
+    "url": page.url.startsWith('http') ? page.url : `${baseUrl}${page.url}`,
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Gringa Style",
+      "url": baseUrl
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Gringa Style",
+      "url": baseUrl
+    }
+  };
+
+  if (page.products && page.products.length > 0) {
+    schema["mainEntity"] = {
+      "@type": "ItemList",
+      "itemListElement": page.products.slice(0, 20).map((product, index) => ({
+        "@type": "ListItem",
+        "position": index + 1,
+        "url": `${baseUrl}/produto/${product.slug || product.id}`
+      }))
+    };
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+};

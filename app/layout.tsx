@@ -40,13 +40,18 @@ export const metadata: Metadata = {
     template: "%s | Gringa Style",
   },
   description:
-    "Encontre as melhores máscaras de solda personalizadas, automáticas e acessórios para TIG. Estilo e proteção para soldadores profissionais. Confira!",
+    "Máscaras de solda personalizadas em fibra de vidro, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.",
   keywords: [
-    "máscara de solda",
-    "solda tig",
-    "personalizada",
+    "máscara de solda personalizada",
+    "máscara de solda tig",
+    "epi soldador",
+    "fibra de vidro",
+    "solda mig",
     "gringa style",
-    "acessórios solda",
+    "acessórios de solda",
+    "boné soldador",
+    "botina soldador",
+    "tocha solda",
   ],
   openGraph: {
     title: "Gringa Style | Máscaras de Solda Personalizadas",

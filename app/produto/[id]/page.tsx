@@ -68,18 +68,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const productUrl = `${SITE_URL}/produto/${product.slug || slug}`;
     const precoFinal = product.preco_promocional || product.preco;
+    const precoFormatado = precoFinal?.toFixed(2).replace('.', ',') || '';
+    const estoqueTexto = product.em_estoque ? 'Pronta entrega' : 'Sob encomenda';
+
+    const title = `${product.nome} - R$ ${precoFormatado} | ${estoqueTexto} | Gringa Style`;
+    const description = `${product.nome} com ${estoqueTexto.toLowerCase()}. ${product.em_estoque ? 'Envio imediato para todo o Brasil, ' : ''}PIX com aprovação imediata e até 12x sem juros. ${descricaoLimpa}`.substring(0, 160);
 
     return {
-        title: `${product.nome} | Gringa Style`,
-        description: descricaoLimpa,
-        keywords: [product.nome, 'gringa style', 'solda', 'tig', 'máscara de solda'],
+        title,
+        description,
+        keywords: [
+            product.nome,
+            'máscara de solda',
+            'solda tig',
+            'solda mig',
+            'epi soldador',
+            'gringa style',
+            'máscara personalizada',
+            'fibra de vidro',
+            'boné aba curva',
+            'botina soldador',
+            'acessórios solda',
+        ],
         alternates: {
-            // URL Canônica absoluta para evitar duplicação de URL
             canonical: productUrl,
         },
         openGraph: {
-            title: product.nome,
-            description: descricaoLimpa,
+            title,
+            description,
             url: productUrl,
             type: 'website',
             siteName: 'Gringa Style',
@@ -96,8 +112,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
         twitter: {
             card: 'summary_large_image',
-            title: product.nome,
-            description: descricaoLimpa,
+            title,
+            description,
             images: [imageUrl],
         },
     };

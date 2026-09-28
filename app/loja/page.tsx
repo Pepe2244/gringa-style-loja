@@ -7,9 +7,17 @@ import { getCachedValue } from '@/lib/cache';
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: 'Loja Gringa Style',
-  description: 'Máscaras TIG, acessórios e EPIs para soldadores profissionais.',
+  title: 'Loja Gringa Style | Máscaras de Solda, EPIs e Acessórios TIG',
+  description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega, PIX e até 12x sem juros para todo o Brasil.',
   alternates: { canonical: '/loja' },
+  keywords: [
+    'loja solda',
+    'máscara de solda',
+    'epi soldador',
+    'acessórios tig',
+    'tocha solda',
+    'gringa style loja',
+  ],
 };
 
 export default async function LojaPage() {
