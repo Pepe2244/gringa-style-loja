@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
   },
   
   experimental: {
-    inlineCss: true, // Injeta o CSS crítico direto no HTML, zerando o bloqueio de renderização
     serverActions: {
       allowedOrigins: [
         'probable-trout-979jr97rr7q53x7qx-3000.app.github.dev',
