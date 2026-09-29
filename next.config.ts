@@ -6,9 +6,11 @@ const cspValue = isDevelopment
   : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;";
 
 const nextConfig: NextConfig = {
+  trailingSlash: false,
+
   compiler: {
     removeConsole: !isDevelopment,
-  reactRemoveProperties: !isDevelopment,
+    reactRemoveProperties: !isDevelopment,
   },
   
   experimental: {
@@ -17,6 +19,8 @@ const nextConfig: NextConfig = {
         'probable-trout-979jr97rr7q53x7qx-3000.app.github.dev',
         '*.app.github.dev',
         'localhost:3000',
+        'gringastylebr.com.br',
+        'www.gringastylebr.com.br',
       ],
     },
     optimizePackageImports: ['lucide-react'],
@@ -47,6 +51,36 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+
+  async redirects() {
+    return [
+      // 1. Remove dinamicamente prefixos numéricos de slugs (/produto/2-estilo-tropical -> /produto/estilo-tropical)
+      {
+        source: '/produto/:id(\\d+)-:slug',
+        destination: '/produto/:slug',
+        permanent: true,
+      },
+
+      // 2. Redireciona URLs que eram apenas IDs numéricos legados (/produto/14 -> /loja)
+      {
+        source: '/produto/:id(\\d+)',
+        destination: '/loja',
+        permanent: true,
+      },
+
+      // 3. Normalização de URLs específicas com hífen residual no final
+      {
+        source: '/produto/kit-guerreiro-gtaw-',
+        destination: '/produto/kit-guerreiro-gtaw',
+        permanent: true,
+      },
+      {
+        source: '/produto/1-mscara-de-solda-pronta-entrega-',
+        destination: '/produto/estilo-tropical---mscara-de-solda-em-fibra-de-vidro-personalizada',
+        permanent: true,
+      },
+    ];
   },
 
   async headers() {
