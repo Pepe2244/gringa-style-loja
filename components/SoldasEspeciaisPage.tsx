@@ -17,6 +17,8 @@ export default function SoldasEspeciaisPage() {
   const carouselResumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const carouselDragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number } | null>(null);
   const [carouselCopies, setCarouselCopies] = useState(3);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const [systemPrefersReducedMotion, setSystemPrefersReducedMotion] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     empresa: '',
@@ -71,14 +73,24 @@ export default function SoldasEspeciaisPage() {
   }, []);
 
   useEffect(() => {
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setSystemPrefersReducedMotion(motionPreference.matches);
+
+    updatePreference();
+    motionPreference.addEventListener('change', updatePreference);
+    return () => motionPreference.removeEventListener('change', updatePreference);
+  }, []);
+
+  useEffect(() => {
     const carousel = clientsCarouselRef.current;
     if (!carousel) return;
 
     let animationFrame = 0;
     let previousTime = 0;
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const advanceCarousel = (time: number) => {
-      if (!isCarouselInteractingRef.current) {
+      if (!isCarouselInteractingRef.current && !isCarouselPaused && !motionPreference.matches) {
         const cycle = carousel.querySelector<HTMLElement>('[data-carousel-cycle]');
         const cycleWidth = cycle?.getBoundingClientRect().width ?? 0;
 
@@ -91,19 +103,34 @@ export default function SoldasEspeciaisPage() {
         }
       }
 
-      previousTime = isCarouselInteractingRef.current ? 0 : time;
-      animationFrame = window.requestAnimationFrame(advanceCarousel);
+      previousTime = isCarouselInteractingRef.current || isCarouselPaused || motionPreference.matches ? 0 : time;
+      if (!isCarouselPaused && !motionPreference.matches && document.visibilityState === 'visible') {
+        animationFrame = window.requestAnimationFrame(advanceCarousel);
+      }
     };
 
-    animationFrame = window.requestAnimationFrame(advanceCarousel);
+    const startOrStopAnimation = () => {
+      window.cancelAnimationFrame(animationFrame);
+      previousTime = 0;
+      if (!isCarouselPaused && !motionPreference.matches && document.visibilityState === 'visible') {
+        animationFrame = window.requestAnimationFrame(advanceCarousel);
+      }
+    };
+    const handleVisibilityChange = () => startOrStopAnimation();
+
+    startOrStopAnimation();
+    motionPreference.addEventListener('change', startOrStopAnimation);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
+      motionPreference.removeEventListener('change', startOrStopAnimation);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (carouselResumeTimeoutRef.current) {
         clearTimeout(carouselResumeTimeoutRef.current);
       }
     };
-  }, []);
+  }, [isCarouselPaused]);
 
   const pauseCarouselForInteraction = () => {
     isCarouselInteractingRef.current = true;
@@ -342,6 +369,12 @@ export default function SoldasEspeciaisPage() {
               onPointerUp={handleCarouselPointerUp}
               onPointerCancel={handleCarouselPointerUp}
               onPointerLeave={handleCarouselPointerLeave}
+              onFocus={pauseCarouselForInteraction}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  resumeCarouselAfterInteraction();
+                }
+              }}
               className="clients-carousel group relative mt-8 flex cursor-grab snap-x snap-mandatory overflow-x-auto pt-4 pb-4 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--cor-destaque)] md:snap-none md:[mask-image:_linear-gradient(to_right,transparent_0,_black_15%,_black_85%,transparent_100%)]"
             >
               <div className="flex w-max">
@@ -374,6 +407,22 @@ export default function SoldasEspeciaisPage() {
             <p className="mt-2 text-center text-sm text-white/60 md:hidden">
               Deslize para ver mais clientes
             </p>
+            <div className="mt-3 flex justify-center">
+              {systemPrefersReducedMotion ? (
+                <p role="status" className="text-sm text-white/60">
+                  Movimento reduzido conforme a preferência do dispositivo
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  aria-pressed={isCarouselPaused}
+                  onClick={() => setIsCarouselPaused((paused) => !paused)}
+                  className="rounded-full border border-[var(--cor-destaque)] px-4 py-2 text-sm font-semibold text-[var(--cor-destaque)] transition-colors hover:bg-[var(--cor-destaque)] hover:text-[var(--cor-fundo)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cor-destaque)]"
+                >
+                  {isCarouselPaused ? 'Retomar movimento' : 'Pausar movimento'}
+                </button>
+              )}
+            </div>
 
             {/* CSS injetado especificamente para este componente para evitar conflitos e bugs no Mobile */}
             <style dangerouslySetInnerHTML={{__html: `

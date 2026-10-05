@@ -1,8 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function revalidateProductCache() {
+    if (!await isAdminAuthenticated()) {
+        return { success: false, error: 'Não autorizado.' };
+    }
+
     try {
         // 1. Obliteração do Cache do Next.js (App Router)
         // Ataque direto às rotas específicas.

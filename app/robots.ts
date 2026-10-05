@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         // Bloqueia bots de raspagem e treinamento de IA para economizar tráfego
-        userAgent: ['GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot', 'FacebookBot', 'PerplexityBot', 'ClaudeBot', 'AnthropicAI'],
+        userAgent: ['GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot', 'PerplexityBot', 'ClaudeBot', 'AnthropicAI'],
         disallow: '/',
       },
       {

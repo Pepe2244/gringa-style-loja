@@ -5,11 +5,10 @@ import Image from 'next/image';
 // Caminhos relativos para compatibilidade com o ambiente atual
 import { supabase } from '../../lib/supabase';
 import { Product, Category, ProductVariant } from '../../types';
-import { Json } from '../../types/database.types';
 import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser, AlertCircle, Loader2, Package, Tag, Settings2 } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
-import { revalidateProductCache } from '../../app/actions/produtos';
+import { deleteProduct, saveProduct, setProductStock } from '@/app/actions/admin-data';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -196,22 +195,13 @@ export default function ProductManager() {
             tags: tags.split(',').map(s => s.trim()).filter(Boolean),
             em_estoque,
             media_urls: finalMediaUrls,
-            variants: variants as unknown as Json
+            variants
         };
 
         try {
-            if (editingProduct) {
-                const { error } = await supabase.from('produtos').update(productData as any).eq('id', editingProduct.id);
-                if (error) throw error;
-                alert('Produto atualizado com sucesso!');
-            } else {
-                const { error } = await supabase.from('produtos').insert([productData as any]);
-                if (error) throw error;
-                alert('Produto criado com sucesso!');
-            }
-            
-            // Revalida o cache APÓS o sucesso no banco
-            await revalidateProductCache();
+            const result = await saveProduct(productData, editingProduct?.id);
+            if (!result.success) throw new Error(result.error);
+            alert(editingProduct ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!');
             setShowModal(false);
             fetchProducts();
         } catch (error: any) {
@@ -230,12 +220,8 @@ export default function ProductManager() {
         setProducts(products.filter(p => p.id !== id));
 
         try {
-            // Executa a deleção no banco
-            const { error } = await supabase.from('produtos').delete().eq('id', id);
-            if (error) throw error;
-
-            // Purga os caches do Next e Custom
-            await revalidateProductCache();
+            const result = await deleteProduct(id);
+            if (!result.success) throw new Error(result.error);
             
             // Feedback silencioso (opcional, pode usar um toast aqui se preferir)
             console.log(`Produto ${id} excluído com sucesso e cache limpo.`);
@@ -254,10 +240,8 @@ export default function ProductManager() {
         setProducts(products.map(p => p.id === id ? { ...p, em_estoque: newStatus } : p));
 
         try {
-            const { error } = await supabase.from('produtos').update({ em_estoque: newStatus }).eq('id', id);
-            if (error) throw error;
-            
-            await revalidateProductCache();
+            const result = await setProductStock(id, newStatus);
+            if (!result.success) throw new Error(result.error);
         } catch (error: any) {
             console.error('Erro ao alterar estoque:', error);
             alert('Falha ao atualizar o status de estoque.');

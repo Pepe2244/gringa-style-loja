@@ -1,27 +1,23 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createAdminSession, isValidAdminPassword } from '@/lib/admin-auth';
 
 export async function POST(request: Request) {
   try {
-    const { password } = await request.json();
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const body = await request.json().catch(() => null);
 
-    if (!adminPassword) {
+    if (!body || typeof body !== 'object' || !('password' in body)) {
+      return NextResponse.json({ success: false, message: 'Dados inválidos.' }, { status: 400 });
+    }
+
+    if (!process.env.ADMIN_PASSWORD) {
       return NextResponse.json(
         { success: false, message: 'Erro de configuração no servidor.' },
         { status: 500 }
       );
     }
 
-    if (password && password.trim() === adminPassword.trim()) {
-      const cookieStore = await cookies();
-      cookieStore.set('admin_session', 'authenticated', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      });
-
+    if (isValidAdminPassword(body.password)) {
+      await createAdminSession();
       return NextResponse.json({ success: true });
     }
 

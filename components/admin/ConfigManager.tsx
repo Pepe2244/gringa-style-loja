@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { saveShopConfig } from '@/app/actions/admin-data';
 
 export default function ConfigManager() {
     const [diasNovo, setDiasNovo] = useState('');
@@ -20,8 +21,9 @@ export default function ConfigManager() {
         if (!diasNovo) return;
         setLoading(true);
         try {
-            const { error } = await supabase.from('configuracoes').upsert({ chave: 'dias_novo', valor: diasNovo });
-            if (error) throw error;
+            const parsedDays = Number(diasNovo);
+            const result = await saveShopConfig(parsedDays);
+            if (!result.success) throw new Error(result.error);
             alert('Configurações salvas!');
         } catch (error: any) {
             alert('Erro ao salvar: ' + error.message);

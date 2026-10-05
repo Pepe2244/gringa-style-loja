@@ -46,7 +46,7 @@ export default function RecommendationEngine({
             const response = await fetch(`/api/produtos?categoria=${encodeURIComponent(currentCategory)}&limit=${maxRecommendations}&exclude=${currentProductId}`);
             if (response.ok) {
                 const data = await response.json();
-                return data.produtos || [];
+                return Array.isArray(data) ? data : data.produtos || [];
             }
         } catch (error) {
             console.error('Erro no fallback de recomendações:', error);

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 import { Trash2, Edit, Plus, X } from 'lucide-react';
+import { deleteCoupon, getPrivateAdminData, saveCoupon, toggleCoupon } from '@/app/actions/admin-data';
 
 export default function CouponManager() {
     const [coupons, setCoupons] = useState<any[]>([]);
@@ -28,12 +29,13 @@ export default function CouponManager() {
     }, []);
 
     const fetchCoupons = async () => {
-        const { data, error } = await supabase.from('cupons').select('*').order('created_at', { ascending: false });
-        if (error) {
-            console.error('Erro ao buscar cupons:', error);
-            alert('Erro ao buscar cupons: ' + error.message);
+        const result = await getPrivateAdminData('coupons');
+        if (!result.success) {
+            console.error('Erro ao buscar cupons:', result.error);
+            alert('Erro ao buscar cupons: ' + result.error);
+            return;
         }
-        if (data) setCoupons(data);
+        setCoupons(result.data || []);
     };
 
     const fetchProducts = async () => {
@@ -85,15 +87,9 @@ export default function CouponManager() {
         };
 
         try {
-            if (editingCoupon) {
-                const { error } = await supabase.from('cupons').update(couponData).eq('id', editingCoupon.id);
-                if (error) throw error;
-                alert('Cupom atualizado!');
-            } else {
-                const { error } = await supabase.from('cupons').insert([couponData]);
-                if (error) throw error;
-                alert('Cupom criado!');
-            }
+            const result = await saveCoupon(couponData, editingCoupon?.id);
+            if (!result.success) throw new Error(result.error);
+            alert(editingCoupon ? 'Cupom atualizado!' : 'Cupom criado!');
             setShowModal(false);
             fetchCoupons();
         } catch (error: any) {
@@ -106,8 +102,8 @@ export default function CouponManager() {
     const handleDelete = async (id: number) => {
         if (!confirm('Excluir este cupom?')) return;
         try {
-            const { error } = await supabase.from('cupons').delete().eq('id', id);
-            if (error) throw error;
+            const result = await deleteCoupon(id);
+            if (!result.success) throw new Error(result.error);
             fetchCoupons();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
@@ -116,8 +112,8 @@ export default function CouponManager() {
 
     const toggleStatus = async (id: number, currentStatus: boolean) => {
         try {
-            const { error } = await supabase.from('cupons').update({ ativo: !currentStatus }).eq('id', id);
-            if (error) throw error;
+            const result = await toggleCoupon(id, !currentStatus);
+            if (!result.success) throw new Error(result.error);
             fetchCoupons();
         } catch (error: any) {
             alert('Erro ao atualizar status: ' + error.message);

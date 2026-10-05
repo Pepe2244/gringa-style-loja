@@ -8,7 +8,7 @@ import { Redis } from '@upstash/redis';
 const BLOCKED_BOTS = [
     'AhrefsBot', 'DotBot', 'SemrushBot', 'MJ12bot', 'Cyberscan',
     'PetalBot', 'Baiduspider', 'YandexBot', 'DataForSeoBot',
-    'GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot', 'FacebookBot', 
+    'GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot',
     'PerplexityBot', 'ClaudeBot', 'anthropic-ai', 'Barkrowler', 
     'MegaIndex', 'SeekportBot', 'Serpstatbot', 'Bytespider', 
     'Amazonbot', 'TurnitinBot', 'Scrapy', 'python-requests', 
@@ -26,10 +26,15 @@ const MALICIOUS_PATHS = [
 const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
     '/api/auth/login': { maxRequests: 5, windowMs: 15 * 60 * 1000 },
     '/api/auth/register': { maxRequests: 3, windowMs: 60 * 60 * 1000 },
+    '/api/admin/login': { maxRequests: 5, windowMs: 15 * 60 * 1000 },
+    '/api/admin': { maxRequests: 120, windowMs: 60 * 1000 },
+    '/api/upload': { maxRequests: 20, windowMs: 60 * 60 * 1000 },
     '/api/pagamento': { maxRequests: 10, windowMs: 60 * 60 * 1000 },
     '/api/validate-coupon': { maxRequests: 20, windowMs: 60 * 60 * 1000 },
     '/api/produtos': { maxRequests: 100, windowMs: 60 * 1000 },
     '/api/calculate-total': { maxRequests: 50, windowMs: 60 * 1000 },
+    '/api/recommendations': { maxRequests: 60, windowMs: 60 * 1000 },
+    '/api/analytics/session': { maxRequests: 60, windowMs: 60 * 1000 },
     '/api/shipping': { maxRequests: 30, windowMs: 60 * 1000 },
     'default': { maxRequests: 1000, windowMs: 60 * 60 * 1000 }
 };
@@ -153,6 +158,26 @@ export async function proxy(request: NextRequest) {
 
     if (isBadBot || isMaliciousPath) {
         return new NextResponse('Edge Firewall Blocked Request', { status: 403 });
+    }
+
+    if (pathname === '/api/upload' && method === 'POST') {
+        const contentLength = Number(request.headers.get('content-length'));
+        if (Number.isFinite(contentLength) && contentLength > 10 * 1024 * 1024 + 64 * 1024) {
+            return NextResponse.json({ error: 'Arquivo excede o tamanho máximo de 10 MB.' }, { status: 413 });
+        }
+    }
+
+    if (method === 'POST' && ['/api/calculate-total', '/api/validate-coupon', '/api/recommendations'].includes(pathname)) {
+        const contentLength = Number(request.headers.get('content-length'));
+        if (Number.isFinite(contentLength) && contentLength > 64 * 1024) {
+            return NextResponse.json({ error: 'A requisição excede o tamanho máximo permitido.' }, { status: 413 });
+        }
+    }
+    if (method === 'POST' && pathname === '/api/analytics/session') {
+        const contentLength = Number(request.headers.get('content-length'));
+        if (Number.isFinite(contentLength) && contentLength > 256 * 1024) {
+            return NextResponse.json({ error: 'A requisição excede o tamanho máximo permitido.' }, { status: 413 });
+        }
     }
 
     // --- ETAPA 2: RATE LIMITING ---

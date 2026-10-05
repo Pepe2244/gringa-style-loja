@@ -8,13 +8,13 @@ import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { cookies } from "next/headers";
 import {
   LocalBusinessSchema,
   WebSiteSchema,
   OrganizationSchema,
 } from "@/components/SEO/StructuredData";
 import ScrollToTop from "@/components/ScrollToTop";
+import { MotionConfig } from "framer-motion";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -70,15 +70,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Lógica de consentimento no servidor para performance máxima
-  const cookieStore = await cookies();
-  const hasConsent = cookieStore.get("cookie-consent")?.value === "true";
-
   // SEGURANÇA: Extração da URL do Supabase via Env Var
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   let supabaseOrigin = "";
@@ -111,22 +107,23 @@ export default async function RootLayout({
         <WebSiteSchema />
         <OrganizationSchema />
 
-        <ToastProvider>
-          <ErrorBoundary>
-            <div className="flex flex-col min-h-screen">
-              <Header />
-              <CampaignBannerServer />
-              <main className="flex-grow">{children}</main>
-              
-              {/* Renderização condicional de consentimento e Analytics seguro */}
-              {!hasConsent && <CookieConsent />}
-              <AnalyticsLoader hasConsent={hasConsent} />
-              
-              <Footer />
-              <ScrollToTop />
-            </div>
-          </ErrorBoundary>
-        </ToastProvider>
+        <MotionConfig reducedMotion="user">
+          <ToastProvider>
+            <ErrorBoundary>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                <CampaignBannerServer />
+                <main className="flex-grow">{children}</main>
+
+                <CookieConsent />
+                <AnalyticsLoader />
+
+                <Footer />
+                <ScrollToTop />
+              </div>
+            </ErrorBoundary>
+          </ToastProvider>
+        </MotionConfig>
       </body>
     </html>
   );

@@ -5,6 +5,7 @@ import { Edit, Image as ImageIcon, Loader2, Plus, Trash2, Upload, X } from 'luci
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
 import Image from 'next/image';
+import { deleteB2BAsset, saveB2BAsset } from '@/app/actions/admin-data';
 
 type B2BSection = 'galeria' | 'cliente' | 'hero' | 'projetos';
 type B2BTab = B2BSection | 'clientes';
@@ -128,11 +129,6 @@ export default function B2BMediaManager() {
 
       if (!mainUrl) throw new Error('A imagem principal não foi definida.');
 
-      if (section === 'hero' && !editingAsset) {
-        const { error: deleteError } = await supabase.from('b2b_assets').delete().eq('section', 'hero');
-        if (deleteError) throw deleteError;
-      }
-
       const record = {
         section,
         url: mainUrl,
@@ -140,11 +136,8 @@ export default function B2BMediaManager() {
         ...(isProject ? { secondary_url: secondaryUrl || null } : {}),
       };
 
-      const result = editingAsset
-        ? await supabase.from('b2b_assets').update(record).eq('id', editingAsset.id)
-        : await supabase.from('b2b_assets').insert([record]);
-
-      if (result.error) throw result.error;
+      const result = await saveB2BAsset(record, editingAsset?.id, !editingAsset);
+      if (!result.success) throw new Error(result.error);
       await fetchAssets();
       closeModal();
     } catch (saveError: any) {
@@ -159,8 +152,8 @@ export default function B2BMediaManager() {
     if (!window.confirm('Deseja realmente remover esta mídia?')) return;
     setError(null);
     try {
-      const { error: deleteError } = await supabase.from('b2b_assets').delete().eq('id', asset.id);
-      if (deleteError) throw deleteError;
+      const result = await deleteB2BAsset(asset.id);
+      if (!result.success) throw new Error(result.error);
       setAssets((current) => current.filter((item) => item.id !== asset.id));
     } catch (deleteError: any) {
       console.error('Erro ao excluir mídia B2B:', deleteError);

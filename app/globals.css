@@ -1334,6 +1334,21 @@ letter-spacing: 1px;
 .b2b-marquee-item { width: 160px; height: 84px; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html,
+  html:focus-within {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
 @media (max-width: 768px) {
 /* Modifiquei a classe abaixo para resolver o bug de sobreposição */
 .dual-path-card { width: 100%; min-height: auto; padding-bottom: 40px; }

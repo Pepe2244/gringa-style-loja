@@ -1,34 +1,17 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAdminClient } from '@/lib/supabase-admin';
+import { verifyPaymentAccessToken } from '@/lib/payment-access';
 
-export async function getPaymentDetails(participanteId: number) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return { success: false, error: 'Configuração do Supabase incompleta.' };
-    }
-
-    // Cria o cliente ADMIN ou fallback para anônimo
-    const supabaseAdmin = supabaseServiceKey
-        ? createClient(supabaseUrl, supabaseServiceKey, {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
-        })
-        : createClient(supabaseUrl, supabaseAnonKey);
-
-    if (!supabaseServiceKey) {
-        console.warn('SUPABASE_SERVICE_ROLE_KEY não configurada em pagamento.ts, usando chave anônima');
-    }
-
+export async function getPaymentDetails(participanteId: number, accessToken: string) {
     try {
-        if (!participanteId || isNaN(participanteId)) {
+        if (!Number.isSafeInteger(participanteId) || participanteId <= 0) {
             return { success: false, error: 'ID do participante inválido.' };
         }
+        if (typeof accessToken !== 'string' || !verifyPaymentAccessToken(participanteId, accessToken)) {
+            return { success: false, error: 'Acesso à reserva inválido ou expirado. Refaça a reserva ou contate o suporte.' };
+        }
+        const supabaseAdmin = createSupabaseAdminClient();
 
         // 1. Busca Participante
         const { data: participante, error: partError } = await supabaseAdmin

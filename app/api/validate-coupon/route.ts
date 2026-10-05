@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
 const normalizePaymentMethod = (value: unknown) => {
     if (typeof value !== 'string') return 'cartao_credito';
@@ -11,17 +12,41 @@ const normalizePaymentMethod = (value: unknown) => {
 
 export async function POST(request: Request) {
     try {
-        const { codigo_cupom, itens_carrinho, metodo_pagamento } = await request.json();
+        const body = await request.json();
+        const { codigo_cupom, itens_carrinho, metodo_pagamento } = body ?? {};
         const paymentMethod = normalizePaymentMethod(metodo_pagamento);
 
-        if (!codigo_cupom || !itens_carrinho || !Array.isArray(itens_carrinho)) {
+        if (
+            typeof codigo_cupom !== 'string' ||
+            !/^[\p{L}\p{N}_-]{1,64}$/u.test(codigo_cupom.trim()) ||
+            !Array.isArray(itens_carrinho) ||
+            itens_carrinho.length === 0 ||
+            itens_carrinho.length > 50
+        ) {
             return NextResponse.json({ valido: false, mensagem: 'Dados inválidos.' }, { status: 400 });
         }
 
-        const { data: cupom, error: cupomError } = await supabase
+        const quantitiesByProduct = new Map<number, number>();
+        for (const item of itens_carrinho) {
+            if (
+                !item || !Number.isSafeInteger(item.produto_id) || item.produto_id <= 0 ||
+                !Number.isSafeInteger(item.quantidade) || item.quantidade < 1 || item.quantidade > 99
+            ) {
+                return NextResponse.json({ valido: false, mensagem: 'Itens do carrinho inválidos.' }, { status: 400 });
+            }
+            const quantity = (quantitiesByProduct.get(item.produto_id) || 0) + item.quantidade;
+            if (quantity > 99) {
+                return NextResponse.json({ valido: false, mensagem: 'A quantidade por produto não pode exceder 99 unidades.' }, { status: 400 });
+            }
+            quantitiesByProduct.set(item.produto_id, quantity);
+        }
+        const validItems = Array.from(quantitiesByProduct, ([produto_id, quantidade]) => ({ produto_id, quantidade }));
+
+        const adminClient = createSupabaseAdminClient();
+        const { data: cupom, error: cupomError } = await adminClient
             .from('cupons')
             .select('*')
-            .ilike('codigo', codigo_cupom)
+            .ilike('codigo', codigo_cupom.trim())
             .single();
 
         if (cupomError || !cupom) {
@@ -40,17 +65,18 @@ export async function POST(request: Request) {
             }
         }
 
-        const productIds = itens_carrinho.map((item: any) => item.produto_id);
-        const { data: products } = await supabase
+        const productIds = validItems.map((item) => item.produto_id);
+        const { data: products, error: productsError } = await supabase
             .from('produtos')
             .select('id, preco, preco_promocional, preco_pix')
             .in('id', productIds);
 
-        if (!products) {
-            return NextResponse.json({ valido: false, mensagem: 'Erro ao validar produtos.' });
+        if (productsError) throw productsError;
+        if (!products || products.length !== productIds.length) {
+            return NextResponse.json({ valido: false, mensagem: 'Um ou mais produtos não estão disponíveis.' });
         }
 
-        const calculateItemPrice = (product: any) => {
+        const calculateItemPrice = (product: (typeof products)[number]) => {
             if (paymentMethod === 'pix' && product.preco_pix && product.preco_pix > 0) {
                 return product.preco_pix;
             }
@@ -63,19 +89,19 @@ export async function POST(request: Request) {
         let subtotal = 0;
         let eligibleSubtotal = 0;
 
-        itens_carrinho.forEach((item: any) => {
-            const product = products.find((p: any) => p.id === item.produto_id);
+        validItems.forEach((item) => {
+            const product = products.find((candidate) => candidate.id === item.produto_id);
             if (!product) return;
 
             const price = calculateItemPrice(product);
-            subtotal += price * (item.quantidade || 1);
+            subtotal += price * item.quantidade;
 
             if (cupom.tipo_aplicacao === 'produto' && Array.isArray(cupom.produtos_aplicaveis)) {
                 if (cupom.produtos_aplicaveis.includes(item.produto_id)) {
-                    eligibleSubtotal += price * (item.quantidade || 1);
+                    eligibleSubtotal += price * item.quantidade;
                 }
             } else {
-                eligibleSubtotal += price * (item.quantidade || 1);
+                eligibleSubtotal += price * item.quantidade;
             }
         });
 
@@ -96,6 +122,7 @@ export async function POST(request: Request) {
             discountValue = (cupom.valor_desconto || cupom.valor);
         }
 
+        if (!Number.isFinite(discountValue) || discountValue < 0) discountValue = 0;
         if (discountValue > discountBase) discountValue = discountBase;
 
         return NextResponse.json({

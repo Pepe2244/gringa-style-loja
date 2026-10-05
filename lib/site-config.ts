@@ -6,7 +6,7 @@ export const siteConfig = {
     imageBaseUrl: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BASE_URL || 'https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public',
   },
   analytics: {
-    gaId: process.env.NEXT_PUBLIC_GA_ID || 'G-2L2F9CY9JN',
+    gaId: process.env.NEXT_PUBLIC_GA_ID || 'G-8YVY9NP9VR',
     ahrefsKey: process.env.AHREFS_KEY || 'Sam0BvC3Nm1qohD+XzVeLA',
     clarityId: process.env.NEXT_PUBLIC_CLARITY_ID || 'vybz5xptlm',
   },

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
@@ -19,36 +18,16 @@ export default function HistoricoPage() {
     const fetchHistory = async () => {
         setLoading(true);
         try {
-            const { data: rifasData } = await supabase
-                .from('rifas')
-                .select('*')
-                .eq('status', 'finalizada')
-                .order('created_at', { ascending: false });
-
-            const { data: premiosData } = await supabase
-                .from('premios')
-                .select('*')
-                .not('vencedor_nome', 'is', null)
-                .order('ordem', { ascending: true });
-
-            if (rifasData) setRifas(rifasData);
-            if (premiosData) setPremios(premiosData);
+            const response = await fetch('/api/rifas/history');
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Erro ao buscar histórico.');
+            setRifas(data.rifas || []);
+            setPremios(data.premios || []);
         } catch (error) {
             console.error('Error fetching history:', error);
         } finally {
             setLoading(false);
         }
-    };
-
-    const censurarNome = (nome: string) => {
-        if (!nome) return '';
-        const partes = nome.trim().split(' ').filter(p => p.length > 0);
-        if (partes.length <= 1) return nome;
-        const primeiroNome = partes[0];
-        const sobrenomesCensurados = partes.slice(1).map(parte => {
-            return parte.charAt(0) + '*'.repeat(parte.length - 1);
-        }).join(' ');
-        return `${primeiroNome} ${sobrenomesCensurados}`;
     };
 
     const censurarNumero = (numero: number, totalDigitos: number) => {
@@ -158,7 +137,7 @@ export default function HistoricoPage() {
                                                     {premio.ordem}º Prêmio: <span style={{ fontWeight: 'normal', color: '#ddd' }}>{premio.descricao}</span>
                                                 </strong>
                                                 <div style={{ marginTop: '3px', fontSize: '0.95rem' }}>
-                                                    <span style={{ color: '#00ff88', fontWeight: 'bold' }}>Ganhador:</span> {censurarNome(premio.vencedor_nome || '')}
+                                                    <span style={{ color: '#00ff88', fontWeight: 'bold' }}>Ganhador:</span> {premio.vencedor_nome}
                                                     <span style={{ color: '#ccc', marginLeft: '8px' }}>(Nº {censurarNumero(premio.vencedor_numero!, totalDigitos)})</span>
                                                 </div>
                                             </div>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { Rifa } from '@/types';
 import Link from 'next/link';
 
@@ -20,53 +19,13 @@ function TrackingContent() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                let rifaData = null;
-
-                // 1. Tenta buscar pelo ID da URL
-                if (rifaIdParam) {
-                    const { data, error } = await supabase
-                        .from('rifas')
-                        .select('*')
-                        .eq('id', rifaIdParam)
-                        .single();
-
-                    if (!error) rifaData = data;
-                }
-
-                // 2. Se não achou por ID (ou não tem ID), busca a rifa ATIVA
-                if (!rifaData) {
-                    const { data, error } = await supabase
-                        .from('rifas')
-                        .select('*')
-                        .eq('status', 'ativa')
-                        .limit(1)
-                        .maybeSingle();
-
-                    if (!error) rifaData = data;
-                }
-
-                if (rifaData) {
-                    setRifa(rifaData);
-
-                    // Busca participantes da rifa encontrada
-                    const { data: allPartData, error: partError } = await supabase
-                        .from('participantes_rifa')
-                        .select('nome, numeros_escolhidos, status_pagamento')
-                        .eq('rifa_id', rifaData.id);
-
-                    if (allPartData) {
-                        setParticipantes(allPartData);
-                    }
-
-                    if (rifaData.status === 'finalizada') {
-                        const { data: premiosData } = await supabase
-                            .from('premios')
-                            .select('vencedor_numero, vencedor_nome, vencedor_telefone')
-                            .eq('rifa_id', rifaData.id);
-                        
-                        if (premiosData) setPremios(premiosData);
-                    }
-                }
+                const query = rifaIdParam ? `?id=${encodeURIComponent(rifaIdParam)}` : '';
+                const response = await fetch(`/api/rifas/tracking${query}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Erro ao buscar acompanhamento.');
+                setRifa(data.rifa);
+                setParticipantes(data.participantes || []);
+                setPremios(data.premios || []);
             } catch (error) {
                 console.error('Error fetching tracking data:', error);
             } finally {
@@ -81,21 +40,6 @@ function TrackingContent() {
         p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.numeros_escolhidos.some((n: number) => String(n).includes(searchTerm))
     );
-
-    const censurarNome = (nome: string) => {
-        if (!nome) return '';
-        const partes = nome.trim().split(' ').filter(p => p.length > 0);
-        return `${partes[0]} ************`;
-    };
-
-    const censurarTelefone = (telefone: string) => {
-        if (!telefone) return '';
-        const apenasNumeros = telefone.replace(/\D/g, '');
-        if (apenasNumeros.length < 10) return telefone;
-        const ddd = apenasNumeros.substring(0, 2);
-        const inicio = apenasNumeros.substring(2, 7);
-        return `(${ddd}) ${inicio}-****`;
-    };
 
     if (loading) {
         return (
@@ -138,8 +82,8 @@ function TrackingContent() {
                                 <p style={{ fontSize: '1.2rem', color: 'white', marginBottom: '10px' }}>
                                     Número Sorteado: <br/><strong style={{ fontSize: '2.5rem', color: '#00ff88', letterSpacing: '2px' }}>{String(rifa.numero_vencedor).padStart(totalDigitos, '0')}</strong>
                                 </p>
-                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Ganhador: <strong style={{color: 'white'}}>{censurarNome(String(vencedor.vencedor_nome))}</strong></p>
-                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Contato: <strong style={{color: 'white'}}>{censurarTelefone(String(vencedor.vencedor_telefone))}</strong></p>
+                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Ganhador: <strong style={{color: 'white'}}>{vencedor.vencedor_nome}</strong></p>
+                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Contato: <strong style={{color: 'white'}}>{vencedor.vencedor_telefone}</strong></p>
                             </div>
                         );
                     })() : (
@@ -185,7 +129,7 @@ function TrackingContent() {
                                 borderRadius: '8px',
                                 borderLeft: p.status_pagamento === 'pago' ? '4px solid #00ff88' : (p.status_pagamento === 'cancelado' ? '4px solid #ff4444' : '4px solid #ffcc00')
                             }}>
-                                <h4 style={{ margin: '0 0 10px 0', color: 'white' }}>{censurarNome(p.nome)}</h4>
+                                <h4 style={{ margin: '0 0 10px 0', color: 'white' }}>{p.nome}</h4>
                                 <p style={{ fontSize: '0.9em', color: '#ccc', marginBottom: '5px' }}>
                                     Status: <span style={{
                                         color: p.status_pagamento === 'pago' ? '#00ff88' : (p.status_pagamento === 'cancelado' ? '#ff4444' : '#ffcc00'),

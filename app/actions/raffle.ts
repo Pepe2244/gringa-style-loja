@@ -1,10 +1,16 @@
 'use server';
 
-import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
+import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: string) {
+    if (!await isAdminAuthenticated()) {
+        return { success: false, message: 'Não autorizado.' };
+    }
+
     try {
+        const supabase = createSupabaseAdminClient();
         // 1. Busca todos os participantes pagos desta rifa
         const { data: tickets, error: ticketError } = await supabase
             .from('participantes_rifa')

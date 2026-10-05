@@ -9,6 +9,7 @@ import { compressImage } from '@/utils/imageCompression';
 import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
 import { useToast } from '@/context/ToastContext';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { getPrivateAdminData, updateParticipantStatus } from '@/app/actions/admin-data';
 
 // Extensão da interface corrigida para evitar conflito de tipos
 interface RifaFront extends Omit<Rifa, 'status' | 'numero_vencedor'> {
@@ -65,9 +66,10 @@ export default function RifaManager() {
             setTotalNumeros(String(rifa.total_numeros));
             setImagemCapaPreview(rifa.imagem_premio_url || '');
 
-            const { data: prizesData } = await supabase.from('premios').select('*').eq('rifa_id', rifa.id).order('ordem');
-            if (prizesData && prizesData.length > 0) {
-                setPremios(prizesData.map(p => ({ id: p.id, descricao: p.descricao, imagemUrl: p.imagem_url, imagemPreview: p.imagem_url })));
+            const prizesResult = await getPrivateAdminData('prizes', rifa.id);
+            if (!prizesResult.success) throw new Error(prizesResult.error);
+            if (prizesResult.data?.length) {
+                setPremios(prizesResult.data.map(p => ({ id: p.id, descricao: p.descricao, imagemUrl: p.imagem_url, imagemPreview: p.imagem_url })));
             } else {
                 setPremios([{ descricao: '' }]);
             }
@@ -107,6 +109,24 @@ export default function RifaManager() {
     const addPrizeField = () => setPremios([...premios, { descricao: '' }]);
     const removePrizeField = (index: number) => setPremios(premios.filter((_, i) => i !== index));
 
+    const uploadRaffleImage = async (file: File, label: string) => {
+        let preparedFile = file;
+        try {
+            preparedFile = await compressImage(file);
+        } catch {
+            showToast('Aviso: não foi possível comprimir a imagem. O arquivo original será usado.', 'info');
+        }
+
+        const formData = new FormData();
+        formData.append('file', preparedFile, `${label}-${Date.now()}-${preparedFile.name}`);
+        const response = await fetch('/api/upload', { method: 'POST', body: formData });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || typeof result.url !== 'string') {
+            throw new Error(result.error || `HTTP ${response.status}: falha no upload`);
+        }
+        return result.url as string;
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -115,17 +135,7 @@ export default function RifaManager() {
             let capaUrl = editingRifa ? editingRifa.imagem_premio_url : null;
 
             if (imagemCapaFile) {
-                let fileToUpload = imagemCapaFile;
-                try { fileToUpload = await compressImage(imagemCapaFile); } catch (err) {
-                    showToast('Aviso: não foi possível comprimir a imagem de capa. O arquivo original será usado.', 'info');
-                }
-
-                const fileName = `capa-${Date.now()}-${fileToUpload.name}`;
-                const { error: uploadError } = await supabase.storage.from('imagens-rifas').upload(fileName, fileToUpload);
-                if (uploadError) throw new Error('Erro upload capa: ' + uploadError.message);
-
-                const { data } = supabase.storage.from('imagens-rifas').getPublicUrl(fileName);
-                capaUrl = data.publicUrl;
+                capaUrl = await uploadRaffleImage(imagemCapaFile, 'capa-rifa');
             }
 
             const rifaData = {
@@ -144,16 +154,7 @@ export default function RifaManager() {
             for (let i = 0; i < premios.length; i++) {
                 let pUrl = premios[i].imagemUrl;
                 if (premios[i].imagemFile) {
-                    let pFile = premios[i].imagemFile!;
-                    try { pFile = await compressImage(pFile); } catch (err) {
-                        showToast(`Aviso: não foi possível comprimir a imagem do prêmio ${i + 1}. O arquivo original será usado.`, 'info');
-                    }
-                    const pName = `premio-${Date.now()}-${i}-${pFile.name}`;
-                    const { error: pUpErr } = await supabase.storage.from('imagens-premios').upload(pName, pFile);
-                    if (pUpErr) throw new Error('Erro upload prêmio: ' + pUpErr.message);
-
-                    const { data } = supabase.storage.from('imagens-premios').getPublicUrl(pName);
-                    pUrl = data.publicUrl;
+                    pUrl = await uploadRaffleImage(premios[i].imagemFile!, `premio-${i + 1}`);
                 }
 
                 if (premios[i].descricao.trim()) {
@@ -203,26 +204,19 @@ export default function RifaManager() {
     };
 
     const fetchParticipants = async (rifaId: number) => {
-        const { data } = await supabase.from('participantes_rifa').select('*').eq('rifa_id', rifaId).order('created_at');
-        if (data) setParticipants(data);
+        const result = await getPrivateAdminData('participants', rifaId);
+        if (!result.success) {
+            showToast(`Erro ao carregar participantes: ${result.error}`, 'error');
+            return;
+        }
+        setParticipants(result.data || []);
     };
 
     const confirmPayment = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId) return;
         try {
-            const { error: partError } = await supabase.from('participantes_rifa').update({ status_pagamento: 'pago' }).eq('id', participantId);
-            if (partError) throw partError;
-
-            const { data: currentRifa, error: rifaErr } = await supabase.from('rifas').select('numeros_vendidos, numeros_reservados').eq('id', selectedRifaId).single();
-            if (rifaErr) throw rifaErr;
-
-            const vendidosAtuais = currentRifa.numeros_vendidos || [];
-            const novosVendidos = Array.from(new Set([...vendidosAtuais, ...numbers]));
-            const reservadosAtuais = currentRifa.numeros_reservados || [];
-            const novosReservados = reservadosAtuais.filter((n: number) => !numbers.includes(n));
-
-            const { error: updateRifaErr } = await supabase.from('rifas').update({ numeros_vendidos: novosVendidos, numeros_reservados: novosReservados }).eq('id', selectedRifaId);
-            if (updateRifaErr) throw updateRifaErr;
+            const result = await updateParticipantStatus(participantId, 'pago', selectedRifaId, numbers);
+            if (!result.success) throw new Error(result.error);
 
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'pago' } : p));
             fetchRifas();
@@ -235,16 +229,8 @@ export default function RifaManager() {
     const cancelReservation = async (participantId: number, numbers: number[]) => {
         if (!selectedRifaId || !confirm('Cancelar reserva e liberar números?')) return;
         try {
-            const { error } = await supabase.from('participantes_rifa').update({ status_pagamento: 'cancelado' }).eq('id', participantId);
-            if (error) throw error;
-
-            const { data: currentRifa } = await supabase.from('rifas').select('numeros_vendidos, numeros_reservados').eq('id', selectedRifaId).single();
-
-            if (currentRifa) {
-                const novosVendidos = (currentRifa.numeros_vendidos || []).filter((n: number) => !numbers.includes(n));
-                const novosReservados = (currentRifa.numeros_reservados || []).filter((n: number) => !numbers.includes(n));
-                await supabase.from('rifas').update({ numeros_vendidos: novosVendidos, numeros_reservados: novosReservados }).eq('id', selectedRifaId);
-            }
+            const result = await updateParticipantStatus(participantId, 'cancelado', selectedRifaId, numbers);
+            if (!result.success) throw new Error(result.error);
 
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'cancelado' } : p));
             fetchRifas();
@@ -256,8 +242,12 @@ export default function RifaManager() {
 
     const openDrawModal = async (rifa: RifaFront) => {
         setDrawRifa(rifa);
-        const { data } = await supabase.from('premios').select('*').eq('rifa_id', rifa.id).order('ordem');
-        if (data) setDrawPrizes(data);
+        const result = await getPrivateAdminData('prizes', rifa.id);
+        if (!result.success) {
+            showToast(`Erro ao carregar prêmios: ${result.error}`, 'error');
+            return;
+        }
+        setDrawPrizes(result.data || []);
         setShowDrawModal(true);
     };
 
@@ -278,8 +268,9 @@ export default function RifaManager() {
             if (result.success && result.winner) {
                 setDrawAnimation(String(result.winner.number).padStart(3, '0'));
 
-                const { data } = await supabase.from('premios').select('*').eq('rifa_id', drawRifa.id).order('ordem');
-                if (data) setDrawPrizes(data);
+                const prizesResult = await getPrivateAdminData('prizes', drawRifa.id);
+                if (!prizesResult.success) throw new Error(prizesResult.error);
+                setDrawPrizes(prizesResult.data || []);
 
                 setRifas(prev => prev.map(r => r.id === drawRifa.id ? { ...r, status: 'finalizada', numero_vencedor: result.winner.number } : r));
 
@@ -455,5 +446,3 @@ export default function RifaManager() {
         </div>
     );
 }
-
-

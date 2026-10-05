@@ -41,9 +41,15 @@ export default function ProductDetailsModal({
 }: ProductDetailsModalProps) {
     const [currentModalImageIndex, setCurrentModalImageIndex] = useState(0);
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
 
     // Reset state when modal opens or product changes
     useEffect(() => {
+        const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const updateMotionPreference = () => setPrefersReducedMotion(motionPreference.matches);
+        updateMotionPreference();
+        motionPreference.addEventListener('change', updateMotionPreference);
+
         if (isOpen && product) {
             setCurrentModalImageIndex(0);
             const variants = product.variants as unknown as ProductVariant;
@@ -54,6 +60,7 @@ export default function ProductDetailsModal({
                 setSelectedVariant(null);
             }
         }
+        return () => motionPreference.removeEventListener('change', updateMotionPreference);
     }, [isOpen, product]);
 
     if (!product) return null;
@@ -101,7 +108,7 @@ export default function ProductDetailsModal({
                     const videoUrl = product.video || mediaUrls.find(url => url.includes('.mp4') || url.includes('.webm'));
 
                     if (videoUrl) {
-                        return <video src={videoUrl} className="card-video" autoPlay loop muted playsInline />;
+                        return <video src={videoUrl} className="card-video" autoPlay={!prefersReducedMotion} loop muted playsInline />;
                     }
 
                     const currentImage = modalImages.length > 0 ? modalImages[currentModalImageIndex] : '/imagens/gringa_style_logo.png';

@@ -1,25 +1,22 @@
-'use server'
+'use server';
 
-import { cookies } from 'next/headers'
+import {
+    clearAdminSession,
+    createAdminSession,
+    isAdminAuthenticated,
+    isValidAdminPassword,
+} from '@/lib/admin-auth';
 
 export async function loginAction(formData: FormData) {
     const password = formData.get('password') as string;
 
-    // Verificar se as variáveis de ambiente estão configuradas
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    if (!adminPassword) {
+    if (!process.env.ADMIN_PASSWORD) {
         console.error("ERRO CRÍTICO DE SEGURANÇA: A variável ADMIN_PASSWORD não está configurada no painel do servidor.");
         return { success: false, message: 'Erro de configuração no servidor. Contate o suporte.' };
     }
 
-    if (password && password.trim() === adminPassword.trim()) {
-        const cookieStore = await cookies()
-        cookieStore.set('admin_session', 'authenticated', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 7, // 1 semana
-            path: '/',
-        })
+    if (isValidAdminPassword(password)) {
+        await createAdminSession();
         return { success: true }
     }
 
@@ -27,12 +24,9 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function logoutAction() {
-    const cookieStore = await cookies()
-    cookieStore.delete('admin_session')
+    await clearAdminSession();
 }
 
 export async function checkAuth() {
-    const cookieStore = await cookies()
-    const session = cookieStore.get('admin_session')
-    return session?.value === 'authenticated'
+    return isAdminAuthenticated();
 }

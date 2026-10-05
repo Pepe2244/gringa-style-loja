@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
+import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
 // OBRIGATÓRIO: Garante que o dashboard do admin leia dados reais e não o cache de ontem.
 export const dynamic = 'force-dynamic';
@@ -20,15 +21,53 @@ interface SessionData {
 
 export async function POST(request: NextRequest) {
     try {
-        const sessionData: SessionData = await request.json();
+        const body: unknown = await request.json();
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return NextResponse.json({ error: 'Dados da sessão inválidos' }, { status: 400 });
+        }
+        const sessionData = body as SessionData;
 
         // Validar dados obrigatórios
-        if (!sessionData.sessionId || !sessionData.startTime) {
+        if (
+            typeof sessionData.sessionId !== 'string' ||
+            !/^[a-zA-Z0-9_-]{1,128}$/.test(sessionData.sessionId) ||
+            !Number.isFinite(sessionData.startTime) ||
+            !Number.isFinite(sessionData.endTime) ||
+            sessionData.startTime < 0 ||
+            sessionData.endTime < sessionData.startTime ||
+            sessionData.endTime > Date.now() + 5 * 60 * 1000 ||
+            !Number.isFinite(sessionData.duration) ||
+            sessionData.duration < 0 ||
+            sessionData.duration > 7 * 24 * 60 * 60 * 1000 ||
+            !Number.isSafeInteger(sessionData.pageViews) ||
+            sessionData.pageViews < 0 ||
+            sessionData.pageViews > 500 ||
+            !Array.isArray(sessionData.events) ||
+            sessionData.events.length > 100 ||
+            !sessionData.events.every((event) =>
+                event && typeof event === 'object' &&
+                typeof event.event === 'string' && event.event.length <= 100 &&
+                typeof event.category === 'string' && event.category.length <= 100 &&
+                typeof event.action === 'string' && event.action.length <= 100 &&
+                (event.label == null || (typeof event.label === 'string' && event.label.length <= 500)) &&
+                (event.value == null || (typeof event.value === 'number' && Number.isFinite(event.value) && Math.abs(event.value) <= 1_000_000)) &&
+                (event.timestamp == null || (typeof event.timestamp === 'number' && Number.isFinite(event.timestamp))) &&
+                (event.customParameters == null ||
+                    (typeof event.customParameters === 'object' &&
+                        JSON.stringify(event.customParameters).length <= 4096))
+            ) ||
+            typeof sessionData.userAgent !== 'string' || sessionData.userAgent.length > 512 ||
+            typeof sessionData.referrer !== 'string' || sessionData.referrer.length > 2048 ||
+            !['mobile', 'tablet', 'desktop'].includes(sessionData.deviceType) ||
+            typeof sessionData.screenResolution !== 'string' || sessionData.screenResolution.length > 64 ||
+            typeof sessionData.timezone !== 'string' || sessionData.timezone.length > 100
+        ) {
             return NextResponse.json(
                 { error: 'Dados da sessão inválidos' },
                 { status: 400 }
             );
         }
+        const supabase = createSupabaseAdminClient();
 
         // Inserir dados da sessão
         const { error: sessionError } = await supabase
@@ -53,11 +92,11 @@ export async function POST(request: NextRequest) {
 
         // Processar eventos da sessão
         if (sessionData.events && sessionData.events.length > 0) {
-            await processSessionEvents(sessionData.sessionId, sessionData.events);
+            await processSessionEvents(supabase, sessionData.sessionId, sessionData.events);
         }
 
         // Calcular métricas agregadas
-        await updateAggregatedMetrics(sessionData);
+        await updateAggregatedMetrics(supabase, sessionData);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -70,7 +109,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Processar eventos individuais da sessão
-async function processSessionEvents(sessionId: string, events: any[]) {
+async function processSessionEvents(supabase: ReturnType<typeof createSupabaseAdminClient>, sessionId: string, events: any[]) {
     try {
         const eventsToInsert = events.map(event => ({
             session_id: sessionId,
@@ -97,7 +136,7 @@ async function processSessionEvents(sessionId: string, events: any[]) {
 }
 
 // Atualizar métricas agregadas
-async function updateAggregatedMetrics(sessionData: SessionData) {
+async function updateAggregatedMetrics(supabase: ReturnType<typeof createSupabaseAdminClient>, sessionData: SessionData) {
     try {
         const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -181,13 +220,22 @@ async function updateAggregatedMetrics(sessionData: SessionData) {
 
 // Endpoint para buscar métricas (para dashboard admin)
 export async function GET(request: NextRequest) {
+    if (!await isAdminAuthenticated()) {
+        return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+    }
+
     try {
         const { searchParams } = new URL(request.url);
-        const days = parseInt(searchParams.get('days') || '7');
+        const requestedDays = Number(searchParams.get('days') || '7');
+        if (!Number.isSafeInteger(requestedDays) || requestedDays < 1 || requestedDays > 365) {
+            return NextResponse.json({ error: 'Período inválido.' }, { status: 400 });
+        }
+        const days = requestedDays;
 
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
 
+        const supabase = createSupabaseAdminClient();
         const { data, error } = await supabase
             .from('analytics_daily_metrics')
             .select('*')

@@ -4,6 +4,24 @@ const isDevelopment = process.env.NODE_ENV !== "production";
 const cspValue = isDevelopment
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;"
   : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;";
+const r2RemotePattern = (() => {
+  const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+  if (!publicUrl) return null;
+
+  try {
+    const url = new URL(publicUrl);
+    if (url.protocol !== 'https:') return null;
+    const basePath = url.pathname.replace(/\/+$/, '');
+    return {
+      protocol: 'https' as const,
+      hostname: url.hostname,
+      port: url.port,
+      pathname: `${basePath}/**`,
+    };
+  } catch {
+    return null;
+  }
+})();
 
 const nextConfig: NextConfig = {
   trailingSlash: false,
@@ -32,6 +50,7 @@ const nextConfig: NextConfig = {
     deviceSizes: [320, 428, 540, 640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
+      ...(r2RemotePattern ? [r2RemotePattern] : []),
       {
         protocol: 'https',
         hostname: 'pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev',

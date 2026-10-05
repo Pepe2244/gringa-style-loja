@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -14,6 +15,14 @@ import { ItemListSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 const PRODUCTS_PER_PAGE = 12;
 
 export default function SearchPage() {
+    return (
+        <Suspense fallback={<main className="container" style={{ padding: '48px 0', textAlign: 'center' }}>Carregando busca...</main>}>
+            <SearchPageContent />
+        </Suspense>
+    );
+}
+
+function SearchPageContent() {
     const searchParams = useSearchParams();
     const query = searchParams.get('q') || '';
     const [products, setProducts] = useState<Product[]>([]);

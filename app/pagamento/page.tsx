@@ -29,7 +29,23 @@ function PaymentContent() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const result = await getPaymentDetails(Number(participanteId));
+                let token = participanteId ? sessionStorage.getItem(`payment-access-${participanteId}`) : null;
+                if (!token && window.location.hash.startsWith('#payment_access=')) {
+                    token = decodeURIComponent(window.location.hash.slice('#payment_access='.length));
+                    if (participanteId && token) {
+                        try {
+                            sessionStorage.setItem(`payment-access-${participanteId}`, token);
+                        } catch {
+                            // Keep the token in memory when session storage is unavailable.
+                        }
+                        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                    }
+                }
+                if (!token) {
+                    setErro('Acesso seguro à reserva não encontrado. Refaça a reserva ou contate o suporte.');
+                    return;
+                }
+                const result = await getPaymentDetails(Number(participanteId), token);
 
                 if (result.success) {
                     setParticipante(result.participante);

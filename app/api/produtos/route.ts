@@ -10,49 +10,51 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(request: Request) {
   try {
-      const url = new URL(request.url);
-      const from = Number(url.searchParams.get('from') || '0');
-      
-      // Captura o limit se existir (enviado pelo frontend) e ajusta a paginação
-      const limitParam = url.searchParams.get('limit');
-      const to = limitParam ? from + Number(limitParam) - 1 : Number(url.searchParams.get('to') || '11');
-      
-      const categoryId = url.searchParams.get('categoria');
-      const excludeId = url.searchParams.get('exclude');
+    const url = new URL(request.url);
+    const from = Number(url.searchParams.get('from') ?? 0);
+    const limitParam = url.searchParams.get('limit');
+    const toParam = url.searchParams.get('to');
+    const limit = limitParam === null ? null : Number(limitParam);
+    const to = limit === null
+      ? Number(toParam ?? 11)
+      : from + limit - 1;
 
-      let query = supabase
-        .from('produtos')
-        .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
-        .eq('em_estoque', true) // Produtos apagados ou esgotados não devem aparecer
-        .order('created_at', { ascending: false })
-        .range(from, to);
+    if (
+      !Number.isSafeInteger(from) || from < 0 || from > 10_000 ||
+      (limit !== null && (!Number.isSafeInteger(limit) || limit < 1 || limit > 48)) ||
+      !Number.isSafeInteger(to) || to < from || to - from + 1 > 48
+    ) {
+      return NextResponse.json({ error: 'Parâmetros de paginação inválidos.' }, { status: 400 });
+    }
 
-      if (categoryId) {
-        // Garante que não quebre se o frontend enviar string em vez de ID numérico
-        const isNumeric = !isNaN(Number(categoryId));
-        if (isNumeric) {
-            query = query.eq('categoria_id', Number(categoryId));
-        } else {
-            // Previne falha silenciosa se a coluna for tipo texto no seu banco
-            query = query.eq('categoria_id', categoryId); 
-        }
-      }
+    const categoryId = url.searchParams.get('categoria')?.trim();
+    const excludeId = url.searchParams.get('exclude')?.trim();
+    if ((categoryId && categoryId.length > 100) || (excludeId && excludeId.length > 64)) {
+      return NextResponse.json({ error: 'Parâmetros de filtro inválidos.' }, { status: 400 });
+    }
 
-      // Impede a recomendação de produtos duplicados (o produto que já está na tela)
-      if (excludeId) {
-          query = query.neq('id', excludeId);
-      }
+    let query = supabase
+      .from('produtos')
+      .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+      .eq('em_estoque', true)
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
-      const { data, error } = await query;
+    if (categoryId) {
+      const isNumeric = !isNaN(Number(categoryId));
+      query = isNumeric
+        ? query.eq('categoria_id', Number(categoryId))
+        : query.eq('categoria_id', categoryId);
+    }
 
-      if (error) {
-        throw error;
-      }
+    if (excludeId) query = query.neq('id', excludeId);
 
-      return NextResponse.json(data || []);
+    const { data, error } = await query;
+    if (error) throw error;
 
-  } catch (error: any) {
+    return NextResponse.json(data || []);
+  } catch (error) {
       console.error('Erro em GET /api/produtos:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Erro ao buscar produtos.' }, { status: 500 });
   }
 }

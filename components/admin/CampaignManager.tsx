@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Trash2, Edit, Plus, X, Upload } from 'lucide-react';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { deleteCampaign, saveCampaign, setActiveCampaign } from '@/app/actions/admin-data';
 
 export default function CampaignManager() {
     const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -113,17 +114,9 @@ export default function CampaignManager() {
         };
 
         try {
-            if (editingCampaign) {
-                const { error } = await supabase.from('campanhas').update(campaignData).eq('id', editingCampaign.id);
-                if (error) throw error;
-                await fetch('/api/admin/revalidate-campaigns', { method: 'POST', credentials: 'include' });
-                alert('Campanha atualizada!');
-            } else {
-                const { error } = await supabase.from('campanhas').insert([campaignData]);
-                if (error) throw error;
-                await fetch('/api/admin/revalidate-campaigns', { method: 'POST', credentials: 'include' });
-                alert('Campanha criada!');
-            }
+            const result = await saveCampaign(campaignData, editingCampaign?.id);
+            if (!result.success) throw new Error(result.error);
+            alert(editingCampaign ? 'Campanha atualizada!' : 'Campanha criada!');
             setShowModal(false);
             fetchCampaigns();
         } catch (error: any) {
@@ -136,9 +129,8 @@ export default function CampaignManager() {
     const handleDelete = async (id: number) => {
         if (!confirm('Excluir esta campanha?')) return;
         try {
-            const { error } = await supabase.from('campanhas').delete().eq('id', id);
-            if (error) throw error;
-            await fetch('/api/admin/revalidate-campaigns', { method: 'POST', credentials: 'include' });
+            const result = await deleteCampaign(id);
+            if (!result.success) throw new Error(result.error);
             fetchCampaigns();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
@@ -153,12 +145,8 @@ export default function CampaignManager() {
         try {
             const newId = isActivating ? id : null;
 
-            const { error } = await supabase
-                .from('configuracoes_site')
-                .upsert({ id: 1, campanha_ativa_id: newId });
-
-            if (error) throw error;
-            await fetch('/api/admin/revalidate-campaigns', { method: 'POST', credentials: 'include' });
+            const result = await setActiveCampaign(newId);
+            if (!result.success) throw new Error(result.error);
 
             setActiveCampaignId(newId);
 

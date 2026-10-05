@@ -1,47 +1,9 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('CRÍTICO: Variáveis de ambiente do Supabase não configuradas');
-}
-
-if (!supabaseServiceKey) {
-    console.warn('SUPABASE_SERVICE_ROLE_KEY não configurada, usando chave anônima para operações limitadas');
-}
-
-// Cliente ADMIN para operações privilegiadas (sorteio, etc)
-const getAdminClient = () => {
-    if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Configuração do Supabase incompleta');
-    }
-
-    if (supabaseServiceKey) {
-        return createClient(supabaseUrl, supabaseServiceKey, {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
-        });
-    } else {
-        // Fallback para chave anônima se service key não estiver disponível
-        console.warn('Usando chave anônima para operações admin - algumas funções podem falhar');
-        return createClient(supabaseUrl, supabaseAnonKey);
-    }
-};
-
-// Cliente PÚBLICO para operações de usuário (como reservar)
-const getPublicClient = () => {
-    if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Configuração do Supabase incompleta');
-    }
-    return createClient(supabaseUrl, supabaseAnonKey);
-};
+import { isAdminAuthenticated } from '@/lib/admin-auth';
+import { createSupabaseAdminClient } from '@/lib/supabase-admin';
+import { createPaymentAccessToken } from '@/lib/payment-access';
 
 export async function reservarNumerosRifa(
     rifaId: number,
@@ -49,12 +11,25 @@ export async function reservarNumerosRifa(
     nome: string,
     telefone: string
 ) {
-    const supabase = getAdminClient();
-
     try {
+        if (!Number.isSafeInteger(rifaId) || rifaId <= 0) throw new Error('Rifa inválida.');
+        if (!Array.isArray(numeros) || numeros.length === 0 || numeros.length > 100 ||
+            !numeros.every((numero) => Number.isSafeInteger(numero) && numero >= 0) ||
+            new Set(numeros).size !== numeros.length) {
+            throw new Error('Selecione números válidos e sem duplicação.');
+        }
+        if (typeof nome !== 'string' || nome.trim().length < 2 || nome.trim().length > 120) {
+            throw new Error('Informe um nome válido.');
+        }
+        if (typeof telefone !== 'string' || !/^[+\d ()-]{8,24}$/.test(telefone)) {
+            throw new Error('Informe um telefone válido.');
+        }
+        const supabase = createSupabaseAdminClient();
+
         // Validação de segurança no SERVIDOR: checa se a rifa já encerrou
-        const { data: rifaCheck } = await supabase.from('rifas').select('status').eq('id', rifaId).single();
-        if (rifaCheck && rifaCheck.status === 'finalizada') {
+        const { data: rifaCheck, error: rifaError } = await supabase.from('rifas').select('status').eq('id', rifaId).single();
+        if (rifaError) throw rifaError;
+        if (rifaCheck.status !== 'ativa') {
             throw new Error('CUIDADO: Tentativa de compra em rifa já encerrada e sorteada. Ação bloqueada.');
         }
 
@@ -66,13 +41,19 @@ export async function reservarNumerosRifa(
         });
 
         if (error) throw error;
+        const participantId = Array.isArray(data)
+            ? Number(data[0]?.participante_id ?? data[0]?.id ?? data[0])
+            : Number(data && typeof data === 'object' ? data.participante_id ?? data.id : data);
+        if (!Number.isSafeInteger(participantId) || participantId <= 0) {
+            throw new Error('A reserva foi processada, mas não foi possível gerar o acesso de pagamento. Entre em contato com o suporte.');
+        }
 
         // OBLITERAÇÃO DE CACHE: Garante que os números sumam da tela dos outros usuários instantaneamente
         revalidatePath('/rifa', 'layout');
         revalidatePath('/acompanhar-rifa', 'page');
         revalidatePath('/admin', 'layout');
 
-        return { success: true, data };
+        return { success: true, data, paymentToken: createPaymentAccessToken(participantId) };
     } catch (error: any) {
         console.error('Erro ao reservar rifa (Server Action):', error);
         return { success: false, error: error.message };
@@ -82,9 +63,10 @@ export async function reservarNumerosRifa(
 // --- NOVAS AÇÕES ADMINISTRATIVAS ---
 
 export async function manageRaffle(rifaData: any, premios: any[]) {
-    const supabase = getAdminClient();
+    if (!await isAdminAuthenticated()) return { success: false, error: 'Não autorizado.' };
 
     try {
+        const supabase = createSupabaseAdminClient();
         let rifaId = rifaData.id;
 
         // 1. Salvar ou Atualizar Rifa
@@ -134,8 +116,10 @@ export async function manageRaffle(rifaData: any, premios: any[]) {
 }
 
 export async function deleteRaffle(id: number) {
-    const supabase = getAdminClient();
+    if (!await isAdminAuthenticated()) return { success: false, error: 'Não autorizado.' };
+
     try {
+        const supabase = createSupabaseAdminClient();
         // 1. Excluir participantes (dependência FK)
         const { error: partError } = await supabase.from('participantes_rifa').delete().eq('rifa_id', id);
         if (partError) throw new Error('Erro ao excluir participantes: ' + partError.message);
@@ -160,7 +144,9 @@ export async function deleteRaffle(id: number) {
 }
 
 export async function toggleRaffleStatus(id: number, currentStatus: string) {
-    const supabase = getAdminClient();
+    if (!await isAdminAuthenticated()) return { success: false, error: 'Não autorizado.' };
+
+    const supabase = createSupabaseAdminClient();
     const newStatus = currentStatus === 'ativa' ? 'finalizada' : 'ativa';
 
     try {

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Rifa, Premio } from '@/types';
+import { Rifa } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -21,7 +21,7 @@ interface RifaFront extends Omit<Rifa, 'status'> {
 export default function RifaPage() {
     const { showToast } = useToast();
     const [rifa, setRifa] = useState<RifaFront | null>(null);
-    const [premios, setPremios] = useState<Premio[]>([]);
+    const [winner, setWinner] = useState<{ vencedor_numero: number | null; vencedor_nome: string; vencedor_telefone: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
     const [clientName, setClientName] = useState('');
@@ -65,13 +65,14 @@ export default function RifaPage() {
                     return current.filter(n => !sold.has(n) && !reserved.has(n));
                 });
 
-                const { data: premiosData } = await supabase
-                    .from('premios')
-                    .select('*')
-                    .eq('rifa_id', rifaData.id)
-                    .order('ordem', { ascending: true });
-
-                if (premiosData) setPremios(premiosData);
+                if (rifaData.status === 'finalizada') {
+                    const response = await fetch(`/api/rifas/winner?id=${rifaData.id}`);
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Erro ao carregar o resultado.');
+                    setWinner(result.winners?.find((item: { vencedor_numero: number }) => item.vencedor_numero === rifaData.numero_vencedor) || null);
+                } else {
+                    setWinner(null);
+                }
             } else {
                 setRifa(null);
             }
@@ -202,7 +203,14 @@ export default function RifaPage() {
                 throw new Error(`Ocorreu um erro ao obter sua reserva. Dados: ${JSON.stringify(result.data)}. Por favor contate o suporte.`);
             }
 
-            router.push(`/pagamento?participante_id=${participantId}`);
+            if (!result.paymentToken) throw new Error('Não foi possível gerar o acesso seguro ao pagamento. Contate o suporte.');
+            let paymentHash = '';
+            try {
+                sessionStorage.setItem(`payment-access-${participantId}`, result.paymentToken);
+            } catch {
+                paymentHash = `#payment_access=${encodeURIComponent(result.paymentToken)}`;
+            }
+            router.push(`/pagamento?participante_id=${participantId}${paymentHash}`);
         } catch (error: any) {
             const errorMessage = error instanceof Error ? error.message : 'Erro ao reservar. Tente novamente.';
             showToast(errorMessage, 'error');
@@ -299,22 +307,7 @@ export default function RifaPage() {
     const rawImage = rifa.imagem_premio_url?.trim() ? rifa.imagem_premio_url : '/imagens/gringa_style_logo.png';
     const imageUrl = getProxiedImageUrl(rawImage);
 
-    const censurarNome = (nome: string) => {
-        if (!nome) return '';
-        const partes = nome.trim().split(' ');
-        return `${partes[0]} ************`;
-    };
-
-    const censurarTelefone = (telefone: string) => {
-        if (!telefone) return '';
-        const apenasNumeros = telefone.replace(/\D/g, '');
-        if (apenasNumeros.length < 10) return telefone;
-        const ddd = apenasNumeros.substring(0, 2);
-        const inicio = apenasNumeros.substring(2, 7); 
-        return `(${ddd}) ${inicio}-****`;
-    };
-
-    const premioVencedor = premios.find(p => p.vencedor_numero === rifa.numero_vencedor);
+    const premioVencedor = winner;
 
     return (
         <>
@@ -351,8 +344,8 @@ export default function RifaPage() {
                                 </p>
                                 {premioVencedor && (
                                     <>
-                                        <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>🏆 Ganhador: <strong style={{color: 'white'}}>{censurarNome(String(premioVencedor.vencedor_nome))}</strong></p>
-                                        <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>📱 Contato: <strong style={{color: 'white'}}>{censurarTelefone(String(premioVencedor.vencedor_telefone))}</strong></p>
+                                        <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>🏆 Ganhador: <strong style={{color: 'white'}}>{premioVencedor.vencedor_nome}</strong></p>
+                                        <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>📱 Contato: <strong style={{color: 'white'}}>{premioVencedor.vencedor_telefone}</strong></p>
                                     </>
                                 )}
                             </div>

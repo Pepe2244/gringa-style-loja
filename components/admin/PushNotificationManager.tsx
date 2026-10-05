@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { Trash2, Send, CheckCircle } from 'lucide-react';
+import { approvePushNotification, createPushNotification, deletePushNotification, getPrivateAdminData } from '@/app/actions/admin-data';
 
 export default function PushNotificationManager() {
     const [drafts, setDrafts] = useState<any[]>([]);
@@ -16,17 +16,13 @@ export default function PushNotificationManager() {
     }, []);
 
     const fetchDrafts = async () => {
-        const { data, error } = await supabase
-            .from('notificacoes_push_queue')
-            .select('*')
-            .eq('status', 'rascunho')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Erro ao buscar notificações:', error);
-            alert('Erro ao buscar notificações: ' + error.message);
+        const result = await getPrivateAdminData('notifications');
+        if (!result.success) {
+            console.error('Erro ao buscar notificações:', result.error);
+            alert('Erro ao buscar notificações: ' + result.error);
+            return;
         }
-        if (data) setDrafts(data);
+        setDrafts((result.data || []).filter((notification) => notification.status === 'rascunho'));
     };
 
     const handleSendManual = async (e: React.FormEvent) => {
@@ -37,14 +33,8 @@ export default function PushNotificationManager() {
 
         setLoading(true);
         try {
-            const { error } = await supabase.from('notificacoes_push_queue').insert({
-                titulo: title,
-                mensagem: message,
-                link_url: link,
-                status: 'aprovado' // Assume-se que um gatilho de DB ou Edge Function vai capturar isso e disparar.
-            });
-
-            if (error) throw error;
+            const result = await createPushNotification(title, message, link);
+            if (!result.success) throw new Error(result.error);
             alert('Notificação manual inserida na fila de disparo!');
             setTitle('');
             setMessage('');
@@ -64,12 +54,8 @@ export default function PushNotificationManager() {
         setDrafts(updatedDrafts);
 
         try {
-            const { error } = await supabase
-                .from('notificacoes_push_queue')
-                .update({ status: 'aprovado' })
-                .eq('id', id);
-
-            if (error) throw error;
+            const result = await approvePushNotification(id);
+            if (!result.success) throw new Error(result.error);
             // Não fazemos o fetchDrafts() aqui. A tela já atualizou na linha 62.
 
         } catch (error: any) {
@@ -87,8 +73,8 @@ export default function PushNotificationManager() {
         setDrafts(updatedDrafts);
 
         try {
-            const { error } = await supabase.from('notificacoes_push_queue').delete().eq('id', id);
-            if (error) throw error;
+            const result = await deletePushNotification(id);
+            if (!result.success) throw new Error(result.error);
         } catch (error: any) {
             alert('Erro ao excluir no banco de dados: ' + error.message);
             fetchDrafts();
@@ -189,5 +175,4 @@ export default function PushNotificationManager() {
         </div>
     );
 }
-
 

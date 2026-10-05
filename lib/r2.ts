@@ -15,13 +15,19 @@ export const r2Client = new S3Client({
 });
 
 export async function uploadToR2(fileBuffer: Buffer, fileName: string, contentType: string) {
+  const bucket = process.env.R2_BUCKET_NAME;
+  const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+  if (!bucket || !publicUrl) {
+    throw new Error('Configuração de armazenamento R2 incompleta.');
+  }
+
   // Limpeza de caracteres especiais do nome do arquivo para evitar erros de URL
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   const key = `${Date.now()}-${sanitizedFileName}`;
   
   await r2Client.send(
     new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
+      Bucket: bucket,
       Key: key,
       Body: fileBuffer,
       ContentType: contentType,
@@ -29,5 +35,5 @@ export async function uploadToR2(fileBuffer: Buffer, fileName: string, contentTy
     })
   );
 
-  return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`;
+  return `${publicUrl.replace(/\/+$/, '')}/${key}`;
 }

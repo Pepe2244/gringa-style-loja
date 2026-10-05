@@ -35,6 +35,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
 
     // Acesso seguro às propriedades do produto
     const mediaUrls = Array.isArray(product?.media_urls) ? product.media_urls :
@@ -60,16 +61,24 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         const checkMobile = () => {
             setIsMobile(window.innerWidth <= 768);
         };
+        const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const updateMotionPreference = () => setPrefersReducedMotion(motionPreference.matches);
+
         checkMobile();
+        updateMotionPreference();
         window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+        motionPreference.addEventListener('change', updateMotionPreference);
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            motionPreference.removeEventListener('change', updateMotionPreference);
+        };
     }, []);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
-        const shouldPlayVideo = videoUrl && isHovered && !isMobile;
+        const shouldPlayVideo = videoUrl && isHovered && !isMobile && !prefersReducedMotion;
 
-        if (isHovered && displayImages.length > 1 && !shouldPlayVideo) {
+        if (!prefersReducedMotion && isHovered && displayImages.length > 1 && !shouldPlayVideo) {
             interval = setInterval(() => {
                 setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
             }, 2000);
@@ -77,7 +86,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             setCurrentImageIndex(0);
         }
         return () => clearInterval(interval);
-    }, [isHovered, displayImages.length, videoUrl, isMobile]);
+    }, [isHovered, displayImages.length, videoUrl, isMobile, prefersReducedMotion]);
 
     if (!product) return null;
 
@@ -105,7 +114,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         return date > limitDate;
     };
 
-    const shouldShowVideo = !!videoUrl && isHovered && !isMobile;
+    const shouldShowVideo = !!videoUrl && isHovered && !isMobile && !prefersReducedMotion;
     const productName = product.nome || 'Produto Sem Nome';
     const productSlug = product.slug || `${product.id}-${productName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
 

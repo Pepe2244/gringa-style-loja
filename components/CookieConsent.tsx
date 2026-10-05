@@ -1,24 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function CookieConsent() {
-    // Se o componente foi chamado, é porque o servidor não achou o cookie.
-    // Ele já nasce true, sem delay de hidratação.
-    const [show, setShow] = useState(true);
+    const [show, setShow] = useState(false);
+
+    useEffect(() => {
+        const consent = document.cookie
+            .split('; ')
+            .find((cookie) => cookie.startsWith('cookie-consent='))
+            ?.split('=')[1];
+
+        setShow(consent !== 'true' && consent !== 'false');
+    }, []);
 
     const accept = () => {
-        // Grava o cookie nativo válido por 1 ano (31536000 segundos)
-        document.cookie = "cookie-consent=true; path=/; max-age=31536000";
-        // Oculta visualmente sem reload
+        document.cookie = `cookie-consent=true; path=/; max-age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
         setShow(false);
-        // Dispara evento para carregar scripts de analytics
         window.dispatchEvent(new Event('cookieConsentGranted'));
     };
 
     const reject = () => {
-        // Grava cookie de rejeição por 1 ano
-        document.cookie = "cookie-consent=false; path=/; max-age=31536000";
+        document.cookie = `cookie-consent=false; path=/; max-age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
         setShow(false);
     };
 

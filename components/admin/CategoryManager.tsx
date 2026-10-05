@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Category } from '@/types';
 import { Trash2, Plus } from 'lucide-react';
+import { deleteCategory, saveCategory } from '@/app/actions/admin-data';
 
 export default function CategoryManager() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -27,8 +28,8 @@ export default function CategoryManager() {
         if (!newCategoryName.trim()) return;
         setLoading(true);
         try {
-            const { error } = await supabase.from('categorias').insert([{ nome: newCategoryName }]);
-            if (error) throw error;
+            const result = await saveCategory(newCategoryName);
+            if (!result.success) throw new Error(result.error);
             setNewCategoryName('');
             fetchCategories();
             alert('Categoria adicionada!');
@@ -42,8 +43,8 @@ export default function CategoryManager() {
     const handleDeleteCategory = async (id: number) => {
         if (!confirm('Tem certeza?')) return;
         try {
-            const { error } = await supabase.from('categorias').delete().eq('id', id);
-            if (error) throw error;
+            const result = await deleteCategory(id);
+            if (!result.success) throw Object.assign(new Error(result.error), { code: result.code });
             fetchCategories();
             alert('Categoria excluída!');
         } catch (error: any) {
