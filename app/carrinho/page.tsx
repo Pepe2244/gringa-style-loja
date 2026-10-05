@@ -18,6 +18,7 @@ interface ShippingOption {
     custom_price?: string | number;
     custom_delivery_time?: number;
     delivery_time: number;
+    is_estimate?: boolean;
 }
 
 export default function CartPage() {
@@ -25,7 +26,6 @@ export default function CartPage() {
     const items = useCartStore((state: CartState) => state.items);
     const updateQuantity = useCartStore((state: CartState) => state.updateQuantity);
     const removeItem = useCartStore((state: CartState) => state.removeItem);
-    const clearCart = useCartStore((state: CartState) => state.clearCart);
 
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,24 +50,7 @@ export default function CartPage() {
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
-    const [validatedTotal, setValidatedTotal] = useState<number | null>(null);
-
-    const validateTotal = useCallback(async (cartItems: CartItem[]) => {
-        try {
-            const response = await fetch('/api/calculate-total', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itens: cartItems, metodo_pagamento: paymentMethod })
-            });
-            const data = await response.json();
-            if (data.total !== undefined) {
-                setValidatedTotal(data.total);
-            }
-        } catch (error) {
-            console.error('Error validating total:', error);
-            showToast('Não foi possível validar os preços. Os valores exibidos podem estar desatualizados.', 'error');
-        }
-    }, [paymentMethod, showToast]);
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     useEffect(() => {
         const fetchCartData = async () => {
@@ -80,7 +63,6 @@ export default function CartPage() {
                     .in('id', productIds);
 
                 if (data) setProducts(data);
-                validateTotal(items);
             } else {
                 setProducts([]);
             }
@@ -88,7 +70,7 @@ export default function CartPage() {
         };
 
         fetchCartData();
-    }, [items, paymentMethod, validateTotal]);
+    }, [items]);
 
     useEffect(() => {
         if (appliedCoupon && appliedCoupon.metodo_pagamento_restrito) {
@@ -291,123 +273,151 @@ export default function CartPage() {
         }
     }, [paymentMethod, appliedCoupon, couponCode, handleApplyCoupon]);
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome para finalizar.', 'error');
+            return;
+        }
+        if (country === 'BR' && cep.length > 0 && cep.length !== 8) {
+            showToast('Informe um CEP válido de 8 dígitos.', 'error');
             return;
         }
         if (country === 'BR' && cep.length === 8 && (!endereco.rua || !endereco.numero)) {
             showToast('Por favor, preencha o número do seu endereço.', 'error');
             return;
         }
+        if (country !== 'BR' && cep.length > 0 && cep.length < 3) {
+            showToast('Informe um código postal válido.', 'error');
+            return;
+        }
         if (country !== 'BR' && cep.length >= 3 && (!endereco.rua || !endereco.numero || !endereco.cidade || !endereco.estado)) {
             showToast('Por favor, preencha seu endereço completo para envios internacionais.', 'error');
             return;
         }
-        if ((country === 'BR' ? cep.length === 8 : cep.length >= 3) && shippingOptions.length > 0 && !selectedShipping) {
-            showToast('Por favor, selecione uma opção de frete.', 'error');
+        if ((country === 'BR' ? cep.length === 8 : cep.length >= 3) && !selectedShipping) {
+            showToast(shippingOptions.length > 0
+                ? 'Por favor, selecione uma opção de frete.'
+                : 'Calcule e selecione uma opção de frete antes de continuar.', 'error');
             return;
         }
 
-        const currentProducts = products;
-
-        const getPrecoAtual = (produtoId: number) => {
-            const p = currentProducts.find(p => p.id === produtoId);
-            if (!p) return 0;
-            if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0) return p.preco_pix;
-            if (!p.preco_promocional || p.preco_promocional >= p.preco) return p.preco;
-            return p.preco_promocional;
-        };
-
-        const subtotal = validatedTotal !== null ? validatedTotal : calculateSubtotal();
-        const discountAmount = appliedCoupon ? appliedCoupon.desconto_calculado : 0;
-        
-        let shippingAmount = 0;
-        if (selectedShipping) {
-            shippingAmount = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+        const checkoutWindow = window.open('', '_blank');
+        if (!checkoutWindow) {
+            showToast('Permita a abertura de pop-ups para continuar pelo WhatsApp.', 'error');
+            return;
         }
 
-        const finalTotal = subtotal - discountAmount + shippingAmount;
+        checkoutWindow.opener = null;
+        checkoutWindow.document.title = 'Validando pedido...';
+        checkoutWindow.document.body.textContent = 'Validando preços, estoque e frete...';
+        setIsCheckingOut(true);
+        const cartSnapshot = JSON.stringify(items);
 
-        const analyticsItems = items.map(item => {
-            const product = products.find(p => p.id === item.produto_id);
-            return {
+        try {
+            const totalResponse = await fetch('/api/calculate-total', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    itens: items,
+                    metodo_pagamento: paymentMethod,
+                    codigo_cupom: appliedCoupon?.codigo || undefined,
+                }),
+            });
+            const quote = await totalResponse.json();
+            if (!totalResponse.ok) throw new Error(quote.error || 'Não foi possível validar os produtos.');
+
+            const hasShippingAddress = country === 'BR' ? cep.length === 8 : cep.length >= 3;
+            let currentShipping = selectedShipping;
+            if (hasShippingAddress && selectedShipping) {
+                const shippingResponse = await fetch('/api/shipping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to_postal_code: cep, country }),
+                });
+                const shippingQuote = await shippingResponse.json();
+                if (!shippingResponse.ok) throw new Error(shippingQuote.error || 'Não foi possível validar o frete.');
+                const currentOptions: ShippingOption[] = Array.isArray(shippingQuote)
+                    ? shippingQuote
+                    : shippingQuote.options || [];
+                currentShipping = currentOptions.find(
+                    (option: ShippingOption) => String(option.id) === String(selectedShipping.id),
+                ) || null;
+                if (!currentShipping) {
+                    setSelectedShipping(null);
+                    setShippingOptions(currentOptions);
+                    throw new Error('O frete selecionado mudou. Escolha uma opção atualizada e tente novamente.');
+                }
+            }
+            if (JSON.stringify(useCartStore.getState().items) !== cartSnapshot) {
+                throw new Error('O carrinho foi alterado durante a validação. Confira os itens e tente novamente.');
+            }
+
+            const subtotal = Number(quote.subtotal);
+            const discountAmount = Number(quote.desconto);
+            const shippingAmount = currentShipping
+                ? Number(currentShipping.custom_price ?? currentShipping.price)
+                : 0;
+            const finalTotal = Number(quote.total) + shippingAmount;
+            const quoteItems = quote.itens as Array<CartItem & { nome: string; preco_unitario: number; total_item: number }>;
+            const analyticsItems = quoteItems.map((item) => ({
                 item_id: item.produto_id,
-                item_name: product?.nome || 'Item Desconhecido',
-                price: product ? getPrecoFinal(product) : 0,
-                quantity: item.quantidade
-            };
-        });
+                item_name: item.nome,
+                price: item.preco_unitario,
+                quantity: item.quantidade,
+            }));
 
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'begin_checkout', {
-                currency: 'BRL',
-                value: finalTotal,
-                items: analyticsItems
-            });
+            if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+                (window as any).gtag('event', 'begin_checkout', {
+                    currency: 'BRL',
+                    value: finalTotal,
+                    items: analyticsItems,
+                });
+            }
 
-            (window as any).gtag('event', 'purchase', {
-                transaction_id: `ZAP-${Date.now()}`,
-                value: finalTotal,
-                currency: 'BRL',
-                shipping: 0,
-                items: analyticsItems
-            });
-        }
-
-        let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
-
-        message += `🛒 *Itens:*\n`;
-        items.forEach(item => {
-            const product = currentProducts.find(p => p.id === item.produto_id);
-            if (product) {
-                const price = getPrecoAtual(item.produto_id);
+            const formatCurrency = (value: number) => value.toFixed(2).replace('.', ',');
+            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
+            message += `🛒 *Itens:*\n`;
+            quoteItems.forEach((item) => {
                 const variantInfo = item.variante ? ` (${item.variante.tipo}: ${item.variante.opcao})` : '';
-                message += `• ${item.quantidade}x ${product.nome}${variantInfo} - R$ ${(price * item.quantidade).toFixed(2).replace('.', ',')}\n`;
-            }
-        });
-        message += `\n`;
+                message += `• ${item.quantidade}x ${item.nome}${variantInfo} - R$ ${formatCurrency(item.total_item)}\n`;
+            });
+            message += '\n';
 
-        if (country === 'BR' ? cep.length === 8 : cep.length >= 3) {
-            message += `📍 *Endereço de Entrega:*\n`;
-            message += `País: ${country === 'BR' ? 'Brasil' : country}\n`;
-            message += `${endereco.rua}, Nº ${endereco.numero}\n`;
-            if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
-            message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
-            message += `Postal Code/CEP: ${cep}\n`;
-            if (selectedShipping) {
-                const sPrice = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
-                const sTime = selectedShipping.custom_delivery_time || selectedShipping.delivery_time;
-                message += `*Frete Escolhido:* ${selectedShipping.name} (${sTime} dias) - R$ ${sPrice.toFixed(2).replace('.', ',')}\n\n`;
+            if (hasShippingAddress) {
+                message += `📍 *Endereço de Entrega:*\n`;
+                message += `País: ${country === 'BR' ? 'Brasil' : country}\n`;
+                message += `${endereco.rua}, Nº ${endereco.numero}\n`;
+                if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
+                message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
+                message += `Postal Code/CEP: ${cep}\n`;
+                if (currentShipping) {
+                    const deliveryTime = currentShipping.custom_delivery_time ?? currentShipping.delivery_time;
+                    const estimateNote = currentShipping.is_estimate ? ' — estimativa, confirmar no WhatsApp' : '';
+                    message += `*Frete Escolhido:* ${currentShipping.name} (${deliveryTime} dias) - R$ ${formatCurrency(shippingAmount)}${estimateNote}\n\n`;
+                }
             } else {
-                message += `\n`;
+                message += `📍 *Entrega:* (Endereço não informado)\n\n`;
             }
-        } else {
-            message += `📍 *Entrega:* (Endereço não informado)\n\n`;
+
+            message += `💳 *Pagamento:* ${paymentMethod}`;
+            if (paymentMethod === 'Cartão de Crédito') message += ` em ${installments}`;
+            message += `\n\n`;
+            message += `📊 *Resumo de Valores:*\n`;
+            message += `• Subtotal: R$ ${formatCurrency(subtotal)}\n`;
+            if (currentShipping) message += `• Frete${currentShipping.is_estimate ? ' estimado' : ''}: R$ ${formatCurrency(shippingAmount)}\n`;
+            if (!currentShipping) message += `• Frete: a confirmar no WhatsApp\n`;
+            if (discountAmount > 0) message += `• Desconto (${quote.cupom}): - R$ ${formatCurrency(discountAmount)}\n`;
+            const totalIsEstimate = !currentShipping || currentShipping.is_estimate;
+            message += `\n💰 *TOTAL${totalIsEstimate ? ' ESTIMADO' : ''}: R$ ${formatCurrency(finalTotal)}*\n\n`;
+            message += `Aguardo as instruções finais!`;
+
+            checkoutWindow.location.href = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+        } catch (error) {
+            checkoutWindow.close();
+            showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
+        } finally {
+            setIsCheckingOut(false);
         }
-
-        message += `💳 *Pagamento:* ${paymentMethod}`;
-        if (paymentMethod === 'Cartão de Crédito') {
-            message += ` em ${installments}`;
-        }
-        message += `\n\n`;
-
-        message += `📊 *Resumo de Valores:*\n`;
-        message += `• Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
-        if (selectedShipping) {
-            message += `• Frete: R$ ${shippingAmount.toFixed(2).replace('.', ',')}\n`;
-        }
-        if (appliedCoupon) {
-            message += `• Desconto (${appliedCoupon.codigo}): - R$ ${discountAmount.toFixed(2).replace('.', ',')}\n`;
-        }
-        message += `\n`;
-
-        message += `💰 *TOTAL A PAGAR:* R$ ${finalTotal.toFixed(2).replace('.', ',')}\n\n`;
-
-        message += `Aguardo as instruções finais!`;
-
-        clearCart();
-        window.location.href = `https://wa.me/https://mail-attachment.googleusercontent.com/attachment/u/0/?ui=2&ik=bec98f0a6d&jsver=GO9rMumjmU4.pt_BR.L.es5&cbl=gmail.pinto-server_20260801.21_p0&view=att&th=%23msg-a:r2411763995910930004&disp=zip&permmsgid=msg-a:r2411763995910930004&saddbat=ANGjdJ_RQx4SRLK4m_tbJxQ2VfJkWUHuMEeOXea_TB6Ucn8B2chXCylmgy6uEYWxNTzN4yJVEixWf2zc2pJ4cgf67ZznpBmL_vvTDCtAVuFt9ezu4A_qMkEoH3aYxh_V1JXlbPL9vap1E_O4yQ3zVcBTdWx8r5_EBW4zM1mNNcFGf6jHNxZXyFZrnduijbtPvCAbHYN9qyxRvcx1IXFOppLJmPg0w-23nwx2nbDKljHi54omRNfpAQ3qQz9mONsNa75fVkNvL1MbAUDtaWhmpiu_o7myNkvL-KlBx3htL4lTgO3f4LfffzikLyBrFQQO6G_JKv-o9cS8q9i4yPftKI78BXDhOVRZD5XfpZUDlfMBYOuRJ8xIQvNmX5OQQ_3Is8Agkkc7OOjY_qvy3cZu_MkUoFQalYUr3MCQ3ItOY3xMkjYTuRdozdZKh6BdN0DXOBpM-zkZMRy-9THN1lmz7Ea-YtfYdE7Fyah3_hrNiiBBxO6utPEfPMy3MvEEmH8miP15kb4GAqIJtC-8ZZRg13Vexu2rgmwwkSauQSsmp7J1CLMLEdAolq-zipxm-L5KPi4Hi47s_GOzg5x8voMYVHxNTgHM4bUDRHkf_pexRw7muL-JI3qRUkZaEUuulu7VH9H707fRw34D6EWXw3ordcoro6llE8F6ahvJFZ2f0PI_1AUn9Xnnk7-mcci8x8JROQpKSjxaT-VavVOoFmp1YA4HGQmNGQM4hI5TrLHkWjS6Kwxg0LNZwe-e0L4CU62e1auVa1Ko0-p4rKMFFoCuHB2nMLn8lLnzQqQRyvLMUs-vA8S1j25ZytFbSTEFSLmXxLPmXkaHGfV5RP7gVmaYjNw66oXy0Z3p1ZOOQui03uGZduHo_yxxJ9dK4M0T0gKbyLaf0Bgpxj8VdHiRu7V4xzRgeH1jzVerm7TWIOEXeFHVkeur5Xlt1tVmdij9pDu_MSIsjgPVXZXyjxW3QbPF22XkEFu9fFJTa2GOUepuDjWpKrtrGlCJ7hcIbN-_EEEy4pv0O81x5eMC22Qp8lG5?text=${encodeURIComponent(message)}`;
     };
 
     if (loading && items.length > 0 && products.length === 0) {
@@ -609,8 +619,8 @@ export default function CartPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                             <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#aaa' }}>Selecione o Frete:</p>
                                             {shippingOptions.map((option) => {
-                                                const priceValue = parseFloat(String(option.custom_price || option.price));
-                                                const days = option.custom_delivery_time || option.delivery_time;
+                                                const priceValue = parseFloat(String(option.custom_price ?? option.price));
+                                                const days = option.custom_delivery_time ?? option.delivery_time;
                                                 return (
                                                     <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#1a1a1a', padding: '10px', borderRadius: '6px', cursor: 'pointer', border: selectedShipping?.id === option.id ? '1px solid var(--cor-destaque)' : '1px solid #333' }}>
                                                         <input 
@@ -623,6 +633,7 @@ export default function CartPage() {
                                                             <div>
                                                                 <strong style={{ color: 'white' }}>{option.name}</strong>
                                                                 <div style={{ fontSize: '0.8rem', color: '#888' }}>Até {days} dias úteis</div>
+                                                                {option.is_estimate && <div style={{ fontSize: '0.75rem', color: '#d6b36a' }}>Estimativa; confirmar no WhatsApp</div>}
                                                             </div>
                                                             <div style={{ fontWeight: 'bold', color: 'var(--cor-destaque)' }}>
                                                                 R$ {priceValue.toFixed(2).replace('.', ',')}
@@ -732,6 +743,7 @@ export default function CartPage() {
 
                     <motion.button
                         onClick={handleCheckout}
+                        disabled={isCheckingOut}
                         whileHover={{ scale: 1.02, boxShadow: '0 8px 20px rgba(37, 211, 102, 0.5)' }}
                         whileTap={{ scale: 0.98 }}
                         style={{
@@ -743,13 +755,14 @@ export default function CartPage() {
                             borderRadius: '6px',
                             fontSize: '1.1rem',
                             fontWeight: 'bold',
-                            cursor: 'pointer',
+                            cursor: isCheckingOut ? 'wait' : 'pointer',
+                            opacity: isCheckingOut ? 0.7 : 1,
                             textTransform: 'uppercase',
                             boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)',
                             boxSizing: 'border-box'
                         }}
                     >
-                        FINALIZAR PEDIDO NO ZAP
+                        {isCheckingOut ? 'VALIDANDO PEDIDO...' : 'FINALIZAR PEDIDO NO ZAP'}
                     </motion.button>
 
                     <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px', color: '#888' }}>

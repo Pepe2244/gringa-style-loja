@@ -4,61 +4,32 @@ import { revalidatePath } from 'next/cache';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
-export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: string) {
+export async function drawWinner(rifaId: number, prizeId: number) {
     if (!await isAdminAuthenticated()) {
         return { success: false, message: 'Não autorizado.' };
     }
 
     try {
+        if (!Number.isSafeInteger(rifaId) || rifaId <= 0 || !Number.isSafeInteger(prizeId) || prizeId <= 0) {
+            throw new Error('Identificador da rifa ou do prêmio inválido.');
+        }
         const supabase = createSupabaseAdminClient();
-        // 1. Busca todos os participantes pagos desta rifa
-        const { data: tickets, error: ticketError } = await supabase
-            .from('participantes_rifa')
-            .select('id, nome, numeros_escolhidos, telefone')
-            .eq('rifa_id', rifaId)
-            .eq('status_pagamento', 'pago');
-
-        if (ticketError) throw ticketError;
-
-        if (!tickets || tickets.length === 0) {
-            return { success: false, message: 'Nenhum número pago encontrado para esta rifa. Aprove pagamentos antes de sortear.' };
-        }
-
-        // 2. Extrai cada número comprado para um array de "bilhetes da urna"
-        const pool: { number: number, participantId: number, name: string, phone: string }[] = [];
-
-        tickets.forEach(t => {
-            if (t.numeros_escolhidos && Array.isArray(t.numeros_escolhidos)) {
-                t.numeros_escolhidos.forEach((n: number) => {
-                    pool.push({ number: n, participantId: t.id, name: t.nome, phone: t.telefone });
-                });
-            }
+        const { data, error } = await supabase.rpc('admin_draw_raffle_winner', {
+            p_rifa_id: rifaId,
+            p_premio_id: prizeId
         });
-
-        if (pool.length === 0) {
-            return { success: false, message: 'Os participantes não têm números válidos.' };
+        if (error) throw error;
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('O sorteio foi processado, mas os dados do vencedor estão inválidos.');
         }
-
-        // 3. O SORTEIO MATEMÁTICO
-        const randomIndex = Math.floor(Math.random() * pool.length);
-        const winner = pool[randomIndex];
-
-        // 4. Salva o vencedor na tabela de prêmios
-        const { error: premioError } = await supabase.from('premios').update({
-            vencedor_nome: winner.name,
-            vencedor_numero: winner.number,
-            vencedor_telefone: winner.phone
-        }).eq('id', prizeId);
-
-        if (premioError) throw premioError;
-
-        // 5. A CORREÇÃO DE OURO: FECHAR A RIFA AQUI, NO SERVIDOR!
-        const { error: rifaError } = await supabase.from('rifas').update({
-            status: 'finalizada',
-            numero_vencedor: winner.number
-        }).eq('id', rifaId);
-
-        if (rifaError) throw rifaError;
+        const winner = {
+            name: String(data.name),
+            phone: String(data.phone),
+            number: Number(data.number)
+        };
+        if (!winner.name || !Number.isSafeInteger(winner.number) || winner.number < 0) {
+            throw new Error('O sorteio foi processado, mas os dados do vencedor estão incompletos.');
+        }
 
         // 6. DESTRUIÇÃO DO CACHE: Atualizar vitrine e painel instantaneamente
         revalidatePath('/', 'layout');
@@ -69,8 +40,8 @@ export async function drawWinner(rifaId: number, prizeId: number, prizeDesc: str
         // Sucesso absoluto. Devolve o vencedor para a tela.
         return { success: true, winner };
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Erro CRÍTICO no Sorteio Server Action:", error);
-        return { success: false, message: error.message || 'Erro interno no sorteio.' };
+        return { success: false, message: error instanceof Error ? error.message : 'Erro interno no sorteio.' };
     }
 }

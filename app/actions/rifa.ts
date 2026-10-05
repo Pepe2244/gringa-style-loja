@@ -62,56 +62,86 @@ export async function reservarNumerosRifa(
 
 // --- NOVAS AÇÕES ADMINISTRATIVAS ---
 
-export async function manageRaffle(rifaData: any, premios: any[]) {
+export async function manageRaffle(rifaData: unknown, premios: unknown[]) {
     if (!await isAdminAuthenticated()) return { success: false, error: 'Não autorizado.' };
 
     try {
         const supabase = createSupabaseAdminClient();
-        let rifaId = rifaData.id;
+        if (!rifaData || typeof rifaData !== 'object' || Array.isArray(rifaData)) {
+            throw new Error('Dados da rifa inválidos.');
+        }
+        if (!Array.isArray(premios) || premios.length > 20) throw new Error('Lista de prêmios inválida.');
 
-        // 1. Salvar ou Atualizar Rifa
-        if (rifaId) {
-            const { error } = await supabase.from('rifas').update(rifaData).eq('id', rifaId);
-            if (error) throw new Error('Erro ao atualizar rifa: ' + error.message);
-        } else {
-            const { data, error } = await supabase.from('rifas').insert([rifaData]).select().single();
-            if (error) throw new Error('Erro ao criar rifa: ' + error.message);
-            rifaId = data.id;
+        const input = rifaData as Record<string, unknown>;
+        const raffleId = input.id == null ? null : Number(input.id);
+        if (raffleId !== null && (!Number.isSafeInteger(raffleId) || raffleId <= 0)) {
+            throw new Error('Identificador da rifa inválido.');
+        }
+        const status = input.status ?? 'ativa';
+        if (!['ativa', 'finalizada', 'cancelada'].includes(String(status))) {
+            throw new Error('Status da rifa inválido.');
+        }
+        const imageUrl = input.imagem_premio_url == null ? null : new URL(String(input.imagem_premio_url));
+        if (imageUrl && imageUrl.protocol !== 'http:' && imageUrl.protocol !== 'https:') {
+            throw new Error('Imagem da rifa inválida.');
         }
 
-        // 2. Sincronizar Prêmios
-        if (rifaData.id) {
-            const { data: existing } = await supabase.from('premios').select('id').eq('rifa_id', rifaId);
-            const existingIds = existing?.map(p => p.id) || [];
-            const incomingIds = premios.map(p => p.id).filter(Boolean);
-            const toDelete = existingIds.filter(id => !incomingIds.includes(id));
+        const rafflePayload = {
+            id: raffleId,
+            nome_premio: typeof input.nome_premio === 'string' ? input.nome_premio.trim() : '',
+            descricao: typeof input.descricao === 'string' ? input.descricao.trim() : '',
+            preco_numero: Number(input.preco_numero),
+            preco_numero_desconto_quantidade: input.preco_numero_desconto_quantidade == null
+                ? null
+                : Number(input.preco_numero_desconto_quantidade),
+            preco_numero_desconto: input.preco_numero_desconto == null
+                ? null
+                : Number(input.preco_numero_desconto),
+            total_numeros: Number(input.total_numeros),
+            imagem_premio_url: imageUrl?.toString() ?? null,
+            status
+        };
+        if (!rafflePayload.nome_premio || rafflePayload.nome_premio.length > 200 ||
+            !rafflePayload.descricao || rafflePayload.descricao.length > 5000 ||
+            !Number.isFinite(rafflePayload.preco_numero) || rafflePayload.preco_numero <= 0 ||
+            !Number.isSafeInteger(rafflePayload.total_numeros) || rafflePayload.total_numeros < 1 ||
+            rafflePayload.total_numeros > 1_000_000 ||
+            (rafflePayload.preco_numero_desconto_quantidade !== null &&
+                (!Number.isSafeInteger(rafflePayload.preco_numero_desconto_quantidade) || rafflePayload.preco_numero_desconto_quantidade < 1)) ||
+            (rafflePayload.preco_numero_desconto !== null &&
+                (!Number.isFinite(rafflePayload.preco_numero_desconto) || rafflePayload.preco_numero_desconto < 0))) {
+            throw new Error('Confira os dados e os valores da rifa.');
+        }
 
-            if (toDelete.length > 0) {
-                await supabase.from('premios').delete().in('id', toDelete);
+        const prizePayload = premios.map((value) => {
+            if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Prêmio inválido.');
+            const prize = value as Record<string, unknown>;
+            const id = prize.id == null ? null : Number(prize.id);
+            if (id !== null && (!Number.isSafeInteger(id) || id <= 0)) throw new Error('Identificador de prêmio inválido.');
+            const description = typeof prize.descricao === 'string' ? prize.descricao.trim() : '';
+            if (!description || description.length > 300) throw new Error('Descrição de prêmio inválida.');
+            let prizeImage: string | null = null;
+            if (prize.imagem_url != null) {
+                const url = new URL(String(prize.imagem_url));
+                if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('Imagem de prêmio inválida.');
+                prizeImage = url.toString();
             }
-        }
+            return { id, descricao: description, imagem_url: prizeImage };
+        });
+        const { data: rifaId, error } = await supabase.rpc('admin_save_raffle_with_prizes', {
+            p_raffle: rafflePayload,
+            p_prizes: prizePayload
+        });
+        if (error) throw error;
 
-        // Preparar prêmios para upsert
-        const premiosToSave = premios.map((p, index) => ({
-            ...p,
-            rifa_id: rifaId,
-            ordem: index + 1
-        }));
-
-        if (premiosToSave.length > 0) {
-            const { error: premiosError } = await supabase.from('premios').upsert(premiosToSave);
-            if (premiosError) throw new Error('Erro ao salvar prêmios: ' + premiosError.message);
-        }
-
-        // OBLITERAÇÃO DE CACHE: Garante que a nova rifa ou edições apareçam na loja
         revalidatePath('/', 'layout');
         revalidatePath('/rifa', 'layout');
         revalidatePath('/admin', 'layout');
 
-        return { success: true, rifaId };
-    } catch (error: any) {
+        return { success: true, rifaId: Number(rifaId) };
+    } catch (error) {
         console.error('Erro ao gerenciar rifa (Server Action):', error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : 'Erro interno.' };
     }
 }
 
@@ -120,26 +150,18 @@ export async function deleteRaffle(id: number) {
 
     try {
         const supabase = createSupabaseAdminClient();
-        // 1. Excluir participantes (dependência FK)
-        const { error: partError } = await supabase.from('participantes_rifa').delete().eq('rifa_id', id);
-        if (partError) throw new Error('Erro ao excluir participantes: ' + partError.message);
-
-        // 2. Excluir prêmios (dependência FK)
-        const { error: prizeError } = await supabase.from('premios').delete().eq('rifa_id', id);
-        if (prizeError) throw new Error('Erro ao excluir prêmios: ' + prizeError.message);
-
-        // 3. Excluir a rifa
-        const { error } = await supabase.from('rifas').delete().eq('id', id);
+        if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Identificador da rifa inválido.');
+        const { error } = await supabase.rpc('admin_delete_raffle', { p_rifa_id: id });
         if (error) throw error;
 
-        // OBLITERAÇÃO DE CACHE: Remove a rifa deletada da interface imediatamente
         revalidatePath('/', 'layout');
         revalidatePath('/rifa', 'layout');
         revalidatePath('/admin', 'layout');
 
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error) {
+        console.error('Erro ao excluir rifa:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Erro interno.' };
     }
 }
 

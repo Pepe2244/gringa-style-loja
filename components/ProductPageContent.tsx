@@ -39,7 +39,7 @@ interface ProductPageContentProps {
 export default function ProductPageContent({ id, initialProduct }: ProductPageContentProps) {
     const { showToast } = useToast();
     const addRecentlyViewed = useRecentlyViewedStore(state => state.addView);
-    const { trackProductView, trackAddToCart, trackConversion, trackEvent } = useAnalytics();
+    const { trackProductView, trackAddToCart, trackEvent } = useAnalytics();
 
     const [product, setProduct] = useState<Product | null>(initialProduct || null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -53,6 +53,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
     const touchEndX = useRef<number | null>(null);
 
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [clientName, setClientName] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
@@ -168,37 +169,77 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         addItem(cartItem);
     };
 
-    const handleDirectPurchase = () => {
+    const handleDirectPurchase = async () => {
         if (!product) return;
+        if (isCheckingOut) return;
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome.', 'error');
             return;
         }
-
-        const price = getDisplayedPrice(product, paymentMethod);
-        const transactionId = `ZAP-DIRECT-${Date.now()}`;
-
-        trackConversion('purchase', price, 'BRL', transactionId);
-
         const variants = product.variants as unknown as ProductVariant | null;
-        const variantInfo = variants ? ` (${variants.tipo}: ${selectedVariant})` : '';
-
-        let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
-        message += `*Produto:* ${product.nome}${variantInfo}\n`;
-        message += `*Valor:* R$ ${price.toFixed(2).replace('.', ',')}\n\n`;
-
-        if (price < product.preco) {
-            message += `_(Valor especial selecionado)_\n\n`;
+        if (variants?.opcoes?.length && !variants.opcoes.includes(selectedVariant)) {
+            showToast(`Por favor, selecione uma opção de ${variants.tipo}.`, 'error');
+            return;
         }
 
-        message += `*Pagamento:* ${paymentMethod}`;
-        if (paymentMethod === 'Cartão de Crédito') {
-            message += ` em ${installments}`;
+        const checkoutWindow = window.open('', '_blank');
+        if (!checkoutWindow) {
+            showToast('Permita a abertura de pop-ups para continuar pelo WhatsApp.', 'error');
+            return;
         }
-        message += `\n\n*Aguardo o retorno!*`;
+        checkoutWindow.opener = null;
+        checkoutWindow.document.title = 'Validando pedido...';
+        checkoutWindow.document.body.textContent = 'Validando preço e estoque...';
+        setIsCheckingOut(true);
 
-        window.open(`https://wa.me/5515998092548?text=${encodeURIComponent(message)}`, '_blank');
-        setShowPurchaseModal(false);
+        try {
+            const response = await fetch('/api/calculate-total', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    itens: [{
+                        produto_id: product.id,
+                        quantidade: 1,
+                        variante: variants?.opcoes?.length
+                            ? { tipo: variants.tipo, opcao: selectedVariant }
+                            : null,
+                    }],
+                    metodo_pagamento: paymentMethod,
+                }),
+            });
+            const quote = await response.json();
+            if (!response.ok) throw new Error(quote.error || 'Não foi possível validar o produto.');
+            const quotedItem = quote.itens?.[0];
+            if (!quotedItem) throw new Error('Não foi possível obter o preço atualizado do produto.');
+            const price = Number(quotedItem.total_item);
+
+            trackEvent({
+                event: 'begin_checkout',
+                category: 'ecommerce',
+                action: 'begin_checkout',
+                value: price,
+                customParameters: {
+                    currency: 'BRL',
+                    items: [{ item_id: product.id, item_name: quotedItem.nome, price: Number(quotedItem.preco_unitario), quantity: 1 }],
+                },
+            });
+
+            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
+            message += `*Produto:* ${quotedItem.nome}`;
+            if (variants?.opcoes?.length) message += ` (${variants.tipo}: ${selectedVariant})`;
+            message += `\n*Valor atualizado:* R$ ${price.toFixed(2).replace('.', ',')}\n\n`;
+            message += `*Pagamento:* ${paymentMethod}`;
+            if (paymentMethod === 'Cartão de Crédito') message += ` em ${installments}`;
+            message += `\n\nFrete a confirmar no WhatsApp.\n\n*Aguardo o retorno!*`;
+
+            checkoutWindow.location.href = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+            setShowPurchaseModal(false);
+        } catch (error) {
+            checkoutWindow.close();
+            showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
+        } finally {
+            setIsCheckingOut(false);
+        }
     };
 
     const handleShare = async () => {
@@ -505,7 +546,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         </button>
                     </div>
 
-                    <ShippingEstimator productName={product.nome} />
+                    <ShippingEstimator productId={product.id} />
 
                     <div style={{ marginTop: '16px', padding: '14px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(255, 107, 0, 0.12) 0%, rgba(255, 107, 0, 0.06) 100%)', border: '1px solid rgba(255, 107, 0, 0.25)' }}>
                         <div style={{ fontWeight: 800, color: 'white', marginBottom: '6px' }}>Compra rápida e segura</div>
@@ -663,9 +704,10 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                 <button 
                     className="btn btn-finalizar" 
                     onClick={handleDirectPurchase}
-                    style={{ width: '100%', padding: '18px', backgroundColor: '#25D366', color: 'white', fontWeight: '900', border: 'none', borderRadius: '8px', fontSize: '1.1rem', marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)' }}
+                disabled={isCheckingOut}
+                style={{ width: '100%', padding: '18px', backgroundColor: '#25D366', color: 'white', fontWeight: '900', border: 'none', borderRadius: '8px', fontSize: '1.1rem', marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)' }}
                 >
-                    Confirmar Pedido no WhatsApp
+                {isCheckingOut ? 'Validando pedido...' : 'Confirmar Pedido no WhatsApp'}
                 </button>
             </Modal>
 

@@ -10,9 +10,10 @@ interface ShippingOption {
     custom_price?: string | number;
     custom_delivery_time?: number;
     delivery_time: number;
+    is_estimate?: boolean;
 }
 
-export default function ShippingEstimator({ productName }: { productName?: string }) {
+export default function ShippingEstimator({ productId }: { productId?: number }) {
     const { showToast } = useToast();
     const [cep, setCep] = useState('');
     const [country, setCountry] = useState('BR');
@@ -42,7 +43,7 @@ export default function ShippingEstimator({ productName }: { productName?: strin
                 body: JSON.stringify({ 
                     to_postal_code: cleanCep, 
                     country,
-                    product_name: productName
+                    product_id: productId
                 })
             });
 
@@ -117,13 +118,14 @@ export default function ShippingEstimator({ productName }: { productName?: strin
             {searched && !loading && options.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {options.map((opt) => {
-                        const price = parseFloat(String(opt.custom_price || opt.price));
-                        const days = opt.custom_delivery_time || opt.delivery_time;
+                        const price = parseFloat(String(opt.custom_price ?? opt.price));
+                        const days = opt.custom_delivery_time ?? opt.delivery_time;
                         return (
                             <div key={opt.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#111', padding: '10px 12px', borderRadius: '6px', border: '1px solid #333' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#eee' }}>{opt.name}</span>
                                     <span style={{ fontSize: '0.75rem', color: '#888' }}>Entrega em até {days} dias úteis</span>
+                                    {opt.is_estimate && <span style={{ fontSize: '0.75rem', color: '#d6b36a' }}>Estimativa; confirmar no WhatsApp</span>}
                                 </div>
                                 <span style={{ fontWeight: 'bold', color: 'var(--cor-destaque)', fontSize: '0.95rem' }}>
                                     R$ {price.toFixed(2).replace('.', ',')}

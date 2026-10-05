@@ -20,6 +20,7 @@ interface ShippingOption {
     custom_price?: string | number;
     custom_delivery_time?: number;
     delivery_time: number;
+    is_estimate?: boolean;
 }
 
 interface DirectPurchaseModalProps {
@@ -49,6 +50,7 @@ export default function DirectPurchaseModal({
     const [paymentMethod, setPaymentMethod] = useState('PIX');
     const [installments, setInstallments] = useState('1x');
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     // Effect to reset state and handle variants when product opens
     useEffect(() => {
@@ -94,7 +96,7 @@ export default function DirectPurchaseModal({
                 body: JSON.stringify({ 
                     to_postal_code: postalCode, 
                     country: selectedCountry,
-                    product_name: product.nome
+                    product_id: product.id
                 })
             });
             const shipData = await shipRes.json();
@@ -143,90 +145,143 @@ export default function DirectPurchaseModal({
         }
     };
 
-    const handleDirectPurchase = () => {
+    const handleDirectPurchase = async () => {
+        if (isCheckingOut) return;
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome.', 'error');
+            return;
+        }
+        if (country === 'BR' && cep.length > 0 && cep.length !== 8) {
+            showToast('Informe um CEP válido de 8 dígitos.', 'error');
             return;
         }
         if (country === 'BR' && cep.length === 8 && (!endereco.rua || !endereco.numero)) {
             showToast('Por favor, preencha o número do endereço.', 'error');
             return;
         }
+        if (country !== 'BR' && cep.length > 0 && cep.length < 3) {
+            showToast('Informe um código postal válido.', 'error');
+            return;
+        }
         if (country !== 'BR' && cep.length >= 3 && (!endereco.rua || !endereco.numero || !endereco.cidade || !endereco.estado)) {
             showToast('Por favor, preencha o endereço completo para envio internacional.', 'error');
             return;
         }
-        if ((country === 'BR' ? cep.length === 8 : cep.length >= 3) && shippingOptions.length > 0 && !selectedShipping) {
-            showToast('Por favor, selecione uma opção de frete.', 'error');
+        if ((country === 'BR' ? cep.length === 8 : cep.length >= 3) && !selectedShipping) {
+            showToast(shippingOptions.length > 0
+                ? 'Por favor, selecione uma opção de frete.'
+                : 'Calcule e selecione uma opção de frete antes de continuar.', 'error');
             return;
         }
 
-        const precoProduto = getPrecoFinal(product);
-        let shippingAmount = 0;
-        if (selectedShipping) {
-            shippingAmount = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+        const checkoutWindow = window.open('', '_blank');
+        if (!checkoutWindow) {
+            showToast('Permita a abertura de pop-ups para continuar pelo WhatsApp.', 'error');
+            return;
         }
-        const precoFinal = precoProduto + shippingAmount;
+        checkoutWindow.opener = null;
+        checkoutWindow.document.title = 'Validando pedido...';
+        checkoutWindow.document.body.textContent = 'Validando preço, estoque e frete...';
+        setIsCheckingOut(true);
 
-        // --- INÍCIO DO RASTREAMENTO GA4 ---
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'purchase', {
-                transaction_id: `ZAP-MODAL-${Date.now()}`,
-                value: precoFinal,
-                currency: 'BRL',
-                items: [{
-                    item_id: product.id,
-                    item_name: product.nome,
-                    price: precoFinal,
-                    quantity: 1,
-                    variant: selectedVariant ? `${selectedVariant.tipo}: ${selectedVariant.opcao}` : undefined
-                }]
+        try {
+            const totalResponse = await fetch('/api/calculate-total', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    itens: [{
+                        produto_id: product.id,
+                        quantidade: 1,
+                        variante: selectedVariant,
+                    }],
+                    metodo_pagamento: paymentMethod,
+                }),
             });
-        }
-        // --- FIM DO RASTREAMENTO ---
+            const quote = await totalResponse.json();
+            if (!totalResponse.ok) throw new Error(quote.error || 'Não foi possível validar o produto.');
 
-        let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
-        message += `*Produto:* ${product.nome}`;
-
-        if (selectedVariant) {
-            message += `\n*Opção:* ${selectedVariant.tipo}: ${selectedVariant.opcao}`;
-        }
-
-        message += `\n*Valor:* R$ ${precoProduto.toFixed(2).replace('.', ',')}\n`;
-
-        if (precoFinal < product.preco) {
-            message += `_(Valor promocional)_\n`;
-        }
-        message += `\n*TOTAL:* R$ ${precoFinal.toFixed(2).replace('.', ',')}\n\n`;
-
-        if (paymentMethod === 'Cartão de Crédito') {
-            message += `*Pagamento:* ${paymentMethod} em ${installments}\n\n`;
-        } else {
-            message += `*Pagamento:* ${paymentMethod}\n\n`;
-        }
-
-        if (country === 'BR' ? cep.length === 8 : cep.length >= 3) {
-            message += `📍 *Endereço de Entrega*\n`;
-            message += `País: ${country === 'BR' ? 'Brasil' : country}\n`;
-            message += `${endereco.rua}, Nº ${endereco.numero}\n`;
-            if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
-            message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
-            message += `Postal Code/CEP: ${cep}\n`;
-            if (selectedShipping) {
-                const sPrice = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
-                const sTime = selectedShipping.custom_delivery_time || selectedShipping.delivery_time;
-                message += `*Frete Escolhido:* ${selectedShipping.name} (${sTime} dias) - R$ ${sPrice.toFixed(2).replace('.', ',')}\n\n`;
-            } else {
-                message += `\n`;
+            const hasShippingAddress = country === 'BR' ? cep.length === 8 : cep.length >= 3;
+            let currentShipping = selectedShipping;
+            if (hasShippingAddress && selectedShipping) {
+                const shippingResponse = await fetch('/api/shipping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to_postal_code: cep, country, product_id: product.id }),
+                });
+                const shippingQuote = await shippingResponse.json();
+                if (!shippingResponse.ok) throw new Error(shippingQuote.error || 'Não foi possível validar o frete.');
+                const options: ShippingOption[] = Array.isArray(shippingQuote)
+                    ? shippingQuote
+                    : shippingQuote.options || [];
+                currentShipping = options.find((option) => String(option.id) === String(selectedShipping.id)) || null;
+                if (!currentShipping) {
+                    setShippingOptions(options);
+                    setSelectedShipping(null);
+                    throw new Error('O frete selecionado mudou. Escolha uma opção atualizada e tente novamente.');
+                }
             }
-        } else {
-            message += `📍 *Entrega:* (Endereço não informado)\n\n`;
+
+            const quotedItem = quote.itens?.[0];
+            if (!quotedItem) throw new Error('Não foi possível obter o preço atualizado do produto.');
+            const productPrice = Number(quotedItem.total_item);
+            const shippingAmount = currentShipping
+                ? Number(currentShipping.custom_price ?? currentShipping.price)
+                : 0;
+            const finalTotal = Number(quote.total) + shippingAmount;
+            const formatCurrency = (value: number) => value.toFixed(2).replace('.', ',');
+
+            if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+                (window as any).gtag('event', 'begin_checkout', {
+                    value: finalTotal,
+                    currency: 'BRL',
+                    items: [{
+                        item_id: product.id,
+                        item_name: quotedItem.nome,
+                        price: Number(quotedItem.preco_unitario),
+                        quantity: 1,
+                        variant: selectedVariant ? `${selectedVariant.tipo}: ${selectedVariant.opcao}` : undefined,
+                    }],
+                });
+            }
+
+            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
+            message += `*Produto:* ${quotedItem.nome}`;
+            if (selectedVariant) message += `\n*Opção:* ${selectedVariant.tipo}: ${selectedVariant.opcao}`;
+            message += `\n*Valor:* R$ ${formatCurrency(productPrice)}\n\n`;
+            message += paymentMethod === 'Cartão de Crédito'
+                ? `*Pagamento:* ${paymentMethod} em ${installments}\n\n`
+                : `*Pagamento:* ${paymentMethod}\n\n`;
+
+            if (hasShippingAddress) {
+                message += `📍 *Endereço de Entrega*\n`;
+                message += `País: ${country === 'BR' ? 'Brasil' : country}\n`;
+                message += `${endereco.rua}, Nº ${endereco.numero}\n`;
+                if (endereco.complemento) message += `Comp: ${endereco.complemento}\n`;
+                message += `${endereco.bairro} - ${endereco.cidade}/${endereco.estado}\n`;
+                message += `Postal Code/CEP: ${cep}\n`;
+                if (currentShipping) {
+                    const deliveryTime = currentShipping.custom_delivery_time ?? currentShipping.delivery_time;
+                    const estimate = currentShipping.is_estimate ? ' — estimativa, confirmar no WhatsApp' : '';
+                    message += `*Frete Escolhido:* ${currentShipping.name} (${deliveryTime} dias) - R$ ${formatCurrency(shippingAmount)}${estimate}\n`;
+                }
+            } else {
+                message += `📍 *Entrega:* (Endereço não informado; frete a confirmar)\n`;
+            }
+
+            if (currentShipping) {
+                message += `\n*TOTAL${currentShipping.is_estimate ? ' ESTIMADO' : ''}:* R$ ${formatCurrency(finalTotal)}\n\n`;
+            } else {
+                message += `\n*Subtotal do produto:* R$ ${formatCurrency(finalTotal)} (frete a confirmar no WhatsApp)\n\n`;
+            }
+            message += `Aguardo as instruções finais!`;
+            checkoutWindow.location.href = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+            onClose();
+        } catch (error) {
+            checkoutWindow.close();
+            showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
+        } finally {
+            setIsCheckingOut(false);
         }
-
-        message += `Aguardo as instruções finais!`;
-
-        window.open(`https://wa.me/5515998092548?text=${encodeURIComponent(message)}`, '_blank');
-        onClose();
     };
 
     const variants = product.variants as unknown as ProductVariant;
@@ -357,8 +412,8 @@ export default function DirectPurchaseModal({
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#aaa' }}>Fretes disponíveis:</p>
                                     {shippingOptions.map((option) => {
-                                        const priceValue = parseFloat(String(option.custom_price || option.price));
-                                        const days = option.custom_delivery_time || option.delivery_time;
+                                        const priceValue = parseFloat(String(option.custom_price ?? option.price));
+                                        const days = option.custom_delivery_time ?? option.delivery_time;
                                         return (
                                             <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#111', padding: '10px', borderRadius: '6px', cursor: 'pointer', border: selectedShipping?.id === option.id ? '1px solid var(--cor-destaque)' : '1px solid #333' }}>
                                                 <input 
@@ -371,6 +426,7 @@ export default function DirectPurchaseModal({
                                                     <div>
                                                         <strong style={{ color: 'white', fontSize: '0.9rem' }}>{option.name}</strong>
                                                         <div style={{ fontSize: '0.75rem', color: '#888' }}>Até {days} dias úteis</div>
+                                                        {option.is_estimate && <div style={{ fontSize: '0.75rem', color: '#d6b36a' }}>Estimativa; confirmar no WhatsApp</div>}
                                                     </div>
                                                     <div style={{ fontWeight: 'bold', color: 'var(--cor-destaque)', fontSize: '0.9rem' }}>
                                                         R$ {priceValue.toFixed(2).replace('.', ',')}
@@ -418,11 +474,10 @@ export default function DirectPurchaseModal({
                 </div>
             )}
 
-            <button className="btn btn-finalizar" onClick={handleDirectPurchase} style={{ marginTop: '20px' }}>
-                Confirmar Pedido no WhatsApp
+            <button className="btn btn-finalizar" onClick={handleDirectPurchase} disabled={isCheckingOut} style={{ marginTop: '20px' }}>
+                {isCheckingOut ? 'Validando pedido...' : 'Confirmar Pedido no WhatsApp'}
             </button>
             </div>
         </Modal>
     );
 }
-

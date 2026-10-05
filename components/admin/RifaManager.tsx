@@ -212,10 +212,10 @@ export default function RifaManager() {
         setParticipants(result.data || []);
     };
 
-    const confirmPayment = async (participantId: number, numbers: number[]) => {
+    const confirmPayment = async (participantId: number) => {
         if (!selectedRifaId) return;
         try {
-            const result = await updateParticipantStatus(participantId, 'pago', selectedRifaId, numbers);
+            const result = await updateParticipantStatus(participantId, 'pago', selectedRifaId);
             if (!result.success) throw new Error(result.error);
 
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'pago' } : p));
@@ -226,10 +226,10 @@ export default function RifaManager() {
         }
     };
 
-    const cancelReservation = async (participantId: number, numbers: number[]) => {
+    const cancelReservation = async (participantId: number) => {
         if (!selectedRifaId || !confirm('Cancelar reserva e liberar números?')) return;
         try {
-            const result = await updateParticipantStatus(participantId, 'cancelado', selectedRifaId, numbers);
+            const result = await updateParticipantStatus(participantId, 'cancelado', selectedRifaId);
             if (!result.success) throw new Error(result.error);
 
             setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, status_pagamento: 'cancelado' } : p));
@@ -251,7 +251,7 @@ export default function RifaManager() {
         setShowDrawModal(true);
     };
 
-    const performDraw = async (prizeId: number, prizeDesc: string) => {
+    const performDraw = async (prizeId: number) => {
         if (!drawRifa) return;
         setDrawing(true);
 
@@ -262,7 +262,7 @@ export default function RifaManager() {
                 setDrawAnimation(Math.floor(Math.random() * 1000).toString().padStart(3, '0'));
             }, 50);
 
-            const result = await drawWinner(drawRifa.id, prizeId, prizeDesc);
+            const result = await drawWinner(drawRifa.id, prizeId);
             clearInterval(interval);
 
             if (result.success && result.winner) {
@@ -414,8 +414,8 @@ export default function RifaManager() {
                                         <li key={p.id} className="participante-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div><strong>{p.nome}</strong> <small>(Tel: {p.telefone})</small><br /><small>Números: {p.numeros_escolhidos.join(', ')}</small><br /><span style={{ color: p.status_pagamento === 'pago' ? '#00ff88' : '#ffcc00' }}>{p.status_pagamento === 'pago' ? 'Pago' : p.status_pagamento === 'cancelado' ? 'Cancelado' : 'Pendente'}</span></div>
                                             <div className="acoes-btn">
-                                                {p.status_pagamento === 'pendente' && (<><button className="btn-admin btn-adicionar" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => confirmPayment(p.id, p.numeros_escolhidos)}>Confirmar</button><button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar</button></>)}
-                                                {p.status_pagamento === 'pago' && (<button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id, p.numeros_escolhidos)}>Cancelar Pagamento</button>)}
+                                                {p.status_pagamento === 'pendente' && (<><button className="btn-admin btn-adicionar" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => confirmPayment(p.id)}>Confirmar</button><button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id)}>Cancelar</button></>)}
+                                                {p.status_pagamento === 'pago' && (<button className="btn-admin btn-excluir" style={{ padding: '5px 10px', fontSize: '0.8em' }} onClick={() => cancelReservation(p.id)}>Cancelar Pagamento</button>)}
                                             </div>
                                         </li>
                                     ))}
@@ -436,7 +436,7 @@ export default function RifaManager() {
                             {drawPrizes.map(prize => (
                                 <li key={prize.id} className="premio-sorteio-item">
                                     <div className="premio-sorteio-info"><strong>{prize.ordem}º Prêmio:</strong> {prize.descricao}{prize.vencedor_nome && (<div className="vencedor-destaque">🏆 Vencedor: {prize.vencedor_nome} (Nº {prize.vencedor_numero})</div>)}</div>
-                                    {!prize.vencedor_nome && (<button className="btn-admin btn-sortear" onClick={() => performDraw(prize.id!, prize.descricao)} disabled={drawing || drawRifa.status === 'finalizada'}>{drawing ? 'Sorteando...' : 'Sortear'}</button>)}
+                                    {!prize.vencedor_nome && (<button className="btn-admin btn-sortear" onClick={() => performDraw(prize.id!)} disabled={drawing || drawRifa.status === 'finalizada'}>{drawing ? 'Sorteando...' : 'Sortear'}</button>)}
                                 </li>
                             ))}
                         </ul>

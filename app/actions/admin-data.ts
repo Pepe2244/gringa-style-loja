@@ -332,34 +332,17 @@ export async function deleteB2BAsset(id: string) {
     });
 }
 
-export async function updateParticipantStatus(id: number, status: 'pago' | 'cancelado', raffleId: number, numbers: number[]) {
+export async function updateParticipantStatus(id: number, status: 'pago' | 'cancelado', raffleId: number) {
     return runAdmin(async (client) => {
         const participantId = positiveId(id);
         const rifaId = positiveId(raffleId);
         if (status !== 'pago' && status !== 'cancelado') throw new Error('Status de pagamento inválido.');
-        if (!Array.isArray(numbers) || numbers.length > 1000 || !numbers.every((value) => Number.isSafeInteger(value) && value >= 0)) {
-            throw new Error('Números de reserva inválidos.');
-        }
-        const { data: participant, error: participantError } = await client.from('participantes_rifa')
-            .update({ status_pagamento: status }).eq('id', participantId).eq('rifa_id', rifaId).select('id').maybeSingle();
-        if (participantError) throw participantError;
-        if (!participant) throw new Error('Participante não encontrado nesta rifa.');
-
-        const { data: raffle, error: raffleError } = await client.from('rifas')
-            .select('numeros_vendidos, numeros_reservados').eq('id', rifaId).single();
-        if (raffleError) throw raffleError;
-
-        const sold = Array.isArray(raffle.numeros_vendidos) ? raffle.numeros_vendidos : [];
-        const reserved = Array.isArray(raffle.numeros_reservados) ? raffle.numeros_reservados : [];
-        const nextSold = status === 'pago'
-            ? Array.from(new Set([...sold, ...numbers]))
-            : sold.filter((number) => !numbers.includes(number));
-        const nextReserved = reserved.filter((number) => !numbers.includes(number));
-        const { error: updateError } = await client.from('rifas').update({
-            numeros_vendidos: nextSold,
-            numeros_reservados: nextReserved
-        }).eq('id', rifaId);
-        if (updateError) throw updateError;
+        const { error } = await client.rpc('admin_update_participant_status', {
+            p_participante_id: participantId,
+            p_rifa_id: rifaId,
+            p_status: status
+        });
+        if (error) throw error;
         revalidatePath('/rifa', 'page');
         revalidatePath('/acompanhar-rifa', 'page');
         revalidatePath('/admin', 'layout');

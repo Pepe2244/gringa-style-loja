@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { getPaymentDetails } from '@/app/actions/pagamento';
 import { Copy, Check, MessageCircle } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
-// Importação vital para injetar o faturamento no Analytics
 import { useAnalytics } from '@/components/AdvancedAnalytics';
 
 function PaymentContent() {
@@ -15,8 +14,7 @@ function PaymentContent() {
     const searchParams = useSearchParams();
     const participanteId = searchParams.get('participante_id');
     
-    // Injeta as funções do Analytics
-    const { trackConversion, trackEvent } = useAnalytics();
+    const { trackEvent } = useAnalytics();
 
     const [loading, setLoading] = useState(true);
     const [participante, setParticipante] = useState<any>(null);
@@ -118,10 +116,13 @@ function PaymentContent() {
         if (!participante || !rifa) return;
 
         const total = participante.numeros_escolhidos.length * rifa.preco_numero;
-        const transactionId = `RIFA-PIX-${participante.id}-${Date.now()}`;
-
-        // OBLITERA A CEGUEIRA DE CONVERSÃO: Dispara a venda no GA4 e Supabase
-        trackConversion('purchase', total, 'BRL', transactionId);
+        trackEvent({
+            event: 'interaction',
+            category: 'payment',
+            action: 'send_payment_proof',
+            value: total,
+            label: `RIFA-${rifa.id}`,
+        });
 
         const mensagem = `Olá! Acabei de fazer o pagamento da Rifa *${rifa.nome_premio}*.\n\n` +
             `*Nome:* ${participante.nome}\n` +

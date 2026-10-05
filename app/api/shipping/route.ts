@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 const SUPERFRETE_TOKEN = process.env.SUPERFRETE_TOKEN || '';
 
@@ -38,6 +39,7 @@ function getNationalFallback() {
         {
             id: 1,
             name: 'PAC (Correios)',
+            is_estimate: true,
             price: '28.90',
             discount: '0.00',
             currency: 'R$',
@@ -51,6 +53,7 @@ function getNationalFallback() {
         {
             id: 2,
             name: 'SEDEX (Correios)',
+            is_estimate: true,
             price: '46.50',
             discount: '0.00',
             currency: 'R$',
@@ -64,23 +67,58 @@ function getNationalFallback() {
     ];
 }
 
-export async function POST(request: Request) {
-    try {
-        const payloadJson = await request.json();
-        const { to_postal_code, country = 'BR', product_name } = payloadJson;
+function getInternationalFallback() {
+    return [
+        { id: 991, name: 'Exporta Fácil Econômico (est.)', is_estimate: true, price: '320.00', delivery_time: 20 },
+        { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', is_estimate: true, price: '400.00', delivery_time: 8 },
+    ];
+}
 
-        if (!to_postal_code) {
+export async function POST(request: Request) {
+    let countryForFallback = 'BR';
+    try {
+        const payloadJson: unknown = await request.json();
+        if (!payloadJson || typeof payloadJson !== 'object' || Array.isArray(payloadJson)) {
+            return NextResponse.json({ error: 'Dados de frete inválidos.' }, { status: 400 });
+        }
+        const input = payloadJson as { to_postal_code?: unknown; country?: unknown; product_id?: unknown };
+        const { to_postal_code } = input;
+        if (input.country != null && typeof input.country !== 'string') {
+            return NextResponse.json({ error: 'País de destino inválido.' }, { status: 400 });
+        }
+        const country = typeof input.country === 'string' ? input.country.toUpperCase() : 'BR';
+        countryForFallback = country;
+
+        if (typeof to_postal_code !== 'string' || !to_postal_code.trim()) {
             return NextResponse.json(
                 { error: 'CEP/Postal Code de destino não fornecido' },
                 { status: 400 }
             );
         }
+        if (country !== 'INT' && !/^[A-Z]{2}$/.test(country)) {
+            return NextResponse.json({ error: 'País de destino inválido.' }, { status: 400 });
+        }
+
+        let productName = '';
+        if (input.product_id != null) {
+            if (!Number.isSafeInteger(input.product_id) || Number(input.product_id) <= 0) {
+                return NextResponse.json({ error: 'Produto inválido para cotação.' }, { status: 400 });
+            }
+            const { data: product, error: productError } = await supabase
+                .from('produtos')
+                .select('nome')
+                .eq('id', Number(input.product_id))
+                .maybeSingle();
+            if (productError) throw productError;
+            if (!product) return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
+            productName = product.nome;
+        }
 
         // Determinar CEP de origem (Máscaras saem de Três Lagoas/MS)
         const MASKS_ORIGIN_CEP = '79631170'; 
-        const isMask = product_name && (
-            product_name.toLowerCase().includes('mascara') || 
-            product_name.toLowerCase().includes('máscara')
+        const isMask = (
+            productName.toLowerCase().includes('mascara') ||
+            productName.toLowerCase().includes('máscara')
         );
         const effectiveOriginCep = isMask ? MASKS_ORIGIN_CEP : ORIGIN_CEP;
 
@@ -94,7 +132,6 @@ export async function POST(request: Request) {
                     { status: 400 }
                 );
             }
-
             if (!SUPERFRETE_TOKEN) {
                 return NextResponse.json(getNationalFallback());
             }
@@ -125,7 +162,7 @@ export async function POST(request: Request) {
                 if (sfRes.ok) {
                     const sfData = await sfRes.json();
                     if (Array.isArray(sfData) && sfData.length > 0 && !sfData[0].has_error) {
-                        return NextResponse.json(sfData);
+                        return NextResponse.json(sfData.map((option) => ({ ...option, is_estimate: false })));
                     }
                 }
                 
@@ -138,13 +175,13 @@ export async function POST(request: Request) {
         }
 
         // ─── Lógica Internacional – Correios Exporta Fácil ────────────────────
+        if (to_postal_code.trim().length < 3) {
+            return NextResponse.json({ error: 'Código postal internacional inválido.' }, { status: 400 });
+        }
         const coPaisDestino = COUNTRY_CODES[country] ?? COUNTRY_CODES.INT;
 
         if (!CORREIOS_TOKEN) {
-            return NextResponse.json([
-                { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '320.00', delivery_time: 20 },
-                { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', price: '400.00', delivery_time: 8 },
-            ]);
+            return NextResponse.json(getInternationalFallback());
         }
 
         const resultados = await Promise.all(
@@ -184,6 +221,7 @@ export async function POST(request: Request) {
                     return {
                         id: 991 + idx,
                         name: servico.nome,
+                        is_estimate: false,
                         price: String(preco).replace(',', '.'),
                         delivery_time: parseInt(String(prazo), 10),
                     };
@@ -196,15 +234,12 @@ export async function POST(request: Request) {
         const validos = resultados.filter(Boolean);
 
         if (validos.length === 0) {
-            return NextResponse.json([
-                { id: 991, name: 'Exporta Fácil Econômico (est.)', price: '320.00', delivery_time: 20 },
-                { id: 992, name: 'Exporta Fácil Expresso EMS (est.)', price: '400.00', delivery_time: 8 },
-            ]);
+            return NextResponse.json(getInternationalFallback());
         }
 
         return NextResponse.json(validos);
     } catch (error) {
         console.error('Erro na rota de frete:', error);
-        return NextResponse.json(getNationalFallback());
+        return NextResponse.json(countryForFallback === 'BR' ? getNationalFallback() : getInternationalFallback());
     }
 }
