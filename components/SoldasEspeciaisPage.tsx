@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 const diferenciais = [
@@ -12,6 +12,11 @@ const diferenciais = [
 ];
 
 export default function SoldasEspeciaisPage() {
+  const clientsCarouselRef = useRef<HTMLDivElement>(null);
+  const isCarouselInteractingRef = useRef(false);
+  const carouselResumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const carouselDragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number } | null>(null);
+  const [carouselCopies, setCarouselCopies] = useState(3);
   const [formData, setFormData] = useState({
     nome: '',
     empresa: '',
@@ -65,6 +70,59 @@ export default function SoldasEspeciaisPage() {
     fetchB2BAssets();
   }, []);
 
+  useEffect(() => {
+    const carousel = clientsCarouselRef.current;
+    if (!carousel) return;
+
+    let animationFrame = 0;
+    let previousTime = 0;
+
+    const advanceCarousel = (time: number) => {
+      if (!isCarouselInteractingRef.current) {
+        const cycle = carousel.querySelector<HTMLElement>('[data-carousel-cycle]');
+        const cycleWidth = cycle?.getBoundingClientRect().width ?? 0;
+
+        if (cycleWidth > 0 && previousTime > 0) {
+          carousel.scrollLeft += (time - previousTime) * 0.035;
+
+          if (carousel.scrollLeft >= cycleWidth) {
+            carousel.scrollLeft %= cycleWidth;
+          }
+        }
+      }
+
+      previousTime = isCarouselInteractingRef.current ? 0 : time;
+      animationFrame = window.requestAnimationFrame(advanceCarousel);
+    };
+
+    animationFrame = window.requestAnimationFrame(advanceCarousel);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      if (carouselResumeTimeoutRef.current) {
+        clearTimeout(carouselResumeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const pauseCarouselForInteraction = () => {
+    isCarouselInteractingRef.current = true;
+    if (carouselResumeTimeoutRef.current) {
+      clearTimeout(carouselResumeTimeoutRef.current);
+    }
+  };
+
+  const resumeCarouselAfterInteraction = () => {
+    if (carouselResumeTimeoutRef.current) {
+      clearTimeout(carouselResumeTimeoutRef.current);
+    }
+
+    carouselResumeTimeoutRef.current = setTimeout(() => {
+      isCarouselInteractingRef.current = false;
+      carouselResumeTimeoutRef.current = null;
+    }, 1200);
+  };
+
   // Fallbacks caso o admin ainda não tenha cadastrado nada
   const projetosFinais = projetosDinamicos.length > 0 ? projetosDinamicos : [
     {
@@ -90,6 +148,62 @@ export default function SoldasEspeciaisPage() {
     { name: 'Cliente D', src: '/imagens/logo_gringa_style.png' },
     { name: 'Cliente E', src: '/imagens/logo_gringa_style.png' },
   ];
+
+  useEffect(() => {
+    const carousel = clientsCarouselRef.current;
+    if (!carousel) return;
+
+    const updateCopies = () => {
+      const cycle = carousel.querySelector<HTMLElement>('[data-carousel-cycle]');
+      if (!cycle) return;
+
+      const cycleWidth = cycle.getBoundingClientRect().width;
+      if (cycleWidth > 0) {
+        setCarouselCopies(Math.max(3, Math.ceil(carousel.clientWidth / cycleWidth) + 2));
+      }
+    };
+
+    updateCopies();
+    window.addEventListener('resize', updateCopies);
+
+    return () => window.removeEventListener('resize', updateCopies);
+  }, [clientesFinais.length]);
+
+  const handleCarouselPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    pauseCarouselForInteraction();
+
+    if (event.pointerType === 'mouse' && event.button === 0) {
+      carouselDragRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startScrollLeft: event.currentTarget.scrollLeft,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  };
+
+  const handleCarouselPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = carouselDragRef.current;
+    if (drag?.pointerId === event.pointerId) {
+      event.currentTarget.scrollLeft = drag.startScrollLeft - (event.clientX - drag.startX);
+    }
+  };
+
+  const handleCarouselPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (carouselDragRef.current?.pointerId === event.pointerId) {
+      carouselDragRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    }
+    resumeCarouselAfterInteraction();
+  };
+
+  const handleCarouselPointerLeave = () => {
+    if (!carouselDragRef.current) {
+      resumeCarouselAfterInteraction();
+    }
+  };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -218,39 +332,63 @@ export default function SoldasEspeciaisPage() {
               <h2>Clientes que confiam em nossa execução.</h2>
             </div>
 
-            <div className="group relative flex overflow-hidden mt-8 pt-4 pb-4 [mask-image:_linear-gradient(to_right,transparent_0,_black_15%,_black_85%,transparent_100%)]">
-              <div className="flex w-max animate-infinite-scroll">
-                {/* Duplicamos a lista e usamos map nela inteira para o cálculo de -50% funcionar com precisão */}
-                {[...clientesFinais, ...clientesFinais].map((cliente, index) => (
-                  <div 
-                    key={`cliente-${index}`} 
-                    className="flex-shrink-0 px-6 md:px-12 flex items-center justify-center"
+            <div
+              role="region"
+              aria-label="Carrossel de empresas clientes"
+              tabIndex={0}
+              ref={clientsCarouselRef}
+              onPointerDown={handleCarouselPointerDown}
+              onPointerMove={handleCarouselPointerMove}
+              onPointerUp={handleCarouselPointerUp}
+              onPointerCancel={handleCarouselPointerUp}
+              onPointerLeave={handleCarouselPointerLeave}
+              className="clients-carousel group relative mt-8 flex cursor-grab snap-x snap-mandatory overflow-x-auto pt-4 pb-4 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--cor-destaque)] md:snap-none md:[mask-image:_linear-gradient(to_right,transparent_0,_black_15%,_black_85%,transparent_100%)]"
+            >
+              <div className="flex w-max">
+                {Array.from({ length: carouselCopies }, (_, copyIndex) => (
+                  <div
+                    key={`clientes-copia-${copyIndex}`}
+                    data-carousel-cycle
+                    className="flex w-max"
                   >
-                    <Image 
-                      src={cliente.src} 
-                      alt={cliente.name} 
-                      width={120} 
-                      height={48} 
-                      className="object-contain opacity-70 hover:opacity-100 transition-opacity w-[100px] md:w-[120px] h-[40px] md:h-[48px]" 
-                    />
+                    {clientesFinais.map((cliente, index) => (
+                      <div
+                        key={`cliente-${copyIndex}-${index}`}
+                        className="clients-carousel-item mr-4 flex h-28 w-44 flex-shrink-0 snap-center items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 md:h-32 md:w-56"
+                      >
+                        <div className="relative h-16 w-full md:h-20">
+                          <Image
+                            src={cliente.src}
+                            alt={cliente.name}
+                            fill
+                            sizes="(max-width: 768px) 176px, 224px"
+                            className="object-contain p-2 opacity-75 transition-opacity hover:opacity-100"
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
             </div>
+            <p className="mt-2 text-center text-sm text-white/60 md:hidden">
+              Deslize para ver mais clientes
+            </p>
 
             {/* CSS injetado especificamente para este componente para evitar conflitos e bugs no Mobile */}
             <style dangerouslySetInnerHTML={{__html: `
-              @keyframes infinite-scroll {
-                from { transform: translateX(0); }
-                to { transform: translateX(-50%); }
+              .clients-carousel {
+                scrollbar-width: none;
               }
-              .animate-infinite-scroll {
-                animation: infinite-scroll 25s linear infinite;
+              .clients-carousel::-webkit-scrollbar {
+                display: none;
               }
-              /* Pausa no hover APENAS se o dispositivo tiver mouse (evita travamento no toque do celular) */
-              @media (hover: hover) and (pointer: fine) {
-                .group:hover .animate-infinite-scroll {
-                  animation-play-state: paused;
+              @media (max-width: 767px) {
+                .clients-carousel {
+                  -webkit-overflow-scrolling: touch;
+                }
+                .clients-carousel-item {
+                  scroll-snap-align: center;
                 }
               }
             `}} />
