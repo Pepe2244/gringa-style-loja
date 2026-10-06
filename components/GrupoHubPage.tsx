@@ -139,7 +139,7 @@ export default function GrupoHubPage() {
                     borderRadius: '5px',
                     border: departamento === 'loja' ? '2px solid var(--cor-destaque)' : '1px solid #555',
                     backgroundColor: departamento === 'loja' ? 'rgba(255,165,0,0.15)' : '#202020',
-                    color: '#fff',
+                    color: 'hsl(0, 0%, 100%)',
                     fontWeight: 'bold',
                     cursor: 'pointer'
                   }}

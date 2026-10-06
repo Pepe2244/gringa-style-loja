@@ -25,10 +25,10 @@ class ErrorBoundary extends Component<Props, State> {
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        // Log do erro
+        
         console.error('ErrorBoundary caught an error:', error, errorInfo);
 
-        // Track no analytics
+        
         trackError(error.message, {
             componentStack: errorInfo.componentStack,
             errorBoundary: true
