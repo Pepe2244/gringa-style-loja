@@ -119,8 +119,8 @@ export default function Header() {
                {/* Contextual Logo Link */}
                <Link href={homeLink} className="logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
                     <Image
-                        src="/imagens/logo_gringa_style.png"
-                        alt="Gringa Style Logo"
+                        src={isServices ? '/imagens/unnamed.png' : '/imagens/logo_gringa_style.png'}
+                        alt={isServices ? 'GS Serviços Industriais' : 'Gringa Style Logo'}
                         width={120}
                         height={120}
                         priority
