@@ -1301,13 +1301,13 @@ letter-spacing: 1px;
 .b2b-diferencial-card p, .b2b-project-copy p { color: #ccc; }
 .b2b-projects-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 .b2b-project-card { overflow: hidden; }
-.b2b-before-after { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; background: #111; }
-.b2b-compare-item { position: relative; min-height: 220px; overflow: hidden; }
-.b2b-compare-item::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.65)); }
-.b2b-compare-item img { width: 100%; height: 100%; object-fit: cover; }
-.b2b-compare-item span { position: absolute; z-index: 1; top: 14px; left: 14px; padding: 4px 9px; border: 1px solid rgba(255,255,255,0.5); border-radius: 999px; color: #fff; font-size: 12px; text-transform: uppercase; }
 .b2b-project-copy { padding: 24px; }
 .b2b-project-copy small { display: inline-block; margin-top: 16px; color: var(--cor-destaque); }
+.b2b-process-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.b2b-process-card { min-height: 190px; padding: 24px; border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); box-shadow: 0 12px 28px rgba(0,0,0,0.26); }
+.b2b-process-number { color: var(--cor-destaque); font-family: var(--fonte-titulos); font-size: 24px; }
+.b2b-process-card h3 { margin: 16px 0 8px; color: var(--cor-texto); font-family: var(--fonte-titulos); font-size: 25px; line-height: 1; }
+.b2b-process-card p { color: #ccc; }
 .b2b-service-list { display: grid; gap: 10px; margin-top: 20px; padding-left: 20px; color: #ccc; }
 .b2b-service-list li::marker { color: var(--cor-destaque); }
 .b2b-client-logos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
@@ -1363,7 +1363,7 @@ letter-spacing: 1px;
 .b2b-hero { padding-top: 42px; }
 .b2b-hero-content.container, .b2b-footer-grid { grid-template-columns: 1fr; gap: 30px; }
 .b2b-hero-visual { min-height: 300px; }
-.b2b-diferenciais-grid, .b2b-projects-grid { grid-template-columns: 1fr; }
+.b2b-diferenciais-grid, .b2b-projects-grid, .b2b-process-grid { grid-template-columns: 1fr; }
 .b2b-client-logos { grid-template-columns: repeat(2, 1fr); }
 .b2b-field-row { grid-template-columns: 1fr; }
 .b2b-footer-copy h3 { font-size: 36px; }

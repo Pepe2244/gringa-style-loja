@@ -11,6 +11,12 @@ const diferenciais = [
   { title: 'Foco na Operação', text: 'Soluções para apoiar a confiabilidade e reduzir o tempo de parada.' },
 ];
 
+const etapasAtendimento = [
+  { number: '01', title: 'Entendimento da necessidade', text: 'Analisamos a demanda, o equipamento e o contexto da operação.' },
+  { number: '02', title: 'Planejamento técnico', text: 'Alinhamos o escopo do serviço, os recursos necessários e os requisitos de segurança.' },
+  { number: '03', title: 'Execução do serviço', text: 'Realizamos o trabalho com acompanhamento técnico e foco na qualidade da entrega.' },
+];
+
 export default function GSServicosIndustriaisPage() {
   const clientsCarouselRef = useRef<HTMLDivElement>(null);
   const isCarouselInteractingRef = useRef(false);
@@ -29,7 +35,6 @@ export default function GSServicosIndustriaisPage() {
 
   // Estados para os dados vindos do Supabase
   const [heroImage, setHeroImage] = useState('/imagens/tocha 2.jpg');
-  const [projetosDinamicos, setProjetosDinamicos] = useState<any[]>([]);
   const [clientesDinamicos, setClientesDinamicos] = useState<any[]>([]);
   const [galeriaImagens, setGaleriaImagens] = useState<any[]>([]);
 
@@ -45,25 +50,13 @@ export default function GSServicosIndustriaisPage() {
         const hero = data.find(item => item.section === 'hero');
         if (hero) setHeroImage(hero.url);
 
-        // 2. Projetos Antes / Depois
-        const proj = data.filter(item => item.section === 'projetos');
-        if (proj.length > 0) {
-          setProjetosDinamicos(proj.map(p => ({
-            title: p.title || 'Projeto Industrial',
-            detail: 'Atuação técnica em serviços industriais conforme o escopo do projeto.',
-            meta: 'Norma / Procedimento técnico atendido',
-            before: p.url,
-            after: p.secondary_url || p.url,
-          })));
-        }
-
-        // 3. Clientes (Confiança)
+        // 2. Clientes (Confiança)
         const cl = data.filter(item => item.section === 'cliente');
         if (cl.length > 0) {
           setClientesDinamicos(cl.map(c => ({ name: c.title || 'Cliente', src: c.url })));
         }
 
-        // 4. Galeria
+        // 3. Galeria
         const gal = data.filter(item => item.section === 'galeria');
         setGaleriaImagens(gal);
       }
@@ -149,24 +142,6 @@ export default function GSServicosIndustriaisPage() {
       carouselResumeTimeoutRef.current = null;
     }, 1200);
   };
-
-  // Fallbacks caso o admin ainda não tenha cadastrado nada
-  const projetosFinais = projetosDinamicos.length > 0 ? projetosDinamicos : [
-    {
-      title: 'Recuperação de eixo de máquina industrial',
-      detail: 'Manutenção e recuperação de componente mecânico para apoiar a operação industrial.',
-      meta: 'Norma / Procedimento técnico atendido',
-      before: '/imagens/tocha 1.jpg',
-      after: '/imagens/tocha 3.jpg',
-    },
-    {
-      title: 'Estrutura metálica em altura',
-      detail: 'Execução em campo com equipe especializada, EPIs e monitoramento de segurança.',
-      meta: 'Execução em obra / inspeção de qualidade',
-      before: '/imagens/mascara 2.jpg',
-      after: '/imagens/mascara personalizada 3.jpg',
-    },
-  ];
 
   const clientesFinais = clientesDinamicos.length > 0 ? clientesDinamicos : [
     { name: 'Cliente A', src: '/imagens/logo_gringa_style.png' },
@@ -335,28 +310,16 @@ export default function GSServicosIndustriaisPage() {
         <section className="b2b-section b2b-section-alt">
           <div className="container">
             <div className="b2b-section-header">
-              <span className="b2b-kicker">Portfólio industrial</span>
-              <h2>Projetos executados com foco em desempenho.</h2>
+              <span className="b2b-kicker">Como trabalhamos</span>
+              <h2>Da necessidade à execução, com foco na operação.</h2>
             </div>
 
-            <div className="b2b-projects-grid">
-              {projetosFinais.map((projeto, idx) => (
-                <article key={idx} className="b2b-project-card">
-                  <div className="b2b-before-after">
-                    <div className="b2b-compare-item">
-                      <span>Antes</span>
-                      <Image src={projeto.before} alt={`${projeto.title} antes`} fill sizes="(max-width: 768px) 90vw, 24vw" />
-                    </div>
-                    <div className="b2b-compare-item">
-                      <span>Depois</span>
-                      <Image src={projeto.after} alt={`${projeto.title} depois`} fill sizes="(max-width: 768px) 90vw, 24vw" />
-                    </div>
-                  </div>
-                  <div className="b2b-project-copy">
-                    <h3>{projeto.title}</h3>
-                    <p>{projeto.detail}</p>
-                    <small>{projeto.meta}</small>
-                  </div>
+            <div className="b2b-process-grid">
+              {etapasAtendimento.map((etapa) => (
+                <article key={etapa.number} className="b2b-process-card">
+                  <span className="b2b-process-number">{etapa.number}</span>
+                  <h3>{etapa.title}</h3>
+                  <p>{etapa.text}</p>
                 </article>
               ))}
             </div>
