@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 
 export const metadata: Metadata = {
-    title: 'Sobre o Grupo Gringa Style | Loja e Soldas Especiais',
-    description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela operação de soldas especiais para a indústria.',
+    title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
+    description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
   alternates: { canonical: '/sobre' },
 };
 
@@ -14,7 +14,7 @@ export default function SobrePage() {
         <>
             <WebPageSchema page={{
                 name: 'Sobre o Grupo Gringa Style',
-                description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela operação de soldas especiais para a indústria.',
+                description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
                 url: '/sobre'
             }} />
             <BreadcrumbSchema items={[
@@ -24,7 +24,7 @@ export default function SobrePage() {
             <main className="container" style={{ padding: '60px 15px', maxWidth: '1000px', margin: '0 auto' }}>
                 <h1 className="titulo-secao" style={{ textAlign: 'center', marginBottom: '20px' }}>Sobre o Grupo Gringa Style</h1>
                 <p className="subtitulo-secao" style={{ textAlign: 'center', marginBottom: '60px', color: '#ccc', fontSize: '1.2rem' }}>
-                    Duas frentes que trabalham com o mesmo compromisso: tornar a soldagem mais segura, eficiente e respeitada.
+                    Duas frentes que trabalham com o mesmo compromisso: equipar profissionais e apoiar operações industriais.
                 </p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '40px' }}>
@@ -36,8 +36,8 @@ export default function SobrePage() {
                     </section>
                     <section style={{ backgroundColor: '#111', padding: '30px', borderRadius: '15px', border: '1px solid #333' }}>
                         <span style={{ color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)', letterSpacing: '1px' }}>B2B | PARA OPERAÇÕES INDUSTRIAIS</span>
-                        <h2 style={{ fontFamily: 'var(--fonte-titulos)', color: '#fff', fontSize: '2rem', margin: '12px 0' }}>Soldas Especiais</h2>
-                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>Engenharia de soldagem, recuperação de ativos, manutenção e execução técnica para reduzir riscos e tempo parado.</p>
+                        <h2 style={{ fontFamily: 'var(--fonte-titulos)', color: '#fff', fontSize: '2rem', margin: '12px 0' }}>GS Serviços Industriais</h2>
+                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>Soldas especiais e mecânica industrial para manutenção, recuperação de equipamentos e suporte às operações industriais.</p>
                         <Link href="/soldas-especiais" style={{ display: 'inline-block', marginTop: '18px', color: 'var(--cor-destaque)', fontWeight: 'bold' }}>Conheça os serviços</Link>
                     </section>
                 </div>

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import SoldasEspeciaisPage from '@/components/SoldasEspeciaisPage';
+import GSServicosIndustriaisPage from '@/components/SoldasEspeciaisPage';
 
 export const metadata: Metadata = {
-  title: 'Soldas Especiais B2B',
-  description: 'Recuperação de ativos críticos, soldagem industrial e soluções técnicas para indústria.',
+  title: 'GS Serviços Industriais | Soldas Especiais e Mecânica Industrial',
+  description: 'Soluções industriais em soldas especiais e mecânica industrial, da manutenção à recuperação de equipamentos e componentes.',
   alternates: { canonical: '/soldas-especiais' },
 };
 
 export default function SoldasEspeciaisRoute() {
-  return <SoldasEspeciaisPage />;
+  return <GSServicosIndustriaisPage />;
 }

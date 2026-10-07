@@ -138,7 +138,7 @@ export default function Header() {
                     {isPortal ? (
                         <>
                             <Link href="/loja" className="nav-item" onClick={handleNavClick}>Loja</Link>
-                            <Link href="/soldas-especiais" className="nav-item" onClick={handleNavClick}>Soldas Especiais</Link>
+                            <Link href="/soldas-especiais" className="nav-item" onClick={handleNavClick}>GS Serviços Industriais</Link>
                         </>
                     ) : isServices ? (
                         <>

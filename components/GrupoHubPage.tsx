@@ -22,7 +22,7 @@ export default function GrupoHubPage() {
   const handleWhatsAppSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    const deptoNome = departamento === 'loja' ? 'Loja Gringa Style (B2C)' : 'Soldas Especiais (B2B)';
+    const deptoNome = departamento === 'loja' ? 'Loja Gringa Style (B2C)' : 'GS Serviços Industriais (B2B)';
     const mensagemTexto = `Olá! Meu nome é ${formData.nome}.\n\nDepartamento/Assunto: *${deptoNome}*\nEmpresa: ${formData.empresa || 'Não informado'}\nE-mail: ${formData.email}\nTelefone: ${formData.telefone}\nMensagem: ${formData.mensagem || 'Gostaria de mais informações.'}`;
 
     const whatsappUrl = `https://wa.me/5515998092548?text=${encodeURIComponent(mensagemTexto)}`;
@@ -36,7 +36,7 @@ export default function GrupoHubPage() {
       return;
     }
 
-    const deptoNome = departamento === 'loja' ? 'Loja Gringa Style (B2C)' : 'Soldas Especiais (B2B)';
+    const deptoNome = departamento === 'loja' ? 'Loja Gringa Style (B2C)' : 'GS Serviços Industriais (B2B)';
     const assunto = encodeURIComponent(`Contato via Site - ${deptoNome} (${formData.nome})`);
     const corpo = encodeURIComponent(`Nome: ${formData.nome}\nEmpresa: ${formData.empresa || 'Não informado'}\nE-mail: ${formData.email}\nTelefone: ${formData.telefone}\nDepartamento: ${deptoNome}\n\nMensagem:\n${formData.mensagem || 'Gostaria de mais informações.'}`);
 
@@ -90,9 +90,9 @@ export default function GrupoHubPage() {
                 />
               </div>
               <span className="dual-path-badge dual-path-badge-industrial">B2B</span>
-              <h2>SOLDAS ESPECIAIS B2B</h2>
+              <h2>GS SERVIÇOS INDUSTRIAIS</h2>
               <p>
-                Engenharia de soldagem, manutenção industrial, caldeiraria pesada e serviços técnicos para sua planta.
+                Soldas especiais e mecânica industrial para apoiar a manutenção e a confiabilidade da sua operação.
               </p>
               <Link href="/soldas-especiais" className="dual-path-cta dual-path-cta-secondary">
                 SOLICITAR ORÇAMENTO INDUSTRIAL
@@ -162,7 +162,7 @@ export default function GrupoHubPage() {
                     cursor: 'pointer'
                   }}
                 >
-                  Soldas Especiais (B2B)
+                  GS Serviços Industriais (B2B)
                 </button>
               </div>
             </div>

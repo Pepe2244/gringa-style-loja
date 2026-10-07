@@ -171,7 +171,7 @@ export default function B2BMediaManager() {
         <div>
           <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Mídia B2B</h1>
           <p style={{ color: '#888', fontSize: '0.85rem', margin: '6px 0 0' }}>
-            Gerencie as imagens exibidas em Soldas Especiais.
+            Gerencie as imagens exibidas em GS Serviços Industriais.
           </p>
         </div>
         <button className="btn-admin btn-adicionar" onClick={() => openModal(modalSection)}>

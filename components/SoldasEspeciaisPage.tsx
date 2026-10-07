@@ -5,13 +5,13 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 const diferenciais = [
-  { title: 'Time Qualificado', text: 'Equipe técnica com experiência real em soldagem industrial.' },
-  { title: 'Atendimento em Todo o Brasil', text: 'Execução e suporte em plantas, caldeiraria e manutenção.' },
+  { title: 'Time Qualificado', text: 'Equipe técnica para demandas de soldagem e mecânica industrial.' },
+  { title: 'Atendimento em Todo o Brasil', text: 'Execução e suporte em plantas, manutenção e operações industriais.' },
   { title: 'Cumprimento de Normas', text: 'Processos alinhados com exigências técnicas e de segurança.' },
-  { title: 'Laudo Técnico', text: 'Documentação técnica para tomada de decisão e rastreabilidade.' },
+  { title: 'Foco na Operação', text: 'Soluções para apoiar a confiabilidade e reduzir o tempo de parada.' },
 ];
 
-export default function SoldasEspeciaisPage() {
+export default function GSServicosIndustriaisPage() {
   const clientsCarouselRef = useRef<HTMLDivElement>(null);
   const isCarouselInteractingRef = useRef(false);
   const carouselResumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,7 +50,7 @@ export default function SoldasEspeciaisPage() {
         if (proj.length > 0) {
           setProjetosDinamicos(proj.map(p => ({
             title: p.title || 'Projeto Industrial',
-            detail: 'Execução com solda especializada de alto desempenho.',
+            detail: 'Atuação técnica em serviços industriais conforme o escopo do projeto.',
             meta: 'Norma / Procedimento técnico atendido',
             before: p.url,
             after: p.secondary_url || p.url,
@@ -154,7 +154,7 @@ export default function SoldasEspeciaisPage() {
   const projetosFinais = projetosDinamicos.length > 0 ? projetosDinamicos : [
     {
       title: 'Recuperação de eixo de máquina industrial',
-      detail: 'Recuperação estrutural com solda especializada em aço e alta resistência.',
+      detail: 'Manutenção e recuperação de componente mecânico para apoiar a operação industrial.',
       meta: 'Norma / Procedimento técnico atendido',
       before: '/imagens/tocha 1.jpg',
       after: '/imagens/tocha 3.jpg',
@@ -253,33 +253,70 @@ export default function SoldasEspeciaisPage() {
           <div className="b2b-hero-overlay" />
           <div className="container b2b-hero-content">
             <div className="b2b-hero-copy">
-              <span className="b2b-kicker">Soluções em soldagem industrial</span>
-              <h1>RECUPERAÇÃO DE ATIVOS CRÍTICOS E SOLUÇÕES EM SOLDAGEM INDUSTRIAL.</h1>
+              <span className="b2b-kicker">GS Serviços Industriais</span>
+              <h1>SOLDAS ESPECIAIS E MECÂNICA INDUSTRIAL.</h1>
               <p>
-                Nossa equipe de engenharia de soldagem garante eficiência, laudo técnico e redução de downtime para sua indústria.
+                Duas frentes integradas para atender às necessidades da indústria: serviços especializados de soldagem e soluções em mecânica industrial.
               </p>
               <div className="b2b-hero-actions">
                 <a
-                  href="https://wa.me/5515998092548?text=Ol%C3%A1%2C%20quero%20falar%20com%20o%20engenheiro%20respons%C3%A1vel%20sobre%20soldagem%20industrial."
+                  href={`https://wa.me/5515998092548?text=${encodeURIComponent('Olá, quero falar com a equipe da GS Serviços Industriais.')}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="b2b-primary-cta"
                 >
-                  FALAR COM ENGENHEIRO RESPONSÁVEL (WhatsApp)
+                  FALAR COM A EQUIPE INDUSTRIAL
                 </a>
               </div>
             </div>
               <div className="b2b-hero-visual">
-                <Image src={heroImage} alt="Soldagem profissional em equipamento industrial" fill priority sizes="(max-width: 768px) 92vw, 42vw" />
-                <span>PRECISÃO EM CADA JUNTA</span>
+                <Image src={heroImage} alt="Serviços técnicos para operações industriais" fill priority sizes="(max-width: 768px) 92vw, 42vw" />
+                <span>SOLUÇÕES PARA A INDÚSTRIA</span>
               </div>
+          </div>
+        </section>
+
+        <section id="servicos" className="b2b-section b2b-section-alt">
+          <div className="container">
+            <div className="b2b-section-header">
+              <span className="b2b-kicker">Nossas frentes</span>
+              <h2>Especialidades que trabalham lado a lado.</h2>
+            </div>
+
+            <div className="b2b-projects-grid">
+              <article className="b2b-project-card">
+                <div className="b2b-project-copy">
+                  <span className="b2b-kicker">Soldas especiais</span>
+                  <h3>Engenharia e execução em soldagem.</h3>
+                  <p>Atuação técnica em soldagem industrial para manutenção e recuperação de equipamentos e componentes.</p>
+                  <ul className="b2b-service-list">
+                    <li>Soldagem especializada para aplicações industriais</li>
+                    <li>Recuperação de componentes e ativos</li>
+                    <li>Serviços de solda em campo e em estruturas industriais</li>
+                  </ul>
+                </div>
+              </article>
+
+              <article className="b2b-project-card">
+                <div className="b2b-project-copy">
+                  <span className="b2b-kicker">Mecânica industrial</span>
+                  <h3>Manutenção e soluções mecânicas.</h3>
+                  <p>Serviços mecânicos para apoiar a disponibilidade e o funcionamento dos equipamentos da sua operação.</p>
+                  <ul className="b2b-service-list">
+                    <li>Manutenção industrial preventiva e corretiva</li>
+                    <li>Montagem e desmontagem de equipamentos</li>
+                    <li>Reparo e recuperação de componentes mecânicos</li>
+                  </ul>
+                </div>
+              </article>
+            </div>
           </div>
         </section>
 
         <section className="b2b-section">
           <div className="container">
             <div className="b2b-section-header">
-              <span className="b2b-kicker">Por que nos escolher?</span>
+              <span className="b2b-kicker">Por que a GS Serviços Industriais?</span>
               <h2>Resultado técnico com visão de operação.</h2>
             </div>
 
@@ -298,8 +335,8 @@ export default function SoldasEspeciaisPage() {
         <section className="b2b-section b2b-section-alt">
           <div className="container">
             <div className="b2b-section-header">
-              <span className="b2b-kicker">Portfólio técnico</span>
-              <h2>Projetos executados com prova de performance.</h2>
+              <span className="b2b-kicker">Portfólio industrial</span>
+              <h2>Projetos executados com foco em desempenho.</h2>
             </div>
 
             <div className="b2b-projects-grid">
@@ -339,7 +376,7 @@ export default function SoldasEspeciaisPage() {
                     <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-white/10 group">
                       <Image 
                         src={img.url} 
-                        alt="Galeria de serviços de solda" 
+                        alt="Galeria de serviços industriais"
                         fill 
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
                         sizes="(max-width: 768px) 50vw, 25vw"
@@ -449,8 +486,8 @@ export default function SoldasEspeciaisPage() {
       <section id="contato" className="b2b-footer">
         <div className="container b2b-footer-grid">
           <div className="b2b-footer-copy">
-            <span className="b2b-kicker">Solicite um orçamento</span>
-            <h3>Descreva sua necessidade e nossa equipe entra em contato.</h3>
+          <span className="b2b-kicker">GS Serviços Industriais</span>
+          <h3>Conte sua necessidade em soldagem ou mecânica industrial.</h3>
             <ul>
               <li>Telefone: (15) 99809-2548</li>
               <li>E-mail: contato@gringastylebr.com.br</li>

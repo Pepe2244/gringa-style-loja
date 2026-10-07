@@ -29,13 +29,13 @@ export default function Footer() {
             <div className="container">
                 <div className="rodape-coluna">
                     <div style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '15px', fontWeight: 'bold' }}>
-                        {isServices ? 'Gringa Style Soldas Especiais' : isPortal ? 'Grupo Gringa Style' : 'Gringa Style'}
+                        {isServices ? 'GS Serviços Industriais' : isPortal ? 'Grupo Gringa Style' : 'Gringa Style'}
                     </div>
                     <p>
                         {isServices
-                            ? 'Engenharia de soldagem, manutenção industrial, caldeiraria pesada e serviços técnicos para sua planta.'
+                            ? 'Soluções industriais em soldas especiais e mecânica industrial para sua operação.'
                             : isPortal
-                                ? 'Duas frentes para transformar a soldagem: equipamentos e acessórios para profissionais, além de soluções técnicas para operações industriais.'
+                                ? 'Loja de equipamentos para soldadores e GS Serviços Industriais, com soluções em soldas especiais e mecânica industrial.'
                                 : 'Equipamentos e acessórios para solda com a mais alta qualidade e estilo.'}
                     </p>
                 </div>
@@ -45,7 +45,7 @@ export default function Footer() {
                         <h2>Conheça o grupo</h2>
                         <p><Link href="/sobre">Sobre nós</Link></p>
                         <p><Link href="/loja">Loja Gringa Style</Link></p>
-                        <p><Link href="/soldas-especiais">Soldas Especiais</Link></p>
+                        <p><Link href="/soldas-especiais">GS Serviços Industriais</Link></p>
                         <p><Link href="#contato">Fale com o grupo</Link></p>
                     </div>
                 )}

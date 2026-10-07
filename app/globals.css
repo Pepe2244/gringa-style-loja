@@ -1308,6 +1308,8 @@ letter-spacing: 1px;
 .b2b-compare-item span { position: absolute; z-index: 1; top: 14px; left: 14px; padding: 4px 9px; border: 1px solid rgba(255,255,255,0.5); border-radius: 999px; color: #fff; font-size: 12px; text-transform: uppercase; }
 .b2b-project-copy { padding: 24px; }
 .b2b-project-copy small { display: inline-block; margin-top: 16px; color: var(--cor-destaque); }
+.b2b-service-list { display: grid; gap: 10px; margin-top: 20px; padding-left: 20px; color: #ccc; }
+.b2b-service-list li::marker { color: var(--cor-destaque); }
 .b2b-client-logos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
 .b2b-client-logo { padding: 20px 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #bbb; text-align: center; font-family: var(--fonte-titulos); font-size: 22px; }
 .b2b-marquee { width: 100%; overflow: hidden; }
