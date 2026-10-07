@@ -94,7 +94,7 @@ export default function GrupoHubPage() {
               <p>
                 Soldas especiais e mecânica industrial para apoiar a manutenção e a confiabilidade da sua operação.
               </p>
-              <Link href="/soldas-especiais" className="dual-path-cta dual-path-cta-secondary">
+              <Link href="/gs-servicos-industriais" className="dual-path-cta dual-path-cta-secondary">
                 SOLICITAR ORÇAMENTO INDUSTRIAL
               </Link>
             </article>

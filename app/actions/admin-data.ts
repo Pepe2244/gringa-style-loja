@@ -319,7 +319,7 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
             : client.from('b2b_assets').insert(payload);
         const { error } = await query;
         if (error) throw error;
-        revalidatePath('/soldas-especiais', 'page');
+        revalidatePath('/gs-servicos-industriais', 'page');
     });
 }
 
@@ -328,7 +328,7 @@ export async function deleteB2BAsset(id: string) {
         const assetId = text(id, 'Identificador da mídia', 100);
         const { error } = await client.from('b2b_assets').delete().eq('id', assetId);
         if (error) throw error;
-        revalidatePath('/soldas-especiais', 'page');
+        revalidatePath('/gs-servicos-industriais', 'page');
     });
 }
 

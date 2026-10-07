@@ -18,7 +18,7 @@ export default function Header() {
     
     // Determine the context based on the pathname
     const isPortal = pathname === '/';
-    const isServices = pathname.startsWith('/soldas-especiais');
+    const isServices = pathname.startsWith('/gs-servicos-industriais');
     const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
     
     const [mounted, setMounted] = useState(false);
@@ -110,7 +110,7 @@ export default function Header() {
     if (isStore) {
         homeLink = '/loja';
     } else if (isServices) {
-        homeLink = '/soldas-especiais';
+        homeLink = '/gs-servicos-industriais';
     }
 
     return (
@@ -138,12 +138,12 @@ export default function Header() {
                     {isPortal ? (
                         <>
                             <Link href="/loja" className="nav-item" onClick={handleNavClick}>Loja</Link>
-                            <Link href="/soldas-especiais" className="nav-item" onClick={handleNavClick}>GS Serviços Industriais</Link>
+                            <Link href="/gs-servicos-industriais" className="nav-item" onClick={handleNavClick}>GS Serviços Industriais</Link>
                         </>
                     ) : isServices ? (
                         <>
-                            <Link href="/soldas-especiais#servicos" className={`nav-item ${isActive('/soldas-especiais#servicos')}`} onClick={handleNavClick}>Serviços</Link>
-                            <Link href="/soldas-especiais#contato" className="nav-item" onClick={handleNavClick}>Orçamento</Link>
+                            <Link href="/gs-servicos-industriais#servicos" className={`nav-item ${isActive('/gs-servicos-industriais#servicos')}`} onClick={handleNavClick}>Serviços</Link>
+                            <Link href="/gs-servicos-industriais#contato" className="nav-item" onClick={handleNavClick}>Orçamento</Link>
                             <Link href="/loja" className="nav-item" onClick={handleNavClick}>Conheça a Loja</Link>
                             <Link href="/" className="nav-item" onClick={handleNavClick}>Portal Gringa</Link>
                         </>

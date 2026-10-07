@@ -38,7 +38,7 @@ export default function SobrePage() {
                         <span style={{ color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)', letterSpacing: '1px' }}>B2B | PARA OPERAÇÕES INDUSTRIAIS</span>
                         <h2 style={{ fontFamily: 'var(--fonte-titulos)', color: '#fff', fontSize: '2rem', margin: '12px 0' }}>GS Serviços Industriais</h2>
                         <p style={{ color: '#ccc', lineHeight: '1.7' }}>Soldas especiais e mecânica industrial para manutenção, recuperação de equipamentos e suporte às operações industriais.</p>
-                        <Link href="/soldas-especiais" style={{ display: 'inline-block', marginTop: '18px', color: 'var(--cor-destaque)', fontWeight: 'bold' }}>Conheça os serviços</Link>
+                        <Link href="/gs-servicos-industriais" style={{ display: 'inline-block', marginTop: '18px', color: 'var(--cor-destaque)', fontWeight: 'bold' }}>Conheça os serviços</Link>
                     </section>
                 </div>
                 

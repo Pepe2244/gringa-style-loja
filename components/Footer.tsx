@@ -12,7 +12,7 @@ export default function Footer() {
 
     // Determine context based on the current path
     const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
-    const isServices = pathname.startsWith('/soldas-especiais');
+    const isServices = pathname.startsWith('/gs-servicos-industriais');
     const isPortal = pathname === '/';
 
     const handleSecretClick = () => {
@@ -45,7 +45,7 @@ export default function Footer() {
                         <h2>Conheça o grupo</h2>
                         <p><Link href="/sobre">Sobre nós</Link></p>
                         <p><Link href="/loja">Loja Gringa Style</Link></p>
-                        <p><Link href="/soldas-especiais">GS Serviços Industriais</Link></p>
+                        <p><Link href="/gs-servicos-industriais">GS Serviços Industriais</Link></p>
                         <p><Link href="#contato">Fale com o grupo</Link></p>
                     </div>
                 )}

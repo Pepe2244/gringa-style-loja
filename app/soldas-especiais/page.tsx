@@ -1,12 +1,5 @@
-import type { Metadata } from 'next';
-import GSServicosIndustriaisPage from '@/components/SoldasEspeciaisPage';
-
-export const metadata: Metadata = {
-  title: 'GS Serviços Industriais | Soldas Especiais e Mecânica Industrial',
-  description: 'Soluções industriais em soldas especiais e mecânica industrial, da manutenção à recuperação de equipamentos e componentes.',
-  alternates: { canonical: '/soldas-especiais' },
-};
+import { permanentRedirect } from 'next/navigation';
 
 export default function SoldasEspeciaisRoute() {
-  return <GSServicosIndustriaisPage />;
+  permanentRedirect('/gs-servicos-industriais');
 }
