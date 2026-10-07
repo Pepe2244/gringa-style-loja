@@ -30,12 +30,23 @@ export interface CouponForCheckout {
 
 export type PaymentMethod = 'pix' | 'cartao_credito';
 
+const normalizePaymentMethodValue = (value: unknown): string => {
+    if (value == null) return '';
+    return String(value)
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[\s_-]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+};
+
 export function normalizePaymentMethod(value: unknown): PaymentMethod {
     if (value == null || value === '') return 'cartao_credito';
     if (typeof value !== 'string') throw new Error('Método de pagamento inválido.');
-    const normalized = value.toLowerCase().trim();
+    const normalized = normalizePaymentMethodValue(value);
     if (normalized === 'pix') return 'pix';
-    if (['cartão de crédito', 'cartao de credito', 'cartao_credito', 'credit_card'].includes(normalized)) {
+    if (['cartao_credito', 'cartao_de_credito', 'credit_card', 'credito'].includes(normalized)) {
         return 'cartao_credito';
     }
     throw new Error('Método de pagamento inválido.');
@@ -119,14 +130,14 @@ export function getCouponFailure(
     if (coupon.limite_uso !== null && coupon.limite_uso > 0 && coupon.usos_atuais >= coupon.limite_uso) {
         return 'Este cupom atingiu o limite de utilizações.';
     }
-    if (
-        coupon.metodo_pagamento_restrito &&
-        coupon.metodo_pagamento_restrito !== paymentMethod
-    ) {
-        return coupon.metodo_pagamento_restrito === 'pix'
+
+    const restrictedMethod = normalizePaymentMethodValue(coupon.metodo_pagamento_restrito);
+    if (restrictedMethod && restrictedMethod !== paymentMethod) {
+        return restrictedMethod === 'pix'
             ? 'Este cupom é válido apenas para PIX.'
             : 'Este cupom é válido apenas para Cartão de Crédito.';
     }
+
     if (coupon.valor_minimo !== null && subtotal < coupon.valor_minimo) {
         return `Valor mínimo para uso do cupom: R$ ${coupon.valor_minimo.toFixed(2).replace('.', ',')}`;
     }
@@ -142,12 +153,17 @@ export function calculateCouponDiscount(
     const productById = new Map(products.map((product) => [product.id, product]));
     let subtotal = 0;
     let eligibleSubtotal = 0;
+    const eligibleProducts = new Set<number>();
 
     for (const item of items) {
         const product = productById.get(item.produto_id);
         if (!product) throw new Error('Um ou mais produtos não estão disponíveis.');
         const lineTotal = getUnitPrice(product, paymentMethod) * item.quantidade;
         subtotal += lineTotal;
+
+        if (coupon.tipo_aplicacao === 'produto' && coupon.produtos_aplicaveis?.includes(item.produto_id)) {
+            eligibleProducts.add(item.produto_id);
+        }
 
         if (
             coupon.tipo_aplicacao !== 'produto' ||
@@ -176,7 +192,7 @@ export function calculateCouponDiscount(
         discount = discountBase * discountValue / 100;
     } else if (discountType === 'fixo' || discountType === 'valor_fixo') {
         discount = coupon.tipo_aplicacao === 'produto'
-            ? items.filter((item) => coupon.produtos_aplicaveis?.includes(item.produto_id)).length * discountValue
+            ? eligibleProducts.size * discountValue
             : discountValue;
     } else {
         throw new Error('Tipo de desconto do cupom inválido.');

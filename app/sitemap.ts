@@ -11,16 +11,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/loja`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${baseUrl}/sobre`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/soldas-especiais`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/rifa`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${baseUrl}/devolucao-e-reembolso`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${baseUrl}/privacidade`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
   ];
 
   try {
     const [productsRes, categoriesRes] = await Promise.all([
       supabase
         .from('produtos')
-        .select('id, nome, slug, created_at, em_estoque')
+        .select('id, nome, slug, created_at')
         .order('id', { ascending: false }),
       supabase
         .from('categorias')
@@ -29,7 +26,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]);
 
     const productUrls: MetadataRoute.Sitemap = (productsRes.data || [])
-      .filter((product) => product.em_estoque !== false)
       .map((product) => ({
         url: `${baseUrl}/produto/${product.slug || product.id}`,
         lastModified: product.created_at ? new Date(product.created_at) : new Date(),

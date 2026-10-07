@@ -250,6 +250,7 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'price': precoFormatado,
     'itemCondition': 'https://schema.org/NewCondition',
     'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    'validFrom': new Date().toISOString().split('T')[0],
     'priceValidUntil': validUntilDate.toISOString().split('T')[0],
     'hasMerchantReturnPolicy': merchantReturnPolicy,
     'shippingDetails': shippingDetails,

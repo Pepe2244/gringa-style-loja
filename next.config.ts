@@ -74,24 +74,10 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
-      // 1. Remove dinamicamente prefixos numéricos de slugs (/produto/2-estilo-tropical -> /produto/estilo-tropical)
-      {
-        source: '/produto/:id(\\d+)-:slug',
-        destination: '/produto/:slug',
-        permanent: true,
-      },
-
-      // 2. Redireciona URLs que eram apenas IDs numéricos legados (/produto/14 -> /loja)
-      {
-        source: '/produto/:id(\\d+)',
-        destination: '/loja',
-        permanent: true,
-      },
-
-      // 3. Normalização de URLs específicas com hífen residual no final
+      // 1. Normalização de URLs legadas diretamente para o slug canônico
       {
         source: '/produto/kit-guerreiro-gtaw-',
-        destination: '/produto/kit-guerreiro-gtaw',
+        destination: '/produto/kit-guerreiro-gtaw---gringa-style',
         permanent: true,
       },
       {

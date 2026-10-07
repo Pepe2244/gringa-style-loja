@@ -86,6 +86,10 @@ test('checks coupon expiry, usage limit, minimum and payment restriction', () =>
         getCouponFailure({ ...coupon, metodo_pagamento_restrito: 'pix' }, 100, 'cartao_credito', now) || '',
         /apenas para PIX/,
     );
+    assert.match(
+        getCouponFailure({ ...coupon, metodo_pagamento_restrito: 'cartao de credito' }, 100, 'pix', now) || '',
+        /apenas para Cartão de Crédito/,
+    );
 });
 
 test('calculates discounts from current prices and only applicable products', () => {
@@ -118,4 +122,21 @@ test('applies a fixed product coupon once per eligible product', () => {
         'pix',
     );
     assert.deepEqual(result, { subtotal: 305, discount: 20 });
+});
+
+test('counts fixed product discounts once per product even when the same product is repeated', () => {
+    const productCoupon = {
+        ...coupon,
+        tipo_aplicacao: 'produto',
+        produtos_aplicaveis: [1, 2],
+        tipo_desconto: 'fixo',
+        valor_desconto: 10,
+    } satisfies CouponForCheckout;
+    const result = calculateCouponDiscount(
+        productCoupon,
+        [{ produto_id: 1, quantidade: 2 }, { produto_id: 1, quantidade: 3 }, { produto_id: 2, quantidade: 1 }],
+        products,
+        'pix',
+    );
+    assert.deepEqual(result, { subtotal: 475, discount: 20 });
 });
