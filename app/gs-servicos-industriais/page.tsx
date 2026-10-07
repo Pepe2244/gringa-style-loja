@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description: 'Serviços industriais especializados em soldagem, manutenção mecânica e recuperação de equipamentos.',
     url: 'https://gringastylebr.com.br/gs-servicos-industriais',
     siteName: 'GS Serviços Industriais',
-    images: [{ url: '/imagens/logo_gringa_style.png', width: 800, height: 600, alt: 'GS Serviços Industriais' }],
+    images: [{ url: '/imagens/unnamed.png', width: 1920, height: 1920, alt: 'Logo GS Serviços Industriais' }],
     locale: 'pt_BR',
     type: 'website',
   },
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'GS Serviços Industriais | Soldas Especiais e Mecânica Industrial',
     description: 'Serviços industriais especializados em soldagem, manutenção mecânica e recuperação de equipamentos.',
-    images: ['/imagens/logo_gringa_style.png'],
+    images: ['/imagens/unnamed.png'],
   },
 };
 
