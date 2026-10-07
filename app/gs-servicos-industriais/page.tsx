@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'GS Serviços Industriais | Soldas Especiais e Mecânica Industrial',
-    description: 'Serviços industriais especializados em soldagem, manutenção mecânica e recuperação de equipamentos.',
+    description: 'Serviços industriais especializados em soldagem, manutenção mecânica.',
     images: ['/imagens/unnamed.png'],
   },
 };
