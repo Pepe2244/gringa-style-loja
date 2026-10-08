@@ -14,6 +14,9 @@ export default function Footer() {
     const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
     const isServices = pathname.startsWith('/gs-servicos-industriais');
     const isPortal = pathname === '/';
+    const gringaEmail = 'contato@gringastylebr.com.br';
+    const gsServicesEmail = 'contato@gsserviçosindustriais.com.br';
+    const contactEmail = isServices ? gsServicesEmail : gringaEmail;
 
     const handleSecretClick = () => {
         const newCount = clickCount + 1;
@@ -60,7 +63,7 @@ export default function Footer() {
                             (15) 99809-2548
                         </a>
                     </p>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Mail size={16} /> contato@gringastylebr.com.br</p>
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Mail size={16} /> {contactEmail}</p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP {!isServices && '(Loja Online)'}</p>
                     
                     {!isServices && !isPortal && (
