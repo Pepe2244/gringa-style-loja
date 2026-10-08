@@ -453,7 +453,7 @@ export default function GSServicosIndustriaisPage() {
           <h3>Conte sua necessidade em soldagem ou mecânica industrial.</h3>
             <ul>
               <li>Telefone: (15) 99809-2548</li>
-              <li>E-mail: contato@gsserviçosindustriais.com.br</li>
+              <li style={{ overflowWrap: 'anywhere' }}>E-mail: contato@gsserviçosindustriais.com.br</li>
             </ul>
           </div>
 

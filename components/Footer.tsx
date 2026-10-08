@@ -63,7 +63,10 @@ export default function Footer() {
                             (15) 99809-2548
                         </a>
                     </p>
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Mail size={16} /> {contactEmail}</p>
+                    <p style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
+                        <Mail size={16} />
+                        <span>{contactEmail}</span>
+                    </p>
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP {!isServices && '(Loja Online)'}</p>
                     
                     {!isServices && !isPortal && (

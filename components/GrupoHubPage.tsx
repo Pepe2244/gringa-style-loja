@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { useState } from 'react';
 
 export default function GrupoHubPage() {
+  const lojaEmail = 'contato@gringastylebr.com.br';
+  const gsServicesEmail = 'contato@gsserviçosindustriais.com.br';
   const [departamento, setDepartamento] = useState<'loja' | 'soldas'>('loja');
   const [formData, setFormData] = useState({
     nome: '',
@@ -37,10 +39,11 @@ export default function GrupoHubPage() {
     }
 
     const deptoNome = departamento === 'loja' ? 'Loja Gringa Style (B2C)' : 'GS Serviços Industriais (B2B)';
+    const destinatario = departamento === 'loja' ? lojaEmail : gsServicesEmail;
     const assunto = encodeURIComponent(`Contato via Site - ${deptoNome} (${formData.nome})`);
     const corpo = encodeURIComponent(`Nome: ${formData.nome}\nEmpresa: ${formData.empresa || 'Não informado'}\nE-mail: ${formData.email}\nTelefone: ${formData.telefone}\nDepartamento: ${deptoNome}\n\nMensagem:\n${formData.mensagem || 'Gostaria de mais informações.'}`);
 
-    window.location.href = `mailto:contato@gringastylebr.com.br?subject=${assunto}&body=${corpo}`;
+    window.location.href = `mailto:${destinatario}?subject=${assunto}&body=${corpo}`;
   };
 
   return (
@@ -125,6 +128,15 @@ export default function GrupoHubPage() {
             <span className="dual-path-section-label">Contato Direto</span>
             <h3>Fale com a equipe do Grupo Gringa Style.</h3>
             <p style={{ color: '#aaa', marginTop: '8px' }}>Preencha seus dados, selecione o setor de destino e escolha entre WhatsApp ou E-mail.</p>
+          </div>
+
+          <div style={{ maxWidth: '700px', margin: '0 auto 26px', display: 'grid', gap: '12px', color: '#f2f2f2' }}>
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 16px', overflowWrap: 'anywhere' }}>
+              <strong>Loja Gringa Style:</strong> contato@gringastylebr.com.br
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 16px', overflowWrap: 'anywhere' }}>
+              <strong>GS Serviços Industriais:</strong> contato@gsserviçosindustriais.com.br
+            </div>
           </div>
 
           <div className="b2b-contact-form" style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
