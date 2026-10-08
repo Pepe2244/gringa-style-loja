@@ -1329,6 +1329,21 @@ letter-spacing: 1px;
 .b2b-contact-form button { cursor: pointer; }
 
 @media (max-width: 768px) {
+.dual-path-page,
+.dual-path-shell,
+.dual-path-eyebrow,
+.dual-path-subheadline,
+.dual-path-shell h1,
+.dual-path-contact-box {
+  text-align: center !important;
+}
+
+.dual-path-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .dual-path-trust-grid { gap: 18px; padding-top: 24px; }
 .dual-path-trust-grid strong { font-size: 25px; }
 .dual-path-trust-grid span { display: block; max-width: 320px; margin: 0 auto; }

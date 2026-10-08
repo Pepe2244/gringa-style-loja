@@ -17,6 +17,12 @@ export default function Footer() {
     const gringaEmail = 'contato@gringastylebr.com.br';
     const gsServicesEmail = 'contato@gsserviçosindustriais.com.br';
     const contactEmail = isServices ? gsServicesEmail : gringaEmail;
+    const contactEmails = isPortal
+        ? [
+            { label: 'Loja Gringa Style', value: gringaEmail },
+            { label: 'GS Serviços Industriais', value: gsServicesEmail },
+        ]
+        : [{ label: isServices ? 'GS Serviços Industriais' : 'Loja Gringa Style', value: contactEmail }];
 
     const handleSecretClick = () => {
         const newCount = clickCount + 1;
@@ -63,10 +69,14 @@ export default function Footer() {
                             (15) 99809-2548
                         </a>
                     </p>
-                    <p style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
-                        <Mail size={16} />
-                        <span>{contactEmail}</span>
-                    </p>
+                    {contactEmails.map((item) => (
+                        <p key={item.value} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
+                            <Mail size={16} />
+                            <span>
+                                {isPortal ? `${item.label}: ${item.value}` : item.value}
+                            </span>
+                        </p>
+                    ))}
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP {!isServices && '(Loja Online)'}</p>
                     
                     {!isServices && !isPortal && (
