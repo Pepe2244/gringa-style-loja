@@ -5,18 +5,48 @@ import { isAdminAuthenticated } from '@/lib/admin-auth';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_REQUEST_SIZE = MAX_FILE_SIZE + 64 * 1024;
 
-function matchesFileSignature(bytes: Uint8Array, contentType: string) {
-  if (contentType === 'image/jpeg') return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (contentType === 'image/png') return [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((byte, index) => bytes[index] === byte);
-  if (contentType === 'image/webp') return String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP';
-  if (contentType === 'image/gif') return ['GIF87a', 'GIF89a'].includes(String.fromCharCode(...bytes.slice(0, 6)));
-  if (contentType === 'image/avif') {
-    const brand = String.fromCharCode(...bytes.slice(4, 12));
-    return brand.startsWith('ftypavif') || brand.startsWith('ftypavis');
+// Função que descobre o formato REAL através dos primeiros bytes do arquivo
+function detectMimeType(bytes: Uint8Array): string | null {
+  // JPEG: Inicia com FF D8
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+    return 'image/jpeg';
   }
-  if (contentType === 'video/mp4') return String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp';
-  if (contentType === 'video/webm') return [0x1a, 0x45, 0xdf, 0xa3].every((byte, index) => bytes[index] === byte);
-  return false;
+
+  // PNG: Inicia com 89 50 4E 47 0D 0A 1A 0A
+  const pngSig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (pngSig.every((b, i) => bytes[i] === b)) {
+    return 'image/png';
+  }
+
+  // WebP: RIFF .... WEBP
+  const riff = String.fromCharCode(...bytes.slice(0, 4));
+  const webp = String.fromCharCode(...bytes.slice(8, 12));
+  if (riff === 'RIFF' && webp === 'WEBP') {
+    return 'image/webp';
+  }
+
+  // GIF: GIF87a ou GIF89a
+  const gif = String.fromCharCode(...bytes.slice(0, 6));
+  if (gif === 'GIF87a' || gif === 'GIF89a') {
+    return 'image/gif';
+  }
+
+  // Formatos baseados em container ISO/IEC (MP4, AVIF, HEIC do iPhone)
+  const ftyp = String.fromCharCode(...bytes.slice(4, 8));
+  if (ftyp === 'ftyp') {
+    const brand = String.fromCharCode(...bytes.slice(8, 12)).toLowerCase();
+    if (brand.startsWith('avif') || brand.startsWith('avis')) return 'image/avif';
+    if (brand.startsWith('heic') || brand.startsWith('heix') || brand.startsWith('mif1')) return 'image/heic';
+    return 'video/mp4';
+  }
+
+  // WebM: 1A 45 DF A3
+  const webmSig = [0x1a, 0x45, 0xdf, 0xa3];
+  if (webmSig.every((b, i) => bytes[i] === b)) {
+    return 'video/webm';
+  }
+
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -41,26 +71,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'O arquivo deve ter até 10 MB.' }, { status: 413 });
     }
 
-    const allowedTypes = new Set([
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'image/avif',
-      'image/gif',
-      'video/mp4',
-      'video/webm',
-    ]);
-    if (!allowedTypes.has(file.type)) {
-      return NextResponse.json({ error: 'Formato de arquivo não permitido.' }, { status: 415 });
-    }
-
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    if (!matchesFileSignature(buffer, file.type)) {
-      return NextResponse.json({ error: 'O conteúdo do arquivo não corresponde ao formato informado.' }, { status: 415 });
+
+    // Detecta o tipo real a partir dos bytes da imagem
+    const detectedType = detectMimeType(buffer);
+
+    if (!detectedType) {
+      return NextResponse.json({ error: 'O conteúdo do arquivo não corresponde a um formato de mídia válido.' }, { status: 415 });
     }
 
-    const publicUrl = await uploadToR2(buffer, file.name, file.type);
+    // Usa o tipo detectado real para salvar corretamente no R2
+    const finalContentType = detectedType;
+
+    const publicUrl = await uploadToR2(buffer, file.name, finalContentType);
 
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
