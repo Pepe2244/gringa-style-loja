@@ -6,25 +6,59 @@ import { Bell } from 'lucide-react';
 export default function PushNotificationButton() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Verificar se o navegador suporta notificações push
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
             setIsSupported(true);
+
+            navigator.serviceWorker.register('/sw-v2.js')
+                .then((registration) => registration.pushManager.getSubscription())
+                .then((subscription) => {
+                    if (subscription) {
+                        setIsSubscribed(true);
+                    }
+                })
+                .catch((error) => {
+                    console.warn('[PWA] Service Worker não registrado:', error);
+                });
         }
     }, []);
 
     const handleSubscribe = async () => {
-        if (!isSupported) return;
+        if (!isSupported || loading || isSubscribed) return;
+        setLoading(true);
 
         try {
-            const registration = await navigator.serviceWorker.ready;
-            await registration.pushManager.subscribe({
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert('Permissão de notificações não concedida no navegador.');
+                return;
+            }
+
+            const registration = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout ao aguardar Service Worker')), 5000))
+            ]);
+
+            // Verifica se já existe subscription ativa
+            const existingSubscription = await registration.pushManager.getSubscription();
+            if (existingSubscription) {
+                setIsSubscribed(true);
+                return;
+            }
+
+            const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
             });
-            setIsSubscribed(true);
+
+            if (subscription) {
+                setIsSubscribed(true);
+            }
         } catch (error) {
             console.error('Erro ao ativar notificações:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -35,25 +69,25 @@ export default function PushNotificationButton() {
     return (
         <button
             onClick={handleSubscribe}
-            disabled={isSubscribed}
+            disabled={isSubscribed || loading}
             style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 16px',
                 backgroundColor: isSubscribed ? '#10b981' : 'var(--cor-destaque)',
-                color: 'white',
+                color: isSubscribed ? 'white' : 'black',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: isSubscribed ? 'default' : 'pointer',
+                cursor: isSubscribed || loading ? 'default' : 'pointer',
                 fontSize: '14px',
-                fontWeight: '500',
+                fontWeight: 'bold',
                 transition: 'background-color 0.3s',
             }}
             className="hover:opacity-90"
         >
             <Bell size={16} />
-            {isSubscribed ? 'Notificações Ativadas' : 'Ativar Notificações'}
+            {loading ? 'Ativando...' : isSubscribed ? 'Notificações Ativadas' : 'Ativar Notificações'}
         </button>
     );
 }

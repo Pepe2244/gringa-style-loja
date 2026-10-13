@@ -6,7 +6,7 @@ import { Redis } from '@upstash/redis';
 // 1. CONFIGURAÇÕES DE FIREWALL (EDGE)
 // ==========================================
 const BLOCKED_BOTS = [
-    'AhrefsBot', 'DotBot', 'SemrushBot', 'MJ12bot', 'Cyberscan',
+    'DotBot', 'SemrushBot', 'MJ12bot', 'Cyberscan',
     'PetalBot', 'Baiduspider', 'YandexBot', 'DataForSeoBot',
     'GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot',
     'PerplexityBot', 'ClaudeBot', 'anthropic-ai', 'Barkrowler', 
@@ -152,9 +152,9 @@ export async function proxy(request: NextRequest) {
 
     // --- ETAPA 1: FIREWALL (Bloqueio de Bots e Paths Maliciosos) ---
     const isMaliciousPath = MALICIOUS_PATHS.some(path => pathname.includes(path));
-    const isBadBot = !userAgent || BLOCKED_BOTS.some(bot =>
+    const isBadBot = Boolean(userAgent && BLOCKED_BOTS.some(bot =>
         userAgent.toLowerCase().includes(bot.toLowerCase())
-    );
+    ));
 
     if (isBadBot || isMaliciousPath) {
         return new NextResponse('Edge Firewall Blocked Request', { status: 403 });

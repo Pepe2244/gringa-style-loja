@@ -8,10 +8,11 @@ export const siteConfig = {
   supportEmail: 'contato@gringastylebr.com.br',
   supabase: {
     storageBucket: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'gringa-style-produtos',
-    imageBaseUrl: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BASE_URL || 'https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public',
+    imageBaseUrl: process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BASE_URL ||
+      (process.env.NEXT_PUBLIC_SUPABASE_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/public` : 'https://evgabdhvekmdhfvzteow.supabase.co/storage/v1/object/public'),
   },
   analytics: {
-    gaId: process.env.NEXT_PUBLIC_GA_ID || 'G-8YVY9NP9VR',
+    gaId: process.env.NEXT_PUBLIC_GA_ID || 'G-2L2F9CY9JN',
     ahrefsKey: process.env.AHREFS_KEY || 'Sam0BvC3Nm1qohD+XzVeLA',
     clarityId: process.env.NEXT_PUBLIC_CLARITY_ID || 'vybz5xptlm',
   },

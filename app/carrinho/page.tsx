@@ -301,15 +301,18 @@ export default function CartPage() {
             return;
         }
 
-        const checkoutWindow = window.open('', '_blank');
-        if (!checkoutWindow) {
-            showToast('Permita a abertura de pop-ups para continuar pelo WhatsApp.', 'error');
-            return;
+        let checkoutWindow: Window | null = null;
+        try {
+            checkoutWindow = window.open('', '_blank');
+            if (checkoutWindow) {
+                checkoutWindow.opener = null;
+                checkoutWindow.document.title = 'Validando pedido...';
+                checkoutWindow.document.body.textContent = 'Validando preços, estoque e frete...';
+            }
+        } catch {
+            checkoutWindow = null;
         }
 
-        checkoutWindow.opener = null;
-        checkoutWindow.document.title = 'Validando pedido...';
-        checkoutWindow.document.body.textContent = 'Validando preços, estoque e frete...';
         setIsCheckingOut(true);
         const cartSnapshot = JSON.stringify(items);
 
@@ -411,9 +414,16 @@ export default function CartPage() {
             message += `\n💰 *TOTAL${totalIsEstimate ? ' ESTIMADO' : ''}: R$ ${formatCurrency(finalTotal)}*\n\n`;
             message += `Aguardo as instruções finais!`;
 
-            checkoutWindow.location.href = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+            const whatsappUrl = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+            if (checkoutWindow && !checkoutWindow.closed) {
+                checkoutWindow.location.href = whatsappUrl;
+            } else {
+                window.location.href = whatsappUrl;
+            }
         } catch (error) {
-            checkoutWindow.close();
+            if (checkoutWindow && !checkoutWindow.closed) {
+                checkoutWindow.close();
+            }
             showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
         } finally {
             setIsCheckingOut(false);

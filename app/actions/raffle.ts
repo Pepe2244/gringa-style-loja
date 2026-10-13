@@ -25,7 +25,9 @@ export async function drawWinner(rifaId: number, prizeId: number) {
         const winner = {
             name: String(data.name),
             phone: String(data.phone),
-            number: Number(data.number)
+            number: Number(data.number),
+            remainingPrizes: Number(data.remaining_prizes ?? 0),
+            raffleFinalized: Boolean(data.raffle_finalized ?? true),
         };
         if (!winner.name || !Number.isSafeInteger(winner.number) || winner.number < 0) {
             throw new Error('O sorteio foi processado, mas os dados do vencedor estão incompletos.');

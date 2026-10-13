@@ -72,6 +72,16 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async rewrites() {
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://evgabdhvekmdhfvzteow.supabase.co').replace(/\/+$/, '');
+    return [
+      {
+        source: '/supabase-assets/:path*',
+        destination: `${supabaseUrl}/storage/v1/object/public/:path*`,
+      },
+    ];
+  },
+
   async redirects() {
     return [
       // 1. Normalização de URLs legadas diretamente para o slug canônico

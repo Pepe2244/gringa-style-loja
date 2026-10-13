@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Roboto, Teko } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -102,6 +103,19 @@ export default function RootLayout({
             <link rel="dns-prefetch" href={supabaseOrigin} />
           </>
         )}
+        {/* Google tag (gtag.js) */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analytics.gaId}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${siteConfig.analytics.gaId}');
+          `}
+        </Script>
       </head>
       <body className={`${roboto.variable} ${teko.variable} antialiased`}>
         <LocalBusinessSchema />

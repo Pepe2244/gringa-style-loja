@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { buildStorageUrl } from '@/lib/site-config';
+import { slugify } from '@/utils/slugify';
 import { trackPurchaseIntent } from '@/utils/analytics';
-import Image from 'next/image';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -13,22 +16,10 @@ interface ProductCardProps {
     priority?: boolean;
 }
 
-// CONSTANTE ESTRATÉGICA: Centraliza a URL do bucket para facilitar manutenção futura.
-const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
-
-// Componentes de fallback para evitar erros de compilação no Canvas (ambiente sem Next.js)
-interface AnchorProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
-    href: string;
-}
-
-const Link = ({ href, children, className, ...props }: AnchorProps) => (
-    <a href={href} className={className} {...props}>{children}</a>
-);
-
 const resolveMediaUrl = (path: string | unknown) => {
     if (!path || typeof path !== 'string') return '';
     if (path.startsWith('http') || path.startsWith('/')) return getProxiedImageUrl(path);
-    return getProxiedImageUrl(`${BUCKET_URL}${path}`);
+    return getProxiedImageUrl(buildStorageUrl(path));
 };
 
 export default function ProductCard({ product, diasNovo, onQuickView, priority = false }: ProductCardProps) {
@@ -45,13 +36,12 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     // O Vídeo continuará passando pelo proxy pois next/image não suporta <video>
     const videoUrl = resolveMediaUrl(rawVideoUrl);
 
-    // As imagens irão usar a URL original do Supabase para que a Netlify / Next.js consigam
-    // fazer o download interno no servidor deles e aplicar o WebP/AVIF compression
+    // As imagens irão usar a URL original para otimização pelo Next.js
     const imageUrls = mediaUrls
         .filter(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
         .map(url => {
             if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) return url;
-            return typeof url === 'string' ? `${BUCKET_URL}${url}` : '';
+            return typeof url === 'string' ? buildStorageUrl(url) : '';
         })
         .filter(Boolean) as string[];
 
@@ -116,7 +106,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
 
     const shouldShowVideo = !!videoUrl && isHovered && !isMobile && !prefersReducedMotion;
     const productName = product.nome || 'Produto Sem Nome';
-    const productSlug = product.slug || `${product.id}-${productName.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '')}`;
+    const productSlug = product.slug || `${product.id}-${slugify(productName)}`;
 
     return (
         <div

@@ -1,15 +1,23 @@
 import type { Metadata } from 'next';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-  title: 'Rifa Gringa Style | Concorra a Equipamentos de Solda Profissionais',
-  description: 'Participe da Rifa Gringa Style e concorra a prêmios incríveis como máscaras de solda automáticas, lentes personalizadas e acessórios TIG originais.',
-  alternates: { canonical: '/rifa' },
-  robots: {
-    index: false,
-    follow: true,
-  },
+    title: 'Ação Entre Amigos / Rifa de Solda | Gringa Style',
+    description: 'Participe da nossa ação entre amigos e concorra a máscaras de solda personalizadas, tochas TIG e equipamentos exclusivos.',
+    alternates: {
+        canonical: buildCanonicalUrl('/rifa'),
+    },
+    openGraph: {
+        title: 'Ação Entre Amigos / Rifa de Solda | Gringa Style',
+        description: 'Concorra a máscaras de solda exclusivas e prêmios profissionais.',
+        url: buildCanonicalUrl('/rifa'),
+    },
 };
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+export default function RifaLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    return <>{children}</>;
 }

@@ -3,14 +3,14 @@ import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import Image from 'next/image';
+import { buildStorageUrl } from '@/lib/site-config';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
 
 const resolveOriginalUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('http') || path.startsWith('/')) return path;
-    return `${BUCKET_URL}${path}`;
+    return buildStorageUrl(path);
 };
 
 interface ShippingOption {
@@ -174,14 +174,17 @@ export default function DirectPurchaseModal({
             return;
         }
 
-        const checkoutWindow = window.open('', '_blank');
-        if (!checkoutWindow) {
-            showToast('Permita a abertura de pop-ups para continuar pelo WhatsApp.', 'error');
-            return;
+        let checkoutWindow: Window | null = null;
+        try {
+            checkoutWindow = window.open('', '_blank');
+            if (checkoutWindow) {
+                checkoutWindow.opener = null;
+                checkoutWindow.document.title = 'Validando pedido...';
+                checkoutWindow.document.body.textContent = 'Validando preço, estoque e frete...';
+            }
+        } catch {
+            checkoutWindow = null;
         }
-        checkoutWindow.opener = null;
-        checkoutWindow.document.title = 'Validando pedido...';
-        checkoutWindow.document.body.textContent = 'Validando preço, estoque e frete...';
         setIsCheckingOut(true);
 
         try {
@@ -274,10 +277,18 @@ export default function DirectPurchaseModal({
                 message += `\n*Subtotal do produto:* R$ ${formatCurrency(finalTotal)} (frete a confirmar no WhatsApp)\n\n`;
             }
             message += `Aguardo as instruções finais!`;
-            checkoutWindow.location.href = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+
+            const whatsappUrl = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+            if (checkoutWindow && !checkoutWindow.closed) {
+                checkoutWindow.location.href = whatsappUrl;
+            } else {
+                window.location.href = whatsappUrl;
+            }
             onClose();
         } catch (error) {
-            checkoutWindow.close();
+            if (checkoutWindow && !checkoutWindow.closed) {
+                checkoutWindow.close();
+            }
             showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
         } finally {
             setIsCheckingOut(false);

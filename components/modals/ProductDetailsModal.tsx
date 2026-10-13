@@ -4,14 +4,14 @@ import Modal from '@/components/Modal';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { buildStorageUrl } from '@/lib/site-config';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
 
 const resolveOriginalUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('http') || path.startsWith('/')) return path;
-    return `${BUCKET_URL}${path}`;
+    return buildStorageUrl(path);
 };
 
 const modalVariants = {

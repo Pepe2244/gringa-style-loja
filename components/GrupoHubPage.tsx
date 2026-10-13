@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 export default function GrupoHubPage() {
   const lojaEmail = 'contato@gringastylebr.com.br';
-  const gsServicesEmail = 'contato@gsserviçosindustriais.com.br';
+  const gsServicesEmail = 'contato@gsservicosindustriais.com.br';
   const [departamento, setDepartamento] = useState<'loja' | 'soldas'>('loja');
   const [formData, setFormData] = useState({
     nome: '',
@@ -135,7 +135,7 @@ export default function GrupoHubPage() {
               <strong>Loja Gringa Style:</strong> contato@gringastylebr.com.br
             </div>
             <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 16px', overflowWrap: 'anywhere' }}>
-              <strong>GS Serviços Industriais:</strong> contato@gsserviçosindustriais.com.br
+              <strong>GS Serviços Industriais:</strong> contato@gsservicosindustriais.com.br
             </div>
           </div>
 

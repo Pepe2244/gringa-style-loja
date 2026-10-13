@@ -1,16 +1,26 @@
-import { buildStorageUrl } from '@/lib/site-config';
+import { buildStorageUrl, getStorageBaseUrl } from '@/lib/site-config';
 
+/**
+ * Retorna a URL válida para exibição de mídias e imagens.
+ * Não converte mais para /supabase-assets/ (que gerava 404),
+ * e recupera URLs antigas que porventura contenham esse prefixo.
+ */
 export function getProxiedImageUrl(url: string | null | undefined): string {
     if (!url) return '';
-    if (url.startsWith('/supabase-assets/')) return url;
 
-    const supabaseRegex = /^https?:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i;
-
-    if (supabaseRegex.test(url)) {
-      return url.replace(supabaseRegex, '/supabase-assets/');
+    // Se foi passada uma URL com o prefixo quebrado /supabase-assets/, recupera para a URL real do Supabase
+    if (url.startsWith('/supabase-assets/')) {
+        const cleanPath = url.replace(/^\/supabase-assets\//, '');
+        return `${getStorageBaseUrl()}/${cleanPath}`;
     }
 
-    return url;
+    // Se já é uma URL completa ou asset estático local
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+        return url;
+    }
+
+    // Se for um caminho relativo de arquivo no bucket
+    return buildStorageUrl(url);
 }
 
 export function toStorageUrl(path: string) {

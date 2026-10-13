@@ -272,9 +272,18 @@ export default function RifaManager() {
                 if (!prizesResult.success) throw new Error(prizesResult.error);
                 setDrawPrizes(prizesResult.data || []);
 
-                setRifas(prev => prev.map(r => r.id === drawRifa.id ? { ...r, status: 'finalizada', numero_vencedor: result.winner.number } : r));
+                setRifas(prev => prev.map(r => r.id === drawRifa.id ? {
+                    ...r,
+                    status: (result.winner as any)?.raffleFinalized ? 'finalizada' : r.status,
+                    numero_vencedor: result.winner.number
+                } : r));
 
-                alert(`Vencedor: ${result.winner.name} (Nº ${result.winner.number}).`);
+                const pendingCount = (result.winner as any)?.remainingPrizes;
+                if (pendingCount > 0) {
+                    alert(`Vencedor do prêmio: ${result.winner.name} (Nº ${result.winner.number}).\nAtenção: Ainda restam ${pendingCount} prêmio(s) a sortear.`);
+                } else {
+                    alert(`Vencedor: ${result.winner.name} (Nº ${result.winner.number}). Todos os prêmios foram sorteados e a rifa foi finalizada!`);
+                }
             } else {
                 alert(result.message || 'Erro ao realizar sorteio.');
                 setDrawAnimation('ERR');

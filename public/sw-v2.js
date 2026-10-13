@@ -9,7 +9,7 @@ const API_CACHE = 'gringa-style-api-v2.0';
 // Recursos críticos para cache imediato
 const CRITICAL_RESOURCES = [
     '/',
-    '/manifest.json',
+    '/site.webmanifest',
     '/favicon.ico',
     '/robots.txt',
     '/sitemap.xml'
@@ -19,17 +19,15 @@ const CRITICAL_RESOURCES = [
 const STATIC_RESOURCES = [
     '/_next/static/',
     '/fonts/',
-    '/images/',
+    '/imagens/',
     'https://fonts.googleapis.com/',
     'https://fonts.gstatic.com/'
 ];
 
-// Cache primeiro, depois rede (para APIs)
+// Endpoints somente GET permitidos para cache networkFirst
 const API_ENDPOINTS = [
-    '/api/calculate-total',
     '/api/google-feed',
-    '/api/shipping',
-    '/api/validate-coupon'
+    '/api/produtos'
 ];
 
 // Estratégia de cache: Stale While Revalidate para assets estáticos

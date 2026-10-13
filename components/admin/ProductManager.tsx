@@ -9,6 +9,7 @@ import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser, Alert
 import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
 import { deleteProduct, saveProduct, setProductStock } from '@/app/actions/admin-data';
+import { slugify } from '@/utils/slugify';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -182,7 +183,7 @@ export default function ProductManager() {
             opcoes: variantOpcoes.split(',').map(s => s.trim()).filter(Boolean)
         } : null;
 
-        const generatedSlug = nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        const generatedSlug = slugify(nome);
 
         const productData = {
             nome,

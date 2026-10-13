@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
-import Modal from '@/components/Modal';
+import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { useToast } from '@/context/ToastContext';
 import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 import StickyCTA from './StickyCTA';
@@ -21,14 +21,14 @@ import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import { PaymentMethods } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import { useAnalytics } from '@/components/AdvancedAnalytics'; 
+import { buildStorageUrl } from '@/lib/site-config';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
 
 const resolveOriginalUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('http') || path.startsWith('/')) return path;
-    return `${BUCKET_URL}${path}`;
+    return buildStorageUrl(path);
 };
 
 interface ProductPageContentProps {
@@ -53,10 +53,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
     const touchEndX = useRef<number | null>(null);
 
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-    const [isCheckingOut, setIsCheckingOut] = useState(false);
-    const [clientName, setClientName] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('PIX');
-    const [installments, setInstallments] = useState('1x');
 
     const setupProductState = useCallback((data: Product) => {
         const variants = data.variants as unknown as ProductVariant | null;
@@ -169,78 +166,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         addItem(cartItem);
     };
 
-    const handleDirectPurchase = async () => {
-        if (!product) return;
-        if (isCheckingOut) return;
-        if (!clientName.trim()) {
-            showToast('Por favor, preencha seu nome.', 'error');
-            return;
-        }
-        const variants = product.variants as unknown as ProductVariant | null;
-        if (variants?.opcoes?.length && !variants.opcoes.includes(selectedVariant)) {
-            showToast(`Por favor, selecione uma opção de ${variants.tipo}.`, 'error');
-            return;
-        }
 
-        const checkoutWindow = window.open('', '_blank');
-        if (!checkoutWindow) {
-            showToast('Permita a abertura de pop-ups para continuar pelo WhatsApp.', 'error');
-            return;
-        }
-        checkoutWindow.opener = null;
-        checkoutWindow.document.title = 'Validando pedido...';
-        checkoutWindow.document.body.textContent = 'Validando preço e estoque...';
-        setIsCheckingOut(true);
-
-        try {
-            const response = await fetch('/api/calculate-total', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    itens: [{
-                        produto_id: product.id,
-                        quantidade: 1,
-                        variante: variants?.opcoes?.length
-                            ? { tipo: variants.tipo, opcao: selectedVariant }
-                            : null,
-                    }],
-                    metodo_pagamento: paymentMethod,
-                }),
-            });
-            const quote = await response.json();
-            if (!response.ok) throw new Error(quote.error || 'Não foi possível validar o produto.');
-            const quotedItem = quote.itens?.[0];
-            if (!quotedItem) throw new Error('Não foi possível obter o preço atualizado do produto.');
-            const price = Number(quotedItem.total_item);
-
-            trackEvent({
-                event: 'begin_checkout',
-                category: 'ecommerce',
-                action: 'begin_checkout',
-                value: price,
-                customParameters: {
-                    currency: 'BRL',
-                    items: [{ item_id: product.id, item_name: quotedItem.nome, price: Number(quotedItem.preco_unitario), quantity: 1 }],
-                },
-            });
-
-            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
-            message += `*Produto:* ${quotedItem.nome}`;
-            if (variants?.opcoes?.length) message += ` (${variants.tipo}: ${selectedVariant})`;
-            message += `\n*Valor atualizado:* R$ ${price.toFixed(2).replace('.', ',')}\n\n`;
-            message += `*Pagamento:* ${paymentMethod}`;
-            if (paymentMethod === 'Cartão de Crédito') message += ` em ${installments}`;
-            message += `\n\nFrete a confirmar no WhatsApp.\n\n*Aguardo o retorno!*`;
-
-            checkoutWindow.location.href = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
-            setShowPurchaseModal(false);
-        } catch (error) {
-            checkoutWindow.close();
-            showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
-        } finally {
-            setIsCheckingOut(false);
-        }
-    };
 
     const handleShare = async () => {
         if (!product) return;
@@ -635,81 +561,14 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
             <RecentlyViewed currentProductId={product?.id} limit={5} />
 
-            <Modal isOpen={showPurchaseModal} onClose={() => setShowPurchaseModal(false)} title="Finalizar Pedido Rápido">
-                <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', padding: '15px', backgroundColor: '#111', borderRadius: '8px', border: '1px solid #333' }}>
-                    <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '5px', overflow: 'hidden', flexShrink: 0 }}>
-                        <Image
-                            src={resolveOriginalUrl(mediaUrls[0] || fallbackImage)}
-                            alt={product.nome}
-                            fill
-                            sizes="80px"
-                            style={{ objectFit: 'cover' }}
-                            placeholder="blur"
-                            blurDataURL={BLUR_DATA_URL}
-                        />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <h3 style={{ fontSize: '1rem', margin: '0 0 5px 0', color: '#fff' }}>{product.nome}</h3>
-                        {selectedVariant && <p style={{ fontSize: '0.85rem', color: '#aaa', margin: '0 0 5px 0' }}>{variants?.tipo}: {selectedVariant}</p>}
-                        <p style={{ fontWeight: '900', color: 'var(--cor-destaque)', fontSize: '1.2rem', margin: 0 }}>
-                            R$ {displayedPrice.toFixed(2).replace('.', ',')}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="campo-cliente" style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', color: '#ccc', fontWeight: 'bold' }}>Seu Nome Completo</label>
-                    <input
-                        type="text"
-                        className="input-cliente"
-                        placeholder="Ex: João da Silva"
-                        value={clientName}
-                        onChange={(e) => setClientName(e.target.value)}
-                        style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #444', backgroundColor: '#222', color: 'white', fontSize: '1rem', outline: 'none' }}
-                    />
-                </div>
-
-                <div className="resumo-pagamento" style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', color: '#ccc', fontWeight: 'bold' }}>Forma de Pagamento</label>
-                    <select
-                        className="select-pagamento"
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #444', backgroundColor: '#222', color: 'white', fontSize: '1rem', outline: 'none', cursor: 'pointer' }}
-                    >
-                        <option value="PIX">PIX (Aprovação imediata)</option>
-                        <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    </select>
-                </div>
-
-                {paymentMethod === 'Cartão de Crédito' && (
-                    <div className="resumo-pagamento" style={{ marginBottom: '25px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', color: '#ccc', fontWeight: 'bold' }}>Parcelas</label>
-                        <select
-                            className="select-pagamento"
-                            value={installments}
-                            onChange={(e) => setInstallments(e.target.value)}
-                            style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #444', backgroundColor: '#222', color: 'white', fontSize: '1rem', outline: 'none', cursor: 'pointer' }}
-                        >
-                            <option value="1x">1x sem juros</option>
-                            <option value="2x">2x sem juros</option>
-                            <option value="3x">3x sem juros</option>
-                            <option value="4x">4x sem juros</option>
-                            <option value="5x">5x sem juros</option>
-                            <option value="6x">6x sem juros</option>
-                        </select>
-                    </div>
-                )}
-
-                <button 
-                    className="btn btn-finalizar" 
-                    onClick={handleDirectPurchase}
-                disabled={isCheckingOut}
-                style={{ width: '100%', padding: '18px', backgroundColor: '#25D366', color: 'white', fontWeight: '900', border: 'none', borderRadius: '8px', fontSize: '1.1rem', marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)' }}
-                >
-                {isCheckingOut ? 'Validando pedido...' : 'Confirmar Pedido no WhatsApp'}
-                </button>
-            </Modal>
+            {showPurchaseModal && product && (
+                <DirectPurchaseModal
+                    isOpen={showPurchaseModal}
+                    onClose={() => setShowPurchaseModal(false)}
+                    product={product}
+                    initialVariant={variants && selectedVariant ? { tipo: variants.tipo, opcao: selectedVariant } : null}
+                />
+            )}
 
             {product && <StickyCTA product={product} />}
 

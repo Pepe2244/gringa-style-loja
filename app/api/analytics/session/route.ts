@@ -135,86 +135,103 @@ async function processSessionEvents(supabase: ReturnType<typeof createSupabaseAd
     }
 }
 
-// Atualizar métricas agregadas
+// Atualizar métricas agregadas com proteção contra race conditions e retry exponencial
 async function updateAggregatedMetrics(supabase: ReturnType<typeof createSupabaseAdminClient>, sessionData: SessionData) {
-    try {
-        const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-        // Buscar métricas existentes para o dia
-        const { data: existingMetrics, error: fetchError } = await supabase
-            .from('analytics_daily_metrics')
-            .select('*')
-            .eq('date', date)
-            .single();
+            // Buscar métricas existentes para o dia usando maybeSingle para evitar erro PGRST116 quando não há registro
+            const { data: existingMetrics, error: fetchError } = await supabase
+                .from('analytics_daily_metrics')
+                .select('*')
+                .eq('date', date)
+                .maybeSingle();
 
-        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = not found
-            console.error('Erro ao buscar métricas existentes:', fetchError);
-            return;
+            if (fetchError) {
+                console.error('Erro ao buscar métricas existentes:', fetchError);
+                return;
+            }
+
+            const metrics = existingMetrics ? { ...existingMetrics } : {
+                date,
+                total_sessions: 0,
+                total_page_views: 0,
+                total_duration: 0,
+                unique_users: 0,
+                bounce_rate: 0,
+                device_types: {},
+                top_pages: {},
+                conversion_rate: 0,
+                avg_session_duration: 0,
+                total_revenue: 0
+            };
+
+            // Garantir que os objetos de mapeamento existem
+            metrics.device_types = { ...(metrics.device_types || {}) };
+            metrics.top_pages = { ...(metrics.top_pages || {}) };
+
+            // Atualizar contadores
+            metrics.total_sessions = (Number(metrics.total_sessions) || 0) + 1;
+            metrics.total_page_views = (Number(metrics.total_page_views) || 0) + (Number(sessionData.pageViews) || 0);
+            metrics.total_duration = (Number(metrics.total_duration) || 0) + (Number(sessionData.duration) || 0);
+
+            // Atualizar tipos de dispositivo
+            metrics.device_types[sessionData.deviceType] =
+                (metrics.device_types[sessionData.deviceType] || 0) + 1;
+
+            // Calcular médias
+            metrics.avg_session_duration = metrics.total_duration / metrics.total_sessions;
+
+            // Calcular bounce rate (sessões com apenas 1 page view)
+            const bounceSessions = sessionData.pageViews === 1 ? 1 : 0;
+            metrics.bounce_rate = (((Number(metrics.bounce_rate) || 0) * (metrics.total_sessions - 1)) + bounceSessions) / metrics.total_sessions;
+
+            // Extrair páginas visitadas
+            const pageEvents = sessionData.events.filter(e => e.event === 'page_view');
+            pageEvents.forEach(event => {
+                const page = event.label || 'unknown';
+                metrics.top_pages[page] = (metrics.top_pages[page] || 0) + 1;
+            });
+
+            // Verificar conversões de venda reais e faturamento
+            const purchaseEvents = sessionData.events.filter(e => e.category === 'ecommerce' && e.action === 'purchase');
+            const hasConversion = sessionData.events.some(e =>
+                e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
+            );
+            
+            if (hasConversion) {
+                metrics.conversion_rate = (((Number(metrics.conversion_rate) || 0) * (metrics.total_sessions - 1)) + 1) / metrics.total_sessions;
+            }
+
+            // Somar receita das vendas da sessão
+            const sessionRevenue = purchaseEvents.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
+            if (sessionRevenue > 0) {
+                metrics.total_revenue = (Number(metrics.total_revenue) || 0) + sessionRevenue;
+            }
+
+            // Salvar ou atualizar métricas
+            const { error: upsertError } = await supabase
+                .from('analytics_daily_metrics')
+                .upsert(metrics, { onConflict: 'date' });
+
+            if (upsertError) {
+                if (attempt < maxRetries) {
+                    await new Promise(res => setTimeout(res, 50 * attempt));
+                    continue;
+                }
+                console.error('Erro ao salvar métricas agregadas:', upsertError);
+            }
+            break;
+        } catch (error) {
+            if (attempt < maxRetries) {
+                await new Promise(res => setTimeout(res, 50 * attempt));
+                continue;
+            }
+            console.error('Erro ao atualizar métricas agregadas:', error);
+            break;
         }
-
-        const metrics = existingMetrics || {
-            date,
-            total_sessions: 0,
-            total_page_views: 0,
-            total_duration: 0,
-            unique_users: 0,
-            bounce_rate: 0,
-            device_types: {},
-            top_pages: {},
-            conversion_rate: 0,
-            avg_session_duration: 0,
-            total_revenue: 0 // Métrica vital para ROI adicionada
-        };
-
-        // Atualizar contadores
-        metrics.total_sessions += 1;
-        metrics.total_page_views += sessionData.pageViews;
-        metrics.total_duration += sessionData.duration;
-
-        // Atualizar tipos de dispositivo
-        metrics.device_types[sessionData.deviceType] =
-            (metrics.device_types[sessionData.deviceType] || 0) + 1;
-
-        // Calcular médias
-        metrics.avg_session_duration = metrics.total_duration / metrics.total_sessions;
-
-        // Calcular bounce rate (sessões com apenas 1 page view)
-        const bounceSessions = sessionData.pageViews === 1 ? 1 : 0;
-        metrics.bounce_rate = ((metrics.bounce_rate * (metrics.total_sessions - 1)) + bounceSessions) / metrics.total_sessions;
-
-        // Extrair páginas visitadas
-        const pageEvents = sessionData.events.filter(e => e.event === 'page_view');
-        pageEvents.forEach(event => {
-            const page = event.label || 'unknown';
-            metrics.top_pages[page] = (metrics.top_pages[page] || 0) + 1;
-        });
-
-        // Verificar conversões de venda reais e faturamento
-        const purchaseEvents = sessionData.events.filter(e => e.category === 'ecommerce' && e.action === 'purchase');
-        const hasConversion = sessionData.events.some(e =>
-            e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
-        );
-        
-        if (hasConversion) {
-            metrics.conversion_rate = ((metrics.conversion_rate * (metrics.total_sessions - 1)) + 1) / metrics.total_sessions;
-        }
-
-        // Somar receita das vendas da sessão
-        const sessionRevenue = purchaseEvents.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
-        if (sessionRevenue > 0) {
-            metrics.total_revenue = (metrics.total_revenue || 0) + sessionRevenue;
-        }
-
-        // Salvar ou atualizar métricas
-        const { error: upsertError } = await supabase
-            .from('analytics_daily_metrics')
-            .upsert(metrics, { onConflict: 'date' });
-
-        if (upsertError) {
-            console.error('Erro ao salvar métricas agregadas:', upsertError);
-        }
-    } catch (error) {
-        console.error('Erro ao atualizar métricas agregadas:', error);
     }
 }
 

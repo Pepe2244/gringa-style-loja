@@ -47,7 +47,12 @@ export async function GET(request: Request) {
         : query.eq('categoria_id', categoryId);
     }
 
-    if (excludeId) query = query.neq('id', excludeId);
+    if (excludeId) {
+      const numEx = Number(excludeId);
+      if (Number.isSafeInteger(numEx) && numEx > 0) {
+        query = query.neq('id', numEx);
+      }
+    }
 
     const { data, error } = await query;
     if (error) throw error;

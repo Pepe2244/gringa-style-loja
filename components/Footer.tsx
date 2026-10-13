@@ -15,7 +15,7 @@ export default function Footer() {
     const isServices = pathname.startsWith('/gs-servicos-industriais');
     const isPortal = pathname === '/';
     const gringaEmail = 'contato@gringastylebr.com.br';
-    const gsServicesEmail = 'contato@gsserviçosindustriais.com.br';
+    const gsServicesEmail = 'contato@gsservicosindustriais.com.br';
     const contactEmail = isServices ? gsServicesEmail : gringaEmail;
     const contactEmails = isPortal
         ? [

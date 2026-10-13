@@ -3,15 +3,13 @@ import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
 import { BreadcrumbSchema, ProductSchema } from '@/components/SEO/StructuredData';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
-
-const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
+import { buildCanonicalUrl, buildStorageUrl, siteConfig } from '@/lib/site-config';
 
 const resolveAbsoluteUrl = (path?: string | null) => {
     if (!path) return `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
     if (path.startsWith('http')) return path;
     if (path.startsWith('/')) return `${siteConfig.appUrl}${path}`;
-    return `${BUCKET_URL}${path}`;
+    return buildStorageUrl(path);
 };
 
 // Formata o título dinamicamente para não estourar os 60 caracteres da SERP do Google

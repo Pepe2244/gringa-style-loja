@@ -1,9 +1,19 @@
+import type { Metadata } from 'next';
+
 export const dynamic = 'force-dynamic';
 
+export const metadata: Metadata = {
+  title: 'Painel Administrativo | Gringa Style',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
 export default function AdminLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return <>{children}</>;
+  return <>{children}</>;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { siteConfig } from '@/lib/site-config';
+import { buildStorageUrl, siteConfig } from '@/lib/site-config';
 
 /**
  * MOTOR DE DADOS ESTRUTURADOS - GRINGA STYLE
@@ -188,7 +188,7 @@ const resolveProductImage = (product: ProductData) => {
 
   if (rawImage.startsWith('http')) return rawImage;
   if (rawImage.startsWith('/')) return `${SITE_URL}${rawImage}`;
-  return `${SITE_URL}/${rawImage}`;
+  return buildStorageUrl(rawImage);
 };
 
 export const ProductSchema = ({ product }: { product: ProductData }) => {
