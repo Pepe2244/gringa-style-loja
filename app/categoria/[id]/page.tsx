@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
 import CategoryPageContent from '@/components/home/CategoryPageContent';
 import { notFound } from 'next/navigation';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 export const revalidate = 60;
 
@@ -47,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const categoryName = category.nome;
     const title = `${categoryName} | Compre Online | Gringa Style`;
     const description = `${categoryName} para soldadores profissionais: máscaras, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.`;
-    const canonicalUrl = `https://gringastylebr.com.br/categoria/${id}`;
+    const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
 
     return {
         title,

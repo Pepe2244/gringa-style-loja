@@ -2,11 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
     title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
     description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
-  alternates: { canonical: '/sobre' },
+  alternates: { canonical: buildCanonicalUrl('/sobre') },
 };
 
 export default function SobrePage() {

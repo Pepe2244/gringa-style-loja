@@ -15,6 +15,7 @@ import {
 } from "@/components/SEO/StructuredData";
 import ScrollToTop from "@/components/ScrollToTop";
 import { MotionConfig } from "framer-motion";
+import { siteConfig } from "@/lib/site-config";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -31,9 +32,9 @@ const teko = Teko({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://gringastylebr.com.br"),
+  metadataBase: new URL(siteConfig.appUrl),
   alternates: {
-    canonical: "/",
+    canonical: siteConfig.appUrl,
   },
   title: {
     default: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
@@ -56,9 +57,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Gringa Style | Máscaras de Solda Personalizadas",
     description: "Estilo e proteção para soldadores profissionais.",
-    url: "https://gringastylebr.com.br",
+    url: siteConfig.appUrl,
     siteName: "Gringa Style",
-    images: [{ url: "/imagens/logo_gringa_style.png", width: 800, height: 600 }],
+    images: [{ url: new URL("/imagens/logo_gringa_style.png", siteConfig.appUrl).toString(), width: 800, height: 600 }],
     locale: "pt_BR",
     type: "website",
   },
@@ -66,7 +67,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Gringa Style",
     description: "Máscaras de solda personalizadas e acessórios para TIG.",
-    images: ["/imagens/logo_gringa_style.png"],
+    images: [new URL("/imagens/logo_gringa_style.png", siteConfig.appUrl).toString()],
   },
 };
 

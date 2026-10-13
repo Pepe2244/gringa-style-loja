@@ -4,6 +4,7 @@ import { Product, Category } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { CollectionPageSchema, BreadcrumbSchema } from '@/components/SEO/StructuredData';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 interface CategoryPageContentProps {
     category: Category;
@@ -12,7 +13,7 @@ interface CategoryPageContentProps {
 
 export default function CategoryPageContent({ category, products }: CategoryPageContentProps) {
     const categoryName = category.nome;
-    const canonicalUrl = `https://gringastylebr.com.br/categoria/${category.id}`;
+    const canonicalUrl = buildCanonicalUrl(`/categoria/${category.id}`);
 
     const introText = getCategoryIntro(categoryName);
 

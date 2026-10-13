@@ -8,6 +8,7 @@ import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
 import { trackEvent, trackFilterUsage, trackSearchQuery } from '@/utils/analytics';
 import { ItemListSchema } from '@/components/SEO/StructuredData';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 // IMPORTAÇÕES DINÂMICAS: Cortam drasticamente o JavaScript inicial carregado na tela.
 // Só baixam quando o usuário chega perto delas ou precisa delas.
@@ -219,7 +220,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 imagens: product.imagens,
                 media_urls: product.media_urls,
                 slug: product.slug
-            }))} pageUrl='https://gringastylebr.com.br/' />
+            }))} pageUrl={buildCanonicalUrl('/')} />
 
             <ProductGrid
                 products={filteredProducts}

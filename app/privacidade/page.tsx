@@ -2,14 +2,16 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BreadcrumbSchema } from '@/components/SEO/StructuredData';
 
+import { buildCanonicalUrl } from '@/lib/site-config';
+
 export const metadata: Metadata = {
   title: 'Política de Privacidade',
   description: 'Conheça nossa política de privacidade e como tratamos seus dados com segurança na Gringa Style, em conformidade com a LGPD.',
-  alternates: { canonical: '/privacidade' },
-    robots: {
-        index: false,
-        follow: true,
-    },
+  alternates: { canonical: buildCanonicalUrl('/privacidade') },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function PrivacyPage() {

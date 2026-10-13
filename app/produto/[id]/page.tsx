@@ -3,14 +3,14 @@ import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
 import { BreadcrumbSchema, ProductSchema } from '@/components/SEO/StructuredData';
 import { notFound, permanentRedirect } from 'next/navigation';
+import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 
 const BUCKET_URL = "https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/gringa-style-produtos/";
-const SITE_URL = "https://gringastylebr.com.br";
 
 const resolveAbsoluteUrl = (path?: string | null) => {
-    if (!path) return `${SITE_URL}/imagens/logo_gringa_style.png`;
+    if (!path) return `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
     if (path.startsWith('http')) return path;
-    if (path.startsWith('/')) return `${SITE_URL}${path}`;
+    if (path.startsWith('/')) return `${siteConfig.appUrl}${path}`;
     return `${BUCKET_URL}${path}`;
 };
 
@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const canonicalSlug = product.slug || slug;
-    const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
+    const productUrl = buildCanonicalUrl(`/produto/${canonicalSlug}`);
 
     const mediaUrls = product.media_urls || product.imagens || [];
     const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
@@ -178,7 +178,7 @@ export default async function ProductPage({ params }: Props) {
         permanentRedirect(`/produto/${product.slug}`);
     }
 
-    const productUrl = `${SITE_URL}/produto/${product.slug || product.id}`;
+    const productUrl = buildCanonicalUrl(`/produto/${product.slug || product.id}`);
 
     return (
         <>

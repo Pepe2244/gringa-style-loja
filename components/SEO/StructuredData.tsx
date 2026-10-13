@@ -1,4 +1,5 @@
 import React from 'react';
+import { siteConfig } from '@/lib/site-config';
 
 /**
  * MOTOR DE DADOS ESTRUTURADOS - GRINGA STYLE
@@ -15,7 +16,7 @@ interface BreadcrumbItem {
   url: string;
 }
 
-const SITE_URL = 'https://gringastylebr.com.br';
+const SITE_URL = siteConfig.appUrl;
 
 const cleanText = (text?: string): string => {
   if (!text) return '';

@@ -3,13 +3,14 @@ import HomeContent from '@/components/home/HomeContent';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 import { getCachedValue } from '@/lib/cache';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Loja Gringa Style | Máscaras de Solda, EPIs e Acessórios TIG',
   description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega, PIX e até 12x sem juros para todo o Brasil.',
-  alternates: { canonical: '/loja' },
+  alternates: { canonical: buildCanonicalUrl('/loja') },
   keywords: [
     'loja solda',
     'máscara de solda',

@@ -1,10 +1,11 @@
 import GrupoHubPage from '@/components/GrupoHubPage';
 import type { Metadata } from 'next';
+import { siteConfig, buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: 'Gringa Style | Máscaras de Solda Personalizadas, EPIs e Acessórios TIG',
   description: 'Máscaras de solda personalizadas em fibra de vidro, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.',
-  alternates: { canonical: '/' },
+  alternates: { canonical: buildCanonicalUrl('/') },
   keywords: [
     'máscara de solda personalizada',
     'máscara de solda tig',
@@ -19,9 +20,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG',
     description: 'Máscaras de solda personalizadas, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil.',
-    url: 'https://gringastylebr.com.br',
+    url: siteConfig.appUrl,
     siteName: 'Gringa Style',
-    images: [{ url: '/imagens/logo_gringa_style.png', width: 800, height: 600 }],
+    images: [{ url: new URL('/imagens/logo_gringa_style.png', siteConfig.appUrl).toString(), width: 800, height: 600 }],
     locale: 'pt_BR',
     type: 'website',
   },
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Gringa Style',
     description: 'Máscaras de solda personalizadas e acessórios para TIG.',
-    images: ['/imagens/logo_gringa_style.png'],
+    images: [new URL('/imagens/logo_gringa_style.png', siteConfig.appUrl).toString()],
   },
 };
 

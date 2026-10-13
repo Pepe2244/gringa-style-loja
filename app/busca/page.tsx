@@ -11,6 +11,7 @@ import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import { trackSearchQuery } from '@/utils/analytics';
 import { ItemListSchema, WebPageSchema } from '@/components/SEO/StructuredData';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -275,7 +276,7 @@ function SearchPageContent() {
                         <WebPageSchema page={{
                             name: 'Resultados de Busca | Gringa Style',
                             description: `Página de resultados de busca para ${query || 'produtos Gringa Style'}`,
-                            url: `https://gringastylebr.com.br/busca?q=${encodeURIComponent(query || '')}`
+                            url: buildCanonicalUrl(`/busca?q=${encodeURIComponent(query || '')}`)
                         }} />
                         <ItemListSchema
                             products={filteredProducts.map(product => ({
@@ -289,7 +290,7 @@ function SearchPageContent() {
                                 media_urls: product.media_urls,
                                 slug: product.slug
                             }))}
-                            pageUrl={`https://gringastylebr.com.br/busca?q=${encodeURIComponent(query || '')}`}
+                            pageUrl={buildCanonicalUrl(`/busca?q=${encodeURIComponent(query || '')}`)}
                         />
 
                         <div style={{ marginTop: '30px', marginBottom: '20px', color: '#888' }}>

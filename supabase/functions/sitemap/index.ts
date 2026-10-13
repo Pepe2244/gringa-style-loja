@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const BASE_URL = 'https://gringastylebr.com.br';
+const BASE_URL = Deno.env.get('NEXT_PUBLIC_SITE_URL') ?? 'https://gringastylebr.com.br';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
