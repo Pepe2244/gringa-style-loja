@@ -50,8 +50,8 @@ export default function GrupoHubPage() {
     <div className="dual-path-page">
       <section className="dual-path-hero">
         <div className="container dual-path-shell">
-          <span className="dual-path-eyebrow">Grupo Gringa Style</span>
-          <h1>DO ENTUSIASTA AO CHÃO DE FÁBRICA.</h1>
+          <span className="dual-path-eyebrow" style={{ display: 'block', textAlign: 'center' }}>Grupo Gringa Style</span>
+          <h1 style={{ textAlign: 'center' }}>DO ENTUSIASTA AO CHÃO DE FÁBRICA.</h1>
           <p className="dual-path-subheadline">
             O Grupo Gringa Style eleva o padrão da soldagem. Escolha o seu caminho.
           </p>

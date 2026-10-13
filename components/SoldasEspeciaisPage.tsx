@@ -5,24 +5,60 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 const diferenciais = [
-  { title: 'Time Qualificado', text: 'Equipe técnica para demandas de soldagem e mecânica industrial.' },
-  { title: 'Atendimento em Todo o Brasil', text: 'Execução e suporte em plantas, manutenção e operações industriais.' },
-  { title: 'Cumprimento de Normas', text: 'Processos alinhados com exigências técnicas e de segurança.' },
-  { title: 'Foco na Operação', text: 'Soluções para apoiar a confiabilidade e reduzir o tempo de parada.' },
+  {
+    title: 'Soldagem industrial',
+    text: 'Recuperação de peças, reforço estrutural e execução de solda em equipamentos e componentes críticos da operação.',
+  },
+  {
+    title: 'Mecânica de manutenção',
+    text: 'Montagem, reparo, ajuste e recuperação de máquinas e sistemas para manter produtividade e disponibilidade.',
+  },
+  {
+    title: 'Manutenção planejada',
+    text: 'Diagnóstico técnico para reduzir falhas, evitar paradas inesperadas e prolongar a vida útil do ativo.',
+  },
+  {
+    title: 'Qualidade e segurança',
+    text: 'Execução orientada por normas, segurança e controle de processo para entregar resultado confiável e durável.',
+  },
 ];
 
 const etapasAtendimento = [
-  { number: '01', title: 'Entendimento da necessidade', text: 'Analisamos a demanda, o equipamento e o contexto da operação.' },
-  { number: '02', title: 'Planejamento técnico', text: 'Alinhamos o escopo do serviço, os recursos necessários e os requisitos de segurança.' },
-  { number: '03', title: 'Execução do serviço', text: 'Realizamos o trabalho com acompanhamento técnico e foco na qualidade da entrega.' },
+  {
+    number: '01',
+    title: 'Diagnóstico técnico',
+    text: 'Inspecionamos o equipamento, identificamos a falha e avaliamos o impacto da operação para definir a melhor solução.',
+  },
+  {
+    number: '02',
+    title: 'Planejamento da intervenção',
+    text: 'Definimos a sequência do trabalho, materiais, processos e critérios de qualidade para execução segura e eficiente.',
+  },
+  {
+    number: '03',
+    title: 'Execução e entrega',
+    text: 'Realizamos solda, reparos e ajustes com controle de qualidade e acompanhamento até o retorno funcional do ativo.',
+  },
+];
+
+const frentesIndustriais = [
+  {
+    title: 'Soldas Especiais',
+    icon: '⚡',
+    tagline: 'Recuperação e reforço estrutural',
+    keywords: ['Estruturas', 'Peças', 'Recuperação', 'Resistência'],
+    summary: 'Execução técnica para reforço, recuperação e reparo de componentes submetidos a esforço, desgaste e condições severas de operação.',
+  },
+  {
+    title: 'Mecânica Industrial',
+    icon: '🔧',
+    tagline: 'Manutenção e disponibilidade operacional',
+    keywords: ['Montagem', 'Ajuste', 'Reparo', 'Disponibilidade'],
+    summary: 'Serviços de manutenção, montagem e ajuste em máquinas e equipamentos para garantir performance, confiabilidade e menor tempo de parada.',
+  },
 ];
 
 export default function GSServicosIndustriaisPage() {
-  const clientsCarouselRef = useRef<HTMLDivElement>(null);
-  const isCarouselInteractingRef = useRef(false);
-  const carouselResumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const carouselDragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number } | null>(null);
-  const [carouselCopies, setCarouselCopies] = useState(3);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [systemPrefersReducedMotion, setSystemPrefersReducedMotion] = useState(false);
   const [formData, setFormData] = useState({
@@ -74,75 +110,6 @@ export default function GSServicosIndustriaisPage() {
     return () => motionPreference.removeEventListener('change', updatePreference);
   }, []);
 
-  useEffect(() => {
-    const carousel = clientsCarouselRef.current;
-    if (!carousel) return;
-
-    let animationFrame = 0;
-    let previousTime = 0;
-    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-    const advanceCarousel = (time: number) => {
-      if (!isCarouselInteractingRef.current && !isCarouselPaused && !motionPreference.matches) {
-        const cycle = carousel.querySelector<HTMLElement>('[data-carousel-cycle]');
-        const cycleWidth = cycle?.getBoundingClientRect().width ?? 0;
-
-        if (cycleWidth > 0 && previousTime > 0) {
-          carousel.scrollLeft += (time - previousTime) * 0.035;
-
-          if (carousel.scrollLeft >= cycleWidth) {
-            carousel.scrollLeft %= cycleWidth;
-          }
-        }
-      }
-
-      previousTime = isCarouselInteractingRef.current || isCarouselPaused || motionPreference.matches ? 0 : time;
-      if (!isCarouselPaused && !motionPreference.matches && document.visibilityState === 'visible') {
-        animationFrame = window.requestAnimationFrame(advanceCarousel);
-      }
-    };
-
-    const startOrStopAnimation = () => {
-      window.cancelAnimationFrame(animationFrame);
-      previousTime = 0;
-      if (!isCarouselPaused && !motionPreference.matches && document.visibilityState === 'visible') {
-        animationFrame = window.requestAnimationFrame(advanceCarousel);
-      }
-    };
-    const handleVisibilityChange = () => startOrStopAnimation();
-
-    startOrStopAnimation();
-    motionPreference.addEventListener('change', startOrStopAnimation);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.cancelAnimationFrame(animationFrame);
-      motionPreference.removeEventListener('change', startOrStopAnimation);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (carouselResumeTimeoutRef.current) {
-        clearTimeout(carouselResumeTimeoutRef.current);
-      }
-    };
-  }, [isCarouselPaused]);
-
-  const pauseCarouselForInteraction = () => {
-    isCarouselInteractingRef.current = true;
-    if (carouselResumeTimeoutRef.current) {
-      clearTimeout(carouselResumeTimeoutRef.current);
-    }
-  };
-
-  const resumeCarouselAfterInteraction = () => {
-    if (carouselResumeTimeoutRef.current) {
-      clearTimeout(carouselResumeTimeoutRef.current);
-    }
-
-    carouselResumeTimeoutRef.current = setTimeout(() => {
-      isCarouselInteractingRef.current = false;
-      carouselResumeTimeoutRef.current = null;
-    }, 1200);
-  };
-
   const clientesFinais = clientesDinamicos.length > 0 ? clientesDinamicos : [
     { name: 'Cliente A', src: '/imagens/logo_gringa_style.png' },
     { name: 'Cliente B', src: '/imagens/logo_gringa_style.png' },
@@ -150,62 +117,7 @@ export default function GSServicosIndustriaisPage() {
     { name: 'Cliente D', src: '/imagens/logo_gringa_style.png' },
     { name: 'Cliente E', src: '/imagens/logo_gringa_style.png' },
   ];
-
-  useEffect(() => {
-    const carousel = clientsCarouselRef.current;
-    if (!carousel) return;
-
-    const updateCopies = () => {
-      const cycle = carousel.querySelector<HTMLElement>('[data-carousel-cycle]');
-      if (!cycle) return;
-
-      const cycleWidth = cycle.getBoundingClientRect().width;
-      if (cycleWidth > 0) {
-        setCarouselCopies(Math.max(3, Math.ceil(carousel.clientWidth / cycleWidth) + 2));
-      }
-    };
-
-    updateCopies();
-    window.addEventListener('resize', updateCopies);
-
-    return () => window.removeEventListener('resize', updateCopies);
-  }, [clientesFinais.length]);
-
-  const handleCarouselPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    pauseCarouselForInteraction();
-
-    if (event.pointerType === 'mouse' && event.button === 0) {
-      carouselDragRef.current = {
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startScrollLeft: event.currentTarget.scrollLeft,
-      };
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-  };
-
-  const handleCarouselPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = carouselDragRef.current;
-    if (drag?.pointerId === event.pointerId) {
-      event.currentTarget.scrollLeft = drag.startScrollLeft - (event.clientX - drag.startX);
-    }
-  };
-
-  const handleCarouselPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (carouselDragRef.current?.pointerId === event.pointerId) {
-      carouselDragRef.current = null;
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-    }
-    resumeCarouselAfterInteraction();
-  };
-
-  const handleCarouselPointerLeave = () => {
-    if (!carouselDragRef.current) {
-      resumeCarouselAfterInteraction();
-    }
-  };
+  const carouselItems = [...clientesFinais, ...clientesFinais];
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -231,7 +143,7 @@ export default function GSServicosIndustriaisPage() {
               <span className="b2b-kicker">GS Serviços Industriais</span>
               <h1>SOLDAS ESPECIAIS E MECÂNICA INDUSTRIAL.</h1>
               <p>
-                Duas frentes integradas para atender às necessidades da indústria: serviços especializados de soldagem e soluções em mecânica industrial.
+                Atuamos em soldagem industrial e mecânica de manutenção para empresas que precisam de confiabilidade, resistência e solução prática em equipamentos, estruturas e componentes críticos.
               </p>
               <div className="b2b-hero-actions">
                 <a
@@ -259,31 +171,51 @@ export default function GSServicosIndustriaisPage() {
             </div>
 
             <div className="b2b-projects-grid">
-              <article className="b2b-project-card">
-                <div className="b2b-project-copy">
-                  <span className="b2b-kicker">Soldas especiais</span>
-                  <h3>Engenharia e execução em soldagem.</h3>
-                  <p>Atuação técnica em soldagem industrial para manutenção e recuperação de equipamentos e componentes.</p>
-                  <ul className="b2b-service-list">
-                    <li>Soldagem especializada para aplicações industriais</li>
-                    <li>Recuperação de componentes e ativos</li>
-                    <li>Serviços de solda em campo e em estruturas industriais</li>
-                  </ul>
-                </div>
-              </article>
+              {frentesIndustriais.map((frente) => (
+                <article key={frente.title} className="b2b-project-card" style={{ minHeight: '280px' }}>
+                  <div className="b2b-project-copy" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'rgba(255,165,0,0.12)',
+                        border: '1px solid rgba(255,165,0,0.28)',
+                        fontSize: '1.5rem',
+                        lineHeight: 1,
+                      }} aria-hidden="true">{frente.icon}</span>
+                      <span className="b2b-kicker">{frente.title}</span>
+                    </div>
 
-              <article className="b2b-project-card">
-                <div className="b2b-project-copy">
-                  <span className="b2b-kicker">Mecânica industrial</span>
-                  <h3>Manutenção e soluções mecânicas.</h3>
-                  <p>Serviços mecânicos para apoiar a disponibilidade e o funcionamento dos equipamentos da sua operação.</p>
-                  <ul className="b2b-service-list">
-                    <li>Manutenção industrial preventiva e corretiva</li>
-                    <li>Montagem e desmontagem de equipamentos</li>
-                    <li>Reparo e recuperação de componentes mecânicos</li>
-                  </ul>
-                </div>
-              </article>
+                    <h3 style={{ marginBottom: '12px' }}>{frente.tagline}</h3>
+                    <p style={{ marginBottom: '18px', color: '#d0d0d0', lineHeight: 1.6 }}>{frente.summary}</p>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: 'auto' }}>
+                      {frente.keywords.map((item) => (
+                        <span
+                          key={item}
+                          style={{
+                            padding: '7px 10px',
+                            borderRadius: '999px',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            background: 'rgba(255,255,255,0.02)',
+                            color: '#d6d6d6',
+                            fontSize: '0.76rem',
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -352,62 +284,32 @@ export default function GSServicosIndustriaisPage() {
         )}
 
         {/* CARROSSEL CONFIANÇA CORRIGIDO */}
-        <section className="b2b-section overflow-hidden bg-black/40 border-y border-white/5">
+        <section className="b2b-section overflow-hidden bg-black/40 border-y border-white/5 clients-marquee-section">
           <div className="container">
             <div className="b2b-section-header text-center">
               <span className="b2b-kicker">Confiança</span>
               <h2>Clientes que confiam em nossa execução.</h2>
             </div>
 
-            <div
-              role="region"
-              aria-label="Carrossel de empresas clientes"
-              tabIndex={0}
-              ref={clientsCarouselRef}
-              onPointerDown={handleCarouselPointerDown}
-              onPointerMove={handleCarouselPointerMove}
-              onPointerUp={handleCarouselPointerUp}
-              onPointerCancel={handleCarouselPointerUp}
-              onPointerLeave={handleCarouselPointerLeave}
-              onFocus={pauseCarouselForInteraction}
-              onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                  resumeCarouselAfterInteraction();
-                }
-              }}
-              className="clients-carousel group relative mt-8 flex cursor-grab snap-x snap-mandatory overflow-x-auto pt-4 pb-4 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--cor-destaque)] md:snap-none md:[mask-image:_linear-gradient(to_right,transparent_0,_black_15%,_black_85%,transparent_100%)]"
-            >
-              <div className="flex w-max">
-                {Array.from({ length: carouselCopies }, (_, copyIndex) => (
-                  <div
-                    key={`clientes-copia-${copyIndex}`}
-                    data-carousel-cycle
-                    className="flex w-max"
-                  >
-                    {clientesFinais.map((cliente, index) => (
-                      <div
-                        key={`cliente-${copyIndex}-${index}`}
-                        className="clients-carousel-item mr-4 flex h-28 w-44 flex-shrink-0 snap-center items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 md:h-32 md:w-56"
-                      >
-                        <div className="relative h-16 w-full md:h-20">
-                          <Image
-                            src={cliente.src}
-                            alt={cliente.name}
-                            fill
-                            sizes="(max-width: 768px) 176px, 224px"
-                            className="object-contain p-2 opacity-75 transition-opacity hover:opacity-100"
-                          />
-                        </div>
-                      </div>
-                    ))}
+            <div className="clients-marquee mt-8" aria-label="Marquee de clientes e parceiros">
+              <div className={`clients-track ${isCarouselPaused ? 'is-paused' : ''} ${systemPrefersReducedMotion ? 'reduced-motion' : ''}`}>
+                {carouselItems.map((cliente, index) => (
+                  <div key={`${cliente.name}-${index}`} className="clients-card">
+                    <div className="clients-card-inner">
+                      <Image
+                        src={cliente.src}
+                        alt={cliente.name}
+                        fill
+                        sizes="(max-width: 768px) 160px, 220px"
+                        className="clients-card-logo"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-            <p className="mt-2 text-center text-sm text-white/60 md:hidden">
-              Deslize para ver mais clientes
-            </p>
-            <div className="mt-3 flex justify-center">
+
+            <div className="mt-4 flex justify-center">
               {systemPrefersReducedMotion ? (
                 <p role="status" className="text-sm text-white/60">
                   Movimento reduzido conforme a preferência do dispositivo
@@ -424,24 +326,83 @@ export default function GSServicosIndustriaisPage() {
               )}
             </div>
 
-            {/* CSS injetado especificamente para este componente para evitar conflitos e bugs no Mobile */}
             <style dangerouslySetInnerHTML={{__html: `
-              .clients-carousel {
-                scrollbar-width: none;
+              .clients-marquee {
+                position: relative;
+                overflow: hidden;
+                mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+                -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
               }
-              .clients-carousel::-webkit-scrollbar {
-                display: none;
+
+              .clients-track {
+                display: flex;
+                width: max-content;
+                gap: 18px;
+                padding: 8px 0 18px;
+                animation: clients-marquee 24s linear infinite;
               }
+
+              .clients-marquee-section:hover .clients-track,
+              .clients-track.is-paused {
+                animation-play-state: paused;
+              }
+
+              .clients-track.reduced-motion {
+                animation: none;
+              }
+
+              .clients-card {
+                flex: 0 0 auto;
+                width: 210px;
+                height: 120px;
+                border-radius: 16px;
+                border: 1px solid rgba(255,255,255,0.09);
+                background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+                transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+              }
+
+              .clients-card:hover {
+                transform: translateY(-3px);
+                border-color: rgba(255,165,0,0.4);
+                box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+              }
+
+              .clients-card-inner {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 16px;
+                filter: grayscale(1) contrast(1.08);
+                opacity: 0.82;
+                transition: filter 0.25s ease, opacity 0.25s ease;
+              }
+
+              .clients-card:hover .clients-card-inner {
+                filter: grayscale(0.15) contrast(1.14);
+                opacity: 1;
+              }
+
+              .clients-card-logo {
+                object-fit: contain;
+                padding: 8px;
+              }
+
+              @keyframes clients-marquee {
+                from { transform: translateX(0); }
+                to { transform: translateX(-50%); }
+              }
+
               @media (max-width: 767px) {
-                .clients-carousel {
-                  -webkit-overflow-scrolling: touch;
-                }
-                .clients-carousel-item {
-                  scroll-snap-align: center;
+                .clients-card {
+                  width: 170px;
+                  height: 100px;
                 }
               }
             `}} />
-
           </div>
         </section>
       </main>
