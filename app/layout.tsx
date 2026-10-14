@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
-import { Roboto, Teko } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -16,20 +15,6 @@ import {
 } from "@/components/SEO/StructuredData";
 import ScrollToTop from "@/components/ScrollToTop";
 import { siteConfig } from "@/lib/site-config";
-
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-const teko = Teko({
-  variable: "--font-teko",
-  subsets: ["latin"],
-  weight: ["700"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.appUrl),
@@ -102,6 +87,16 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Teko:wght@700&display=swap"
+        />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (
@@ -115,7 +110,7 @@ export default function RootLayout({
           </>
         )}
       </head>
-      <body className={`${roboto.variable} ${teko.variable} antialiased`}>
+      <body className="antialiased">
         <GoogleAnalytics gaId={siteConfig.analytics.gaId} />
         <LocalBusinessSchema />
         <WebSiteSchema />
