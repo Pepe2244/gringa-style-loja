@@ -1,0 +1,25 @@
+# Gringa Style
+
+> Loja oficial Gringa Style: referência brasileira em máscaras de solda personalizadas em fibra de vidro, equipamentos de proteção individual (EPIs), tochas, lentes e consumíveis de alta precisão para soldagem TIG e MIG.
+
+A Gringa Style combina artesanato técnico, materiais de padrão aeroespacial e design ergonômico para proporcionar segurança, conforto e estilo ao soldador profissional. Todos os produtos contam com pronta entrega para todo o Brasil, suporte técnico via WhatsApp, pagamento via PIX e parcelamento no cartão.
+
+## Catálogo e Principais Seções
+- [Página Inicial](https://gringastylebr.com.br/): Apresentação da marca, lançamentos, campanhas e principais destaques de equipamentos de soldagem.
+- [Loja Completa](https://gringastylebr.com.br/loja): Catálogo com máscaras personalizadas, lentes protetoras, tochas TIG/MIG e acessórios de reposição.
+- [GS Serviços Industriais](https://gringastylebr.com.br/gs-servicos-industriais): Prestação de serviços de caldeiraria, soldas especiais e montagens industriais.
+- [Rifas Oficiais](https://gringastylebr.com.br/rifa): Participação em sorteios de equipamentos e máscaras de solda customizadas.
+- [Acompanhar Bilhetes](https://gringastylebr.com.br/acompanhar-rifa): Verificação de bilhetes comprados e acompanhamento de sorteios ao vivo.
+- [Histórico de Ganhadores](https://gringastylebr.com.br/historico): Registro auditado e público de ganhadores de campanhas anteriores.
+
+## Institucional e Políticas
+- [Sobre a Gringa Style](https://gringastylebr.com.br/sobre): Missão, visão e compromisso da marca com a valorização da profissão de soldador.
+- [Devolução e Reembolso](https://gringastylebr.com.br/devolucao-e-reembolso): Prazos de garantia legal, política de troca por defeito e devolução conforme o CDC.
+- [Política de Privacidade](https://gringastylebr.com.br/privacidade): Diretrizes de privacidade, segurança no tratamento de dados cadastrais e conformidade LGPD.
+
+## Feeds e Metadados Técnicos
+- [Sitemap XML](https://gringastylebr.com.br/sitemap.xml): Mapa canônico do site para indexação de motores de busca.
+- [Google Merchant Feed](https://gringastylebr.com.br/api/google-feed): Feed XML oficial com produtos, preços e disponibilidade para Google e Bing Shopping.
+
+## Opcional
+- [Visão Geral Expandida (llms-full.txt)](https://gringastylebr.com.br/llms-full.txt): Conteúdo expandido com dados detalhados da loja e serviços.
