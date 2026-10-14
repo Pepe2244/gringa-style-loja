@@ -15,7 +15,6 @@ import {
   OrganizationSchema,
 } from "@/components/SEO/StructuredData";
 import ScrollToTop from "@/components/ScrollToTop";
-import { MotionConfig } from "framer-motion";
 import { siteConfig } from "@/lib/site-config";
 
 const roboto = Roboto({
@@ -122,23 +121,21 @@ export default function RootLayout({
         <WebSiteSchema />
         <OrganizationSchema />
 
-        <MotionConfig reducedMotion="user">
-          <ToastProvider>
-            <ErrorBoundary>
-              <div className="flex flex-col min-h-screen">
-                <Header />
-                <CampaignBannerServer />
-                <main className="flex-grow">{children}</main>
+        <ToastProvider>
+          <ErrorBoundary>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <CampaignBannerServer />
+              <main className="flex-grow">{children}</main>
 
-                <CookieConsent />
-                <AnalyticsLoader />
+              <CookieConsent />
+              <AnalyticsLoader />
 
-                <Footer />
-                <ScrollToTop />
-              </div>
-            </ErrorBoundary>
-          </ToastProvider>
-        </MotionConfig>
+              <Footer />
+              <ScrollToTop />
+            </div>
+          </ErrorBoundary>
+        </ToastProvider>
       </body>
     </html>
   );

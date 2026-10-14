@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
         'www.gringastylebr.com.br',
       ],
     },
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
 
   images: {

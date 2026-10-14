@@ -46,7 +46,13 @@ export default function Header() {
 
     useEffect(() => {
         setMounted(true);
-        checkActiveRaffles();
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            const idleId = (window as any).requestIdleCallback(() => checkActiveRaffles());
+            return () => (window as any).cancelIdleCallback(idleId);
+        } else {
+            const timer = setTimeout(checkActiveRaffles, 1200);
+            return () => clearTimeout(timer);
+        }
     }, []);
 
     const toggleMenu = () => {
