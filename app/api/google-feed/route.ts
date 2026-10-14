@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { slugify } from '@/utils/slugify';
 
 export const revalidate = 3600; // Revalida a cada 1 hora
 
@@ -45,7 +46,10 @@ export async function GET() {
       const rawImage = produto.media_urls[0];
       if (!rawImage || typeof rawImage !== 'string' || !rawImage.trim()) return;
 
-      const productUrl = `${SITE_URL}/produto/${produto.slug || produto.id}`;
+      const canonicalSlug = (produto.slug && String(produto.slug).trim().length > 0)
+        ? String(produto.slug).trim()
+        : slugify(produto.nome) || String(produto.id);
+      const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
       const imageLink = rawImage.startsWith('http')
         ? rawImage
         : `${SITE_URL}${rawImage.startsWith('/') ? rawImage : `/${rawImage}`}`;
@@ -74,7 +78,7 @@ export async function GET() {
             <g:price>${precoBase} BRL</g:price>
             <g:product_type>${escapeXml(`Equipamentos > ${categoriaNome}`)}</g:product_type>
             <g:brand>${escapeXml(brandName)}</g:brand>
-            <g:mpn>${escapeXml(produto.slug || String(produto.id))}</g:mpn>`;
+            <g:mpn>${escapeXml(canonicalSlug)}</g:mpn>`;
       
       // Validação de Identificadores (Crucial para o ROI no Google Ads)
       if (hasGtin) {

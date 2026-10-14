@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
+import { submitToIndexNow } from '@/lib/indexnow';
 
 export async function revalidateProductCache() {
     if (!await isAdminAuthenticated()) {
@@ -16,6 +17,11 @@ export async function revalidateProductCache() {
         revalidatePath('/busca', 'page');       // Resultados de busca e filtros
         revalidatePath('/carrinho', 'page');    // Evita itens fantasmas no checkout
         revalidatePath('/admin', 'layout');     // Sincroniza o painel instantaneamente
+
+        // 2. Notificação IndexNow em segundo plano (não bloqueante)
+        submitToIndexNow().catch((err) => {
+            console.error('[IndexNow] Falha na submissão em background:', err);
+        });
 
         return { success: true };
     } catch (error) {

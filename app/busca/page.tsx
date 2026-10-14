@@ -17,7 +17,14 @@ const PRODUCTS_PER_PAGE = 12;
 
 export default function SearchPage() {
     return (
-        <Suspense fallback={<main className="container" style={{ padding: '48px 0', textAlign: 'center' }}>Carregando busca...</main>}>
+        <Suspense fallback={
+            <main className="container" style={{ padding: '48px 0', textAlign: 'center' }}>
+                <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2.5rem', marginBottom: '20px', color: 'var(--cor-destaque)' }}>
+                    Busca de Produtos
+                </h1>
+                <p style={{ color: '#888' }}>Carregando busca...</p>
+            </main>
+        }>
             <SearchPageContent />
         </Suspense>
     );

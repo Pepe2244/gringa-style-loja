@@ -53,28 +53,80 @@ export async function generateStaticParams() {
     })) || [];
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { id: slug } = await params;
+async function fetchProductBySlugOrId(rawSlugOrId: string) {
+    const raw = (rawSlugOrId || '').trim();
+    if (!raw) return null;
 
-    // 1. Busca pelo Slug Oficial
-    let { data: product } = await supabase
+    let decoded = raw;
+    try {
+        decoded = decodeURIComponent(raw);
+    } catch {
+        decoded = raw;
+    }
+
+    // 1. Busca exata pelo slug oficial
+    const { data: exactProduct } = await supabase
         .from('produtos')
-        .select('nome, descricao, imagens, media_urls, slug, preco, preco_promocional, em_estoque')
-        .eq('slug', slug)
+        .select('*')
+        .eq('slug', decoded)
         .maybeSingle();
 
-    // 2. Fallback de Segurança para slugs antigos com ID
-    if (!product) {
-        const idMatch = slug.match(/^(\d+)/);
-        if (idMatch) {
+    if (exactProduct) return exactProduct;
+
+    // 2. Busca limpando traços duplicados ou nas extremidades (ex: "kit-guerreiro-gtaw-" -> "kit-guerreiro-gtaw")
+    const cleanedSlug = decoded.replace(/^-+|-+$/g, '').replace(/-+/g, '-');
+    if (cleanedSlug && cleanedSlug !== decoded) {
+        const { data: byClean } = await supabase
+            .from('produtos')
+            .select('*')
+            .eq('slug', cleanedSlug)
+            .maybeSingle();
+        if (byClean) return byClean;
+    }
+
+    // 3. Fallback de Segurança para slugs antigos com ID (ex: "8-bon-gringa-style-aba-curva" ou "8")
+    const idMatch = decoded.match(/^(\d+)/);
+    if (idMatch) {
+        const numId = parseInt(idMatch[1], 10);
+        if (!isNaN(numId)) {
             const { data: legacyProduct } = await supabase
                 .from('produtos')
-                .select('nome, descricao, imagens, media_urls, slug, preco, preco_promocional, em_estoque')
-                .eq('id', parseInt(idMatch[1], 10))
+                .select('*')
+                .eq('id', numId)
                 .maybeSingle();
-            product = legacyProduct;
+            if (legacyProduct) return legacyProduct;
         }
     }
+
+    // 4. Fallback por palavras-chave do slug (para URLs históricas do Googlebot com separadores "---" ou acentos removidos)
+    // Ex: "tocha-tig-wp-26-profissional-alta-amperagem---punho-ergonmico-"
+    // Ex: "lente-de-solda-passiva-oudopanda---classe-ptica-1111-profissional"
+    // Ex: "estilo-tropical---mscara-de-solda-em-fibra-de-vidro-personalizada"
+    const stopWords = new Set(['de', 'da', 'do', 'em', 'para', 'com', 'sem', 'style', 'gringa', 'a', 'o', 'e']);
+    const tokens = cleanedSlug
+        .split('-')
+        .filter(t => t.length > 2 && !stopWords.has(t.toLowerCase()))
+        .slice(0, 3);
+
+    if (tokens.length > 0) {
+        const pattern = `%${tokens.join('%')}%`;
+        const { data: matched } = await supabase
+            .from('produtos')
+            .select('*')
+            .ilike('nome', pattern)
+            .limit(1);
+
+        if (matched && matched.length > 0) {
+            return matched[0];
+        }
+    }
+
+    return null;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const { id: slug } = await params;
+    const product = await fetchProductBySlugOrId(slug);
 
     if (!product) {
         return {
@@ -102,7 +154,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description = `Compre ${product.nome}${precoFormatado ? ` por R$ ${precoFormatado}` : ''}. ${estoqueTexto} com envio rápido, PIX com desconto e até 12x no cartão. ${descricaoLimpa}`.substring(0, 155);
 
     return {
-        title,
+        title: {
+            absolute: title,
+        },
         description,
         keywords: [
             product.nome,
@@ -146,26 +200,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
     const { id: slug } = await params;
-
-    // Busca do produto
-    let { data: product } = await supabase
-        .from('produtos')
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle();
-
-    // Fallback caso acesse via ID legado
-    if (!product) {
-        const idMatch = slug.match(/^(\d+)/);
-        if (idMatch) {
-            const { data: legacyProduct } = await supabase
-                .from('produtos')
-                .select('*')
-                .eq('id', parseInt(idMatch[1], 10))
-                .maybeSingle();
-            product = legacyProduct;
-        }
-    }
+    const product = await fetchProductBySlugOrId(slug);
 
     if (!product) {
         notFound();
@@ -196,7 +231,8 @@ export default async function ProductPage({ params }: Props) {
                 imagens: product.imagens,
                 media_urls: product.media_urls,
                 variants: product.variants,
-                tags: product.tags
+                tags: product.tags,
+                marca: 'Gringa Style'
             }} />
             <ProductPageContent id={product.id} initialProduct={product} />
         </>

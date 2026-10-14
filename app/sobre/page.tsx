@@ -7,7 +7,15 @@ import { buildCanonicalUrl } from '@/lib/site-config';
 export const metadata: Metadata = {
     title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
     description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
-  alternates: { canonical: buildCanonicalUrl('/sobre') },
+    alternates: { canonical: buildCanonicalUrl('/sobre') },
+    openGraph: {
+        title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
+        description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
+        url: buildCanonicalUrl('/sobre'),
+        siteName: 'Gringa Style',
+        locale: 'pt_BR',
+        type: 'website',
+    },
 };
 
 export default function SobrePage() {
@@ -16,7 +24,7 @@ export default function SobrePage() {
             <WebPageSchema page={{
                 name: 'Sobre o Grupo Gringa Style',
                 description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
-                url: '/sobre'
+                url: buildCanonicalUrl('/sobre')
             }} />
             <BreadcrumbSchema items={[
                 { name: 'Gringa Style', url: '/' },

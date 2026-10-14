@@ -151,12 +151,20 @@ export async function proxy(request: NextRequest) {
     }
 
     // --- ETAPA 1: FIREWALL (Bloqueio de Bots e Paths Maliciosos) ---
+    const isVerificationOrPublicFeed =
+        pathname === '/robots.txt' ||
+        pathname === '/sitemap.xml' ||
+        pathname.startsWith('/.well-known/') ||
+        pathname.endsWith('.txt') ||
+        pathname.endsWith('.html') ||
+        pathname === '/api/google-feed';
+
     const isMaliciousPath = MALICIOUS_PATHS.some(path => pathname.includes(path));
     const isBadBot = Boolean(userAgent && BLOCKED_BOTS.some(bot =>
         userAgent.toLowerCase().includes(bot.toLowerCase())
     ));
 
-    if (isBadBot || isMaliciousPath) {
+    if (!isVerificationOrPublicFeed && (isBadBot || isMaliciousPath)) {
         return new NextResponse('Edge Firewall Blocked Request', { status: 403 });
     }
 
@@ -233,6 +241,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|favicon.ico).*)',
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|webmanifest)$).*)',
     ],
 };

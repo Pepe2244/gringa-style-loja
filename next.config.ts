@@ -25,6 +25,8 @@ const r2RemotePattern = (() => {
 
 const nextConfig: NextConfig = {
   trailingSlash: false,
+  poweredByHeader: false,
+  compress: true,
 
   compiler: {
     removeConsole: !isDevelopment,
@@ -83,23 +85,20 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
-    return [
-      // 1. Normalização de URLs legadas diretamente para o slug canônico
-      {
-        source: '/produto/kit-guerreiro-gtaw-',
-        destination: '/produto/kit-guerreiro-gtaw---gringa-style',
-        permanent: true,
-      },
-      {
-        source: '/produto/1-mscara-de-solda-pronta-entrega-',
-        destination: '/produto/estilo-tropical---mscara-de-solda-em-fibra-de-vidro-personalizada',
-        permanent: true,
-      },
-    ];
+    return [];
   },
 
   async headers() {
     return [
+      {
+        source: '/imagens/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [

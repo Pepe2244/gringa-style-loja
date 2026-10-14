@@ -49,15 +49,16 @@ export default function Footer() {
                     </p>
                 </div>
 
-                {isPortal && (
-                    <div className="rodape-coluna">
-                        <h2>Conheça o grupo</h2>
-                        <p><Link href="/sobre">Sobre nós</Link></p>
-                        <p><Link href="/loja">Loja Gringa Style</Link></p>
-                        <p><Link href="/gs-servicos-industriais">GS Serviços Industriais</Link></p>
-                        <p><Link href="#contato">Fale com o grupo</Link></p>
-                    </div>
-                )}
+                <div className="rodape-coluna">
+                    <h2>Institucional</h2>
+                    <p><Link href="/sobre">Sobre nós</Link></p>
+                    <p><Link href="/loja">Loja Gringa Style</Link></p>
+                    <p><Link href="/gs-servicos-industriais">GS Serviços Industriais</Link></p>
+                    <p><Link href="/rifa">Ações e Rifas</Link></p>
+                    <p><Link href="/historico">Histórico de Rifas</Link></p>
+                    <p><Link href="/devolucao-e-reembolso">Devolução e Reembolso</Link></p>
+                    <p><Link href="/privacidade">Política de Privacidade</Link></p>
+                </div>
                 
                 <div className="rodape-coluna">
                     <h2>Contato</h2>
@@ -78,14 +79,6 @@ export default function Footer() {
                         </p>
                     ))}
                     <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP {!isServices && '(Loja Online)'}</p>
-                    
-                    {!isServices && !isPortal && (
-                        <>
-                            <p><Link href="/devolucao-e-reembolso">Devolução e Reembolso</Link></p>
-                            <p><Link href="/privacidade">Política de Privacidade</Link></p>
-                        </>
-                    )}
-                    {isPortal && <p><Link href="/privacidade">Política de Privacidade</Link></p>}
                 </div>
 
                 <div className="rodape-coluna">

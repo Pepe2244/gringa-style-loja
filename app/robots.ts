@@ -7,22 +7,15 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        // Regras otimizadas para motores de busca principais (indexação rápida)
-        userAgent: ['Googlebot', 'Bingbot'],
-        allow: '/',
-        disallow: ['/admin/', '/carrinho/', '/pagamento/', '/api/'],
+        // Regras para todos os motores de busca legítimos (Google, Bing, etc.)
+        userAgent: '*',
+        allow: ['/', '/api/google-feed'],
+        disallow: ['/admin/', '/carrinho/', '/pagamento/', '/api/', '/busca', '/busca/'],
       },
       {
-        // Bloqueia bots de raspagem e treinamento de IA para economizar tráfego
+        // Bloqueia bots de raspagem massiva e treinamento de IA
         userAgent: ['GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot', 'PerplexityBot', 'ClaudeBot', 'AnthropicAI'],
         disallow: '/',
-      },
-      {
-        // Regras para demais rastreadores
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/admin/', '/carrinho/', '/pagamento/', '/api/'],
-        crawlDelay: 5,
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

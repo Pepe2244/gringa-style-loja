@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 import { getCachedValue } from '@/lib/cache';
 import { buildCanonicalUrl } from '@/lib/site-config';
+import { BreadcrumbSchema, CollectionPageSchema } from '@/components/SEO/StructuredData';
 
 export const revalidate = 60;
 
@@ -19,6 +20,14 @@ export const metadata: Metadata = {
     'tocha solda',
     'gringa style loja',
   ],
+  openGraph: {
+    title: 'Loja Gringa Style | Máscaras de Solda, EPIs e Acessórios TIG',
+    description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil.',
+    url: buildCanonicalUrl('/loja'),
+    siteName: 'Gringa Style',
+    locale: 'pt_BR',
+    type: 'website',
+  },
 };
 
 export default async function LojaPage() {
@@ -56,5 +65,31 @@ export default async function LojaPage() {
     ),
   ]);
 
-  return <HomeContent initialProducts={products} categories={categories} diasNovo={diasNovo} />;
+  const lojaUrl = buildCanonicalUrl('/loja');
+
+  return (
+    <>
+      <BreadcrumbSchema items={[
+        { name: 'Início', url: '/' },
+        { name: 'Loja', url: lojaUrl },
+      ]} />
+      <CollectionPageSchema page={{
+        name: 'Loja Gringa Style',
+        description: 'Catálogo de máscaras de solda personalizadas, EPIs e acessórios para soldagem TIG e MIG.',
+        url: lojaUrl,
+        products: products.map(p => ({
+          id: p.id,
+          nome: p.nome,
+          descricao: p.descricao,
+          preco: p.preco,
+          preco_promocional: p.preco_promocional,
+          em_estoque: p.em_estoque,
+          imagens: p.imagens,
+          media_urls: p.media_urls,
+          slug: p.slug,
+        })),
+      }} />
+      <HomeContent initialProducts={products} categories={categories} diasNovo={diasNovo} />
+    </>
+  );
 }

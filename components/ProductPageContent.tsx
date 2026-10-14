@@ -255,7 +255,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             )}
 
             <div className="titulo-mobile-container" style={{ display: 'none', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', marginTop: '20px' }}>
-                <h1 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0 }}>{product?.nome}</h1>
+                <span role="heading" aria-level={1} style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', lineHeight: '1.1', color: 'var(--cor-destaque)', margin: 0, fontWeight: 'bold', display: 'block' }}>{product?.nome}</span>
                 <button onClick={handleShare} className="btn-share" aria-label="Compartilhar" style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', padding: '0 0 0 10px' }}>
                     <Share2 size={24} />
                 </button>
