@@ -14,7 +14,7 @@ export const siteConfig = {
   analytics: {
     gaId: process.env.NEXT_PUBLIC_GA_ID || 'G-2L2F9CY9JN',
     ahrefsKey: process.env.AHREFS_KEY || 'Sam0BvC3Nm1qohD+XzVeLA',
-    clarityId: process.env.NEXT_PUBLIC_CLARITY_ID || 'vybz5xptlm',
+    clarityId: process.env.NEXT_PUBLIC_CLARITY_ID || 'ymagctc0fi',
   },
   content: {
     revalidateSeconds: Number(process.env.NEXT_PUBLIC_REVALIDATE_SECONDS || 60),

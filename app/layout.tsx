@@ -98,6 +98,19 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Teko:wght@700&display=swap"
         />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
+        {/* Microsoft Clarity */}
+        <link rel="preconnect" href="https://www.clarity.ms" />
+        <link rel="preconnect" href="https://c.clarity.ms" />
+        <script
+          type="text/javascript"
+          dangerouslySetInnerHTML={{
+            __html: `(function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "ymagctc0fi");`,
+          }}
+        />
         {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (
           <>
