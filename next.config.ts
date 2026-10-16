@@ -85,7 +85,20 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
-    return [];
+    return [
+      {
+        source: '/_next/image',
+        has: [
+          {
+            type: 'query',
+            key: 'url',
+            value: '(.*)tsilaaurmpahookyanbe(.*)',
+          },
+        ],
+        destination: '/imagens/logo_gringa_style.png',
+        permanent: true,
+      },
+    ];
   },
 
   async headers() {
