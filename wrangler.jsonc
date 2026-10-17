@@ -1,0 +1,46 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gringa-style-loja",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-12",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "services": [
+    {
+      // Deve apontar para o próprio Worker (mesmo valor de "name").
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "gringa-style-loja"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "temp-app-opennext-cache"
+    }
+  ],
+  // Mantém as variáveis/segredos já cadastrados no painel da Cloudflare
+  // (ADMIN_PASSWORD, R2_*, SUPABASE_SERVICE_ROLE_KEY, SUPERFRETE_TOKEN, etc.)
+  // em vez de apagá-los a cada deploy.
+  "keep_vars": true,
+  // Somente valores não sensíveis ficam versionados aqui.
+  "vars": {
+    "CONVEX_DEPLOYMENT": "dev:dapper-capybara-156",
+    "NEXT_PUBLIC_CONVEX_SITE_URL": "https://dapper-capybara-156.convex.site",
+    "NEXT_PUBLIC_CONVEX_URL": "https://dapper-capybara-156.convex.cloud",
+    "NEXT_PUBLIC_PIX_KEY": "38840525866",
+    "NEXT_PUBLIC_R2_PUBLIC_URL": "https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2Z2FiZGh2ZWttZGhmdnp0ZW93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDIzNTgsImV4cCI6MjEwMjcxODM1OH0.oy3G65gw5cWvljjyt0LoZSXk7cnzEQ2BJ9IYtuHtnck",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://evgabdhvekmdhfvzteow.supabase.co",
+    "R2_ACCOUNT_ID": "ec7935770dca17ad97ff9d9978727494",
+    "R2_BUCKET_NAME": "gringa-imagens"
+  }
+}
