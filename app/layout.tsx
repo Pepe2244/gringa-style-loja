@@ -105,9 +105,6 @@ export default function RootLayout({
         />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="preconnect" href="https://analytics.google.com" />
-        {/* Microsoft Clarity */}
-        <link rel="preconnect" href="https://www.clarity.ms" />
-        <link rel="preconnect" href="https://c.clarity.ms" />
         {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (
           <>
