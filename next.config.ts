@@ -98,6 +98,12 @@ const nextConfig: NextConfig = {
         destination: '/imagens/logo_gringa_style.png',
         permanent: true,
       },
+      {
+        // Slug antigo (acentos removidos) da máscara Croco Green, renomeada para "Linha Sand Croco"
+        source: '/produto/mscara-de-solda-gringa-style---croco-green--sand',
+        destination: '/produto/mascara-de-solda-gringa-style-linha-sand-croco',
+        permanent: true,
+      },
     ];
   },
 
@@ -105,6 +111,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/imagens/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/fonts/:path*',
         headers: [
           {
             key: 'Cache-Control',

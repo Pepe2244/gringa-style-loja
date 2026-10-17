@@ -12,11 +12,8 @@ export default function robots(): MetadataRoute.Robots {
         allow: ['/', '/api/google-feed'],
         disallow: ['/admin/', '/carrinho/', '/pagamento/', '/api/', '/busca', '/busca/'],
       },
-      {
-        // Bloqueia bots de raspagem massiva e treinamento de IA
-        userAgent: ['GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot', 'PerplexityBot', 'ClaudeBot', 'AnthropicAI'],
-        disallow: '/',
-      },
+      // IAs (GPTBot, ChatGPT-User, OAI-SearchBot, PerplexityBot, ClaudeBot, Google-Extended etc.)
+      // NÃO têm grupo próprio de propósito: seguem a regra '*' acima e podem ler o site (veja /llms.txt).
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };

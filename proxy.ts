@@ -5,13 +5,14 @@ import { Redis } from '@upstash/redis';
 // ==========================================
 // 1. CONFIGURAÇÕES DE FIREWALL (EDGE)
 // ==========================================
+// IAs que lêem o site (GPTBot, ChatGPT-User, OAI-SearchBot, PerplexityBot, ClaudeBot, anthropic-ai,
+// CCBot, Amazonbot) foram removidas da lista de propósito: queremos ser lidos por assistentes de IA.
 const BLOCKED_BOTS = [
     'DotBot', 'SemrushBot', 'MJ12bot', 'Cyberscan',
     'PetalBot', 'Baiduspider', 'YandexBot', 'DataForSeoBot',
-    'GPTBot', 'ChatGPT-User', 'CCBot', 'Omgilibot',
-    'PerplexityBot', 'ClaudeBot', 'anthropic-ai', 'Barkrowler', 
-    'MegaIndex', 'SeekportBot', 'Serpstatbot', 'Bytespider', 
-    'Amazonbot', 'TurnitinBot', 'Scrapy', 'python-requests', 
+    'Omgilibot', 'Barkrowler',
+    'MegaIndex', 'SeekportBot', 'Serpstatbot', 'Bytespider',
+    'TurnitinBot', 'Scrapy', 'python-requests',
     'curl', 'wget'
 ];
 

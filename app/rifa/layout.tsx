@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-    title: 'Ação Entre Amigos / Rifa de Solda | Gringa Style',
+    title: { absolute: 'Ação Entre Amigos / Rifa de Solda | Gringa Style' },
     description: 'Participe da nossa ação entre amigos e concorra a máscaras de solda personalizadas, tochas TIG e equipamentos exclusivos.',
     alternates: {
         canonical: buildCanonicalUrl('/rifa'),

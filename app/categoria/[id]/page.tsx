@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!category) {
         return {
-            title: 'Categoria não encontrada | Gringa Style',
+            title: { absolute: 'Categoria não encontrada | Gringa Style' },
             description: 'A categoria que você procura não foi encontrada.',
         };
     }
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
 
     return {
-        title,
+        title: { absolute: title },
         description,
         keywords: [categoryName, 'máscara de solda', 'epi soldador', 'solda tig', 'gringa style', 'acessórios solda'],
         alternates: { canonical: canonicalUrl },

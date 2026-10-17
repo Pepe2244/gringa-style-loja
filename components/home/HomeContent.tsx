@@ -220,7 +220,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 imagens: product.imagens,
                 media_urls: product.media_urls,
                 slug: product.slug
-            }))} pageUrl={buildCanonicalUrl('/')} />
+            }))} pageUrl={buildCanonicalUrl('/loja')} />
 
             <ProductGrid
                 products={filteredProducts}

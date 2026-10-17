@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-  title: 'Busca de Produtos | Gringa Style',
+  title: { absolute: 'Busca de Produtos | Gringa Style' },
   description: 'Pesquise máscaras de solda, tochas, consumíveis e EPIs na Gringa Style.',
   alternates: { canonical: buildCanonicalUrl('/busca') },
   robots: {

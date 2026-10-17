@@ -98,6 +98,28 @@ async function fetchProductBySlugOrId(rawSlugOrId: string) {
         }
     }
 
+    // 3.5. Slugs legados gerados por versão antiga do slugify (letras acentuadas eram APAGADAS, não convertidas)
+    // Ex: "mscara-de-solda---air-model" era "Máscara de solda - Air Model"
+    const collapse = (s: string) => s.replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+    const legacyTarget = collapse(decoded.toLowerCase());
+    if (legacyTarget) {
+        const { data: allProducts } = await supabase
+            .from('produtos')
+            .select('*')
+            .limit(500);
+
+        const legacyMatch = (allProducts || []).find((p: { nome?: string | null }) => {
+            if (!p.nome) return false;
+            const legacySlug = p.nome
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '-');
+            return collapse(legacySlug) === legacyTarget;
+        });
+        if (legacyMatch) return legacyMatch;
+    }
+
     // 4. Fallback por palavras-chave do slug (para URLs históricas do Googlebot com separadores "---" ou acentos removidos)
     // Ex: "tocha-tig-wp-26-profissional-alta-amperagem---punho-ergonmico-"
     // Ex: "lente-de-solda-passiva-oudopanda---classe-ptica-1111-profissional"
@@ -130,7 +152,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!product) {
         return {
-            title: 'Produto não encontrado | Gringa Style',
+            title: { absolute: 'Produto não encontrado | Gringa Style' },
             description: 'O produto que você procura não foi encontrado ou está esgotado.'
         };
     }

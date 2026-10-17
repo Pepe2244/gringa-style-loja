@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import "./fonts.css";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -87,15 +88,20 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Fontes auto-hospedadas (ver app/fonts.css): preload apenas das críticas */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
+          rel="preload"
+          href="/fonts/roboto-400-latin.woff2"
+          as="font"
+          type="font/woff2"
           crossOrigin="anonymous"
         />
         <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Teko:wght@700&display=swap"
+          rel="preload"
+          href="/fonts/teko-700-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         {/* Microsoft Clarity */}
