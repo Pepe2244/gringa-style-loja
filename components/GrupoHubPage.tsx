@@ -63,11 +63,11 @@ export default function GrupoHubPage() {
                   src="/imagens/mascara personalizada 1.jpg"
                   alt="Máscara de solda personalizada Gringa Style"
                   fill
-                  sizes="(max-width: 640px) 360px, (max-width: 1024px) 480px, 490px"
+                  sizes="(max-width: 640px) 320px, (max-width: 1024px) 440px, 490px"
                   priority
                   fetchPriority="high"
                   loading="eager"
-                  quality={70}
+                  quality={65}
                 />
               </div>
               <span className="dual-path-badge">B2C</span>
@@ -87,9 +87,9 @@ export default function GrupoHubPage() {
                   src="/imagens/tocha 1.jpg"
                   alt="Equipamento para soldagem profissional"
                   fill
-                  sizes="(max-width: 640px) 360px, (max-width: 1024px) 480px, 490px"
+                  sizes="(max-width: 640px) 320px, (max-width: 1024px) 440px, 490px"
                   loading="lazy"
-                  quality={70}
+                  quality={65}
                 />
               </div>
               <span className="dual-path-badge dual-path-badge-industrial">B2B</span>
