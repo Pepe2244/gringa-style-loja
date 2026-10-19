@@ -247,7 +247,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     items={[
                         { 
                             label: product.categoria_id ? categories?.find((c: any) => c.id === product.categoria_id)?.nome || 'Produtos' : 'Produtos', 
-                            href: '/#produtos' 
+                            href: product.categoria_id ? `/categoria/${product.categoria_id}` : '/loja' 
                         },
                         { label: product.nome }
                     ]}
@@ -325,21 +325,24 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     </div>
 
                     <div className="produto-miniaturas" style={{ marginTop: '20px' }}>
-                        {mediaUrls.map((url, idx) => (
-                            <Image
-                                key={idx}
-                                src={resolveOriginalUrl(url)}
-                                className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
-                                onClick={() => setCurrentImageIndex(idx)}
-                                alt={`Miniatura ${idx + 1}`}
-                                loading="lazy"
-                                width={100}
-                                height={100}
-                                style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent', objectFit: 'cover', cursor: 'pointer' }}
-                                placeholder="blur"
-                                blurDataURL={BLUR_DATA_URL}
-                            />
-                        ))}
+                        {mediaUrls.map((url, idx) => {
+                            const originalSrc = resolveOriginalUrl(url) || fallbackImage;
+                            const isR2 = originalSrc.includes('r2.dev') || originalSrc.includes('pub-');
+                            return (
+                                <Image
+                                    key={idx}
+                                    src={originalSrc}
+                                    className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
+                                    onClick={() => setCurrentImageIndex(idx)}
+                                    alt={`${product?.nome || 'Equipamento'} - Foto ${idx + 1}`}
+                                    loading="lazy"
+                                    width={100}
+                                    height={100}
+                                    unoptimized={isR2}
+                                    style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent', objectFit: 'cover', cursor: 'pointer' }}
+                                />
+                            );
+                        })}
                     </div>
 
                     <div className="produto-descricao-container desktop-only-description" style={{ marginTop: '24px', borderTop: '1px solid #333', paddingTop: '24px' }}>
@@ -540,13 +543,12 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                             />
                                         ) : (
                                             <Image
-                                                src={resolveOriginalUrl(mediaUrl)}
+                                                src={resolveOriginalUrl(mediaUrl) || fallbackImage}
                                                 alt={rel.nome}
                                                 fill
                                                 sizes="(max-width: 768px) 50vw, 25vw"
                                                 style={{ objectFit: 'cover' }}
-                                                placeholder="blur"
-                                                blurDataURL={BLUR_DATA_URL}
+                                                unoptimized={(resolveOriginalUrl(mediaUrl) || '').includes('r2.dev')}
                                             />
                                         )}
                                     </div>

@@ -1,4 +1,5 @@
 import { Category } from '@/types';
+import Link from 'next/link';
 import { Search, X, ChevronDown, ChevronUp, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -259,6 +260,46 @@ export default function ProductFilters({
                         </div>
                     </div>
                 </div>
+
+                {categories.length > 0 && (
+                    <nav aria-label="Categorias da Loja" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #222' }}>
+                        <Link
+                            href="/loja"
+                            style={{
+                                padding: '5px 12px',
+                                borderRadius: '16px',
+                                fontSize: '0.82rem',
+                                textDecoration: 'none',
+                                border: '1px solid',
+                                borderColor: selectedCategory === null ? 'var(--cor-destaque)' : '#333',
+                                backgroundColor: selectedCategory === null ? 'rgba(255,165,0,0.12)' : '#1a1a1a',
+                                color: selectedCategory === null ? 'var(--cor-destaque)' : '#aaa',
+                                transition: 'all 0.2s ease',
+                            }}
+                        >
+                            Todas as Categorias
+                        </Link>
+                        {categories.map((cat) => (
+                            <Link
+                                key={cat.id}
+                                href={`/categoria/${cat.id}`}
+                                style={{
+                                    padding: '5px 12px',
+                                    borderRadius: '16px',
+                                    fontSize: '0.82rem',
+                                    textDecoration: 'none',
+                                    border: '1px solid',
+                                    borderColor: selectedCategory === cat.id ? 'var(--cor-destaque)' : '#333',
+                                    backgroundColor: selectedCategory === cat.id ? 'rgba(255,165,0,0.12)' : '#1a1a1a',
+                                    color: selectedCategory === cat.id ? 'var(--cor-destaque)' : '#aaa',
+                                    transition: 'all 0.2s ease',
+                                }}
+                            >
+                                {cat.nome}
+                            </Link>
+                        ))}
+                    </nav>
+                )}
             </div>
         </div>
     );

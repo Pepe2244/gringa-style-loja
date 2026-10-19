@@ -33,9 +33,6 @@
   "keep_vars": true,
   // Somente valores não sensíveis ficam versionados aqui.
   "vars": {
-    "CONVEX_DEPLOYMENT": "dev:dapper-capybara-156",
-    "NEXT_PUBLIC_CONVEX_SITE_URL": "https://dapper-capybara-156.convex.site",
-    "NEXT_PUBLIC_CONVEX_URL": "https://dapper-capybara-156.convex.cloud",
     "NEXT_PUBLIC_PIX_KEY": "38840525866",
     "NEXT_PUBLIC_R2_PUBLIC_URL": "https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2Z2FiZGh2ZWttZGhmdnp0ZW93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDIzNTgsImV4cCI6MjEwMjcxODM1OH0.oy3G65gw5cWvljjyt0LoZSXk7cnzEQ2BJ9IYtuHtnck",

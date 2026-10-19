@@ -53,6 +53,34 @@ export async function generateStaticParams() {
     })) || [];
 }
 
+// Cache em memória compartilhado para evitar queries repetidas ao banco durante o ciclo de renderização
+let allProductsCache: any[] | null = null;
+let allProductsCacheTime = 0;
+
+async function getAllActiveProducts() {
+    const now = Date.now();
+    if (allProductsCache && (now - allProductsCacheTime < 60000)) {
+        return allProductsCache;
+    }
+    const { data } = await supabase
+        .from('produtos')
+        .select('*')
+        .limit(500);
+    allProductsCache = data || [];
+    allProductsCacheTime = now;
+    return allProductsCache;
+}
+
+// Normaliza uma string para comparação fonética/de slug (remove acentos, pontuações e hifens extras)
+function normalizeSlugCompare(str: string): string {
+    return (str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
 async function fetchProductBySlugOrId(rawSlugOrId: string) {
     const raw = (rawSlugOrId || '').trim();
     if (!raw) return null;
@@ -64,7 +92,7 @@ async function fetchProductBySlugOrId(rawSlugOrId: string) {
         decoded = raw;
     }
 
-    // 1. Busca exata pelo slug oficial
+    // 1. Busca exata pelo slug oficial no banco
     const { data: exactProduct } = await supabase
         .from('produtos')
         .select('*')
@@ -73,7 +101,7 @@ async function fetchProductBySlugOrId(rawSlugOrId: string) {
 
     if (exactProduct) return exactProduct;
 
-    // 2. Busca limpando traços duplicados ou nas extremidades (ex: "kit-guerreiro-gtaw-" -> "kit-guerreiro-gtaw")
+    // 2. Busca limpando traços duplicados ou nas extremidades
     const cleanedSlug = decoded.replace(/^-+|-+$/g, '').replace(/-+/g, '-');
     if (cleanedSlug && cleanedSlug !== decoded) {
         const { data: byClean } = await supabase
@@ -84,7 +112,7 @@ async function fetchProductBySlugOrId(rawSlugOrId: string) {
         if (byClean) return byClean;
     }
 
-    // 3. Fallback de Segurança para slugs antigos com ID (ex: "8-bon-gringa-style-aba-curva" ou "8")
+    // 3. Fallback por ID numérico (ex: "23" ou "23-oculos-steelflex")
     const idMatch = decoded.match(/^(\d+)/);
     if (idMatch) {
         const numId = parseInt(idMatch[1], 10);
@@ -98,48 +126,43 @@ async function fetchProductBySlugOrId(rawSlugOrId: string) {
         }
     }
 
-    // 3.5. Slugs legados gerados por versão antiga do slugify (letras acentuadas eram APAGADAS, não convertidas)
-    // Ex: "mscara-de-solda---air-model" era "Máscara de solda - Air Model"
-    const collapse = (s: string) => s.replace(/-+/g, '-').replace(/^-+|-+$/g, '');
-    const legacyTarget = collapse(decoded.toLowerCase());
-    if (legacyTarget) {
-        const { data: allProducts } = await supabase
-            .from('produtos')
-            .select('*')
-            .limit(500);
-
-        const legacyMatch = (allProducts || []).find((p: { nome?: string | null }) => {
-            if (!p.nome) return false;
-            const legacySlug = p.nome
+    // 4. RESOLUÇÃO DEFINITIVA ACCENT-INSENSITIVE:
+    // Compara o slug solicitado contra:
+    // a) O slug no banco normalizado
+    // b) O slugify do nome do produto no banco (com acentos convertidos corretamente)
+    // c) O slug legado do banco sem acentos
+    const targetNorm = normalizeSlugCompare(decoded);
+    if (targetNorm) {
+        const allProducts = await getAllActiveProducts();
+        const found = allProducts.find((p: any) => {
+            if (!p) return false;
+            if (p.slug && normalizeSlugCompare(p.slug) === targetNorm) return true;
+            if (p.nome && normalizeSlugCompare(p.nome) === targetNorm) return true;
+            // Compatibilidade com slugs antigos onde as letras acentuadas foram apagadas (ex: "mscara")
+            const legacyStripped = (p.nome || '')
                 .toLowerCase()
                 .replace(/[^a-z0-9\s-]/g, '')
                 .trim()
-                .replace(/\s+/g, '-');
-            return collapse(legacySlug) === legacyTarget;
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            if (legacyStripped && legacyStripped === targetNorm) return true;
+            return false;
         });
-        if (legacyMatch) return legacyMatch;
-    }
 
-    // 4. Fallback por palavras-chave do slug (para URLs históricas do Googlebot com separadores "---" ou acentos removidos)
-    // Ex: "tocha-tig-wp-26-profissional-alta-amperagem---punho-ergonmico-"
-    // Ex: "lente-de-solda-passiva-oudopanda---classe-ptica-1111-profissional"
-    // Ex: "estilo-tropical---mscara-de-solda-em-fibra-de-vidro-personalizada"
-    const stopWords = new Set(['de', 'da', 'do', 'em', 'para', 'com', 'sem', 'style', 'gringa', 'a', 'o', 'e']);
-    const tokens = cleanedSlug
-        .split('-')
-        .filter(t => t.length > 2 && !stopWords.has(t.toLowerCase()))
-        .slice(0, 3);
+        if (found) return found;
 
-    if (tokens.length > 0) {
-        const pattern = `%${tokens.join('%')}%`;
-        const { data: matched } = await supabase
-            .from('produtos')
-            .select('*')
-            .ilike('nome', pattern)
-            .limit(1);
+        // 5. Fallback por similaridade de tokens principais (para URLs históricas truncadas pelo Googlebot)
+        const stopWords = new Set(['de', 'da', 'do', 'em', 'para', 'com', 'sem', 'style', 'gringa', 'a', 'o', 'e']);
+        const tokens = targetNorm
+            .split('-')
+            .filter(t => t.length > 2 && !stopWords.has(t));
 
-        if (matched && matched.length > 0) {
-            return matched[0];
+        if (tokens.length >= 2) {
+            const candidate = allProducts.find((p: any) => {
+                const normName = normalizeSlugCompare(p.nome || '');
+                return tokens.every(token => normName.includes(token));
+            });
+            if (candidate) return candidate;
         }
     }
 
@@ -220,6 +243,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
+const CATEGORY_NAMES: Record<number, string> = {
+    4: 'Camisas',
+    5: 'Bonés',
+    6: 'Máscaras',
+    7: 'Acessórios',
+    8: 'Kits',
+};
+
 export default async function ProductPage({ params }: Props) {
     const { id: slug } = await params;
     const product = await fetchProductBySlugOrId(slug);
@@ -234,12 +265,16 @@ export default async function ProductPage({ params }: Props) {
     }
 
     const productUrl = buildCanonicalUrl(`/produto/${product.slug || product.id}`);
+    const categoryName = product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null;
 
     return (
         <>
             <BreadcrumbSchema items={[
                 { name: 'Início', url: '/' },
                 { name: 'Loja', url: '/loja' },
+                ...(product.categoria_id && categoryName ? [
+                    { name: categoryName, url: `/categoria/${product.categoria_id}` }
+                ] : []),
                 { name: product.nome, url: productUrl }
             ]} />
             <ProductSchema product={{

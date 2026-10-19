@@ -301,16 +301,19 @@ export default function CartPage() {
             return;
         }
 
+        const isMobile = typeof window !== 'undefined' && (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768);
         let checkoutWindow: Window | null = null;
-        try {
-            checkoutWindow = window.open('', '_blank');
-            if (checkoutWindow) {
-                checkoutWindow.opener = null;
-                checkoutWindow.document.title = 'Validando pedido...';
-                checkoutWindow.document.body.textContent = 'Validando preços, estoque e frete...';
+        if (!isMobile) {
+            try {
+                checkoutWindow = window.open('', '_blank');
+                if (checkoutWindow) {
+                    checkoutWindow.opener = null;
+                    checkoutWindow.document.title = 'Validando pedido...';
+                    checkoutWindow.document.body.textContent = 'Validando preços, estoque e frete...';
+                }
+            } catch {
+                checkoutWindow = null;
             }
-        } catch {
-            checkoutWindow = null;
         }
 
         setIsCheckingOut(true);

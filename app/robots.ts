@@ -7,13 +7,15 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        // Regras para todos os motores de busca legítimos (Google, Bing, etc.)
+        userAgent: ['Googlebot', 'Storebot-Google', 'Google-InspectionTool'],
+        allow: ['/', '/api/google-feed'],
+        disallow: ['/admin/', '/carrinho/', '/pagamento/', '/busca'],
+      },
+      {
         userAgent: '*',
         allow: ['/', '/api/google-feed'],
-        disallow: ['/admin/', '/carrinho/', '/pagamento/', '/api/', '/busca', '/busca/'],
+        disallow: ['/admin/', '/carrinho/', '/pagamento/', '/api/', '/busca'],
       },
-      // IAs (GPTBot, ChatGPT-User, OAI-SearchBot, PerplexityBot, ClaudeBot, Google-Extended etc.)
-      // NÃO têm grupo próprio de propósito: seguem a regra '*' acima e podem ler o site (veja /llms.txt).
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };

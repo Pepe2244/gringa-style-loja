@@ -8,14 +8,14 @@ export default function ConfigManager() {
     const [diasNovo, setDiasNovo] = useState('');
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        fetchConfig();
-    }, []);
-
     const fetchConfig = async () => {
         const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle();
         if (data) setDiasNovo(data.valor);
     };
+
+    useEffect(() => {
+        fetchConfig();
+    }, []);
 
     const handleSave = async () => {
         if (!diasNovo) return;

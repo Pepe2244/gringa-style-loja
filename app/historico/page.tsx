@@ -11,10 +11,6 @@ export default function HistoricoPage() {
     const [premios, setPremios] = useState<Premio[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchHistory();
-    }, []);
-
     const fetchHistory = async () => {
         setLoading(true);
         try {
@@ -30,16 +26,16 @@ export default function HistoricoPage() {
         }
     };
 
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
     const censurarNumero = (numero: number, totalDigitos: number) => {
         if (numero === null || numero === undefined) return '';
         const numeroString = String(numero).padStart(totalDigitos, '0');
         const metadeVisivel = Math.ceil(numeroString.length / 2);
         return numeroString.substring(0, metadeVisivel) + '*'.repeat(numeroString.length - metadeVisivel);
     };
-
-    if (loading) {
-        return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando histórico...</div>;
-    }
 
     return (
         <>
@@ -54,10 +50,13 @@ export default function HistoricoPage() {
             ]} />
             <div className="container historico-container">
             <h1 className="titulo-secao">Histórico de Rifas</h1>
-            <div id="historico-lista" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {rifas.length === 0 ? (
-                    <p style={{ textAlign: 'center', color: '#ccc' }}>Nenhuma rifa foi finalizada ainda.</p>
-                ) : (
+            {loading ? (
+                <div style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando histórico...</div>
+            ) : (
+                <div id="historico-lista" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {rifas.length === 0 ? (
+                        <p style={{ textAlign: 'center', color: '#ccc' }}>Nenhuma rifa foi finalizada ainda.</p>
+                    ) : (
                     rifas.map(rifa => {
                         const premiosDaRifa = premios.filter(p => p.rifa_id === rifa.id);
                         if (premiosDaRifa.length === 0) return null;
@@ -66,7 +65,7 @@ export default function HistoricoPage() {
 
                         // Fallback para logo se não houver imagem da rifa
                         const rifaImagem = rifa.imagem_premio_url
-                            ? `${getProxiedImageUrl(rifa.imagem_premio_url)}?format=webp&width=150&quality=75`
+                            ? getProxiedImageUrl(rifa.imagem_premio_url)
                             : '/imagens/gringa_style_logo.png';
 
                         return (
@@ -122,7 +121,7 @@ export default function HistoricoPage() {
                                         }}>
                                             {premio.imagem_url ? (
                                                 <Image
-                                                    src={`${getProxiedImageUrl(premio.imagem_url)}?format=webp&width=60&quality=75`}
+                                                    src={getProxiedImageUrl(premio.imagem_url)}
                                                     alt={premio.descricao}
                                                     width={50}
                                                     height={50}
@@ -149,6 +148,7 @@ export default function HistoricoPage() {
                     })
                 )}
             </div>
+            )}
         </div>
     </>
     );

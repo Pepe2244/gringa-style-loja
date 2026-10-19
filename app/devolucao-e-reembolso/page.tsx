@@ -1,7 +1,25 @@
-'use client';
-
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BreadcrumbSchema } from '@/components/SEO/StructuredData';
+import { buildCanonicalUrl } from '@/lib/site-config';
+
+export const metadata: Metadata = {
+  title: 'Política de Trocas, Devoluções e Reembolso | Gringa Style',
+  description: 'Conheça nossa política de trocas, devoluções e reembolso. Garantia legal de 90 dias e direito de arrependimento de 7 dias na Gringa Style.',
+  alternates: { canonical: buildCanonicalUrl('/devolucao-e-reembolso') },
+  openGraph: {
+    title: 'Política de Trocas, Devoluções e Reembolso | Gringa Style',
+    description: 'Direito de arrependimento de 7 dias, garantia de 90 dias e processo simples de troca e reembolso.',
+    url: buildCanonicalUrl('/devolucao-e-reembolso'),
+    siteName: 'Gringa Style',
+    locale: 'pt_BR',
+    type: 'website',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default function DevolucaoReembolsoPage() {
     return (

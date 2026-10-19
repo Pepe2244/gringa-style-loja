@@ -130,7 +130,7 @@ export default function Header() {
                         width={120}
                         height={120}
                         priority
-                        style={{ width: '125px !important', height: '125px !important', maxWidth: 'none', objectFit: 'contain' }}
+                        style={{ width: '125px', height: '125px', maxWidth: 'none', objectFit: 'contain' }}
                     />
                 </Link>
 

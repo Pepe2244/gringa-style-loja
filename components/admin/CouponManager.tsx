@@ -23,11 +23,6 @@ export default function CouponManager() {
     const [dataValidade, setDataValidade] = useState('');
     const [limiteUso, setLimiteUso] = useState('');
 
-    useEffect(() => {
-        fetchCoupons();
-        fetchProducts();
-    }, []);
-
     const fetchCoupons = async () => {
         const result = await getPrivateAdminData('coupons');
         if (!result.success) {
@@ -46,6 +41,11 @@ export default function CouponManager() {
         }
         if (data) setProducts(data);
     };
+
+    useEffect(() => {
+        fetchCoupons();
+        fetchProducts();
+    }, []);
 
     const openModal = (coupon: any = null) => {
         setEditingCoupon(coupon);

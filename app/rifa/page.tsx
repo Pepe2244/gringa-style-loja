@@ -223,6 +223,7 @@ export default function RifaPage() {
 
     if (loading) return (
         <div className="container" id="rifa-container">
+            <h1 className="titulo-secao" style={{ marginBottom: '25px' }}>Ações Entre Amigos & Rifas de Solda</h1>
             <div className="rifa-card">
                 {[{ w: '70%', h: '40px' }, { w: '100%', h: '400px' }, { w: '50%', h: '24px' }, { w: '100%', h: '20px' }, { w: '100%', h: '20px' }].map((s, i) => (
                     <div key={i} style={{ background: '#333', borderRadius: '8px', height: s.h, width: s.w, marginBottom: '16px', animation: 'pulse 1.5s infinite ease-in-out' }} />

@@ -116,7 +116,7 @@ export default function PrivacyPage() {
                             <li><strong>Revogação de Consentimento:</strong> Para rifas ou comunicações de marketing.</li>
                         </ul>
                         <p>
-                            Para qualquer uma dessas solicitações, basta entrar em contato conosco pelo nosso WhatsApp de Suporte: <a href="https://wa.me/5515998092548" target="_blank" className="text-amber-400 hover:underline">+55 15 99809-2548</a>.
+                            Para qualquer uma dessas solicitações, basta entrar em contato conosco pelo nosso WhatsApp de Suporte: <a href="https://wa.me/5515998092548" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">+55 15 99809-2548</a>.
                         </p>
 
                         <h2 className="text-xl font-bold text-amber-500 pt-4 border-b border-zinc-800 pb-2">

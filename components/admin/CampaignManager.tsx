@@ -23,10 +23,6 @@ export default function CampaignManager() {
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerPreview, setBannerPreview] = useState('');
 
-    useEffect(() => {
-        fetchCampaigns();
-    }, []);
-
     const fetchCampaigns = async () => {
         const { data: config, error: configError } = await supabase.from('configuracoes_site').select('campanha_ativa_id').limit(1).maybeSingle();
         if (configError) {
@@ -41,6 +37,10 @@ export default function CampaignManager() {
         }
         if (data) setCampaigns(data);
     };
+
+    useEffect(() => {
+        fetchCampaigns();
+    }, []);
 
     const openModal = (campaign: any = null) => {
         setEditingCampaign(campaign);

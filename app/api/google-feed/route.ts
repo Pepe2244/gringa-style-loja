@@ -86,10 +86,23 @@ export async function GET() {
 
       const descricaoText = produto.descricao?.trim() || produto.nome;
       
-      // Extração de dados dinâmicos
+      // Extração de dados dinâmicos e taxonomia Google
       const categoriaNome = produto.categorias?.nome || 'Diversos';
       const brandName = produto.marca || 'Gringa Style';
-      const hasGtin = !!produto.gtin13;
+      const mpnCode = `GS-${String(produto.id).padStart(3, '0')}`;
+      const rawGtin = produto.gtin13 ? String(produto.gtin13).trim() : '';
+      const hasValidGtin = /^\d{8,14}$/.test(rawGtin);
+
+      // Taxonomia oficial do Google Product Category
+      let googleCategory = '926'; // Hardware > Tools > Welding & Soldering
+      const catLower = categoriaNome.toLowerCase();
+      if (catLower.includes('boné') || catLower.includes('bone')) {
+        googleCategory = '173'; // Apparel & Accessories > Clothing Accessories > Hats
+      } else if (catLower.includes('camisa') || catLower.includes('vestu')) {
+        googleCategory = '212'; // Apparel & Accessories > Clothing > Shirts & Tops
+      } else if (catLower.includes('máscara') || catLower.includes('mascara')) {
+        googleCategory = '926'; // Welding Helmets
+      }
 
       const additionalImagesXml = additionalImages
         .map((img) => `\n            <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`)
@@ -105,23 +118,26 @@ export async function GET() {
             <g:condition>new</g:condition>
             <g:availability>in_stock</g:availability>
             <g:price>${precoBase} BRL</g:price>
+            <g:google_product_category>${googleCategory}</g:google_product_category>
             <g:product_type>${escapeXml(`Equipamentos > ${categoriaNome}`)}</g:product_type>
             <g:brand>${escapeXml(brandName)}</g:brand>
-            <g:mpn>${escapeXml(canonicalSlug)}</g:mpn>`;
+            <g:mpn>${escapeXml(mpnCode)}</g:mpn>`;
       
-      // Validação de Identificadores (Crucial para o ROI no Google Ads)
-      if (hasGtin) {
-          itemsXml += `\n            <g:gtin>${escapeXml(produto.gtin13)}</g:gtin>`;
+      // Validação de Identificadores (Conforme diretrizes oficiais do Google Merchant Center)
+      if (hasValidGtin) {
+          itemsXml += `\n            <g:gtin>${escapeXml(rawGtin)}</g:gtin>`;
           itemsXml += `\n            <g:identifier_exists>yes</g:identifier_exists>`;
       } else {
+          // Produtos artesanais/personalizados sem código de barras EAN/GTIN de fábrica
           itemsXml += `\n            <g:identifier_exists>no</g:identifier_exists>`;
       }
 
+      // Frete base alinhado com o checkout real (evita suspensão por divergência de frete)
       itemsXml += `
             <g:shipping>
                 <g:country>BR</g:country>
-                <g:service>Standard</g:service>
-                <g:price>0.00 BRL</g:price>
+                <g:service>Correios PAC</g:service>
+                <g:price>28.90 BRL</g:price>
             </g:shipping>`;
 
       if (salePrice) {

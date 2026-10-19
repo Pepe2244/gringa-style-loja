@@ -19,9 +19,6 @@ import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.appUrl),
-  alternates: {
-    canonical: siteConfig.appUrl,
-  },
   title: {
     default: "Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG",
     template: "%s | Gringa Style",

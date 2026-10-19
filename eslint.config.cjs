@@ -4,6 +4,16 @@ const typescript = require('eslint-config-next/typescript');
 const prettierConfig = require('eslint-config-prettier');
 
 module.exports = [
+  {
+    ignores: [
+      '.next/**',
+      '.open-next/**',
+      '.wrangler/**',
+      'node_modules/**',
+      'public/sw*.js',
+      'scripts/**',
+    ],
+  },
   ...coreWebVitals,
   ...typescript,
   prettierConfig,

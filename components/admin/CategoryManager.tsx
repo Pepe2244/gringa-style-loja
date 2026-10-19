@@ -11,10 +11,6 @@ export default function CategoryManager() {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
     const fetchCategories = async () => {
         const { data, error } = await supabase.from('categorias').select('*').order('nome');
         if (error) {
@@ -23,6 +19,10 @@ export default function CategoryManager() {
         }
         if (data) setCategories(data);
     };
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
 
     const handleAddCategory = async () => {
         if (!newCategoryName.trim()) return;

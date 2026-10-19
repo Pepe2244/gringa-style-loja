@@ -225,16 +225,17 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     '@type': 'MerchantReturnPolicy',
     'applicableCountry': 'BR',
     'returnPolicyCategory': 'https://schema.org/MerchantReturnFiniteReturnWindow',
-    'merchantReturnDays': 14,
+    'merchantReturnDays': 7,
     'returnMethod': 'https://schema.org/ReturnByMail',
-    'returnFees': 'https://schema.org/ReturnFeesCustomerResponsibility'
+    'returnFees': 'https://schema.org/FreeReturn',
+    'merchantReturnLink': `${SITE_URL}/devolucao-e-reembolso`
   };
 
   const shippingDetails = {
     '@type': 'OfferShippingDetails',
     'shippingRate': {
       '@type': 'MonetaryAmount',
-      'value': '0.00',
+      'value': '28.90',
       'currency': 'BRL'
     },
     'shippingDestination': {
@@ -247,13 +248,13 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
         '@type': 'QuantitativeValue',
         'minValue': 1,
         'maxValue': 2,
-        'unitCode': 'DAY'
+        'unitCode': 'd'
       },
       'transitTime': {
         '@type': 'QuantitativeValue',
         'minValue': 3,
-        'maxValue': 10,
-        'unitCode': 'DAY'
+        'maxValue': 8,
+        'unitCode': 'd'
       }
     }
   };
@@ -264,7 +265,7 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'url': SITE_URL
   };
 
-  const baseOffer = {
+  const baseOffer: any = {
     '@type': 'Offer',
     'url': productUrl,
     'priceCurrency': 'BRL',
@@ -275,7 +276,23 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'priceValidUntil': validUntilDate.toISOString().split('T')[0],
     'hasMerchantReturnPolicy': merchantReturnPolicy,
     'shippingDetails': shippingDetails,
-    'seller': seller
+    'seller': seller,
+    ...(hasPromo && {
+      'priceSpecification': [
+        {
+          '@type': 'PriceSpecification',
+          'price': Number(product.preco).toFixed(2),
+          'priceCurrency': 'BRL',
+          'priceType': 'https://schema.org/ListPrice'
+        },
+        {
+          '@type': 'PriceSpecification',
+          'price': precoFormatado,
+          'priceCurrency': 'BRL',
+          'priceType': 'https://schema.org/SalePrice'
+        }
+      ]
+    })
   };
 
   const brandName = product.marca || 'Gringa Style';
@@ -334,22 +351,6 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     },
     ...gtin,
     'offers': product.variants ? aggregateOffer : baseOffer,
-    ...(hasPromo && {
-      'priceSpecification': [
-        {
-          '@type': 'PriceSpecification',
-          'price': Number(product.preco).toFixed(2),
-          'priceCurrency': 'BRL',
-          'priceType': 'ListPrice'
-        },
-        {
-          '@type': 'PriceSpecification',
-          'price': precoFormatado,
-          'priceCurrency': 'BRL',
-          'priceType': 'SalePrice'
-        }
-      ]
-    }),
     'aggregateRating': {
       '@type': 'AggregateRating',
       'ratingValue': ratingValue,
@@ -418,13 +419,13 @@ export const ItemListSchema = ({
         '@type': 'QuantitativeValue',
         'minValue': 1,
         'maxValue': 2,
-        'unitCode': 'DAY'
+        'unitCode': 'd'
       },
       'transitTime': {
         '@type': 'QuantitativeValue',
         'minValue': 3,
         'maxValue': 10,
-        'unitCode': 'DAY'
+        'unitCode': 'd'
       }
     }
   };
@@ -436,16 +437,8 @@ export const ItemListSchema = ({
   };
 
   const listItems = products.slice(0, 20).map((product, index) => {
-    const imagePath = product.media_urls?.find(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
-      || product.imagens?.find(url => typeof url === 'string');
-
-    const imageUrl = imagePath
-      ? imagePath.startsWith('http')
-        ? imagePath
-        : imagePath.startsWith('/')
-          ? `${SITE_URL}${imagePath}`
-          : `${SITE_URL}/${imagePath}`
-      : `${SITE_URL}/imagens/logo_gringa_style.png`;
+    const images = resolveProductImages(product);
+    const imageUrl = images[0] || `${SITE_URL}/imagens/logo_gringa_style.png`;
 
     const precoNumerico = Number(product.preco_promocional && product.preco_promocional < product.preco
       ? product.preco_promocional

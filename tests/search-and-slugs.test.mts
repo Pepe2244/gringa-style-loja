@@ -1,0 +1,91 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { slugify } from '../utils/slugify.ts';
+import { buildCanonicalUrl, buildStorageUrl } from '../lib/site-config.ts';
+
+function normalizeSlug(str: string): string {
+    return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+}
+
+function normalizeSearchText(str: string): string {
+    return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+test('slugify produces clean, URL-safe slugs for portuguese text', () => {
+    assert.equal(
+        slugify('Máscara de Solda Gringa Style - Linha Sand Croco'),
+        'mascara-de-solda-gringa-style-linha-sand-croco'
+    );
+    assert.equal(
+        slugify('Boné Snapback Gringa Style - Bordado 3D'),
+        'bone-snapback-gringa-style-bordado-3d'
+    );
+    assert.equal(
+        slugify('Óculos Steelflex Neon — Proteção'),
+        'oculos-steelflex-neon-protecao'
+    );
+});
+
+test('normalizeSlug matches accented and unaccented product names and slugs', () => {
+    const canonicalName = 'Máscara de Solda Gringa Style';
+    const legacySlugWithoutVowel = 'mscara-de-solda-gringa-style';
+    const normalSlug = 'mascara-de-solda-gringa-style';
+
+    assert.equal(normalizeSlug(canonicalName), 'mascaradesoldagringastyle');
+    assert.equal(normalizeSlug(normalSlug), 'mascaradesoldagringastyle');
+    // Legacy without vowels has similar root
+    assert.ok(normalizeSlug(canonicalName).includes(normalizeSlug(legacySlugWithoutVowel).replace('mscara', 'mascara')));
+});
+
+test('normalizeSearchText finds products regardless of accentuation or casing', () => {
+    const products = [
+        { id: 1, nome: 'Máscara de Solda Profissional', tags: ['solda', 'tig', 'fibra'] },
+        { id: 2, nome: 'Boné Snapback Preto', tags: ['streetwear', 'bone'] },
+        { id: 3, nome: 'Óculos Neon Proteção', tags: ['epi', 'oculos'] },
+    ];
+
+    const search = (query: string) => {
+        const termNorm = normalizeSearchText(query);
+        const tokens = termNorm.split(/\s+/).filter(t => t.length > 0 && !['de', 'da', 'do', 'e'].includes(t));
+
+        return products.filter(p => {
+            const combined = `${normalizeSearchText(p.nome)} ${(p.tags || []).map(normalizeSearchText).join(' ')}`;
+            if (combined.includes(termNorm)) return true;
+            return tokens.length > 0 && tokens.every(t => combined.includes(t));
+        });
+    };
+
+    // User types without accent
+    assert.equal(search('mascara').length, 1);
+    assert.equal(search('mascara de solda').length, 1);
+    assert.equal(search('bone').length, 1);
+    assert.equal(search('oculos').length, 1);
+
+    // User types with accent
+    assert.equal(search('Máscara').length, 1);
+    assert.equal(search('Boné').length, 1);
+    assert.equal(search('Óculos').length, 1);
+
+    // Multi-token search with different word order
+    assert.equal(search('solda profissional mascara').length, 1);
+});
+
+test('buildCanonicalUrl always generates absolute https URLs without trailing slash', () => {
+    assert.ok(buildCanonicalUrl('/loja').startsWith('https://'));
+    assert.ok(buildCanonicalUrl('/loja').endsWith('/loja'));
+    assert.ok(!buildCanonicalUrl('/loja/').endsWith('/loja/'));
+    assert.equal(buildCanonicalUrl('/produto/mascara-1'), 'https://gringastylebr.com.br/produto/mascara-1');
+});
+
+test('buildStorageUrl resolves Supabase storage paths correctly', () => {
+    assert.ok(buildStorageUrl('produtos/foto.jpg').includes('storage/v1/object/public'));
+    assert.equal(buildStorageUrl('https://example.com/foto.jpg'), 'https://example.com/foto.jpg');
+});

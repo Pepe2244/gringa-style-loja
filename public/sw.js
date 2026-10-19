@@ -1,38 +1,19 @@
-self.addEventListener('push', function (event) {
-    const data = event.data.json();
-    const title = data.titulo || "Gringa Style";
-    const options = {
-        body: data.mensagem,
-        icon: '/apple-touch-icon.png',
-        badge: '/favicon-96x96.png',
-        data: {
-            url: data.link || '/'
-        }
-    };
-    event.waitUntil(
-        self.registration.showNotification(title, options)
-    );
+// Legacy Service Worker self-unregistration script
+// Migrates users seamlessly to sw-v2.js without orphaned cache issues
+self.addEventListener('install', () => {
+    self.skipWaiting();
 });
 
-self.addEventListener('notificationclick', function (event) {
-    event.notification.close();
-    const urlToOpen = event.notification.data.url;
-
+self.addEventListener('activate', (event) => {
     event.waitUntil(
-        clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
-        }).then((clientList) => {
-            if (clientList.length > 0) {
-                let client = clientList[0];
-                for (let i = 0; i < clientList.length; i++) {
-                    if (clientList[i].focused) {
-                        client = clientList[i];
-                    }
+        self.registration.unregister().then(() => {
+            return self.clients.matchAll();
+        }).then((clients) => {
+            clients.forEach((client) => {
+                if (client.url && 'navigate' in client) {
+                    client.navigate(client.url);
                 }
-                return client.focus().then(client => client.navigate(urlToOpen));
-            }
-            return clients.openWindow(urlToOpen);
+            });
         })
     );
 });

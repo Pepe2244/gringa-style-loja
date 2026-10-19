@@ -95,10 +95,10 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
     const filteredProducts = products.filter(product => {
         const term = normalizeString(debouncedSearchTerm);
-        const matchSearch =
-            normalizeString(product.nome).includes(term) ||
-            normalizeString(product.descricao).includes(term) ||
-            (product.tags && normalizeString(product.tags.join(' ')).includes(term));
+        const stopWords = ['de', 'da', 'do', 'e', 'para', 'com', 'em', 'um', 'uma'];
+        const tokens = term.split(/\s+/).filter(t => t.length > 0 && !stopWords.includes(t));
+        const combined = `${normalizeString(product.nome)} ${normalizeString(product.descricao)} ${Array.isArray(product.tags) ? product.tags.map(normalizeString).join(' ') : ''}`;
+        const matchSearch = !term || combined.includes(term) || (tokens.length > 0 && tokens.every(token => combined.includes(token)));
 
         const matchCategory = selectedCategory ? product.categoria_id === selectedCategory : true;
         const matchPrice = getPrecoFinal(product) >= priceRange[0] && getPrecoFinal(product) <= priceRange[1];

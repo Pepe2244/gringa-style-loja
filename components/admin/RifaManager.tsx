@@ -45,15 +45,15 @@ export default function RifaManager() {
     const [drawing, setDrawing] = useState(false);
     const [drawAnimation, setDrawAnimation] = useState('000');
 
-    useEffect(() => {
-        fetchRifas();
-    }, []);
-
     const fetchRifas = async () => {
         const { data, error } = await supabase.from('rifas').select('*').order('created_at', { ascending: false });
         if (error) console.error('Erro ao buscar rifas:', error);
         if (data) setRifas(data as RifaFront[]);
     };
+
+    useEffect(() => {
+        fetchRifas();
+    }, []);
 
     const openModal = async (rifa: RifaFront | null = null) => {
         setEditingRifa(rifa);

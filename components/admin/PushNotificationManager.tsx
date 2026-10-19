@@ -11,10 +11,6 @@ export default function PushNotificationManager() {
     const [link, setLink] = useState('/');
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        fetchDrafts();
-    }, []);
-
     const fetchDrafts = async () => {
         const result = await getPrivateAdminData('notifications');
         if (!result.success) {
@@ -24,6 +20,10 @@ export default function PushNotificationManager() {
         }
         setDrafts((result.data || []).filter((notification) => notification.status === 'rascunho'));
     };
+
+    useEffect(() => {
+        fetchDrafts();
+    }, []);
 
     const handleSendManual = async (e: React.FormEvent) => {
         e.preventDefault();

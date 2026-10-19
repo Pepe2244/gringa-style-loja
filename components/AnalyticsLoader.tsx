@@ -8,23 +8,7 @@ export default function AnalyticsLoader() {
 
     useEffect(() => {
         const loadAnalytics = () => {
-            const { gaId, ahrefsKey, clarityId } = analyticsConfig;
-
-            if (gaId && !document.querySelector(`script[src*="gtag/js?id=${gaId}"]`)) {
-                const dataLayer = (window as Window & { dataLayer?: unknown[] }).dataLayer || [];
-                (window as Window & { dataLayer?: unknown[] }).dataLayer = dataLayer;
-                
-                const gtag = (...args: unknown[]) => dataLayer.push(args);
-                (window as Window & { gtag?: (...args: unknown[]) => void }).gtag = gtag;
-                
-                gtag('js', new Date());
-                gtag('config', gaId);
-
-                const gaScript = document.createElement('script');
-                gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
-                gaScript.async = true;
-                document.head.appendChild(gaScript);
-            }
+            const { ahrefsKey, clarityId } = analyticsConfig;
 
             if (ahrefsKey && !document.querySelector('script[src*="analytics.ahrefs.com"]')) {
                 const ahrefsScript = document.createElement('script');

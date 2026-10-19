@@ -52,30 +52,21 @@ function SearchPageContent() {
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadingRef = useRef<HTMLDivElement | null>(null);
 
-    // Função para buscar produtos com paginação
+    const normalizeString = (str: string) => {
+        if (!str) return '';
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    };
+
+    // Função para buscar produtos com paginação e normalização de acentos
     const fetchProducts = useCallback(async (pageNum: number, isLoadMore = false) => {
         try {
             let queryBuilder = supabase
                 .from('produtos')
-                .select('*')
-                .range(pageNum * PRODUCTS_PER_PAGE, (pageNum + 1) * PRODUCTS_PER_PAGE - 1);
-
-            // Aplicar filtros de busca se houver query
-            if (query.trim()) {
-                const searchTerm = query.toLowerCase();
-                queryBuilder = queryBuilder.or(`nome.ilike.%${searchTerm}%,descricao.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
-            }
+                .select('*');
 
             // Aplicar filtro de categoria
             if (selectedCategory) {
                 queryBuilder = queryBuilder.eq('categoria_id', selectedCategory);
-            }
-
-            // Aplicar filtro de preço
-            if (priceRange[0] > 0 || priceRange[1] < 10000) {
-                queryBuilder = queryBuilder.or(
-                    `preco_promocional.gte.${priceRange[0]},preco_promocional.lte.${priceRange[1]},preco.gte.${priceRange[0]},preco.lte.${priceRange[1]}`
-                );
             }
 
             // Aplicar filtro de estoque
@@ -88,42 +79,105 @@ function SearchPageContent() {
                 queryBuilder = queryBuilder.not('preco_promocional', 'is', null);
             }
 
-            // Aplicar ordenação
-            if (sortType === 'menor-preco') {
-                queryBuilder = queryBuilder.order('preco_promocional', { ascending: true, nullsFirst: false })
-                    .order('preco', { ascending: true });
-            } else if (sortType === 'maior-preco') {
-                queryBuilder = queryBuilder.order('preco_promocional', { ascending: false, nullsFirst: false })
-                    .order('preco', { ascending: false });
-            } else if (sortType === 'az') {
-                queryBuilder = queryBuilder.order('nome', { ascending: true });
-            } else if (sortType === 'za') {
-                queryBuilder = queryBuilder.order('nome', { ascending: false });
-            } else {
-                queryBuilder = queryBuilder.order('created_at', { ascending: false });
+            // Se NÃO houver termo de busca, faz a paginação diretamente no banco
+            if (!query.trim()) {
+                if (priceRange[0] > 0 || priceRange[1] < 10000) {
+                    queryBuilder = queryBuilder.or(
+                        `preco_promocional.gte.${priceRange[0]},preco_promocional.lte.${priceRange[1]},preco.gte.${priceRange[0]},preco.lte.${priceRange[1]}`
+                    );
+                }
+
+                if (sortType === 'menor-preco') {
+                    queryBuilder = queryBuilder.order('preco_promocional', { ascending: true, nullsFirst: false })
+                        .order('preco', { ascending: true });
+                } else if (sortType === 'maior-preco') {
+                    queryBuilder = queryBuilder.order('preco_promocional', { ascending: false, nullsFirst: false })
+                        .order('preco', { ascending: false });
+                } else if (sortType === 'az') {
+                    queryBuilder = queryBuilder.order('nome', { ascending: true });
+                } else if (sortType === 'za') {
+                    queryBuilder = queryBuilder.order('nome', { ascending: false });
+                } else {
+                    queryBuilder = queryBuilder.order('created_at', { ascending: false });
+                }
+
+                queryBuilder = queryBuilder.range(pageNum * PRODUCTS_PER_PAGE, (pageNum + 1) * PRODUCTS_PER_PAGE - 1);
+                const { data, error } = await queryBuilder;
+                if (error) throw error;
+
+                if (data) {
+                    if (isLoadMore) {
+                        setProducts(prev => [...prev, ...data]);
+                    } else {
+                        setProducts(data);
+                    }
+                    setHasMore(data.length === PRODUCTS_PER_PAGE);
+                } else {
+                    if (!isLoadMore) setProducts([]);
+                    setHasMore(false);
+                }
+                return;
             }
 
+            // Se houver query, busca produtos ativos e aplica busca inteligente (accent-folding e tokenização)
             const { data, error } = await queryBuilder;
-
             if (error) throw error;
 
-            if (data) {
-                if (isLoadMore) {
-                    setProducts(prev => [...prev, ...data]);
-                } else {
-                    setProducts(data);
-                    if (!isLoadMore && pageNum === 0) {
-                        trackSearchQuery(query, data.length);
-                    }
-                }
+            let resultList: Product[] = data || [];
 
-                // Verificar se há mais produtos
-                setHasMore(data.length === PRODUCTS_PER_PAGE);
+            const termNorm = normalizeString(query);
+            const stopWords = ['de', 'da', 'do', 'e', 'para', 'com', 'em', 'um', 'uma', 'os', 'as'];
+            const tokens = termNorm
+                .split(/\s+/)
+                .filter(t => t.length > 0 && !stopWords.includes(t));
+
+            resultList = resultList.filter(product => {
+                const nome = normalizeString(product.nome);
+                const desc = normalizeString(product.descricao);
+                const tags = Array.isArray(product.tags) ? product.tags.map(normalizeString).join(' ') : '';
+                const combined = `${nome} ${desc} ${tags}`;
+
+                if (combined.includes(termNorm)) return true;
+                return tokens.length > 0 && tokens.every(token => combined.includes(token));
+            });
+
+            // Filtro de faixa de preço em memória para resultados de busca
+            if (priceRange[0] > 0 || priceRange[1] < 10000) {
+                resultList = resultList.filter(p => {
+                    const price = p.preco_promocional && p.preco_promocional < p.preco ? p.preco_promocional : p.preco;
+                    return price >= priceRange[0] && price <= priceRange[1];
+                });
+            }
+
+            // Ordenação em memória para resultados de busca
+            if (sortType === 'menor-preco') {
+                resultList.sort((a, b) => {
+                    const pa = a.preco_promocional && a.preco_promocional < a.preco ? a.preco_promocional : a.preco;
+                    const pb = b.preco_promocional && b.preco_promocional < b.preco ? b.preco_promocional : b.preco;
+                    return pa - pb;
+                });
+            } else if (sortType === 'maior-preco') {
+                resultList.sort((a, b) => {
+                    const pa = a.preco_promocional && a.preco_promocional < a.preco ? a.preco_promocional : a.preco;
+                    const pb = b.preco_promocional && b.preco_promocional < b.preco ? b.preco_promocional : b.preco;
+                    return pb - pa;
+                });
+            } else if (sortType === 'az') {
+                resultList.sort((a, b) => a.nome.localeCompare(b.nome));
+            } else if (sortType === 'za') {
+                resultList.sort((a, b) => b.nome.localeCompare(a.nome));
             } else {
-                if (!isLoadMore) {
-                    setProducts([]);
-                }
-                setHasMore(false);
+                resultList.sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+            }
+
+            const visibleCount = (pageNum + 1) * PRODUCTS_PER_PAGE;
+            const pagedSlice = resultList.slice(0, visibleCount);
+
+            setProducts(pagedSlice);
+            setHasMore(resultList.length > visibleCount);
+
+            if (!isLoadMore && pageNum === 0) {
+                trackSearchQuery(query, resultList.length);
             }
         } catch (error) {
             console.error('Search error:', error);
@@ -191,11 +245,6 @@ function SearchPageContent() {
             }
         };
     }, [loading, loadingMore, hasMore, page, fetchProducts]);
-
-    const normalizeString = (str: string) => {
-        if (!str) return '';
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-    };
 
     const getPrecoFinal = (p: Product) => {
         if (!p.preco_promocional || p.preco_promocional >= p.preco) {

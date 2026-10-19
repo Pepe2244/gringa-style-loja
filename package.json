@@ -7,7 +7,7 @@
     "build": "node scripts/build.cjs",
     "build:next": "next build --webpack",
     "start": "next start",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "test": "node --test tests/*.test.mts",
     "typecheck": "tsc --noEmit",

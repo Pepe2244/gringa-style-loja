@@ -2,18 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
+
 // ==========================================
 // 1. CONFIGURAÇÕES DE FIREWALL (EDGE)
 // ==========================================
-// IAs que lêem o site (GPTBot, ChatGPT-User, OAI-SearchBot, PerplexityBot, ClaudeBot, anthropic-ai,
-// CCBot, Amazonbot) foram removidas da lista de propósito: queremos ser lidos por assistentes de IA.
+// Apenas bots comprovadamente abusivos ou de scraping não autorizado.
+// Motores de busca (Google, Bing, Yandex, DuckDuckGo) e IAs leitoras (GPTBot, ClaudeBot, etc.) são permitidos.
 const BLOCKED_BOTS = [
-    'DotBot', 'SemrushBot', 'MJ12bot', 'Cyberscan',
-    'PetalBot', 'Baiduspider', 'YandexBot', 'DataForSeoBot',
-    'Omgilibot', 'Barkrowler',
+    'DotBot', 'MJ12bot', 'Cyberscan',
+    'DataForSeoBot', 'Omgilibot', 'Barkrowler',
     'MegaIndex', 'SeekportBot', 'Serpstatbot', 'Bytespider',
-    'TurnitinBot', 'Scrapy', 'python-requests',
-    'curl', 'wget'
+    'TurnitinBot', 'Scrapy'
 ];
 
 const MALICIOUS_PATHS = [
@@ -139,12 +138,22 @@ function localRateLimit(key: string, config: { maxRequests: number; windowMs: nu
 // ==========================================
 // 3. FUNÇÃO PRINCIPAL EXPORTADA COMO PROXY
 // ==========================================
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || '';
     const pathname = request.nextUrl.pathname;
     const method = request.method;
 
-    // --- ETAPA 0: FORÇAR HTTPS 301 PERMANENTE ---
+    // --- ETAPA 0: FORÇAR HTTPS E NON-WWW (301 PERMANENTE) ---
+    const host = request.headers.get('host') || request.nextUrl.host;
+    if (host && host.toLowerCase().startsWith('www.')) {
+        const nonWwwHost = host.replace(/^www\./i, '');
+        const targetUrl = new URL(
+            `${request.nextUrl.pathname}${request.nextUrl.search}`,
+            `https://${nonWwwHost}`
+        );
+        return NextResponse.redirect(targetUrl, 301);
+    }
+
     const proto = request.headers.get('x-forwarded-proto');
     if (proto === 'http') {
         const httpsUrl = new URL(`https://${request.nextUrl.host}${request.nextUrl.pathname}${request.nextUrl.search}`);
@@ -239,6 +248,8 @@ export async function proxy(request: NextRequest) {
 
     return response;
 }
+
+export { proxy };
 
 export const config = {
     matcher: [

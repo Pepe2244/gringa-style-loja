@@ -43,10 +43,15 @@ const CACHE_STRATEGIES = {
 self.addEventListener('install', (event) => {
     event.waitUntil(
         Promise.all([
-            // Cache recursos críticos
-            caches.open(STATIC_CACHE).then(cache => {
-                console.log('[SW] Caching critical resources');
-                return cache.addAll(CRITICAL_RESOURCES);
+            // Cache recursos críticos com tratamento de erro tolerante
+            caches.open(STATIC_CACHE).then(async (cache) => {
+                for (const resource of CRITICAL_RESOURCES) {
+                    try {
+                        await cache.add(resource);
+                    } catch (e) {
+                        console.warn('[SW] Falha ao pré-cachear:', resource, e);
+                    }
+                }
             }),
 
             // Pular waiting para ativar imediatamente
@@ -87,20 +92,25 @@ self.addEventListener('fetch', (event) => {
     // Ignorar requisições não-GET
     if (request.method !== 'GET') return;
 
-    // Ignorar requisições do Chrome DevTools
-    if (url.protocol === 'chrome-extension:') return;
+    // Ignorar requisições do Chrome DevTools ou schemas não-http
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-    // Estratégia baseada no tipo de recurso
-    if (isStaticResource(url)) {
-        event.respondWith(staleWhileRevalidate(request));
-    } else if (isApiRequest(url)) {
-        event.respondWith(networkFirst(request));
-    } else if (isImageRequest(url)) {
-        event.respondWith(cacheFirst(request));
-    } else if (isDocumentRequest(request)) {
-        event.respondWith(networkFirst(request));
-    } else {
-        event.respondWith(staleWhileRevalidate(request));
+    // Estratégia baseada no tipo de recurso com try-catch de proteção
+    try {
+        if (isStaticResource(url)) {
+            event.respondWith(staleWhileRevalidate(request).catch(() => fetch(request)));
+        } else if (isApiRequest(url)) {
+            event.respondWith(networkFirst(request).catch(() => fetch(request)));
+        } else if (isImageRequest(url)) {
+            event.respondWith(cacheFirst(request).catch(() => fetch(request)));
+        } else if (isDocumentRequest(request)) {
+            event.respondWith(networkFirst(request).catch(() => fetch(request)));
+        } else {
+            event.respondWith(staleWhileRevalidate(request).catch(() => fetch(request)));
+        }
+    } catch (_err) {
+        // Se houver qualquer falha interna, deixa a rede processar normalmente
+        event.respondWith(fetch(request));
     }
 });
 
@@ -200,7 +210,7 @@ function isImageRequest(url) {
 
 function isDocumentRequest(request) {
     return request.destination === 'document' ||
-           request.headers.get('accept').includes('text/html');
+           Boolean(request.headers.get('accept')?.includes('text/html'));
 }
 
 // Estratégias de cache
