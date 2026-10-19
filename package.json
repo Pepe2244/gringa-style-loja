@@ -46,10 +46,13 @@
     "wrangler": "^4.151.1"
   },
   "browserslist": [
-    "last 2 versions",
+    "defaults and fully supports es6-module",
     "not dead",
     "not IE 11",
     "not op_mini all",
+    "not kaios > 0",
+    "not and_qq > 0",
+    "not and_uc > 0",
     "chrome >= 109",
     "edge >= 109",
     "firefox >= 115",

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import GoogleAnalyticsOptimized from "@/components/GoogleAnalyticsOptimized";
 import "./fonts.css";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -102,6 +102,9 @@ export default function RootLayout({
         />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="preconnect" href="https://analytics.google.com" />
+        <link rel="dns-prefetch" href="https://stats.g.doubleclick.net" />
+        <link rel="preconnect" href="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev" />
         {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (
           <>
@@ -115,7 +118,7 @@ export default function RootLayout({
         )}
       </head>
       <body className="antialiased">
-        <GoogleAnalytics gaId={siteConfig.analytics.gaId} />
+        <GoogleAnalyticsOptimized gaId={siteConfig.analytics.gaId} />
         <LocalBusinessSchema />
         <WebSiteSchema />
         <OrganizationSchema />

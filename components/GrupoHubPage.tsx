@@ -60,10 +60,10 @@ export default function GrupoHubPage() {
             <article className="dual-path-card dual-path-card-b2c">
               <div className="dual-path-visual dual-path-visual-store">
                 <Image
-                  src="/imagens/mascara personalizada 1.jpg"
+                  src="/imagens/mascara-personalizada-1.webp"
                   alt="Máscara de solda personalizada Gringa Style"
                   fill
-                  sizes="(max-width: 640px) 320px, (max-width: 1024px) 440px, 490px"
+                  sizes="(max-width: 640px) 300px, (max-width: 1024px) 440px, 490px"
                   priority
                   fetchPriority="high"
                   loading="eager"
@@ -84,10 +84,10 @@ export default function GrupoHubPage() {
             <article className="dual-path-card dual-path-card-b2b">
               <div className="dual-path-visual dual-path-visual-b2b">
                 <Image
-                  src="/imagens/tocha 1.jpg"
+                  src="/imagens/tocha-1.webp"
                   alt="Equipamento para soldagem profissional"
                   fill
-                  sizes="(max-width: 640px) 320px, (max-width: 1024px) 440px, 490px"
+                  sizes="(max-width: 640px) 300px, (max-width: 1024px) 440px, 490px"
                   loading="lazy"
                   quality={65}
                 />
