@@ -19,12 +19,6 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
   useEffect(() => {
     if (!gaId || typeof window === 'undefined' || window._gtmLoaded) return;
 
-    if (typeof performance !== 'undefined' && performance.mark) {
-      performance.mark('mark_feature_usage', {
-        detail: { feature: 'next-third-parties-ga-optimized' },
-      });
-    }
-
     const loadGTM = () => {
       if (window._gtmLoaded) return;
       window._gtmLoaded = true;
@@ -60,9 +54,9 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
 
     if ('requestIdleCallback' in window) {
       idleId = (window as unknown as { requestIdleCallback: (cb: () => void, opts: { timeout: number }) => number })
-        .requestIdleCallback(loadGTM, { timeout: 3500 });
+        .requestIdleCallback(loadGTM, { timeout: 5000 });
     } else {
-      timerId = setTimeout(loadGTM, 3500);
+      timerId = setTimeout(loadGTM, 5000);
     }
 
     return () => {

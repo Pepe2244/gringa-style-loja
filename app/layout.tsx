@@ -85,23 +85,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        {/* Fontes auto-hospedadas (ver app/fonts.css): preload apenas das críticas */}
-        <link
-          rel="preload"
-          href="/fonts/roboto-400-latin.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/teko-700-latin.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <link rel="preconnect" href="https://analytics.google.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://analytics.google.com" />
         <link rel="dns-prefetch" href="https://stats.g.doubleclick.net" />
         <link rel="dns-prefetch" href="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev" />
         {/* Preload dinâmico do banco de dados */}

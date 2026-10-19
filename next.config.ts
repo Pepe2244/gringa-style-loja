@@ -108,7 +108,7 @@ const nextConfig: NextConfig = {
             value: '(.*)tsilaaurmpahookyanbe(.*)',
           },
         ],
-        destination: '/imagens/logo_gringa_style.png',
+        destination: '/imagens/logo_gringa_style.webp',
         permanent: true,
       },
       {

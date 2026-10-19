@@ -20,7 +20,7 @@ export default function GrupoHubPage() {
                   src="/imagens/mascara-personalizada-1.webp"
                   alt="Máscara de solda personalizada Gringa Style"
                   fill
-                  sizes="(max-width: 640px) 380px, (max-width: 1024px) 440px, 490px"
+                  sizes="(max-width: 640px) 290px, (max-width: 1024px) 440px, 490px"
                   priority
                   fetchPriority="high"
                   loading="eager"
@@ -44,7 +44,7 @@ export default function GrupoHubPage() {
                   src="/imagens/tocha-1.webp"
                   alt="Equipamento para soldagem profissional"
                   fill
-                  sizes="(max-width: 640px) 300px, (max-width: 1024px) 440px, 490px"
+                  sizes="(max-width: 640px) 240px, (max-width: 1024px) 440px, 490px"
                   loading="lazy"
                   fetchPriority="low"
                   quality={60}
