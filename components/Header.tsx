@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 import { ShoppingCart, Heart, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
-import { supabase } from '@/lib/supabase';
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,25 +34,34 @@ export default function Header() {
         prevItemsRef.current = totalItems;
     }, [totalItems, mounted]);
 
-    const checkActiveRaffles = async () => {
-        const { count } = await supabase
-            .from('rifas')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'ativa');
-
-        setHasActiveRaffles(count !== null && count > 0);
-    };
-
     useEffect(() => {
         setMounted(true);
-        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-            const idleId = (window as any).requestIdleCallback(() => checkActiveRaffles());
-            return () => (window as any).cancelIdleCallback(idleId);
-        } else {
-            const timer = setTimeout(checkActiveRaffles, 1200);
-            return () => clearTimeout(timer);
-        }
-    }, []);
+        // Na home e páginas B2B o link de rifas não é exibido no menu; evita puxar o bundle do Supabase
+        if (pathname === '/' || pathname.startsWith('/gs-servicos-industriais')) return;
+
+        let isSubscribed = true;
+        const checkActiveRaffles = async () => {
+            try {
+                const { supabase } = await import('@/lib/supabase');
+                const { count } = await supabase
+                    .from('rifas')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'ativa');
+
+                if (isSubscribed) {
+                    setHasActiveRaffles(count !== null && count > 0);
+                }
+            } catch {
+                // Silencioso em caso de erro de rede
+            }
+        };
+
+        const timer = setTimeout(checkActiveRaffles, 1500);
+        return () => {
+            isSubscribed = false;
+            clearTimeout(timer);
+        };
+    }, [pathname]);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -129,7 +137,7 @@ export default function Header() {
                         alt={isServices ? 'GS Serviços Industriais' : 'Gringa Style Logo'}
                         width={120}
                         height={120}
-                        loading="eager"
+                        loading="lazy"
                         style={{ width: '125px', height: '125px', maxWidth: 'none', objectFit: 'contain' }}
                     />
                 </Link>

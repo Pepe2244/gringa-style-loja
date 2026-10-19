@@ -48,25 +48,12 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
     window.addEventListener('keydown', onUserInteraction, { passive: true, once: true });
     window.addEventListener('click', onUserInteraction, { passive: true, once: true });
 
-    // Fallback se não houver interação do usuário: carrega em período ocioso (idle)
-    let idleId: number | undefined;
-    let timerId: ReturnType<typeof setTimeout> | undefined;
-
-    if ('requestIdleCallback' in window) {
-      idleId = (window as unknown as { requestIdleCallback: (cb: () => void, opts: { timeout: number }) => number })
-        .requestIdleCallback(loadGTM, { timeout: 5000 });
-    } else {
-      timerId = setTimeout(loadGTM, 5000);
-    }
+    // Fallback por timer para usuários que não interagirem imediatamente
+    const timerId = setTimeout(loadGTM, 8500);
 
     return () => {
       cleanupListeners();
-      if (idleId !== undefined && 'cancelIdleCallback' in window) {
-        (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
-      }
-      if (timerId !== undefined) {
-        clearTimeout(timerId);
-      }
+      clearTimeout(timerId);
     };
   }, [gaId]);
 
