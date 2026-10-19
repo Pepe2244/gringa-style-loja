@@ -15,7 +15,6 @@ import ShippingEstimator from './ShippingEstimator';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import WishlistButton from '@/components/WishlistButton';
 import ImageZoom from '@/components/ImageZoom';
-import RecentlyViewed from '@/components/RecentlyViewed';
 import SavingsBadge from '@/components/SavingsBadge';
 import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import { PaymentMethods } from '@/components/PaymentMethods';
@@ -646,8 +645,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     </div>
                 </section>
             )}
-
-            <RecentlyViewed currentProductId={product?.id} limit={5} />
 
             {showPurchaseModal && product && (
                 <DirectPurchaseModal
