@@ -15,8 +15,7 @@ export async function GET() {
           nome
         )
       `)
-      .eq('em_estoque', true)
-      .not('media_urls', 'is', null);
+      .eq('em_estoque', true);
 
     if (error) {
       console.error('Erro na DB ao gerar Feed:', error);
@@ -39,20 +38,46 @@ export async function GET() {
       });
     };
 
+    const formatImageUrl = (url: unknown): string | null => {
+      if (!url || typeof url !== 'string') return null;
+      const trimmed = url.trim();
+      if (!trimmed) return null;
+      // Ignora vídeos
+      if (/\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) return null;
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+      return `${SITE_URL}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+    };
+
     let itemsXml = '';
 
     (produtos || []).forEach((produto: any) => {
-      if (!Array.isArray(produto.media_urls) || produto.media_urls.length === 0) return;
-      const rawImage = produto.media_urls[0];
-      if (!rawImage || typeof rawImage !== 'string' || !rawImage.trim()) return;
+      // Coleta imagens de media_urls e imagens descartando vídeos e duplicatas (até 4 fotos)
+      const rawMediaList = [
+        ...(Array.isArray(produto.media_urls) ? produto.media_urls : []),
+        ...(Array.isArray(produto.imagens) ? produto.imagens : []),
+      ];
+
+      const validImages: string[] = [];
+      const seenImages = new Set<string>();
+
+      for (const raw of rawMediaList) {
+        const formatted = formatImageUrl(raw);
+        if (formatted && !seenImages.has(formatted)) {
+          seenImages.add(formatted);
+          validImages.push(formatted);
+          if (validImages.length >= 4) break; // Limite de 4 imagens automáticas
+        }
+      }
+
+      if (validImages.length === 0) return;
+
+      const mainImage = validImages[0];
+      const additionalImages = validImages.slice(1);
 
       const canonicalSlug = (produto.slug && String(produto.slug).trim().length > 0)
         ? String(produto.slug).trim()
         : slugify(produto.nome) || String(produto.id);
       const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
-      const imageLink = rawImage.startsWith('http')
-        ? rawImage
-        : `${SITE_URL}${rawImage.startsWith('/') ? rawImage : `/${rawImage}`}`;
 
       const precoBase = (produto.preco || 0).toFixed(2);
       const salePrice = (produto.preco_promocional && produto.preco_promocional < produto.preco)
@@ -66,13 +91,17 @@ export async function GET() {
       const brandName = produto.marca || 'Gringa Style';
       const hasGtin = !!produto.gtin13;
 
+      const additionalImagesXml = additionalImages
+        .map((img) => `\n            <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`)
+        .join('');
+
       itemsXml += `
         <item>
             <g:id>${produto.id}</g:id>
             <g:title>${escapeXml(produto.nome)}</g:title>
             <g:description>${escapeXml(descricaoText)}</g:description>
             <g:link>${escapeXml(productUrl)}</g:link>
-            <g:image_link>${escapeXml(imageLink)}</g:image_link>
+            <g:image_link>${escapeXml(mainImage)}</g:image_link>${additionalImagesXml}
             <g:condition>new</g:condition>
             <g:availability>in_stock</g:availability>
             <g:price>${precoBase} BRL</g:price>

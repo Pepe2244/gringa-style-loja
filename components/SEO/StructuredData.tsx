@@ -178,21 +178,41 @@ export interface ProductData {
   gtin13?: string;
 }
 
-const resolveProductImage = (product: ProductData) => {
-  const rawImage = product.media_urls?.find(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
-    || product.imagens?.find(url => typeof url === 'string');
+const resolveProductImages = (product: ProductData): string[] => {
+  const rawList = [
+    ...(Array.isArray(product.media_urls) ? product.media_urls : []),
+    ...(Array.isArray(product.imagens) ? product.imagens : []),
+  ];
 
-  if (!rawImage) {
-    return `${SITE_URL}/imagens/logo_gringa_style.png`;
+  const validImages: string[] = [];
+  const seen = new Set<string>();
+
+  for (const raw of rawList) {
+    if (typeof raw !== 'string') continue;
+    const trimmed = raw.trim();
+    if (!trimmed || /\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) continue;
+
+    let fullUrl = trimmed;
+    if (!fullUrl.startsWith('http')) {
+      fullUrl = fullUrl.startsWith('/') ? `${SITE_URL}${fullUrl}` : buildStorageUrl(fullUrl);
+    }
+
+    if (fullUrl && !seen.has(fullUrl)) {
+      seen.add(fullUrl);
+      validImages.push(fullUrl);
+      if (validImages.length >= 4) break;
+    }
   }
 
-  if (rawImage.startsWith('http')) return rawImage;
-  if (rawImage.startsWith('/')) return `${SITE_URL}${rawImage}`;
-  return buildStorageUrl(rawImage);
+  if (validImages.length === 0) {
+    return [`${SITE_URL}/imagens/logo_gringa_style.png`];
+  }
+
+  return validImages;
 };
 
 export const ProductSchema = ({ product }: { product: ProductData }) => {
-  const imageUrl = resolveProductImage(product);
+  const productImages = resolveProductImages(product);
   const precoNumerico = Number(product.preco_promocional || product.preco) || 0;
   const precoFormatado = precoNumerico.toFixed(2);
   const productUrl = `${SITE_URL}/produto/${product.slug || product.id}`;
@@ -304,7 +324,7 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     '@id': `${productUrl}#product`,
     'name': product.nome,
     'description': cleanText(product.descricao) || `Compre ${product.nome} com melhor preço e envio rápido na Gringa Style.`,
-    'image': [imageUrl],
+    'image': productImages,
     'url': productUrl,
     'sku': String(product.id),
     'mpn': String(product.id),
