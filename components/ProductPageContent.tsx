@@ -6,7 +6,7 @@ import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { useToast } from '@/context/ToastContext';
-import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import StickyCTA from './StickyCTA';
 import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
@@ -51,6 +51,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
 
     const touchStartX = useRef<number | null>(null);
     const touchEndX = useRef<number | null>(null);
+    const thumbnailsRef = useRef<HTMLDivElement | null>(null);
 
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('PIX');
@@ -219,6 +220,31 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
         }
     };
 
+    const handlePrevMedia = useCallback(() => {
+        const mediaUrls = product?.media_urls || product?.imagens || [];
+        if (mediaUrls.length <= 1) return;
+        setCurrentImageIndex((prev) => (prev - 1 + mediaUrls.length) % mediaUrls.length);
+    }, [product]);
+
+    const handleNextMedia = useCallback(() => {
+        const mediaUrls = product?.media_urls || product?.imagens || [];
+        if (mediaUrls.length <= 1) return;
+        setCurrentImageIndex((prev) => (prev + 1) % mediaUrls.length);
+    }, [product]);
+
+    const scrollThumbnails = (direction: 'left' | 'right') => {
+        if (!thumbnailsRef.current) return;
+        const scrollAmount = direction === 'left' ? -220 : 220;
+        thumbnailsRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        if (thumbnailsRef.current && thumbnailsRef.current.children[currentImageIndex]) {
+            const activeEl = thumbnailsRef.current.children[currentImageIndex] as HTMLElement;
+            activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }, [currentImageIndex]);
+
     if (loading) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando produto...</div>;
     if (!product) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Produto não encontrado.</div>;
 
@@ -262,9 +288,9 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             </div>
 
             <div className="detalhe-produto-container">
-                <div className="produto-detalhe-coluna-img" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="produto-detalhe-coluna-img">
                     <div
-                        style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#111' }}
+                        style={{ position: 'relative', width: '100%', maxWidth: '540px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#111' }}
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEnd}
@@ -282,14 +308,14 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                         {videoUrl && currentImageIndex === 0 && product.video ? (
                             <video src={videoUrl} controls muted loop className="video-principal" />
                         ) : (
-                            <div className="container-imagem-zoom" style={{ position: 'relative', width: '100%', aspectRatio: '1/1' }}>
+                            <div className="container-imagem-zoom">
                                 <Image
                                     id="produto-imagem-principal"
                                     src={currentMedia ? resolveOriginalUrl(currentMedia) : fallbackImage}
                                     alt={product.nome}
                                     fill
                                     draggable={false}
-                                    style={{ objectFit: 'cover', cursor: 'zoom-in' }}
+                                    style={{ objectFit: 'contain', cursor: 'zoom-in' }}
                                     priority={true}
                                     placeholder="blur"
                                     blurDataURL={BLUR_DATA_URL}
@@ -303,47 +329,107 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             </div>
                         )}
 
+                        {/* Setas de navegação desktop */}
                         {mediaUrls.length > 1 && (
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '15px', position: 'absolute', bottom: '15px', width: '100%' }}>
-                                {mediaUrls.map((_, idx) => (
-                                    <div 
-                                        key={idx} 
-                                        style={{
-                                            width: idx === currentImageIndex ? '20px' : '8px',
-                                            height: '8px',
-                                            borderRadius: '4px',
-                                            backgroundColor: idx === currentImageIndex ? 'var(--cor-destaque)' : 'rgba(255,255,255,0.5)',
-                                            transition: 'all 0.3s ease',
-                                            cursor: 'pointer',
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                                        }}
-                                        onClick={() => setCurrentImageIndex(idx)}
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                <button
+                                    type="button"
+                                    className="produto-nav-btn produto-nav-btn-prev"
+                                    onClick={handlePrevMedia}
+                                    aria-label="Imagem anterior"
+                                    title="Foto anterior"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="produto-nav-btn produto-nav-btn-next"
+                                    onClick={handleNextMedia}
+                                    aria-label="Próxima imagem"
+                                    title="Próxima foto"
+                                >
+                                    <ChevronRight size={24} />
+                                </button>
+                            </>
+                        )}
+
+                        {/* Indicador de Fotos: Dots para <= 6 fotos ou Badge para > 6 fotos */}
+                        {mediaUrls.length > 1 && (
+                            mediaUrls.length <= 6 ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', position: 'absolute', bottom: '15px', width: '100%', zIndex: 12 }}>
+                                    {mediaUrls.map((_, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            style={{
+                                                width: idx === currentImageIndex ? '20px' : '8px',
+                                                height: '8px',
+                                                borderRadius: '4px',
+                                                backgroundColor: idx === currentImageIndex ? 'var(--cor-destaque)' : 'rgba(255,255,255,0.5)',
+                                                transition: 'all 0.3s ease',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                                            }}
+                                            onClick={() => setCurrentImageIndex(idx)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="badge-contador-fotos">
+                                    {currentImageIndex + 1} / {mediaUrls.length}
+                                </div>
+                            )
                         )}
                     </div>
 
-                    <div className="produto-miniaturas" style={{ marginTop: '20px' }}>
-                        {mediaUrls.map((url, idx) => {
-                            const originalSrc = resolveOriginalUrl(url) || fallbackImage;
-                            const isR2 = originalSrc.includes('r2.dev') || originalSrc.includes('pub-');
-                            return (
-                                <Image
-                                    key={idx}
-                                    src={originalSrc}
-                                    className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
-                                    onClick={() => setCurrentImageIndex(idx)}
-                                    alt={`${product?.nome || 'Equipamento'} - Foto ${idx + 1}`}
-                                    loading="lazy"
-                                    width={100}
-                                    height={100}
-                                    unoptimized={isR2}
-                                    style={{ borderRadius: '8px', border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '2px solid transparent', objectFit: 'cover', cursor: 'pointer' }}
-                                />
-                            );
-                        })}
-                    </div>
+                    {/* Galeria de Miniaturas com Navegação Fluida */}
+                    {mediaUrls.length > 1 && (
+                        <div className="produto-miniaturas-container">
+                            {mediaUrls.length > 4 && (
+                                <button 
+                                    type="button"
+                                    className="miniatura-nav-btn"
+                                    onClick={() => scrollThumbnails('left')}
+                                    aria-label="Rolar fotos anteriores"
+                                    title="Rolar para esquerda"
+                                >
+                                    <ChevronLeft size={18} />
+                                </button>
+                            )}
+
+                            <div className="produto-miniaturas" ref={thumbnailsRef}>
+                                {mediaUrls.map((url, idx) => {
+                                    const originalSrc = resolveOriginalUrl(url) || fallbackImage;
+                                    const isR2 = originalSrc.includes('r2.dev') || originalSrc.includes('pub-');
+                                    return (
+                                        <Image
+                                            key={idx}
+                                            src={originalSrc}
+                                            className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
+                                            onClick={() => setCurrentImageIndex(idx)}
+                                            alt={`${product?.nome || 'Equipamento'} - Foto ${idx + 1}`}
+                                            loading="lazy"
+                                            width={80}
+                                            height={80}
+                                            unoptimized={isR2}
+                                            style={{ objectFit: 'cover' }}
+                                        />
+                                    );
+                                })}
+                            </div>
+
+                            {mediaUrls.length > 4 && (
+                                <button 
+                                    type="button"
+                                    className="miniatura-nav-btn"
+                                    onClick={() => scrollThumbnails('right')}
+                                    aria-label="Rolar mais fotos"
+                                    title="Rolar para direita"
+                                >
+                                    <ChevronRight size={18} />
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <div className="produto-descricao-container desktop-only-description" style={{ marginTop: '24px', borderTop: '1px solid #333', paddingTop: '24px' }}>
                         <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
@@ -583,7 +669,7 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                     .titulo-desktop-container {
                         display: none !important;
                     }
-                    .produto-detalhe-grid {
+                    .detalhe-produto-container {
                         grid-template-columns: 1fr !important;
                         gap: 20px !important;
                     }
