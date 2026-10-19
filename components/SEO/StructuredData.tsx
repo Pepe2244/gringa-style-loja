@@ -280,13 +280,13 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     ...(hasPromo && {
       'priceSpecification': [
         {
-          '@type': 'PriceSpecification',
+          '@type': 'UnitPriceSpecification',
           'price': Number(product.preco).toFixed(2),
           'priceCurrency': 'BRL',
           'priceType': 'https://schema.org/ListPrice'
         },
         {
-          '@type': 'PriceSpecification',
+          '@type': 'UnitPriceSpecification',
           'price': precoFormatado,
           'priceCurrency': 'BRL',
           'priceType': 'https://schema.org/SalePrice'
