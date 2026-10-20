@@ -7,11 +7,6 @@ export const r2Client = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
   },
-  // Otimização de rede para evitar conexões penduradas e melhorar o TTFB
-  requestHandler: {
-    connectionTimeout: 5000,
-    socketTimeout: 5000,
-  } as any,
 });
 
 export async function uploadToR2(fileBuffer: Buffer, fileName: string, contentType: string) {

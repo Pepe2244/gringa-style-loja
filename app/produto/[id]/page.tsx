@@ -41,6 +41,7 @@ interface Props {
 }
 
 export const revalidate = 60; // Cache ISR
+export const dynamicParams = true; // Garante que novos produtos criados no painel sejam gerados sob demanda
 
 export async function generateStaticParams() {
     const { data: products } = await supabase
