@@ -12,6 +12,11 @@ export const resolveAbsoluteUrl = (path?: string | null) => {
 let allProductsCache: any[] | null = null;
 let allProductsCacheTime = 0;
 
+export function clearProductServiceCache() {
+    allProductsCache = null;
+    allProductsCacheTime = 0;
+}
+
 export async function getAllActiveProducts() {
     const now = Date.now();
     if (allProductsCache && (now - allProductsCacheTime < 60000)) {
@@ -25,6 +30,7 @@ export async function getAllActiveProducts() {
     allProductsCacheTime = now;
     return allProductsCache;
 }
+
 
 // Normaliza uma string para comparação fonética/de slug (remove acentos, pontuações e hifens extras)
 export function normalizeSlugCompare(str: string): string {

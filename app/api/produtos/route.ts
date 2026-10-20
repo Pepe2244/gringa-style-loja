@@ -29,12 +29,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Parâmetros de filtro inválidos.' }, { status: 400 });
     }
 
+    const inStockOnly = url.searchParams.get('apenas_estoque') === 'true';
+
     let query = supabase
       .from('produtos')
       .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
-      .eq('em_estoque', true)
       .order('created_at', { ascending: false })
       .range(from, to);
+
+    if (inStockOnly) {
+      query = query.eq('em_estoque', true);
+    }
 
     if (categoryId) {
       const isNumeric = !isNaN(Number(categoryId));

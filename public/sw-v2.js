@@ -1,10 +1,10 @@
-// Service Worker Gringa Style - v2.0
+// Service Worker Gringa Style - v2.1
 // Cache inteligente e offline-first
 
-const CACHE_NAME = 'gringa-style-v2.0';
-const STATIC_CACHE = 'gringa-style-static-v2.0';
-const DYNAMIC_CACHE = 'gringa-style-dynamic-v2.0';
-const API_CACHE = 'gringa-style-api-v2.0';
+const CACHE_NAME = 'gringa-style-v2.1';
+const STATIC_CACHE = 'gringa-style-static-v2.1';
+const DYNAMIC_CACHE = 'gringa-style-dynamic-v2.1';
+const API_CACHE = 'gringa-style-api-v2.1';
 
 // Recursos críticos para cache imediato
 const CRITICAL_RESOURCES = [
@@ -95,6 +95,11 @@ self.addEventListener('fetch', (event) => {
     // Ignorar requisições do Chrome DevTools ou schemas não-http
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
+    // Rotas de administração e APIs administrativas nunca devem ser cacheadas
+    if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api/admin')) {
+        return;
+    }
+
     // Estratégia baseada no tipo de recurso com try-catch de proteção
     try {
         if (isStaticResource(url)) {
@@ -103,7 +108,7 @@ self.addEventListener('fetch', (event) => {
             event.respondWith(networkFirst(request).catch(() => fetch(request)));
         } else if (isImageRequest(url)) {
             event.respondWith(cacheFirst(request).catch(() => fetch(request)));
-        } else if (isDocumentRequest(request)) {
+        } else if (isDocumentRequest(request) || isRscRequest(request, url)) {
             event.respondWith(networkFirst(request).catch(() => fetch(request)));
         } else {
             event.respondWith(staleWhileRevalidate(request).catch(() => fetch(request)));
@@ -211,6 +216,12 @@ function isImageRequest(url) {
 function isDocumentRequest(request) {
     return request.destination === 'document' ||
            Boolean(request.headers.get('accept')?.includes('text/html'));
+}
+
+function isRscRequest(request, url) {
+    return url.searchParams.has('_rsc') ||
+           request.headers.get('rsc') === '1' ||
+           Boolean(request.headers.get('accept')?.includes('text/x-component'));
 }
 
 // Estratégias de cache

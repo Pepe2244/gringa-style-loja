@@ -5,10 +5,11 @@ import Image from 'next/image';
 // Caminhos relativos para compatibilidade com o ambiente atual
 import { supabase } from '../../lib/supabase';
 import { Product, Category, ProductVariant } from '../../types';
-import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser, AlertCircle, Loader2, Package, Tag, Settings2 } from 'lucide-react';
+import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser, AlertCircle, Loader2, Package, Tag, Settings2, RefreshCw } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
 import { deleteProduct, saveProduct, setProductStock } from '@/app/actions/admin-data';
+import { revalidateProductCache } from '@/app/actions/produtos';
 import { slugify } from '@/utils/slugify';
 
 export default function ProductManager() {
@@ -18,6 +19,7 @@ export default function ProductManager() {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [syncingCache, setSyncingCache] = useState(false);
 
     // Campos do Formulário Restaurados
     const [nome, setNome] = useState('');
@@ -84,7 +86,10 @@ export default function ProductManager() {
             const variants = product.variants as unknown as ProductVariant | null;
             setVariantTipo(variants?.tipo || '');
             setVariantOpcoes(variants?.opcoes?.join(', ') || '');
-            setExistingMedia(product.media_urls || []);
+            const medias = (Array.isArray(product.media_urls) && product.media_urls.length > 0)
+                ? product.media_urls
+                : (Array.isArray(product.imagens) ? product.imagens : []);
+            setExistingMedia(medias);
         } else {
             resetFormFields();
         }
@@ -251,6 +256,22 @@ export default function ProductManager() {
         }
     };
 
+    const handleSyncCache = async () => {
+        setSyncingCache(true);
+        try {
+            const res = await revalidateProductCache();
+            if (res.success) {
+                alert('Cache da loja e do site sincronizado com sucesso! Todas as páginas foram atualizadas.');
+            } else {
+                alert(`Erro ao sincronizar cache: ${res.error}`);
+            }
+        } catch (err: any) {
+            alert(`Falha na sincronização: ${err.message}`);
+        } finally {
+            setSyncingCache(false);
+        }
+    };
+
     return (
         <div className="admin-container" style={{ paddingBottom: '100px' }}>
             <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -258,9 +279,33 @@ export default function ProductManager() {
                     <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>Gestão Gringa Style</h1>
                     <p style={{ color: '#888', fontSize: '0.8rem' }}>{products.length} itens no inventário</p>
                 </div>
-                <button className="btn-admin btn-adicionar" onClick={() => openModal()} style={{ borderRadius: '50px', padding: '10px 20px' }}>
-                    <Plus size={18} /> <span>Novo</span>
-                </button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                        type="button"
+                        onClick={handleSyncCache}
+                        disabled={syncingCache}
+                        style={{
+                            borderRadius: '50px',
+                            padding: '10px 18px',
+                            background: '#222',
+                            border: '1px solid #444',
+                            color: '#FFA500',
+                            cursor: syncingCache ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '0.85rem',
+                            fontWeight: 600
+                        }}
+                        title="Força a atualização imediata de todo o cache do site e vitrine"
+                    >
+                        <RefreshCw size={16} className={syncingCache ? "animate-spin" : ""} />
+                        <span>{syncingCache ? 'Sincronizando...' : 'Sincronizar Site'}</span>
+                    </button>
+                    <button className="btn-admin btn-adicionar" onClick={() => openModal()} style={{ borderRadius: '50px', padding: '10px 20px' }}>
+                        <Plus size={18} /> <span>Novo</span>
+                    </button>
+                </div>
             </div>
 
             {loading && products.length === 0 ? (

@@ -1,8 +1,9 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag, updateTag } from 'next/cache';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
+import { clearProductServiceCache } from '@/lib/product-service';
 
 type AdminResult<T = undefined> =
     | { success: true; data: T }
@@ -56,6 +57,9 @@ function booleanValue(value: unknown, name: string): boolean {
 function safeUrl(value: unknown, name: string, optional = false): string | null {
     if (value == null && optional) return null;
     const input = text(value, name, 2048);
+    if (input.startsWith('/') && !input.startsWith('//')) {
+        return input;
+    }
     let url: URL;
     try {
         url = new URL(input);
@@ -67,9 +71,45 @@ function safeUrl(value: unknown, name: string, optional = false): string | null 
 }
 
 function revalidateProducts() {
+    clearProductServiceCache();
+    try {
+        revalidateTag('produtos', 'max');
+        revalidateTag('loja', 'max');
+        revalidateTag('categorias', 'max');
+        if (typeof updateTag === 'function') {
+            updateTag('produtos');
+            updateTag('loja');
+            updateTag('categorias');
+        }
+    } catch (err) {
+        console.error('Falha ao revalidar tags:', err);
+    }
     revalidatePath('/', 'layout');
-    revalidatePath('/produto', 'layout');
+    revalidatePath('/loja', 'page');
+    revalidatePath('/loja', 'layout');
+    revalidatePath('/categoria/[id]', 'page');
+    revalidatePath('/categoria', 'layout');
+    revalidatePath('/produto/[id]', 'page');
     revalidatePath('/busca', 'page');
+    revalidatePath('/carrinho', 'page');
+    revalidatePath('/admin', 'layout');
+}
+
+function revalidateCategories() {
+    try {
+        revalidateTag('categorias', 'max');
+        revalidateTag('loja', 'max');
+        if (typeof updateTag === 'function') {
+            updateTag('categorias');
+            updateTag('loja');
+        }
+    } catch (err) {
+        console.error('Falha ao revalidar tags de categoria:', err);
+    }
+    revalidatePath('/', 'layout');
+    revalidatePath('/loja', 'page');
+    revalidatePath('/categoria/[id]', 'page');
+    revalidatePath('/categoria', 'layout');
     revalidatePath('/admin', 'layout');
 }
 
@@ -112,6 +152,10 @@ export async function getPrivateAdminData(kind: 'coupons' | 'notifications' | 'p
 export async function saveProduct(input: unknown, id?: number) {
     return runAdmin(async (client) => {
         const data = record(input);
+        const mediaList = Array.isArray(data.media_urls) && data.media_urls.length <= 30
+            ? data.media_urls.map((url) => safeUrl(url, 'URL da mídia') as string)
+            : (() => { throw new Error('Mídias inválidas.'); })();
+
         const payload = {
             nome: text(data.nome, 'Nome', 200),
             slug: text(data.slug, 'Slug', 220),
@@ -124,9 +168,8 @@ export async function saveProduct(input: unknown, id?: number) {
                 ? data.tags
                 : (() => { throw new Error('Tags inválidas.'); })(),
             em_estoque: booleanValue(data.em_estoque, 'Estoque'),
-            media_urls: Array.isArray(data.media_urls) && data.media_urls.length <= 30
-                ? data.media_urls.map((url) => safeUrl(url, 'URL da mídia') as string)
-                : (() => { throw new Error('Mídias inválidas.'); })(),
+            media_urls: mediaList,
+            imagens: mediaList,
             variants: data.variants == null ? null : data.variants
         };
         const query = id
@@ -158,7 +201,7 @@ export async function saveCategory(name: string) {
     return runAdmin(async (client) => {
         const { error } = await client.from('categorias').insert({ nome: text(name, 'Nome da categoria', 100) });
         if (error) throw error;
-        revalidatePath('/', 'layout');
+        revalidateCategories();
     });
 }
 
@@ -166,7 +209,7 @@ export async function deleteCategory(id: number) {
     return runAdmin(async (client) => {
         const { error } = await client.from('categorias').delete().eq('id', positiveId(id));
         if (error) throw error;
-        revalidatePath('/', 'layout');
+        revalidateCategories();
     });
 }
 
