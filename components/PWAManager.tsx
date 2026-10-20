@@ -18,60 +18,94 @@ declare global {
 }
 
 interface PWAManagerProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 export default function PWAManager({ children }: PWAManagerProps) {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-    const [isInstallable, setIsInstallable] = useState(false);
     const [isInstalled, setIsInstalled] = useState(false);
     const [showInstallPrompt, setShowInstallPrompt] = useState(false);
     const [isOnline, setIsOnline] = useState(true);
 
     useEffect(() => {
-        // Verificar se já está instalado
-        const checkInstalled = () => {
-            if (typeof window !== 'undefined') {
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-                const navigatorStandalone = window.navigator as Navigator & { standalone?: boolean };
-                const isInWebAppiOS = navigatorStandalone.standalone === true;
-                setIsInstalled(isStandalone || isInWebAppiOS);
+        if (typeof window === 'undefined') return;
+
+        // 1. Registro ultra-otimizado do Service Worker (ZERO impacto no PageSpeed / FCP / LCP)
+        // Só registra quando o navegador estiver 100% ocioso após o carregamento da página
+        if ('serviceWorker' in navigator) {
+            const registerServiceWorker = () => {
+                navigator.serviceWorker
+                    .register('/sw-v2.js')
+                    .then((reg) => {
+                        // Verifica atualizações em background de forma silenciosa
+                        if (reg && reg.update) {
+                            reg.update().catch(() => {});
+                        }
+                    })
+                    .catch((error) => {
+                        console.warn('[PWA] Service Worker não registrado:', error);
+                    });
+            };
+
+            if (document.readyState === 'complete') {
+                if ('requestIdleCallback' in window) {
+                    (window as any).requestIdleCallback(registerServiceWorker);
+                } else {
+                    setTimeout(registerServiceWorker, 2000);
+                }
+            } else {
+                window.addEventListener(
+                    'load',
+                    () => {
+                        if ('requestIdleCallback' in window) {
+                            (window as any).requestIdleCallback(registerServiceWorker);
+                        } else {
+                            setTimeout(registerServiceWorker, 2000);
+                        }
+                    },
+                    { once: true }
+                );
             }
-        };
+        }
 
-        checkInstalled();
+        // 2. Verificar se o app já está rodando em modo standalone
+        const isStandalone =
+            window.matchMedia('(display-mode: standalone)').matches ||
+            (window.navigator as any).standalone === true;
+        setIsInstalled(isStandalone);
 
-        // Listener para o evento beforeinstallprompt
+        // 3. Listener do prompt de instalação nativo
         const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
             e.preventDefault();
             setDeferredPrompt(e);
-            setIsInstallable(true);
 
-            // Mostrar prompt automaticamente após alguns segundos se o usuário estiver engajado
-            setTimeout(() => {
-                if (!isInstalled && !localStorage.getItem('installPromptDismissed')) {
+            // Não exibe imediatamente para não poluir a tela no primeiro segundo (evita queda no PageSpeed / CLS)
+            // Aguarda 10 segundos de engajamento do usuário
+            const timer = setTimeout(() => {
+                const dismissedAt = localStorage.getItem('pwa_dismissed_at');
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+                const wasRecentlyDismissed = dismissedAt && Date.now() - Number(dismissedAt) < sevenDays;
+
+                if (!isStandalone && !wasRecentlyDismissed) {
                     setShowInstallPrompt(true);
                 }
-            }, 3000);
+            }, 10000);
+
+            return () => clearTimeout(timer);
         };
 
-        // Listener para quando o app é instalado
         const handleAppInstalled = () => {
             setIsInstalled(true);
-            setIsInstallable(false);
             setShowInstallPrompt(false);
             setDeferredPrompt(null);
-
-            // Rastrear instalação
-            if (typeof window !== 'undefined' && (window as any).gtag) {
+            if ((window as any).gtag) {
                 (window as any).gtag('event', 'app_install', {
                     event_category: 'engagement',
-                    event_label: 'pwa_install'
+                    event_label: 'pwa_installed',
                 });
             }
         };
 
-        // Listeners de conectividade
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
 
@@ -86,7 +120,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [isInstalled]);
+    }, []);
 
     const handleInstallClick = async () => {
         if (!deferredPrompt) return;
@@ -98,242 +132,135 @@ export default function PWAManager({ children }: PWAManagerProps) {
             if (outcome === 'accepted') {
                 setIsInstalled(true);
             }
-
             setDeferredPrompt(null);
             setShowInstallPrompt(false);
         } catch (error) {
-            console.error('Erro ao instalar PWA:', error);
+            console.error('[PWA] Erro ao instalar:', error);
         }
     };
 
     const dismissInstallPrompt = () => {
         setShowInstallPrompt(false);
-        localStorage.setItem('installPromptDismissed', 'true');
-
-        // Rastrear dismiss
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'install_prompt_dismissed', {
-                event_category: 'engagement'
-            });
-        }
+        try {
+            localStorage.setItem('pwa_dismissed_at', String(Date.now()));
+        } catch {}
     };
 
     return (
         <>
             {children}
 
-            {/* Prompt de instalação */}
-            {showInstallPrompt && !isInstalled && (
-                <div className="pwa-install-prompt">
-                    <div className="pwa-install-content">
-                        <div className="pwa-install-icon">📱</div>
-                        <div className="pwa-install-text">
-                            <h3>Instale o Gringa Style</h3>
-                            <p>Acesse nossos produtos mais rapidamente com o app!</p>
-                            <div className="pwa-install-features">
-                                <span>🛍️ Compras rápidas</span>
-                                <span>🔔 Notificações</span>
-                                <span>📱 Experiência nativa</span>
-                            </div>
-                        </div>
-                        <div className="pwa-install-actions">
-                            <button
-                                className="pwa-install-button"
-                                onClick={handleInstallClick}
-                            >
-                                Instalar
-                            </button>
-                            <button
-                                className="pwa-dismiss-button"
-                                onClick={dismissInstallPrompt}
-                            >
-                                Agora não
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Indicador de offline */}
+            {/* Aviso de Offline */}
             {!isOnline && (
-                <div className="offline-indicator">
-                    <div className="offline-content">
-                        <span className="offline-icon">📶</span>
-                        <span>Você está offline. Algumas funcionalidades podem não estar disponíveis.</span>
-                    </div>
+                <div
+                    role="status"
+                    aria-live="polite"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 9999,
+                        background: '#e11d48',
+                        color: '#ffffff',
+                        padding: '10px 16px',
+                        textAlign: 'center',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                    }}
+                >
+                    📶 Você está offline no momento. O catálogo salvo em cache continua acessível.
                 </div>
             )}
 
-            {/* Compartilhar botão (PWA) */}
-            {isInstalled && (
-                <ShareButton />
+            {/* Prompt de Instalação PWA Responsivo */}
+            {showInstallPrompt && !isInstalled && (
+                <div
+                    role="dialog"
+                    aria-label="Instalar aplicativo Gringa Style"
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 'calc(100% - 32px)',
+                        maxWidth: '480px',
+                        zIndex: 9998,
+                        background: '#1F1F1F',
+                        border: '1px solid #333333',
+                        borderLeft: '4px solid #FFA500',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+                        color: '#FFFFFF',
+                        fontFamily: 'inherit',
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div
+                            style={{
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '10px',
+                                background: '#FFA500',
+                                color: '#111',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '22px',
+                                flexShrink: 0,
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            ⚡
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '700', color: '#FFFFFF' }}>
+                                Instalar App Gringa Style
+                            </h4>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#AAAAAA', lineHeight: '1.4' }}>
+                                Acesso ultrarrápido às máscaras de solda, rifas ativas e ofertas exclusivas direto na sua tela inicial.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'flex-end' }}>
+                        <button
+                            onClick={dismissInstallPrompt}
+                            type="button"
+                            style={{
+                                background: 'transparent',
+                                border: '1px solid #444',
+                                color: '#AAA',
+                                padding: '8px 14px',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                            }}
+                        >
+                            Agora não
+                        </button>
+                        <button
+                            onClick={handleInstallClick}
+                            type="button"
+                            style={{
+                                background: '#FFA500',
+                                border: 'none',
+                                color: '#111111',
+                                padding: '8px 18px',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                fontWeight: '700',
+                            }}
+                        >
+                            Instalar App
+                        </button>
+                    </div>
+                </div>
             )}
-
-            <style jsx>{`
-                .pwa-install-prompt {
-                    position: fixed;
-                    bottom: 20px;
-                    left: 20px;
-                    right: 20px;
-                    z-index: 1000;
-                    animation: slideUp 0.3s ease-out;
-                }
-
-                .pwa-install-content {
-                    background: white;
-                    border-radius: 16px;
-                    padding: 1.5rem;
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-                    display: flex;
-                    align-items: center;
-                    gap: 1rem;
-                    border: 1px solid var(--cor-borda, #e9ecef);
-                }
-
-                .pwa-install-icon {
-                    font-size: 2rem;
-                    flex-shrink: 0;
-                }
-
-                .pwa-install-text {
-                    flex: 1;
-                }
-
-                .pwa-install-text h3 {
-                    margin: 0 0 0.5rem 0;
-                    font-size: 1.1rem;
-                    font-weight: 600;
-                    color: var(--cor-texto, #333);
-                }
-
-                .pwa-install-text p {
-                    margin: 0 0 0.75rem 0;
-                    font-size: 0.9rem;
-                    color: var(--cor-texto-secundario, #666);
-                }
-
-                .pwa-install-features {
-                    display: flex;
-                    gap: 0.75rem;
-                    font-size: 0.8rem;
-                    color: var(--cor-texto-secundario, #666);
-                }
-
-                .pwa-install-actions {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
-
-                .pwa-install-button {
-                    background: var(--cor-destaque, #ff6b35);
-                    color: white;
-                    border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background-color 0.2s ease;
-                }
-
-                .pwa-install-button:hover {
-                    background: var(--cor-destaque-hover, #e55a2b);
-                }
-
-                .pwa-dismiss-button {
-                    background: transparent;
-                    color: var(--cor-texto-secundario, #666);
-                    border: none;
-                    padding: 0.25rem 0.5rem;
-                    font-size: 0.8rem;
-                    cursor: pointer;
-                    text-decoration: underline;
-                }
-
-                .offline-indicator {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    z-index: 1000;
-                    background: #ff6b35;
-                    color: white;
-                    padding: 0.5rem;
-                    text-align: center;
-                    animation: slideDown 0.3s ease-out;
-                }
-
-                .offline-content {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
-                    font-size: 0.9rem;
-                }
-
-                @keyframes slideUp {
-                    from { transform: translateY(100%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-
-                @keyframes slideDown {
-                    from { transform: translateY(-100%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-
-                @media (max-width: 768px) {
-                    .pwa-install-content {
-                        flex-direction: column;
-                        text-align: center;
-                        gap: 1rem;
-                    }
-
-                    .pwa-install-actions {
-                        flex-direction: row;
-                        width: 100%;
-                    }
-
-                    .pwa-install-button,
-                    .pwa-dismiss-button {
-                        flex: 1;
-                    }
-                }
-            `}</style>
         </>
-    );
-}
-
-// Componente para compartilhamento (PWA)
-function ShareButton() {
-    const [canShare, setCanShare] = useState(false);
-
-    useEffect(() => {
-        setCanShare(typeof navigator !== 'undefined' && 'share' in navigator);
-    }, []);
-
-    const handleShare = async () => {
-        if (!canShare) return;
-
-        try {
-            await navigator.share({
-                title: 'Gringa Style - Moda Feminina',
-                text: 'Confira esta loja incrível de moda feminina!',
-                url: window.location.href
-            });
-        } catch (error) {
-            console.error('Erro ao compartilhar:', error);
-        }
-    };
-
-    if (!canShare) return null;
-
-    return (
-        <button
-            className="share-button"
-            onClick={handleShare}
-            aria-label="Compartilhar"
-        >
-            📤
-        </button>
     );
 }

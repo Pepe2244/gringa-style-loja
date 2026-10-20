@@ -15,6 +15,7 @@ import {
   OrganizationSchema,
 } from "@/components/SEO/StructuredData";
 import ScrollToTop from "@/components/ScrollToTop";
+import PWAManager from "@/components/PWAManager";
 import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
@@ -62,6 +63,11 @@ export const metadata: Metadata = {
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
+  },
+  verification: {
+    other: {
+      'p:domain_verify': 'd00b84f06db1659fd65d46ee153d5415',
+    },
   },
 };
 
@@ -119,6 +125,7 @@ export default function RootLayout({
 
               <Footer />
               <ScrollToTop />
+              <PWAManager />
             </div>
           </ErrorBoundary>
         </ToastProvider>

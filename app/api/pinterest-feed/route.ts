@@ -1,0 +1,142 @@
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { slugify } from '@/utils/slugify';
+
+export const revalidate = 3600; // Cache de 1 hora na borda
+
+export async function GET() {
+  try {
+    const { data: produtos, error } = await supabase
+      .from('produtos')
+      .select(`
+        *,
+        categorias (
+          nome
+        )
+      `)
+      .eq('em_estoque', true);
+
+    if (error) {
+      console.error('[Pinterest Feed] Erro no banco de dados:', error);
+      throw error;
+    }
+
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gringastylebr.com.br';
+
+    const escapeXml = (unsafe: string | null | undefined) => {
+      if (!unsafe) return '';
+      return String(unsafe).replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+          case '<': return '&lt;';
+          case '>': return '&gt;';
+          case '&': return '&amp;';
+          case '\'': return '&apos;';
+          case '"': return '&quot;';
+          default: return c;
+        }
+      });
+    };
+
+    const formatImageUrl = (url: unknown): string | null => {
+      if (!url || typeof url !== 'string') return null;
+      const trimmed = url.trim();
+      if (!trimmed) return null;
+      if (/\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) return null;
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+      return `${SITE_URL}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+    };
+
+    let itemsXml = '';
+
+    (produtos || []).forEach((produto: any) => {
+      const rawMediaList = [
+        ...(Array.isArray(produto.media_urls) ? produto.media_urls : []),
+        ...(Array.isArray(produto.imagens) ? produto.imagens : []),
+      ];
+
+      const validImages: string[] = [];
+      const seenImages = new Set<string>();
+
+      for (const raw of rawMediaList) {
+        const formatted = formatImageUrl(raw);
+        if (formatted && !seenImages.has(formatted)) {
+          seenImages.add(formatted);
+          validImages.push(formatted);
+          if (validImages.length >= 4) break;
+        }
+      }
+
+      if (validImages.length === 0) return;
+
+      const mainImage = validImages[0];
+      const additionalImages = validImages.slice(1);
+
+      const canonicalSlug = (produto.slug && String(produto.slug).trim().length > 0)
+        ? String(produto.slug).trim()
+        : slugify(produto.nome) || String(produto.id);
+      const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
+
+      const precoBase = (produto.preco || 0).toFixed(2);
+      const salePrice = (produto.preco_promocional && produto.preco_promocional < produto.preco)
+        ? produto.preco_promocional.toFixed(2)
+        : null;
+
+      const descricaoText = produto.descricao?.replace(/<[^>]*>?/gm, '').trim() || produto.nome;
+      const categoriaNome = produto.categorias?.nome || 'Equipamentos';
+      const brandName = produto.marca || 'Gringa Style';
+
+      let googleCategory = '926'; // Hardware > Tools > Welding & Soldering
+      const catLower = categoriaNome.toLowerCase();
+      if (catLower.includes('boné') || catLower.includes('bone')) {
+        googleCategory = '173';
+      } else if (catLower.includes('camisa') || catLower.includes('vestu')) {
+        googleCategory = '212';
+      }
+
+      const additionalImagesXml = additionalImages
+        .map((img) => `\n            <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`)
+        .join('');
+
+      itemsXml += `
+        <item>
+            <g:id>${produto.id}</g:id>
+            <g:title>${escapeXml(produto.nome)}</g:title>
+            <g:description>${escapeXml(descricaoText)}</g:description>
+            <g:link>${escapeXml(productUrl)}</g:link>
+            <g:image_link>${escapeXml(mainImage)}</g:image_link>${additionalImagesXml}
+            <g:price>${precoBase} BRL</g:price>
+            <g:availability>in stock</g:availability>
+            <g:condition>new</g:condition>
+            <g:brand>${escapeXml(brandName)}</g:brand>
+            <g:google_product_category>${googleCategory}</g:google_product_category>
+            <g:product_type>${escapeXml(`Equipamentos > ${categoriaNome}`)}</g:product_type>`;
+
+      if (salePrice) {
+        itemsXml += `\n            <g:sale_price>${salePrice} BRL</g:sale_price>`;
+      }
+
+      itemsXml += `
+        </item>`;
+    });
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+    <channel>
+        <title>Gringa Style - Catálogo Oficial Pinterest</title>
+        <link>${SITE_URL}</link>
+        <description>Catálogo de Máscaras de Solda e Acessórios para Pinterest Catalogs</description>
+${itemsXml}
+    </channel>
+</rss>`;
+
+    return new NextResponse(xml, {
+      headers: {
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400',
+      },
+    });
+  } catch (error) {
+    console.error('[Pinterest Feed] Erro crítico ao gerar feed:', error);
+    return new NextResponse('Erro interno ao gerar o feed do Pinterest.', { status: 500 });
+  }
+}

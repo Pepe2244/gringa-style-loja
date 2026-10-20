@@ -63,6 +63,9 @@ function shouldSkipRateLimit(path: string, method: string): boolean {
 
     const skipPaths = [
         '/api/webhook',
+        '/api/google-feed',
+        '/api/meta-feed',
+        '/api/pinterest-feed',
         '/_next',
         '/favicon.ico',
         '/robots.txt',
@@ -167,7 +170,9 @@ export default async function proxy(request: NextRequest) {
         pathname.startsWith('/.well-known/') ||
         pathname.endsWith('.txt') ||
         pathname.endsWith('.html') ||
-        pathname === '/api/google-feed';
+        pathname === '/api/google-feed' ||
+        pathname === '/api/meta-feed' ||
+        pathname === '/api/pinterest-feed';
 
     const isMaliciousPath = MALICIOUS_PATHS.some(path => pathname.includes(path));
     const isBadBot = Boolean(userAgent && BLOCKED_BOTS.some(bot =>
