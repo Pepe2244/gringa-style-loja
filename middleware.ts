@@ -139,9 +139,9 @@ function localRateLimit(key: string, config: { maxRequests: number; windowMs: nu
 }
 
 // ==========================================
-// 3. FUNÇÃO PRINCIPAL EXPORTADA COMO PROXY
+// 3. FUNÇÃO PRINCIPAL EXPORTADA COMO MIDDLEWARE
 // ==========================================
-export default async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || '';
     const pathname = request.nextUrl.pathname;
     const method = request.method;
@@ -254,7 +254,7 @@ export default async function proxy(request: NextRequest) {
     return response;
 }
 
-export { proxy };
+export { middleware };
 
 export const config = {
     matcher: [
