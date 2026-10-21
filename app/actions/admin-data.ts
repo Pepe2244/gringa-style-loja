@@ -70,7 +70,7 @@ function safeUrl(value: unknown, name: string, optional = false): string | null 
     return input;
 }
 
-function revalidateProducts() {
+function revalidateProducts(slug?: string, id?: number) {
     clearProductServiceCache();
     try {
         revalidateTag('produtos', 'max');
@@ -90,6 +90,14 @@ function revalidateProducts() {
     revalidatePath('/categoria/[id]', 'page');
     revalidatePath('/categoria', 'layout');
     revalidatePath('/produto/[id]', 'page');
+    if (slug) {
+        revalidatePath(`/produto/${slug}`, 'page');
+        revalidatePath(`/produto/${slug}`, 'layout');
+    }
+    if (id) {
+        revalidatePath(`/produto/${id}`, 'page');
+        revalidatePath(`/produto/${id}`, 'layout');
+    }
     revalidatePath('/busca', 'page');
     revalidatePath('/carrinho', 'page');
     revalidatePath('/admin', 'layout');
@@ -177,7 +185,7 @@ export async function saveProduct(input: unknown, id?: number) {
             : client.from('produtos').insert(payload);
         const { error } = await query;
         if (error) throw error;
-        revalidateProducts();
+        revalidateProducts(payload.slug, id);
     });
 }
 
@@ -185,7 +193,7 @@ export async function deleteProduct(id: number) {
     return runAdmin(async (client) => {
         const { error } = await client.from('produtos').delete().eq('id', positiveId(id));
         if (error) throw error;
-        revalidateProducts();
+        revalidateProducts(undefined, id);
     });
 }
 
@@ -193,7 +201,7 @@ export async function setProductStock(id: number, inStock: boolean) {
     return runAdmin(async (client) => {
         const { error } = await client.from('produtos').update({ em_estoque: booleanValue(inStock, 'Estoque') }).eq('id', positiveId(id));
         if (error) throw error;
-        revalidateProducts();
+        revalidateProducts(undefined, id);
     });
 }
 

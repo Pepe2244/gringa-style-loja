@@ -6,7 +6,7 @@ import { getCachedValue } from '@/lib/cache';
 import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 import { BreadcrumbSchema, CollectionPageSchema, ItemListSchema } from '@/components/SEO/StructuredData';
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: { absolute: 'Loja Gringa Style | Máscaras de Solda e Acessórios TIG' },

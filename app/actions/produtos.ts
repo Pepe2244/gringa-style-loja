@@ -37,6 +37,21 @@ export async function revalidateProductCache() {
         revalidatePath('/carrinho', 'page');
         revalidatePath('/admin', 'layout');
 
+        // Revalidação pontual de cada produto individual
+        try {
+            const { createSupabaseAdminClient } = await import('@/lib/supabase-admin');
+            const adminClient = createSupabaseAdminClient();
+            const { data: allProds } = await adminClient.from('produtos').select('slug, id');
+            if (allProds) {
+                for (const p of allProds) {
+                    if (p.slug) revalidatePath(`/produto/${p.slug}`, 'page');
+                    if (p.id) revalidatePath(`/produto/${p.id}`, 'page');
+                }
+            }
+        } catch (indErr) {
+            console.warn('[Cache] Revalidação individual de produtos ignorada:', indErr);
+        }
+
         // Notificação IndexNow em segundo plano (não bloqueante)
         submitToIndexNow().catch((err) => {
             console.error('[IndexNow] Falha na submissão em background:', err);

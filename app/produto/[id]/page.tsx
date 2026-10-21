@@ -34,7 +34,7 @@ interface Props {
     params: Promise<{ id: string }>;
 }
 
-export const revalidate = 3600; // Cache ISR otimizado para 1 hora (elimina TTFB alto e páginas lentas)
+export const revalidate = 60; // Cache ISR otimizado para atualização rápida e alto desempenho
 export const dynamicParams = true; // Garante que novos produtos criados no painel sejam gerados sob demanda
 
 export async function generateStaticParams() {

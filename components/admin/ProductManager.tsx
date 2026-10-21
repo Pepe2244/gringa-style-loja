@@ -190,13 +190,33 @@ export default function ProductManager() {
 
         const generatedSlug = slugify(nome);
 
+        const parsedPreco = parseFloat(preco.replace(',', '.'));
+        const parsedPromo = precoPromocional.trim() ? parseFloat(precoPromocional.replace(',', '.')) : null;
+        const parsedPix = precoPix.trim() ? parseFloat(precoPix.replace(',', '.')) : null;
+
+        if (isNaN(parsedPreco) || parsedPreco <= 0) {
+            alert('Por favor, informe um Preço Base válido maior que zero.');
+            setLoading(false);
+            return;
+        }
+
+        if (parsedPromo !== null && !isNaN(parsedPromo) && parsedPromo >= parsedPreco) {
+            const prosseguir = confirm(
+                `Atenção: O Preço Promocional (R$ ${parsedPromo.toFixed(2)}) é MAIOR ou IGUAL ao Preço Base (R$ ${parsedPreco.toFixed(2)}).\n\nPara que a promoção "De R$ 450 por R$ 420" funcione na vitrine, o Preço Base deve ser o maior (ex: 450) e o Promocional deve ser o menor (ex: 420).\n\nDeseja salvar mesmo assim?`
+            );
+            if (!prosseguir) {
+                setLoading(false);
+                return;
+            }
+        }
+
         const productData = {
             nome,
             slug: generatedSlug,
             descricao,
-            preco: parseFloat(preco),
-            preco_promocional: precoPromocional ? parseFloat(precoPromocional) : null,
-            preco_pix: precoPix ? parseFloat(precoPix) : null,
+            preco: parsedPreco,
+            preco_promocional: parsedPromo,
+            preco_pix: parsedPix,
             categoria_id: categoriaId ? parseInt(categoriaId) : null,
             tags: tags.split(',').map(s => s.trim()).filter(Boolean),
             em_estoque,
@@ -331,9 +351,22 @@ export default function ProductManager() {
                             <div key={prod.id} style={{ background: '#111', padding: '12px 16px', borderRadius: '12px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1rem' }}>{prod.nome}</h3>
-                                    <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                                    R$ {prod.preco.toFixed(2)}{prod.preco_pix ? ` | PIX R$ ${prod.preco_pix.toFixed(2)}` : ''} | {prod.em_estoque ? 'Em Estoque' : 'Esgotado'}
-                                </span>
+                                    <div style={{ fontSize: '0.82rem', color: '#888', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                        {prod.preco_promocional && prod.preco_promocional < prod.preco ? (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ textDecoration: 'line-through', color: '#777' }}>R$ {prod.preco.toFixed(2)}</span>
+                                                <span style={{ color: '#00ff88', fontWeight: 'bold', background: 'rgba(0, 255, 136, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(0, 255, 136, 0.3)' }}>
+                                                    Por R$ {prod.preco_promocional.toFixed(2)} (PROMO)
+                                                </span>
+                                            </span>
+                                        ) : (
+                                            <span style={{ color: '#eee' }}>R$ {prod.preco.toFixed(2)}</span>
+                                        )}
+                                        {prod.preco_pix ? <span style={{ color: '#00d2ff' }}>| PIX R$ {prod.preco_pix.toFixed(2)}</span> : null}
+                                        <span style={{ color: prod.em_estoque ? '#4ade80' : '#f87171' }}>
+                                            | {prod.em_estoque ? 'Em Estoque' : 'Esgotado'}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <label className="switch" style={{ transform: 'scale(0.7)', cursor: 'pointer' }}>
@@ -363,18 +396,43 @@ export default function ProductManager() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
                                 <div className="form-campo">
-                                    <label>Preço Base (R$)</label>
-                                    <input type="number" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} required />
+                                    <label>Preço Base / "De" (R$)</label>
+                                    <input type="number" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} placeholder="Ex: 450.00" required />
+                                    <small style={{ color: '#888', fontSize: '0.75rem', marginTop: '3px', display: 'block' }}>Preço normal do item</small>
                                 </div>
                                 <div className="form-campo">
-                                    <label>Preço Promo (R$)</label>
-                                    <input type="number" step="0.01" value={precoPromocional} onChange={e => setPrecoPromocional(e.target.value)} />
+                                    <label>Preço Promo / "Por" (R$)</label>
+                                    <input type="number" step="0.01" value={precoPromocional} onChange={e => setPrecoPromocional(e.target.value)} placeholder="Ex: 420.00" />
+                                    <small style={{ color: '#888', fontSize: '0.75rem', marginTop: '3px', display: 'block' }}>Vazio se não for promo</small>
                                 </div>
                                 <div className="form-campo">
                                     <label>Preço PIX (Opcional)</label>
                                     <input type="number" step="0.01" value={precoPix} onChange={e => setPrecoPix(e.target.value)} placeholder="Ex: 79.90" />
+                                    <small style={{ color: '#888', fontSize: '0.75rem', marginTop: '3px', display: 'block' }}>Valor à vista via PIX</small>
                                 </div>
                             </div>
+
+                            {(() => {
+                                const pBase = parseFloat(preco.replace(',', '.'));
+                                const pPromo = precoPromocional.trim() ? parseFloat(precoPromocional.replace(',', '.')) : null;
+                                if (!isNaN(pBase) && pBase > 0 && pPromo !== null && !isNaN(pPromo)) {
+                                    if (pPromo < pBase) {
+                                        const pct = Math.round(((pBase - pPromo) / pBase) * 100);
+                                        return (
+                                            <div style={{ background: 'rgba(0, 255, 136, 0.08)', border: '1px solid rgba(0, 255, 136, 0.4)', padding: '10px 14px', borderRadius: '8px', color: '#00ff88', fontSize: '0.85rem' }}>
+                                                ✨ <strong>Promoção Ativa na Loja:</strong> De <del style={{ color: '#888' }}>R$ {pBase.toFixed(2)}</del> por <strong>R$ {pPromo.toFixed(2)}</strong> ({pct}% OFF na vitrine)
+                                            </div>
+                                        );
+                                    } else {
+                                        return (
+                                            <div style={{ background: 'rgba(255, 165, 0, 0.1)', border: '1px solid rgba(255, 165, 0, 0.5)', padding: '10px 14px', borderRadius: '8px', color: '#ffb347', fontSize: '0.85rem' }}>
+                                                ⚠️ <strong>Atenção:</strong> Para ativar o desconto, o Preço Promo (Por) deve ser <strong>menor</strong> que o Preço Base (De R$ {pBase.toFixed(2)}).
+                                            </div>
+                                        );
+                                    }
+                                }
+                                return null;
+                            })()}
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                 <div className="form-campo">

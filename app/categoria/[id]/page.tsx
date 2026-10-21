@@ -7,7 +7,7 @@ import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 import { BreadcrumbSchema, ItemListSchema } from '@/components/SEO/StructuredData';
 import { resolveAbsoluteUrl } from '@/lib/product-service';
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 interface Props {
     params: Promise<{ id: string }>;
