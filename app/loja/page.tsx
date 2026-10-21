@@ -3,7 +3,7 @@ import HomeContent from '@/components/home/HomeContent';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 import { getCachedValue } from '@/lib/cache';
-import { buildCanonicalUrl } from '@/lib/site-config';
+import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 import { BreadcrumbSchema, CollectionPageSchema } from '@/components/SEO/StructuredData';
 
 export const revalidate = 60;
@@ -27,6 +27,20 @@ export const metadata: Metadata = {
     siteName: 'Gringa Style',
     locale: 'pt_BR',
     type: 'website',
+    images: [
+      {
+        url: `${siteConfig.appUrl}/imagens/logo_gringa_style.png`,
+        width: 800,
+        height: 600,
+        alt: 'Loja Gringa Style',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Loja Gringa Style | Máscaras de Solda, EPIs e Acessórios TIG',
+    description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG.',
+    images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.png`],
   },
 };
 

@@ -166,7 +166,6 @@ export default function RecommendationEngine({
                                 width={200}
                                 height={200}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                unoptimized
                             />
                         </div>
                         <div className="recommendation-info">

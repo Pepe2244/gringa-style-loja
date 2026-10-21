@@ -7,6 +7,10 @@ export const metadata: Metadata = {
     alternates: {
         canonical: buildCanonicalUrl('/acompanhar-rifa'),
     },
+    robots: {
+        index: false,
+        follow: true,
+    },
 };
 
 export default function AcompanharRifaLayout({

@@ -3,21 +3,15 @@ import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
 import CategoryPageContent from '@/components/home/CategoryPageContent';
 import { notFound } from 'next/navigation';
-import { buildCanonicalUrl } from '@/lib/site-config';
+import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
+import { BreadcrumbSchema, ItemListSchema } from '@/components/SEO/StructuredData';
+import { resolveAbsoluteUrl } from '@/lib/product-service';
 
 export const revalidate = 60;
 
 interface Props {
     params: Promise<{ id: string }>;
 }
-
-const SEO_CONTENT: Record<string, { intro: string; title: string; description: string }> = {
-    default: {
-        title: 'Categoria | Gringa Style',
-        description: 'Produtos para soldadores profissionais.',
-        intro: 'Produtos selecionados para profissionais de soldagem.',
-    },
-};
 
 export async function generateStaticParams() {
     const { data: categories } = await supabase
@@ -32,11 +26,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { id } = await params;
     const categoryId = parseInt(id, 10);
 
-    const { data: category } = await supabase
-        .from('categorias')
-        .select('nome')
-        .eq('id', categoryId)
-        .maybeSingle();
+    const [categoryRes, sampleProductRes] = await Promise.all([
+        supabase
+            .from('categorias')
+            .select('nome')
+            .eq('id', categoryId)
+            .maybeSingle(),
+        supabase
+            .from('produtos')
+            .select('imagens, media_urls')
+            .eq('categoria_id', categoryId)
+            .limit(1)
+            .maybeSingle(),
+    ]);
+
+    const category = categoryRes.data;
 
     if (!category) {
         return {
@@ -50,6 +54,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description = `${categoryName} para soldadores profissionais: máscaras, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.`;
     const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
 
+    const sampleMedia = sampleProductRes.data?.media_urls || sampleProductRes.data?.imagens || [];
+    const firstImageUrl = sampleMedia.find((u: string) => !u.includes('.mp4') && !u.includes('.webm'));
+    const categoryOgImage = firstImageUrl ? resolveAbsoluteUrl(firstImageUrl) : `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
+
     return {
         title: { absolute: title },
         description,
@@ -62,11 +70,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             siteName: 'Gringa Style',
             locale: 'pt_BR',
             type: 'website',
+            images: [
+                {
+                    url: categoryOgImage,
+                    width: 1200,
+                    height: 630,
+                    alt: categoryName,
+                },
+            ],
         },
         twitter: {
             card: 'summary_large_image',
             title,
             description,
+            images: [categoryOgImage],
         },
     };
 }
@@ -88,6 +105,30 @@ export default async function CategoriaPage({ params }: Props) {
     if (!category) notFound();
 
     const products = (productsResult.data || []) as Product[];
+    const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
 
-    return <CategoryPageContent category={category} products={products} />;
+    return (
+        <>
+            <BreadcrumbSchema items={[
+                { name: 'Início', url: '/' },
+                { name: 'Loja', url: '/loja' },
+                { name: category.nome, url: canonicalUrl },
+            ]} />
+            <ItemListSchema
+                products={products.map((p) => ({
+                    id: p.id,
+                    nome: p.nome,
+                    descricao: p.descricao,
+                    preco: p.preco,
+                    preco_promocional: p.preco_promocional,
+                    em_estoque: p.em_estoque,
+                    imagens: p.imagens,
+                    media_urls: p.media_urls,
+                    slug: p.slug,
+                }))}
+                pageUrl={canonicalUrl}
+            />
+            <CategoryPageContent category={category} products={products} />
+        </>
+    );
 }

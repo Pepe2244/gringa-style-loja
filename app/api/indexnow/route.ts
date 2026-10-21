@@ -6,20 +6,35 @@ import { slugify } from '@/utils/slugify';
 
 export async function GET() {
   try {
-    // Busca produtos em estoque para indexação completa
-    const { data: produtos } = await supabase
-      .from('produtos')
-      .select('id, nome, slug')
-      .eq('em_estoque', true);
+    const [produtosRes, categoriasRes] = await Promise.all([
+      supabase.from('produtos').select('id, nome, slug').order('id', { ascending: false }),
+      supabase.from('categorias').select('id').order('nome'),
+    ]);
 
-    const productUrls = (produtos || []).map((p: any) => {
+    const staticUrls = [
+      `${siteConfig.appUrl}/`,
+      `${siteConfig.appUrl}/loja`,
+      `${siteConfig.appUrl}/rifa`,
+      `${siteConfig.appUrl}/historico`,
+      `${siteConfig.appUrl}/sobre`,
+      `${siteConfig.appUrl}/gs-servicos-industriais`,
+      `${siteConfig.appUrl}/devolucao-e-reembolso`,
+      `${siteConfig.appUrl}/privacidade`,
+    ];
+
+    const categoryUrls = (categoriasRes.data || []).map(
+      (c: any) => `${siteConfig.appUrl}/categoria/${c.id}`
+    );
+
+    const productUrls = (produtosRes.data || []).map((p: any) => {
       const canonicalSlug = (p.slug && String(p.slug).trim().length > 0)
         ? String(p.slug).trim()
         : slugify(p.nome) || String(p.id);
       return `${siteConfig.appUrl}/produto/${canonicalSlug}`;
     });
 
-    const result = await submitToIndexNow(productUrls);
+    const allUrls = [...staticUrls, ...categoryUrls, ...productUrls];
+    const result = await submitToIndexNow(allUrls);
     return NextResponse.json(result, { status: result.success ? 200 : result.status });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';

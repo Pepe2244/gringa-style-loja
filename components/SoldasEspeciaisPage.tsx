@@ -70,7 +70,7 @@ export default function GSServicosIndustriaisPage() {
   });
 
   // Estados para os dados vindos do Supabase
-  const [heroImage, setHeroImage] = useState('/imagens/tocha 2.jpg');
+  const [heroImage, setHeroImage] = useState('/imagens/tocha-2.webp');
   const [clientesDinamicos, setClientesDinamicos] = useState<any[]>([]);
   const [galeriaImagens, setGaleriaImagens] = useState<any[]>([]);
 

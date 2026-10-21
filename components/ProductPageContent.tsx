@@ -398,7 +398,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                             <div className="produto-miniaturas" ref={thumbnailsRef}>
                                 {mediaUrls.map((url, idx) => {
                                     const originalSrc = resolveOriginalUrl(url) || fallbackImage;
-                                    const isR2 = originalSrc.includes('r2.dev') || originalSrc.includes('pub-');
                                     return (
                                         <Image
                                             key={idx}
@@ -409,7 +408,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                             loading="lazy"
                                             width={80}
                                             height={80}
-                                            unoptimized={isR2}
                                             style={{ objectFit: 'cover' }}
                                         />
                                     );
@@ -633,7 +631,6 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
                                                 fill
                                                 sizes="(max-width: 768px) 50vw, 25vw"
                                                 style={{ objectFit: 'cover' }}
-                                                unoptimized={(resolveOriginalUrl(mediaUrl) || '').includes('r2.dev')}
                                             />
                                         )}
                                     </div>

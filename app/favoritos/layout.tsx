@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
-import { buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Meus Favoritos | Gringa Style' },
-  description: 'Confira sua lista de produtos favoritos e equipamentos de solda salvos na Gringa Style.',
-  alternates: { canonical: buildCanonicalUrl('/favoritos') },
+  title: 'Meus Favoritos | Gringa Style',
   robots: {
     index: false,
     follow: true,
