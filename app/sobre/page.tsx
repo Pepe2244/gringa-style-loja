@@ -5,11 +5,11 @@ import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData
 import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-    title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
+    title: { absolute: 'Sobre o Grupo Gringa Style | Loja e Serviços' },
     description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
     alternates: { canonical: buildCanonicalUrl('/sobre') },
     openGraph: {
-        title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
+        title: 'Sobre o Grupo Gringa Style | Loja e Serviços',
         description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
         url: buildCanonicalUrl('/sobre'),
         siteName: 'Gringa Style',

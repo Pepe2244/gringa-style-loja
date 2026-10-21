@@ -4,12 +4,12 @@ import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'GS Serviços Industriais | Soldas Especiais e Mecânica Industrial',
+    absolute: 'GS Serviços Industriais | Soldas Especiais e Mecânica',
   },
   description: 'Soluções industriais em soldas especiais e mecânica industrial, da manutenção à recuperação de equipamentos e componentes.',
   alternates: { canonical: buildCanonicalUrl('/gs-servicos-industriais') },
   openGraph: {
-    title: 'GS Serviços Industriais | Soldas Especiais e Mecânica Industrial',
+    title: 'GS Serviços Industriais | Soldas Especiais e Mecânica',
     description: 'Serviços industriais especializados em soldagem, manutenção mecânica e recuperação de equipamentos.',
     url: buildCanonicalUrl('/gs-servicos-industriais'),
     siteName: 'GS Serviços Industriais',

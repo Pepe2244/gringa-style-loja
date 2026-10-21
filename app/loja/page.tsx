@@ -4,12 +4,12 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 import { getCachedValue } from '@/lib/cache';
 import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
-import { BreadcrumbSchema, CollectionPageSchema } from '@/components/SEO/StructuredData';
+import { BreadcrumbSchema, CollectionPageSchema, ItemListSchema } from '@/components/SEO/StructuredData';
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Loja Gringa Style | Máscaras de Solda, EPIs e Acessórios TIG',
+  title: { absolute: 'Loja Gringa Style | Máscaras de Solda e Acessórios TIG' },
   description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega, PIX e até 12x sem juros para todo o Brasil.',
   alternates: { canonical: buildCanonicalUrl('/loja') },
   keywords: [
@@ -87,6 +87,20 @@ export default async function LojaPage() {
         { name: 'Início', url: '/' },
         { name: 'Loja', url: lojaUrl },
       ]} />
+      <ItemListSchema
+        products={products.map((p) => ({
+          id: p.id,
+          nome: p.nome,
+          descricao: p.descricao,
+          preco: p.preco,
+          preco_promocional: p.preco_promocional,
+          em_estoque: p.em_estoque,
+          imagens: p.imagens,
+          media_urls: p.media_urls,
+          slug: p.slug,
+        }))}
+        pageUrl={lojaUrl}
+      />
       <CollectionPageSchema page={{
         name: 'Loja Gringa Style',
         description: 'Catálogo de máscaras de solda personalizadas, EPIs e acessórios para soldagem TIG e MIG.',

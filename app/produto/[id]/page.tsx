@@ -34,7 +34,7 @@ interface Props {
     params: Promise<{ id: string }>;
 }
 
-export const revalidate = 60; // Cache ISR
+export const revalidate = 3600; // Cache ISR otimizado para 1 hora (elimina TTFB alto e páginas lentas)
 export const dynamicParams = true; // Garante que novos produtos criados no painel sejam gerados sob demanda
 
 export async function generateStaticParams() {
@@ -165,6 +165,30 @@ export default async function ProductPage({ params }: Props) {
     const productUrl = buildCanonicalUrl(`/produto/${product.slug || product.id}`);
     const categoryName = product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null;
 
+    // Busca produtos relacionados no servidor para que os links internos existam no HTML SSR
+    let initialRelatedProducts: any[] = [];
+    try {
+        if (product.produtos_relacionados_ids && product.produtos_relacionados_ids.length > 0) {
+            const { data } = await supabase
+                .from('produtos')
+                .select('*')
+                .in('id', product.produtos_relacionados_ids)
+                .limit(4);
+            initialRelatedProducts = data || [];
+        } else if (product.categoria_id) {
+            const { data } = await supabase
+                .from('produtos')
+                .select('*')
+                .eq('categoria_id', product.categoria_id)
+                .neq('id', product.id)
+                .order('id', { ascending: false })
+                .limit(4);
+            initialRelatedProducts = data || [];
+        }
+    } catch {
+        // Fallback silencioso
+    }
+
     return (
         <>
             <BreadcrumbSchema items={[
@@ -189,7 +213,11 @@ export default async function ProductPage({ params }: Props) {
                 tags: product.tags,
                 marca: 'Gringa Style'
             }} />
-            <ProductPageContent id={product.id} initialProduct={product} />
+            <ProductPageContent
+                id={product.id}
+                initialProduct={product}
+                initialRelatedProducts={initialRelatedProducts}
+            />
         </>
     );
 }

@@ -106,7 +106,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
 
     const shouldShowVideo = !!videoUrl && isHovered && !isMobile && !prefersReducedMotion;
     const productName = product.nome || 'Produto Sem Nome';
-    const productSlug = product.slug || `${product.id}-${slugify(productName)}`;
+    const productSlug = product.slug || slugify(productName) || String(product.id);
 
     return (
         <div

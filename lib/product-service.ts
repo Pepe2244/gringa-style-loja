@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
 import { buildStorageUrl, siteConfig } from '@/lib/site-config';
 
@@ -42,7 +43,7 @@ export function normalizeSlugCompare(str: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
-export async function fetchProductBySlugOrId(rawSlugOrId: string) {
+export const fetchProductBySlugOrId = cache(async (rawSlugOrId: string) => {
     const raw = (rawSlugOrId || '').trim();
     if (!raw) return null;
 
@@ -123,4 +124,4 @@ export async function fetchProductBySlugOrId(rawSlugOrId: string) {
     }
 
     return null;
-}
+});

@@ -33,15 +33,16 @@ const resolveOriginalUrl = (path: string) => {
 interface ProductPageContentProps {
     id: number;
     initialProduct?: Product | null;
+    initialRelatedProducts?: Product[];
 }
 
-export default function ProductPageContent({ id, initialProduct }: ProductPageContentProps) {
+export default function ProductPageContent({ id, initialProduct, initialRelatedProducts }: ProductPageContentProps) {
     const { showToast } = useToast();
     const addRecentlyViewed = useRecentlyViewedStore(state => state.addView);
     const { trackProductView, trackAddToCart, trackEvent } = useAnalytics();
 
     const [product, setProduct] = useState<Product | null>(initialProduct || null);
-    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>(initialRelatedProducts || []);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(!initialProduct);
     const [selectedVariant, setSelectedVariant] = useState<string>('');
@@ -112,12 +113,14 @@ export default function ProductPageContent({ id, initialProduct }: ProductPageCo
             fetchProduct(id);
         } else if (initialProduct) {
             setupProductState(initialProduct);
-            fetchRelatedProducts(initialProduct);
+            if (!initialRelatedProducts || initialRelatedProducts.length === 0) {
+                fetchRelatedProducts(initialProduct);
+            }
             setLoading(false);
             addRecentlyViewed(initialProduct);
         }
         loadCategories();
-    }, [id, initialProduct, addRecentlyViewed, fetchProduct, setupProductState, fetchRelatedProducts, loadCategories]);
+    }, [id, initialProduct, initialRelatedProducts, addRecentlyViewed, fetchProduct, setupProductState, fetchRelatedProducts, loadCategories]);
 
     useEffect(() => {
         if (product) {

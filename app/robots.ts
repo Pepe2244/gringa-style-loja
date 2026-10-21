@@ -41,6 +41,22 @@ export default function robots(): MetadataRoute.Robots {
         disallow: commonDisallow,
       },
       {
+        userAgent: [
+          'GPTBot',
+          'ChatGPT-User',
+          'ClaudeBot',
+          'Claude-Web',
+          'PerplexityBot',
+          'Bytespider',
+          'Applebot-Extended',
+          'cohere-ai',
+          'Amazonbot',
+        ],
+        allow: ['/', '/llms.txt', '/llms-full.txt', ...publicFeeds],
+        disallow: [...commonDisallow, '/api/'],
+        crawlDelay: 2,
+      },
+      {
         userAgent: '*',
         allow: publicFeeds,
         disallow: [...commonDisallow, '/api/'],

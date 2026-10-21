@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { siteConfig, buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-  title: 'Gringa Style | Máscaras de Solda Personalizadas, EPIs e Acessórios TIG',
+  title: { absolute: 'Gringa Style | Máscaras de Solda e Acessórios TIG' },
   description: 'Máscaras de solda personalizadas em fibra de vidro, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.',
   alternates: { canonical: buildCanonicalUrl('/') },
   keywords: [

@@ -1,19 +1,33 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BreadcrumbSchema } from '@/components/SEO/StructuredData';
-import { buildCanonicalUrl } from '@/lib/site-config';
+import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-  title: 'Política de Trocas, Devoluções e Reembolso | Gringa Style',
+  title: { absolute: 'Trocas, Devoluções e Reembolso | Gringa Style' },
   description: 'Conheça nossa política de trocas, devoluções e reembolso. Garantia legal de 90 dias e direito de arrependimento de 7 dias na Gringa Style.',
   alternates: { canonical: buildCanonicalUrl('/devolucao-e-reembolso') },
   openGraph: {
-    title: 'Política de Trocas, Devoluções e Reembolso | Gringa Style',
+    title: 'Trocas, Devoluções e Reembolso | Gringa Style',
     description: 'Direito de arrependimento de 7 dias, garantia de 90 dias e processo simples de troca e reembolso.',
     url: buildCanonicalUrl('/devolucao-e-reembolso'),
     siteName: 'Gringa Style',
     locale: 'pt_BR',
     type: 'website',
+    images: [
+      {
+        url: `${siteConfig.appUrl}/imagens/logo_gringa_style.png`,
+        width: 800,
+        height: 600,
+        alt: 'Trocas e Devoluções Gringa Style',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Trocas, Devoluções e Reembolso | Gringa Style',
+    description: 'Direito de arrependimento de 7 dias e garantia de 90 dias.',
+    images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.png`],
   },
   robots: {
     index: true,

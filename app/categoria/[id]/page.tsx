@@ -7,7 +7,7 @@ import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 import { BreadcrumbSchema, ItemListSchema } from '@/components/SEO/StructuredData';
 import { resolveAbsoluteUrl } from '@/lib/product-service';
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -50,7 +50,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const categoryName = category.nome;
-    const title = `${categoryName} | Compre Online | Gringa Style`;
+    const rawTitle = `${categoryName} | Compre Online | Gringa Style`;
+    const title = rawTitle.length <= 60 ? rawTitle : `${categoryName} | Gringa Style`;
     const description = `${categoryName} para soldadores profissionais: máscaras, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.`;
     const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
 
