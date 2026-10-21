@@ -13,6 +13,7 @@ import {
 const products: PricedProduct[] = [
     { id: 1, preco: 100, preco_promocional: 90, preco_pix: 85, em_estoque: true },
     { id: 2, preco: 50, preco_promocional: null, preco_pix: null, em_estoque: true },
+    { id: 3, preco: 600, preco_promocional: 450, preco_pix: 550, em_estoque: true },
 ];
 
 const coupon: CouponForCheckout = {
@@ -64,6 +65,9 @@ test('uses only server prices and selects PIX pricing when appropriate', () => {
     assert.equal(getUnitPrice(products[0], 'pix'), 85);
     assert.equal(getUnitPrice(products[0], 'cartao_credito'), 90);
     assert.equal(getUnitPrice(products[1], 'pix'), 50);
+    // When promotional price is lower than PIX price (450 < 550), PIX must give the lower price (450)
+    assert.equal(getUnitPrice(products[2], 'pix'), 450);
+    assert.equal(getUnitPrice(products[2], 'cartao_credito'), 450);
     assert.equal(normalizePaymentMethod('PIX'), 'pix');
     assert.throws(() => normalizePaymentMethod('unknown'), /Método de pagamento inválido/);
 });

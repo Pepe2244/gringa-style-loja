@@ -65,7 +65,7 @@ export default function CategoryPageContent({ category, products }: CategoryPage
                 />
 
                 <section style={{ marginTop: '60px', padding: '40px', backgroundColor: 'rgba(17,17,17,0.7)', borderRadius: '10px', border: '1px solid #333' }}>
-                    <h2 className="titulo-seco" style={{ fontSize: '1.8rem', marginBottom: '16px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
+                    <h2 className="titulo-secao" style={{ fontSize: '1.8rem', marginBottom: '16px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
                         Sobre {categoryName}
                     </h2>
                     <div style={{ color: '#bbb', lineHeight: '1.8', fontSize: '1rem' }}>

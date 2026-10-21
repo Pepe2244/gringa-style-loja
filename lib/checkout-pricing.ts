@@ -102,17 +102,18 @@ export function getUnitPrice(product: PricedProduct, paymentMethod: PaymentMetho
         throw new Error(`Preço inválido para o produto ${product.id}.`);
     }
 
+    const promotionalPrice = product.preco_promocional;
+    const baseEffectivePrice =
+        promotionalPrice !== null && promotionalPrice > 0 && promotionalPrice < product.preco
+            ? promotionalPrice
+            : product.preco;
+
     const pixPrice = product.preco_pix;
     if (paymentMethod === 'pix' && pixPrice !== null && pixPrice > 0 && pixPrice < product.preco) {
-        return pixPrice;
+        return Math.min(pixPrice, baseEffectivePrice);
     }
 
-    const promotionalPrice = product.preco_promocional;
-    if (promotionalPrice !== null && promotionalPrice > 0 && promotionalPrice < product.preco) {
-        return promotionalPrice;
-    }
-
-    return product.preco;
+    return baseEffectivePrice;
 }
 
 export function getCouponFailure(

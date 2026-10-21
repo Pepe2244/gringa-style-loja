@@ -12,10 +12,14 @@ export const resolveAbsoluteUrl = (path?: string | null) => {
 // Cache em memória compartilhado para evitar queries repetidas ao banco durante o ciclo de renderização
 let allProductsCache: any[] | null = null;
 let allProductsCacheTime = 0;
+let allCategoriesCache: any[] | null = null;
+let allCategoriesCacheTime = 0;
 
 export function clearProductServiceCache() {
     allProductsCache = null;
     allProductsCacheTime = 0;
+    allCategoriesCache = null;
+    allCategoriesCacheTime = 0;
 }
 
 export async function getAllActiveProducts() {
@@ -30,6 +34,20 @@ export async function getAllActiveProducts() {
     allProductsCache = data || [];
     allProductsCacheTime = now;
     return allProductsCache;
+}
+
+export async function getCachedCategories() {
+    const now = Date.now();
+    if (allCategoriesCache && (now - allCategoriesCacheTime < 60000)) {
+        return allCategoriesCache;
+    }
+    const { data } = await supabase
+        .from('categorias')
+        .select('*')
+        .order('nome');
+    allCategoriesCache = data || [];
+    allCategoriesCacheTime = now;
+    return allCategoriesCache;
 }
 
 

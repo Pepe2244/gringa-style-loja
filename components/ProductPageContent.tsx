@@ -137,14 +137,15 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     const addItem = useCartStore((state: CartState) => state.addItem);
 
     const getDisplayedPrice = (p: Product, method: string) => {
+        const promoPrice = (p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco)
+            ? p.preco_promocional
+            : p.preco;
+
         const normalizedMethod = method.toLowerCase();
-        if (normalizedMethod === 'pix' && p.preco_pix && p.preco_pix > 0) {
-            return p.preco_pix;
+        if (normalizedMethod === 'pix' && p.preco_pix && p.preco_pix > 0 && p.preco_pix < p.preco) {
+            return Math.min(p.preco_pix, promoPrice);
         }
-        if (p.preco_promocional && p.preco_promocional < p.preco) {
-            return p.preco_promocional;
-        }
-        return p.preco;
+        return promoPrice;
     };
 
     const addToCart = () => {

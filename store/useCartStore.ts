@@ -41,7 +41,10 @@ export const useCartStore = create<CartState>()(
 
                 let newItems = [...state.items];
                 if (existingItemIndex > -1) {
-                    newItems[existingItemIndex].quantidade += item.quantidade;
+                    newItems[existingItemIndex] = {
+                        ...newItems[existingItemIndex],
+                        quantidade: newItems[existingItemIndex].quantidade + item.quantidade
+                    };
                 } else {
                     newItems = [...state.items, item];
                 }
@@ -65,7 +68,10 @@ export const useCartStore = create<CartState>()(
                 if (!quantity || quantity < 1) {
                     newItems.splice(index, 1);
                 } else {
-                    newItems[index].quantidade = quantity;
+                    newItems[index] = {
+                        ...newItems[index],
+                        quantidade: quantity
+                    };
                 }
                 return { items: newItems };
             }),

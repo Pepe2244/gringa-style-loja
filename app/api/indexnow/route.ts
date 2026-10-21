@@ -3,8 +3,13 @@ import { submitToIndexNow } from '@/lib/indexnow';
 import { supabase } from '@/lib/supabase';
 import { siteConfig } from '@/lib/site-config';
 import { slugify } from '@/utils/slugify';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function GET() {
+  if (!await isAdminAuthenticated()) {
+    return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+  }
+
   try {
     const [produtosRes, categoriasRes] = await Promise.all([
       supabase.from('produtos').select('id, nome, slug').order('id', { ascending: false }),
@@ -43,6 +48,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!await isAdminAuthenticated()) {
+    return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const urls = Array.isArray(body?.urls) ? body.urls : undefined;

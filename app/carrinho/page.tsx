@@ -104,13 +104,14 @@ export default function CartPage() {
     };
 
     const getPrecoFinal = useCallback((p: Product) => {
-        if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0) {
-            return p.preco_pix;
+        const promoPrice = (p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco)
+            ? p.preco_promocional
+            : p.preco;
+
+        if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0 && p.preco_pix < p.preco) {
+            return Math.min(p.preco_pix, promoPrice);
         }
-        if (!p.preco_promocional || p.preco_promocional >= p.preco) {
-            return p.preco;
-        }
-        return p.preco_promocional;
+        return promoPrice;
     }, [paymentMethod]);
 
     const calculateSubtotal = useCallback(() => {

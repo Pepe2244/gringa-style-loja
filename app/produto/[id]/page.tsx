@@ -4,7 +4,7 @@ import ProductPageContent from '@/components/ProductPageContent';
 import { BreadcrumbSchema, ProductSchema } from '@/components/SEO/StructuredData';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
-import { resolveAbsoluteUrl, fetchProductBySlugOrId } from '@/lib/product-service';
+import { resolveAbsoluteUrl, fetchProductBySlugOrId, getCachedCategories } from '@/lib/product-service';
 
 // Formata o título dinamicamente para não estourar os 60 caracteres da SERP do Google
 function formatSEOTitle(nome: string, precoFormatado: string, emEstoque: boolean): string {
@@ -163,7 +163,9 @@ export default async function ProductPage({ params }: Props) {
     }
 
     const productUrl = buildCanonicalUrl(`/produto/${product.slug || product.id}`);
-    const categoryName = product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null;
+    const categories = await getCachedCategories();
+    const dynamicCategory = product.categoria_id ? categories.find((c: any) => c.id === product.categoria_id) : null;
+    const categoryName = dynamicCategory?.nome || (product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null);
 
     // Busca produtos relacionados no servidor para que os links internos existam no HTML SSR
     let initialRelatedProducts: any[] = [];
