@@ -91,6 +91,22 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        {/* Preload das fontes críticas (elimina atraso no caminho crítico de renderização) */}
+        <link
+          rel="preload"
+          href="/fonts/roboto-400-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/teko-700-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://analytics.google.com" />
         <link rel="dns-prefetch" href="https://stats.g.doubleclick.net" />
