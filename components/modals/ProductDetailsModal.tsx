@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
-import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { buildStorageUrl } from '@/lib/site-config';
@@ -199,8 +198,8 @@ export default function ProductDetailsModal({
                         </button>
                     )}
                 </div>
-            </div >
+            </div>
         </motion.div>
-        </Modal >
+        </Modal>
     );
 }

@@ -122,7 +122,16 @@ function revalidateCategories() {
 }
 
 function revalidateCampaigns() {
+    try {
+        revalidateTag('campaign', 'max');
+        if (typeof updateTag === 'function') {
+            updateTag('campaign');
+        }
+    } catch (err) {
+        console.error('Falha ao revalidar tags de campanha:', err);
+    }
     revalidatePath('/', 'layout');
+    revalidatePath('/admin', 'layout');
 }
 
 export async function getPrivateAdminData(kind: 'coupons' | 'notifications' | 'participants' | 'prizes', id?: number) {
@@ -176,6 +185,7 @@ export async function saveProduct(input: unknown, id?: number) {
                 ? data.tags
                 : (() => { throw new Error('Tags inválidas.'); })(),
             em_estoque: booleanValue(data.em_estoque, 'Estoque'),
+            emEstoque: booleanValue(data.em_estoque, 'Estoque'),
             media_urls: mediaList,
             imagens: mediaList,
             variants: data.variants == null ? null : data.variants
@@ -199,9 +209,17 @@ export async function deleteProduct(id: number) {
 
 export async function setProductStock(id: number, inStock: boolean) {
     return runAdmin(async (client) => {
-        const { error } = await client.from('produtos').update({ em_estoque: booleanValue(inStock, 'Estoque') }).eq('id', positiveId(id));
+        const stockStatus = booleanValue(inStock, 'Estoque');
+        const prodId = positiveId(id);
+        const { error } = await client.from('produtos').update({
+            em_estoque: stockStatus,
+            emEstoque: stockStatus
+        }).eq('id', prodId);
         if (error) throw error;
-        revalidateProducts(undefined, id);
+
+        // Recupera o slug para revalidar a URL individual do produto na vitrine
+        const { data: prod } = await client.from('produtos').select('slug').eq('id', prodId).maybeSingle();
+        revalidateProducts(prod?.slug, prodId);
     });
 }
 

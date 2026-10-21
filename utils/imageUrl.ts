@@ -14,8 +14,8 @@ export function getProxiedImageUrl(url: string | null | undefined): string {
         return `${getStorageBaseUrl()}/${cleanPath}`;
     }
 
-    // Se já é uma URL completa ou asset estático local
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+    // Se já é uma URL completa, blob local, data URL ou asset estático local
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/') || url.startsWith('blob:') || url.startsWith('data:')) {
         return url;
     }
 

@@ -42,7 +42,7 @@ export function getStorageBaseUrl() {
 
 export function buildStorageUrl(path: string) {
   if (!path) return '';
-  if (path.startsWith('http') || path.startsWith('/')) return path;
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/') || path.startsWith('blob:') || path.startsWith('data:')) return path;
   return `${getStorageBaseUrl()}/${getStorageBucket()}/${path}`;
 }
 

@@ -5,7 +5,7 @@ import Image from 'next/image';
 // Caminhos relativos para compatibilidade com o ambiente atual
 import { supabase } from '../../lib/supabase';
 import { Product, Category, ProductVariant } from '../../types';
-import { Trash2, Edit, Plus, X, Upload, Image as ImageIcon, Video, Eraser, AlertCircle, Loader2, Package, Tag, Settings2, RefreshCw } from 'lucide-react';
+import { Trash2, Edit, Plus, AlertCircle, Loader2, Package, Tag, Settings2, RefreshCw } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
 import { deleteProduct, saveProduct, setProductStock } from '@/app/actions/admin-data';
@@ -74,14 +74,14 @@ export default function ProductManager() {
     const openModal = (product: Product | null = null) => {
         setEditingProduct(product);
         if (product) {
-            setNome(product.nome);
-            setDescricao(product.descricao);
-            setPreco(String(product.preco));
-            setPrecoPromocional(product.preco_promocional ? String(product.preco_promocional) : '');
-            setPrecoPix(product.preco_pix ? String(product.preco_pix) : '');
-            setCategoriaId(product.categoria_id ? String(product.categoria_id) : '');
+            setNome(product.nome || '');
+            setDescricao(product.descricao || '');
+            setPreco(product.preco != null ? String(product.preco) : '');
+            setPrecoPromocional(product.preco_promocional != null ? String(product.preco_promocional) : '');
+            setPrecoPix(product.preco_pix != null ? String(product.preco_pix) : '');
+            setCategoriaId(product.categoria_id != null ? String(product.categoria_id) : '');
             setTags(product.tags ? product.tags.join(', ') : '');
-            setEmEstoque(product.em_estoque);
+            setEmEstoque(Boolean(product.em_estoque));
 
             const variants = product.variants as unknown as ProductVariant | null;
             setVariantTipo(variants?.tipo || '');
@@ -93,9 +93,17 @@ export default function ProductManager() {
         } else {
             resetFormFields();
         }
+        mediaPreviews.forEach(url => URL.revokeObjectURL(url));
         setMediaFiles([]);
         setMediaPreviews([]);
         setShowModal(true);
+    };
+
+    const closeModal = () => {
+        mediaPreviews.forEach(url => URL.revokeObjectURL(url));
+        setMediaFiles([]);
+        setMediaPreviews([]);
+        setShowModal(false);
     };
 
     const resetFormFields = () => {
@@ -113,21 +121,21 @@ export default function ProductManager() {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
+        if (e.target.files && e.target.files.length > 0) {
             const files = Array.from(e.target.files);
-            mediaPreviews.forEach(url => URL.revokeObjectURL(url));
-            setMediaFiles(files);
+            setMediaFiles(prev => [...prev, ...files]);
             const newPreviews = files.map(file => URL.createObjectURL(file));
-            setMediaPreviews(newPreviews);
+            setMediaPreviews(prev => [...prev, ...newPreviews]);
         }
     };
 
     const removeNewMedia = (index: number) => {
-        const newFiles = mediaFiles.filter((_, i) => i !== index);
-        const newPreviews = mediaPreviews.filter((_, i) => i !== index);
-        URL.revokeObjectURL(mediaPreviews[index]);
-        setMediaFiles(newFiles);
-        setMediaPreviews(newPreviews);
+        const previewToRemove = mediaPreviews[index];
+        if (previewToRemove) {
+            URL.revokeObjectURL(previewToRemove);
+        }
+        setMediaFiles(prev => prev.filter((_, i) => i !== index));
+        setMediaPreviews(prev => prev.filter((_, i) => i !== index));
     };
 
     const removeExistingMedia = (urlToRemove: string) => {
@@ -179,13 +187,17 @@ export default function ProductManager() {
                 }
             } catch (uploadErr: any) {
                 console.error('Erro ao enviar imagem:', uploadErr);
-                alert(`Erro ao subir imagem: ${uploadErr.message}`);
+                alert(`Erro ao subir imagem: ${uploadErr.message}. O produto não foi salvo para evitar inconsistência nas mídias.`);
+                setLoading(false);
+                return;
             }
         }
 
-        const variants = (variantTipo && variantOpcoes) ? {
-            tipo: variantTipo,
-            opcoes: variantOpcoes.split(',').map(s => s.trim()).filter(Boolean)
+        const trimmedTipo = variantTipo.trim();
+        const trimmedOpcoes = variantOpcoes.split(',').map(s => s.trim()).filter(Boolean);
+        const variants = (trimmedTipo && trimmedOpcoes.length > 0) ? {
+            tipo: trimmedTipo,
+            opcoes: trimmedOpcoes
         } : null;
 
         const generatedSlug = slugify(nome);
@@ -228,7 +240,7 @@ export default function ProductManager() {
             const result = await saveProduct(productData, editingProduct?.id);
             if (!result.success) throw new Error(result.error);
             alert(editingProduct ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!');
-            setShowModal(false);
+            closeModal();
             fetchProducts();
         } catch (error: any) {
             console.error('Erro ao salvar produto:', error);
@@ -385,7 +397,7 @@ export default function ProductManager() {
             {showModal && (
                 <div className="modal-admin-container visivel" style={{ zIndex: 1000 }}>
                     <div className="modal-admin" style={{ maxHeight: '95vh', overflowY: 'auto', padding: '20px', background: '#111', borderRadius: '15px', width: '95%', maxWidth: '600px' }}>
-                        <button className="modal-fechar-btn" onClick={() => setShowModal(false)} style={{ fontSize: '2rem', cursor: 'pointer' }}>&times;</button>
+                        <button className="modal-fechar-btn" onClick={closeModal} style={{ fontSize: '2rem', cursor: 'pointer' }}>&times;</button>
                         <h2 className="titulo-secao" style={{ fontSize: '1.3rem', marginBottom: '20px' }}>{editingProduct ? 'Editar' : 'Novo'} Produto</h2>
 
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -396,12 +408,12 @@ export default function ProductManager() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
                                 <div className="form-campo">
-                                    <label>Preço Base / "De" (R$)</label>
+                                    <label>Preço Base / &quot;De&quot; (R$)</label>
                                     <input type="number" step="0.01" value={preco} onChange={e => setPreco(e.target.value)} placeholder="Ex: 450.00" required />
                                     <small style={{ color: '#888', fontSize: '0.75rem', marginTop: '3px', display: 'block' }}>Preço normal do item</small>
                                 </div>
                                 <div className="form-campo">
-                                    <label>Preço Promo / "Por" (R$)</label>
+                                    <label>Preço Promo / &quot;Por&quot; (R$)</label>
                                     <input type="number" step="0.01" value={precoPromocional} onChange={e => setPrecoPromocional(e.target.value)} placeholder="Ex: 420.00" />
                                     <small style={{ color: '#888', fontSize: '0.75rem', marginTop: '3px', display: 'block' }}>Vazio se não for promo</small>
                                 </div>
@@ -500,7 +512,7 @@ export default function ProductManager() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-admin" style={{ flex: 1, background: '#333', cursor: 'pointer' }}>Cancelar</button>
+                                <button type="button" onClick={closeModal} className="btn-admin" style={{ flex: 1, background: '#333', cursor: 'pointer' }}>Cancelar</button>
                                 <button type="submit" className="btn-admin" style={{ flex: 2, background: 'var(--cor-destaque)', color: 'black', fontWeight: 'bold', cursor: 'pointer' }} disabled={loading}>
                                     {loading ? 'A Guardar...' : 'Salvar Alterações'}
                                 </button>

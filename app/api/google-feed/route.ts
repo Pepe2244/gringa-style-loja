@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { slugify } from '@/utils/slugify';
 
-export const revalidate = 3600; // Revalida a cada 1 hora
+export const revalidate = 300; // Revalida a cada 5 minutos para refletir estoque rapidamente
 
 export async function GET() {
   try {

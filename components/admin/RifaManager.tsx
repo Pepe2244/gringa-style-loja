@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Rifa, Premio } from '@/types';
-import { Trash2, Edit, Plus, Trophy } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 import { manageRaffle, deleteRaffle, toggleRaffleStatus } from '@/app/actions/rifa';
 import { useToast } from '@/context/ToastContext';
@@ -55,15 +55,38 @@ export default function RifaManager() {
         fetchRifas();
     }, []);
 
+    const closeModal = () => {
+        if (imagemCapaPreview && imagemCapaPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(imagemCapaPreview);
+        }
+        premios.forEach(p => {
+            if (p.imagemPreview && p.imagemPreview.startsWith('blob:')) {
+                URL.revokeObjectURL(p.imagemPreview);
+            }
+        });
+        setImagemCapaFile(null);
+        setImagemCapaPreview('');
+        setShowModal(false);
+    };
+
     const openModal = async (rifa: RifaFront | null = null) => {
+        if (imagemCapaPreview && imagemCapaPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(imagemCapaPreview);
+        }
+        premios.forEach(p => {
+            if (p.imagemPreview && p.imagemPreview.startsWith('blob:')) {
+                URL.revokeObjectURL(p.imagemPreview);
+            }
+        });
+
         setEditingRifa(rifa);
         if (rifa) {
-            setNomePremio(rifa.nome_premio);
-            setDescricao(rifa.descricao);
-            setPrecoNumero(String(rifa.preco_numero));
+            setNomePremio(rifa.nome_premio || '');
+            setDescricao(rifa.descricao || '');
+            setPrecoNumero(rifa.preco_numero != null ? String(rifa.preco_numero) : '');
             setPrecoNumeroDescontoQuantidade(String(rifa.preco_numero_desconto_quantidade ?? ''));
             setPrecoNumeroDesconto(String(rifa.preco_numero_desconto ?? ''));
-            setTotalNumeros(String(rifa.total_numeros));
+            setTotalNumeros(rifa.total_numeros != null ? String(rifa.total_numeros) : '');
             setImagemCapaPreview(rifa.imagem_premio_url || '');
 
             const prizesResult = await getPrivateAdminData('prizes', rifa.id);
@@ -89,6 +112,9 @@ export default function RifaManager() {
 
     const handleCapaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
+            if (imagemCapaPreview && imagemCapaPreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagemCapaPreview);
+            }
             const file = e.target.files[0];
             setImagemCapaFile(file);
             setImagemCapaPreview(URL.createObjectURL(file));
@@ -99,6 +125,9 @@ export default function RifaManager() {
         const newPremios = [...premios];
         if (field === 'descricao') newPremios[index].descricao = value;
         if (field === 'file') {
+            if (newPremios[index].imagemPreview && newPremios[index].imagemPreview?.startsWith('blob:')) {
+                URL.revokeObjectURL(newPremios[index].imagemPreview!);
+            }
             const file = value;
             newPremios[index].imagemFile = file;
             newPremios[index].imagemPreview = URL.createObjectURL(file);
@@ -107,7 +136,12 @@ export default function RifaManager() {
     };
 
     const addPrizeField = () => setPremios([...premios, { descricao: '' }]);
-    const removePrizeField = (index: number) => setPremios(premios.filter((_, i) => i !== index));
+    const removePrizeField = (index: number) => {
+        if (premios[index].imagemPreview && premios[index].imagemPreview?.startsWith('blob:')) {
+            URL.revokeObjectURL(premios[index].imagemPreview!);
+        }
+        setPremios(premios.filter((_, i) => i !== index));
+    };
 
     const uploadRaffleImage = async (file: File, label: string) => {
         let preparedFile = file;
@@ -132,6 +166,30 @@ export default function RifaManager() {
         setLoading(true);
 
         try {
+            const cleanNome = nomePremio.trim();
+            if (!cleanNome) {
+                alert('Informe o nome do prêmio principal.');
+                setLoading(false);
+                return;
+            }
+
+            const parsedPreco = parseFloat(String(precoNumero).replace(',', '.'));
+            if (isNaN(parsedPreco) || parsedPreco <= 0) {
+                alert('Informe um Preço por Número válido maior que zero.');
+                setLoading(false);
+                return;
+            }
+
+            const parsedTotal = parseInt(totalNumeros, 10);
+            if (isNaN(parsedTotal) || parsedTotal < 1) {
+                alert('Informe um Total de Números válido maior que zero.');
+                setLoading(false);
+                return;
+            }
+
+            const parsedDescontoQtd = precoNumeroDescontoQuantidade.trim() ? parseInt(precoNumeroDescontoQuantidade, 10) : null;
+            const parsedPrecoDesconto = precoNumeroDesconto.trim() ? parseFloat(String(precoNumeroDesconto).replace(',', '.')) : null;
+
             let capaUrl = editingRifa ? editingRifa.imagem_premio_url : null;
 
             if (imagemCapaFile) {
@@ -140,12 +198,12 @@ export default function RifaManager() {
 
             const rifaData = {
                 id: editingRifa?.id,
-                nome_premio: nomePremio,
-                descricao,
-                preco_numero: parseFloat(precoNumero),
-                preco_numero_desconto_quantidade: precoNumeroDescontoQuantidade ? parseInt(precoNumeroDescontoQuantidade) : null,
-                preco_numero_desconto: precoNumeroDesconto ? parseFloat(precoNumeroDesconto) : null,
-                total_numeros: parseInt(totalNumeros),
+                nome_premio: cleanNome,
+                descricao: descricao.trim(),
+                preco_numero: parsedPreco,
+                preco_numero_desconto_quantidade: parsedDescontoQtd,
+                preco_numero_desconto: parsedPrecoDesconto,
+                total_numeros: parsedTotal,
                 imagem_premio_url: capaUrl,
                 status: editingRifa ? editingRifa.status : 'ativa'
             };
@@ -158,7 +216,7 @@ export default function RifaManager() {
                 }
 
                 if (premios[i].descricao.trim()) {
-                    finalPrizes.push({ id: premios[i].id, descricao: premios[i].descricao, imagem_url: pUrl });
+                    finalPrizes.push({ id: premios[i].id, descricao: premios[i].descricao.trim(), imagem_url: pUrl });
                 }
             }
 
@@ -166,7 +224,7 @@ export default function RifaManager() {
             if (!result.success) throw new Error(result.error);
 
             alert(editingRifa ? 'Rifa atualizada!' : 'Rifa criada!');
-            setShowModal(false);
+            closeModal();
             fetchRifas();
 
         } catch (error: any) {
@@ -254,16 +312,20 @@ export default function RifaManager() {
     const performDraw = async (prizeId: number) => {
         if (!drawRifa) return;
         setDrawing(true);
+        let interval: ReturnType<typeof setInterval> | null = null;
 
         try {
             const { drawWinner } = await import('@/app/actions/raffle');
 
-            const interval = setInterval(() => {
+            interval = setInterval(() => {
                 setDrawAnimation(Math.floor(Math.random() * 1000).toString().padStart(3, '0'));
             }, 50);
 
             const result = await drawWinner(drawRifa.id, prizeId);
-            clearInterval(interval);
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
 
             if (result.success && result.winner) {
                 setDrawAnimation(String(result.winner.number).padStart(3, '0'));
@@ -291,6 +353,9 @@ export default function RifaManager() {
         } catch (error: any) {
             alert('Erro inesperado: ' + error.message);
         } finally {
+            if (interval) {
+                clearInterval(interval);
+            }
             setDrawing(false);
         }
     };
@@ -383,7 +448,7 @@ export default function RifaManager() {
             {showModal && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin">
-                        <button className="modal-fechar-btn" onClick={() => setShowModal(false)}>&times;</button>
+                        <button className="modal-fechar-btn" onClick={closeModal}>&times;</button>
                         <h2 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '25px' }}>{editingRifa ? 'Editar Rifa' : 'Nova Rifa'}</h2>
                         <form onSubmit={handleSave}>
                             <div className="form-campo"><label>Nome do Prêmio</label><input type="text" value={nomePremio} onChange={e => setNomePremio(e.target.value)} required /></div>
@@ -405,7 +470,7 @@ export default function RifaManager() {
                                 </div>
                             ))}
                             <button type="button" onClick={addPrizeField} className="btn-admin btn-editar" style={{ color: 'black', width: '100%', marginTop: '10px' }}>+ Adicionar Prêmio</button>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '30px' }}><button type="button" onClick={() => setShowModal(false)} className="btn-admin btn-cancelar">Cancelar</button><button type="submit" className="btn-admin btn-adicionar" disabled={loading}>{loading ? 'Salvando...' : 'Salvar Rifa'}</button></div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '30px' }}><button type="button" onClick={closeModal} className="btn-admin btn-cancelar">Cancelar</button><button type="submit" className="btn-admin btn-adicionar" disabled={loading}>{loading ? 'Salvando...' : 'Salvar Rifa'}</button></div>
                         </form>
                     </div>
                 </div>

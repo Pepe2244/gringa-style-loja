@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Category } from '@/types';
-import { Trash2, Plus } from 'lucide-react';
 import { deleteCategory, saveCategory } from '@/app/actions/admin-data';
 
 export default function CategoryManager() {
@@ -60,7 +59,7 @@ export default function CategoryManager() {
         <div className="admin-container">
             <div className="admin-header">
                 <h1 className="titulo-secao" style={{ marginBottom: 0 }}>Gerenciar Categorias</h1>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <form onSubmit={(e) => { e.preventDefault(); handleAddCategory(); }} style={{ display: 'flex', gap: '10px' }}>
                     <input
                         type="text"
                         placeholder="Nome da Categoria"
@@ -68,10 +67,10 @@ export default function CategoryManager() {
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         style={{ padding: '8px', borderRadius: '5px', border: '1px solid #555', background: '#333', color: 'white' }}
                     />
-                    <button className="btn-admin btn-adicionar" onClick={handleAddCategory} disabled={loading}>
-                        Adicionar
+                    <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>
+                        {loading ? 'Adicionando...' : 'Adicionar'}
                     </button>
-                </div>
+                </form>
             </div>
 
             <table className="admin-tabela">

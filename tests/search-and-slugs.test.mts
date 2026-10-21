@@ -88,4 +88,7 @@ test('buildCanonicalUrl always generates absolute https URLs without trailing sl
 test('buildStorageUrl resolves Supabase storage paths correctly', () => {
     assert.ok(buildStorageUrl('produtos/foto.jpg').includes('storage/v1/object/public'));
     assert.equal(buildStorageUrl('https://example.com/foto.jpg'), 'https://example.com/foto.jpg');
+    assert.equal(buildStorageUrl('blob:http://localhost:3000/123-abc'), 'blob:http://localhost:3000/123-abc');
+    assert.equal(buildStorageUrl('data:image/png;base64,abc'), 'data:image/png;base64,abc');
 });
+

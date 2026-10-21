@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import ProductManager from '@/components/admin/ProductManager';
 import RifaManager from '@/components/admin/RifaManager';
 import CouponManager from '@/components/admin/CouponManager';

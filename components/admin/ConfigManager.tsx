@@ -18,10 +18,13 @@ export default function ConfigManager() {
     }, []);
 
     const handleSave = async () => {
-        if (!diasNovo) return;
+        const parsedDays = parseInt(diasNovo, 10);
+        if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+            alert('Informe um número de dias válido entre 1 e 365.');
+            return;
+        }
         setLoading(true);
         try {
-            const parsedDays = Number(diasNovo);
             const result = await saveShopConfig(parsedDays);
             if (!result.success) throw new Error(result.error);
             alert('Configurações salvas!');
@@ -38,11 +41,13 @@ export default function ConfigManager() {
                 <h1 className="titulo-secao" style={{ marginBottom: 0 }}>Configurações da Loja</h1>
             </div>
 
-            <div className="admin-container" style={{ marginTop: '20px', background: '#222', padding: '20px', borderRadius: '8px' }}>
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="admin-container" style={{ marginTop: '20px', background: '#222', padding: '20px', borderRadius: '8px' }}>
                 <div className="form-campo">
                     <label>Dias de Destaque &quot;NOVO&quot;</label>
                     <input
                         type="number"
+                        min="1"
+                        max="365"
                         value={diasNovo}
                         onChange={(e) => setDiasNovo(e.target.value)}
                         placeholder="Ex: 7"
@@ -51,10 +56,10 @@ export default function ConfigManager() {
                     <small>Produtos criados há menos de X dias receberão o selo &quot;NOVO&quot;.</small>
                 </div>
 
-                <button className="btn-admin btn-adicionar" onClick={handleSave} disabled={loading}>
+                <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>
                     {loading ? 'Salvando...' : 'Salvar Configurações'}
                 </button>
-            </div>
+            </form>
         </div>
     );
 }

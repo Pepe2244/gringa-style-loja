@@ -60,7 +60,22 @@ export async function reservarNumerosRifa(
     }
 }
 
-// --- NOVAS AÇÕES ADMINISTRATIVAS ---
+function safeRaffleUrl(value: unknown, name: string): string | null {
+    if (value == null) return null;
+    const str = String(value).trim();
+    if (!str) return null;
+    if (str.startsWith('/') && !str.startsWith('//')) return str;
+    let url: URL;
+    try {
+        url = new URL(str);
+    } catch {
+        throw new Error(`${name} inválida.`);
+    }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        throw new Error(`${name} inválida.`);
+    }
+    return url.toString();
+}
 
 export async function manageRaffle(rifaData: unknown, premios: unknown[]) {
     if (!await isAdminAuthenticated()) return { success: false, error: 'Não autorizado.' };
@@ -81,10 +96,7 @@ export async function manageRaffle(rifaData: unknown, premios: unknown[]) {
         if (!['ativa', 'finalizada', 'cancelada'].includes(String(status))) {
             throw new Error('Status da rifa inválido.');
         }
-        const imageUrl = input.imagem_premio_url == null ? null : new URL(String(input.imagem_premio_url));
-        if (imageUrl && imageUrl.protocol !== 'http:' && imageUrl.protocol !== 'https:') {
-            throw new Error('Imagem da rifa inválida.');
-        }
+        const imageUrl = safeRaffleUrl(input.imagem_premio_url, 'Imagem da rifa');
 
         const rafflePayload = {
             id: raffleId,
@@ -98,7 +110,7 @@ export async function manageRaffle(rifaData: unknown, premios: unknown[]) {
                 ? null
                 : Number(input.preco_numero_desconto),
             total_numeros: Number(input.total_numeros),
-            imagem_premio_url: imageUrl?.toString() ?? null,
+            imagem_premio_url: imageUrl,
             status
         };
         if (!rafflePayload.nome_premio || rafflePayload.nome_premio.length > 200 ||
@@ -120,12 +132,7 @@ export async function manageRaffle(rifaData: unknown, premios: unknown[]) {
             if (id !== null && (!Number.isSafeInteger(id) || id <= 0)) throw new Error('Identificador de prêmio inválido.');
             const description = typeof prize.descricao === 'string' ? prize.descricao.trim() : '';
             if (!description || description.length > 300) throw new Error('Descrição de prêmio inválida.');
-            let prizeImage: string | null = null;
-            if (prize.imagem_url != null) {
-                const url = new URL(String(prize.imagem_url));
-                if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('Imagem de prêmio inválida.');
-                prizeImage = url.toString();
-            }
+            const prizeImage = safeRaffleUrl(prize.imagem_url, 'Imagem de prêmio');
             return { id, descricao: description, imagem_url: prizeImage };
         });
         const { data: rifaId, error } = await supabase.rpc('admin_save_raffle_with_prizes', {

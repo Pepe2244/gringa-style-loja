@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag, updateTag } from 'next/cache';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 /**
@@ -13,6 +13,16 @@ export async function revalidateCampaignCache() {
         return { success: false, error: 'Não autorizado.' };
     }
 
+    try {
+        revalidateTag('campaign', 'max');
+        if (typeof updateTag === 'function') {
+            updateTag('campaign');
+        }
+    } catch (err) {
+        console.error('Falha ao revalidar tags de campanha:', err);
+    }
+
     revalidatePath('/', 'layout');
+    revalidatePath('/admin', 'layout');
     return { success: true };
 }

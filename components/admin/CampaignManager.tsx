@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Trash2, Edit, Plus, X, Upload } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { deleteCampaign, saveCampaign, setActiveCampaign } from '@/app/actions/admin-data';
 
@@ -43,9 +43,12 @@ export default function CampaignManager() {
     }, []);
 
     const openModal = (campaign: any = null) => {
+        if (bannerPreview && bannerPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(bannerPreview);
+        }
         setEditingCampaign(campaign);
         if (campaign) {
-            setNome(campaign.nome_campanha);
+            setNome(campaign.nome_campanha || '');
             setAviso(campaign.aviso_deslizante_texto || '');
             setCorFundo(campaign.cor_fundo || '#1A1A1A');
             setCorTexto(campaign.cor_texto || '#1A1A1A');
@@ -63,8 +66,20 @@ export default function CampaignManager() {
         setShowModal(true);
     };
 
+    const closeModal = () => {
+        if (bannerPreview && bannerPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(bannerPreview);
+        }
+        setBannerFile(null);
+        setBannerPreview('');
+        setShowModal(false);
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
+            if (bannerPreview && bannerPreview.startsWith('blob:')) {
+                URL.revokeObjectURL(bannerPreview);
+            }
             const file = e.target.files[0];
             setBannerFile(file);
             setBannerPreview(URL.createObjectURL(file));
@@ -105,9 +120,9 @@ export default function CampaignManager() {
         }
 
         const campaignData = {
-            nome_campanha: nome,
+            nome_campanha: nome.trim(),
             banner_url: bannerUrl,
-            aviso_deslizante_texto: aviso || null,
+            aviso_deslizante_texto: aviso.trim() || null,
             cor_fundo: corFundo,
             cor_texto: corTexto,
             cor_destaque: corDestaque
@@ -117,7 +132,7 @@ export default function CampaignManager() {
             const result = await saveCampaign(campaignData, editingCampaign?.id);
             if (!result.success) throw new Error(result.error);
             alert(editingCampaign ? 'Campanha atualizada!' : 'Campanha criada!');
-            setShowModal(false);
+            closeModal();
             fetchCampaigns();
         } catch (error: any) {
             alert('Erro ao salvar: ' + error.message);
@@ -235,7 +250,7 @@ export default function CampaignManager() {
             {showModal && (
                 <div className="modal-admin-container visivel">
                     <div className="modal-admin">
-                        <button className="modal-fechar-btn" onClick={() => setShowModal(false)}>&times;</button>
+                        <button className="modal-fechar-btn" onClick={closeModal}>&times;</button>
                         <h2 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '25px' }}>
                             {editingCampaign ? 'Editar Campanha' : 'Nova Campanha'}
                         </h2>
@@ -326,7 +341,7 @@ export default function CampaignManager() {
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} className="btn-admin btn-cancelar">Cancelar</button>
+                                <button type="button" onClick={closeModal} className="btn-admin btn-cancelar">Cancelar</button>
                                 <button type="submit" className="btn-admin btn-adicionar" disabled={loading}>
                                     {loading ? 'Salvando...' : 'Salvar'}
                                 </button>

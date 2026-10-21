@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { slugify } from '@/utils/slugify';
 
-export const revalidate = 3600; // Cache de 1 hora na borda
+export const revalidate = 300; // Cache de 5 minutos na borda
 
 export async function GET() {
   try {

@@ -25,7 +25,7 @@ const getCachedCampaign = unstable_cache(
     },
     ['active-campaign-banner'], // A chave única desta cache
     { 
-        revalidate: 3600, // Tempo de vida: 1 hora (3600 segundos). 
+        revalidate: 60, // Tempo de vida curto para sincronização rápida
         tags: ['campaign'] // Permite limpar a cache no futuro se precisares
     } 
 );

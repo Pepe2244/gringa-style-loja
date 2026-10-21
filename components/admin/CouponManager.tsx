@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
-import { Trash2, Edit, Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { deleteCoupon, getPrivateAdminData, saveCoupon, toggleCoupon } from '@/app/actions/admin-data';
 
 export default function CouponManager() {
@@ -50,14 +50,14 @@ export default function CouponManager() {
     const openModal = (coupon: any = null) => {
         setEditingCoupon(coupon);
         if (coupon) {
-            setCodigo(coupon.codigo);
-            setTipoDesconto(coupon.tipo_desconto);
-            setValorDesconto(coupon.valor_desconto);
-            setTipoAplicacao(coupon.tipo_aplicacao);
+            setCodigo(coupon.codigo || '');
+            setTipoDesconto(coupon.tipo_desconto || 'percentual');
+            setValorDesconto(coupon.valor_desconto != null ? String(coupon.valor_desconto) : '');
+            setTipoAplicacao(coupon.tipo_aplicacao || 'geral');
             setProdutosAplicaveis(coupon.produtos_aplicaveis ? coupon.produtos_aplicaveis.map(String) : []);
             setMetodoPagamentoRestrito(coupon.metodo_pagamento_restrito || '');
             setDataValidade(coupon.data_validade ? coupon.data_validade.slice(0, 16) : '');
-            setLimiteUso(coupon.limite_uso || '');
+            setLimiteUso(coupon.limite_uso != null ? String(coupon.limite_uso) : '');
         } else {
             setCodigo('');
             setTipoDesconto('percentual');
@@ -75,15 +75,48 @@ export default function CouponManager() {
         e.preventDefault();
         setLoading(true);
 
+        const cleanCodigo = codigo.toUpperCase().trim();
+        if (!cleanCodigo) {
+            alert('Informe o código do cupom.');
+            setLoading(false);
+            return;
+        }
+
+        const parsedVal = parseFloat(String(valorDesconto).replace(',', '.'));
+        if (isNaN(parsedVal) || parsedVal <= 0) {
+            alert('Informe um valor de desconto válido maior que zero.');
+            setLoading(false);
+            return;
+        }
+
+        if (tipoDesconto === 'percentual' && parsedVal > 100) {
+            alert('Desconto percentual não pode ser maior que 100%.');
+            setLoading(false);
+            return;
+        }
+
+        if (tipoAplicacao === 'produto' && produtosAplicaveis.length === 0) {
+            alert('Selecione pelo menos um produto aplicável para este cupom.');
+            setLoading(false);
+            return;
+        }
+
+        const parsedLimite = limiteUso.trim() ? parseInt(limiteUso, 10) : null;
+        if (parsedLimite !== null && (isNaN(parsedLimite) || parsedLimite < 1)) {
+            alert('O limite de uso deve ser um número inteiro positivo.');
+            setLoading(false);
+            return;
+        }
+
         const couponData = {
-            codigo: codigo.toUpperCase().trim(),
+            codigo: cleanCodigo,
             tipo_desconto: tipoDesconto,
-            valor_desconto: parseFloat(valorDesconto),
+            valor_desconto: parsedVal,
             tipo_aplicacao: tipoAplicacao,
             produtos_aplicaveis: tipoAplicacao === 'produto' ? produtosAplicaveis.map(Number) : null,
             metodo_pagamento_restrito: metodoPagamentoRestrito || null,
             data_validade: dataValidade || null,
-            limite_uso: limiteUso ? parseInt(limiteUso) : null,
+            limite_uso: parsedLimite,
         };
 
         try {
