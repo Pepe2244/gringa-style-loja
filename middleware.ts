@@ -148,6 +148,14 @@ export default async function middleware(request: NextRequest) {
 
     // --- ETAPA 0: FORÇAR HTTPS E NON-WWW (301 PERMANENTE) ---
     const host = request.headers.get('host') || request.nextUrl.host;
+    if (host && (host.includes('netlify.app') || host.includes('gringa-style.netlify.app'))) {
+        const targetUrl = new URL(
+            `${request.nextUrl.pathname}${request.nextUrl.search}`,
+            'https://gringastylebr.com.br'
+        );
+        return NextResponse.redirect(targetUrl, 301);
+    }
+
     if (host && host.toLowerCase().startsWith('www.')) {
         const nonWwwHost = host.replace(/^www\./i, '');
         const targetUrl = new URL(

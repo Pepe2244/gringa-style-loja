@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { slugify } from '@/utils/slugify';
+import { getProductTaxonomy } from '@/lib/taxonomy';
 
 export const revalidate = 300; // Cache de 5 minutos na borda
 
@@ -85,13 +86,7 @@ export async function GET() {
       const categoriaNome = produto.categorias?.nome || 'Equipamentos';
       const brandName = produto.marca || 'Gringa Style';
 
-      let googleCategory = '926'; // Hardware > Tools > Welding & Soldering
-      const catLower = categoriaNome.toLowerCase();
-      if (catLower.includes('boné') || catLower.includes('bone')) {
-        googleCategory = '173';
-      } else if (catLower.includes('camisa') || catLower.includes('vestu')) {
-        googleCategory = '212';
-      }
+      const taxonomy = getProductTaxonomy(produto.nome, categoriaNome);
 
       const additionalImagesXml = additionalImages
         .map((img) => `\n            <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`)
@@ -108,8 +103,8 @@ export async function GET() {
             <g:availability>in stock</g:availability>
             <g:condition>new</g:condition>
             <g:brand>${escapeXml(brandName)}</g:brand>
-            <g:google_product_category>${googleCategory}</g:google_product_category>
-            <g:product_type>${escapeXml(`Equipamentos > ${categoriaNome}`)}</g:product_type>`;
+            <g:google_product_category>${escapeXml(taxonomy.googleCategoryPath)}</g:google_product_category>
+            <g:product_type>${escapeXml(taxonomy.productType)}</g:product_type>`;
 
       if (salePrice) {
         itemsXml += `\n            <g:sale_price>${salePrice} BRL</g:sale_price>`;

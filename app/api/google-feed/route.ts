@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { slugify } from '@/utils/slugify';
+import { getProductTaxonomy } from '@/lib/taxonomy';
 
 export const revalidate = 300; // Revalida a cada 5 minutos para refletir estoque rapidamente
 
@@ -86,23 +87,15 @@ export async function GET() {
 
       const descricaoText = produto.descricao?.trim() || produto.nome;
       
-      // Extração de dados dinâmicos e taxonomia Google
+      // Extração de dados dinâmicos e taxonomia Google oficial
       const categoriaNome = produto.categorias?.nome || 'Diversos';
       const brandName = produto.marca || 'Gringa Style';
       const mpnCode = `GS-${String(produto.id).padStart(3, '0')}`;
       const rawGtin = produto.gtin13 ? String(produto.gtin13).trim() : '';
       const hasValidGtin = /^\d{8,14}$/.test(rawGtin);
 
-      // Taxonomia oficial do Google Product Category
-      let googleCategory = '926'; // Hardware > Tools > Welding & Soldering
-      const catLower = categoriaNome.toLowerCase();
-      if (catLower.includes('boné') || catLower.includes('bone')) {
-        googleCategory = '173'; // Apparel & Accessories > Clothing Accessories > Hats
-      } else if (catLower.includes('camisa') || catLower.includes('vestu')) {
-        googleCategory = '212'; // Apparel & Accessories > Clothing > Shirts & Tops
-      } else if (catLower.includes('máscara') || catLower.includes('mascara')) {
-        googleCategory = '926'; // Welding Helmets
-      }
+      // Taxonomia oficial rigorosa da Gringa Style (impede desvios como CDs/DVDs no Google Shopping)
+      const taxonomy = getProductTaxonomy(produto.nome, categoriaNome);
 
       const additionalImagesXml = additionalImages
         .map((img) => `\n            <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`)
@@ -118,8 +111,8 @@ export async function GET() {
             <g:condition>new</g:condition>
             <g:availability>in_stock</g:availability>
             <g:price>${precoBase} BRL</g:price>
-            <g:google_product_category>${googleCategory}</g:google_product_category>
-            <g:product_type>${escapeXml(`Equipamentos > ${categoriaNome}`)}</g:product_type>
+            <g:google_product_category>${escapeXml(taxonomy.googleCategoryPath)}</g:google_product_category>
+            <g:product_type>${escapeXml(taxonomy.productType)}</g:product_type>
             <g:brand>${escapeXml(brandName)}</g:brand>
             <g:mpn>${escapeXml(mpnCode)}</g:mpn>`;
       

@@ -111,10 +111,152 @@ const nextConfig: NextConfig = {
         destination: '/imagens/logo_gringa_style.webp',
         permanent: true,
       },
+      // 1. Redirecionamento de slugs legados/malformados para os novos slugs canônicos
       {
-        // Slug antigo (acentos removidos) da máscara Croco Green, renomeada para "Linha Sand Croco"
+        source: '/produto/culos-steelflex-neon--proteo-ocular-e-estilo-streetwear',
+        destination: '/produto/oculos-steelflex-neon-protecao-ocular-e-estilo-streetwear',
+        permanent: true,
+      },
+      {
+        source: '/produto/bota-de-segurana-detroit-pro-bracol---cano-mdio-preto-e-vermelho',
+        destination: '/produto/bota-de-seguranca-detroit-pro-bracol-cano-medio-preto-e-vermelho',
+        permanent: true,
+      },
+      {
+        source: '/produto/lente-de-solda-passiva-oudopanda---classe-ptica-1111-profissional',
+        destination: '/produto/lente-de-solda-passiva-oudopanda-classe-optica-1-1-1-1-profissional',
+        permanent: true,
+      },
+      {
+        source: '/produto/bon-gringa-style-classic-aba-curva---casual-preto',
+        destination: '/produto/bone-gringa-style-classic-aba-curva-casual-preto',
+        permanent: true,
+      },
+      {
+        source: '/produto/tocha-tig-wp-26-profissional-alta-amperagem---punho-ergonmico-',
+        destination: '/produto/tocha-tig-wp-26-profissional-alta-amperagem-punho-ergonomico',
+        permanent: true,
+      },
+      {
+        source: '/produto/camisa-de-soldador-gringa-style-manga-longa---tecido-retardante-a-chamas',
+        destination: '/produto/camisa-de-soldador-gringa-style-manga-longa-tecido-retardante-a-chamas',
+        permanent: true,
+      },
+      {
+        source: '/produto/kit-consumveis-tig-completo-para-tochas--estojo',
+        destination: '/produto/kit-consumiveis-tig-completo-para-tochas-estojo',
+        permanent: true,
+      },
+      {
+        source: '/produto/camiseta-gringa-style--oudopanda---premium-edio-soldador',
+        destination: '/produto/camiseta-gringa-style-oudopanda-premium-edicao-soldador',
+        permanent: true,
+      },
+      {
+        source: '/produto/kit-guerreiro-gtaw---gringa-style',
+        destination: '/produto/kit-guerreiro-gtaw-gringa-style',
+        permanent: true,
+      },
+      {
+        source: '/produto/kit-guerreiro-gtaw-',
+        destination: '/produto/kit-guerreiro-gtaw-gringa-style',
+        permanent: true,
+      },
+      {
+        source: '/produto/kit-gringa-style-air--mscara-minimalista-white--botina-miura-premium',
+        destination: '/produto/kit-gringa-style-air-mascara-minimalista-white-botina-miura-premium',
+        permanent: true,
+      },
+      {
+        source: '/produto/bon-snapback-gringa-style---bordado-3d-em-alto-relevo',
+        destination: '/produto/bone-snapback-gringa-style-bordado-3d-em-alto-relevo',
+        permanent: true,
+      },
+      {
+        source: '/produto/estilo-tropical---mscara-de-solda-em-fibra-de-vidro-personalizada',
+        destination: '/produto/estilo-tropical-mascara-de-solda-em-fibra-de-vidro-personalizada',
+        permanent: true,
+      },
+      {
+        source: '/produto/mscara-de-solda-profissional-em-fibra-de-vidro',
+        destination: '/produto/mascara-de-solda-profissional-em-fibra-de-vidro',
+        permanent: true,
+      },
+      {
+        source: '/produto/mscara-de-solda---air-model',
+        destination: '/produto/mascara-de-solda-air-model',
+        permanent: true,
+      },
+      {
+        source: '/produto/camisa-gringa-style---copa-do-mundo-',
+        destination: '/produto/camisa-gringa-style-copa-do-mundo',
+        permanent: true,
+      },
+      {
+        source: '/produto/mochila-bfalo-cwb-tech--safe---resistncia-urbana',
+        destination: '/produto/mochila-bufalo-cwb-tech-safe-resistencia-urbana',
+        permanent: true,
+      },
+      {
+        source: '/produto/camiseta-gringa-style-artist-series---estampas-exclusivas-autorais',
+        destination: '/produto/camiseta-gringa-style-artist-series-estampas-exclusivas-autorais',
+        permanent: true,
+      },
+      {
+        source: '/produto/bon-gringa-style-aba-curva',
+        destination: '/produto/bone-gringa-style-aba-curva',
+        permanent: true,
+      },
+      {
+        source: '/produto/lente-automtica-lake-michigan-tefuwane--gringa-style',
+        destination: '/produto/lente-automatica-lake-michigan-tefuwane-gringa-style',
+        permanent: true,
+      },
+      {
+        source: '/produto/cabo-de-madeira-anatmico-para-tocha-tig---gringa-style',
+        destination: '/produto/cabo-de-madeira-anatomico-para-tocha-tig-gringa-style',
+        permanent: true,
+      },
+      {
+        source: '/produto/mscara-de-solda-personalizada-gringa-style---couro-legtimo--alta-performance',
+        destination: '/produto/mascara-de-solda-personalizada-gringa-style-couro-legitimo-alta-performance',
+        permanent: true,
+      },
+      {
         source: '/produto/mscara-de-solda-gringa-style---croco-green--sand',
         destination: '/produto/mascara-de-solda-gringa-style-linha-sand-croco',
+        permanent: true,
+      },
+      {
+        source: '/produto/botina-miura-premium-em-couro-nobuck---conforto-ttico-e-resistncia-extrema',
+        destination: '/produto/botina-miura-premium-em-couro-nobuck-conforto-tatico-e-resistencia-extrema',
+        permanent: true,
+      },
+      // Slugs com prefixo numérico legados (encontrados em backlinks e Netlify)
+      {
+        source: '/produto/8-bon-gringa-style-aba-curva',
+        destination: '/produto/bone-gringa-style-aba-curva',
+        permanent: true,
+      },
+      {
+        source: '/produto/12-bon-snapback-gringa-style---bordado-3d-em-alto-relevo',
+        destination: '/produto/bone-snapback-gringa-style-bordado-3d-em-alto-relevo',
+        permanent: true,
+      },
+      // 2. Rotas antigas e links obsoletos mapeados
+      {
+        source: '/pages/contact',
+        destination: '/sobre',
+        permanent: true,
+      },
+      {
+        source: '/acompanhar-rifa',
+        destination: '/historico',
+        permanent: true,
+      },
+      {
+        source: '/blog/',
+        destination: '/blog',
         permanent: true,
       },
     ];
