@@ -66,7 +66,7 @@ export default function HistoricoPage() {
                         // Fallback para logo se não houver imagem da rifa
                         const rifaImagem = rifa.imagem_premio_url
                             ? getProxiedImageUrl(rifa.imagem_premio_url)
-                            : '/imagens/gringa_style_logo.png';
+                            : '/imagens/logo_gringa_style.png';
 
                         return (
                             <div key={rifa.id} className="historico-card" style={{

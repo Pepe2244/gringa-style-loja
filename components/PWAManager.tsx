@@ -35,7 +35,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
         if ('serviceWorker' in navigator) {
             const registerServiceWorker = () => {
                 navigator.serviceWorker
-                    .register('/sw-v2.js')
+                    .register('/sw.js')
                     .then((reg) => {
                         // Verifica atualizações em background de forma silenciosa
                         if (reg && reg.update) {

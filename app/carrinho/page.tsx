@@ -501,7 +501,7 @@ export default function CartPage() {
                                 style={{ display: 'flex', gap: '15px', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #333', position: 'relative', width: '100%', boxSizing: 'border-box' }}
                             >
                                 <div style={{ width: '100px', height: '100px', flexShrink: 0 }}>
-                                    <Link href={`/produto/${item.produto_id}`}>
+                                    <Link href={`/produto/${product?.slug || item.produto_id}`}>
                                         <Image
                                             src={getProxiedImageUrl(imageUrl)}
                                             alt={product.nome}
@@ -514,7 +514,7 @@ export default function CartPage() {
 
                                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                     <div style={{ overflow: 'hidden' }}>
-                                        <Link href={`/produto/${item.produto_id}`} style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', textDecoration: 'none', display: 'block', paddingRight: '25px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <Link href={`/produto/${product?.slug || item.produto_id}`} style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', textDecoration: 'none', display: 'block', paddingRight: '25px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {product.nome}
                                         </Link>
                                         {item.variante && (

@@ -12,7 +12,7 @@ export default function PushNotificationButton() {
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
             setIsSupported(true);
 
-            navigator.serviceWorker.register('/sw-v2.js')
+            navigator.serviceWorker.register('/sw.js')
                 .then((registration) => registration.pushManager.getSubscription())
                 .then((subscription) => {
                     if (subscription) {

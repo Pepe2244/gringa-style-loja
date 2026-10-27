@@ -309,7 +309,7 @@ export default function DirectPurchaseModal({
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                     <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '5px', overflow: 'hidden', flexShrink: 0 }}>
                         <Image
-                            src={resolveOriginalUrl(product.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/gringa_style_logo.png')}
+                            src={resolveOriginalUrl(product.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/logo_gringa_style.png')}
                             alt={product.nome}
                             fill
                             sizes="80px"

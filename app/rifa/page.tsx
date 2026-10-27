@@ -305,7 +305,7 @@ export default function RifaPage() {
     const totalPrice = selectedCount * currentUnitPrice;
 
     // Tratamento seguro da URL da imagem garantindo fallback para o Cloudflare/Local caso venha vazia
-    const rawImage = rifa.imagem_premio_url?.trim() ? rifa.imagem_premio_url : '/imagens/gringa_style_logo.png';
+    const rawImage = rifa.imagem_premio_url?.trim() ? rifa.imagem_premio_url : '/imagens/logo_gringa_style.png';
     const imageUrl = getProxiedImageUrl(rawImage);
 
     const premioVencedor = winner;
