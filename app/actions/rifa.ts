@@ -192,3 +192,44 @@ export async function toggleRaffleStatus(id: number, currentStatus: string) {
         return { success: false, error: error.message };
     }
 }
+
+export async function drawWinner(rifaId: number, prizeId: number) {
+    if (!await isAdminAuthenticated()) {
+        return { success: false, message: 'Não autorizado.' };
+    }
+
+    try {
+        if (!Number.isSafeInteger(rifaId) || rifaId <= 0 || !Number.isSafeInteger(prizeId) || prizeId <= 0) {
+            throw new Error('Identificador da rifa ou do prêmio inválido.');
+        }
+        const supabase = createSupabaseAdminClient();
+        const { data, error } = await supabase.rpc('admin_draw_raffle_winner', {
+            p_rifa_id: rifaId,
+            p_premio_id: prizeId
+        });
+        if (error) throw error;
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('O sorteio foi processado, mas os dados do vencedor estão inválidos.');
+        }
+        const winner = {
+            name: String(data.name),
+            phone: String(data.phone),
+            number: Number(data.number),
+            remainingPrizes: Number(data.remaining_prizes ?? 0),
+            raffleFinalized: Boolean(data.raffle_finalized ?? true),
+        };
+        if (!winner.name || !Number.isSafeInteger(winner.number) || winner.number < 0) {
+            throw new Error('O sorteio foi processado, mas os dados do vencedor estão incompletos.');
+        }
+
+        revalidatePath('/', 'layout');
+        revalidatePath('/rifa', 'page');
+        revalidatePath('/acompanhar-rifa', 'page');
+        revalidatePath('/admin', 'layout');
+
+        return { success: true, winner };
+    } catch (error) {
+        console.error("Erro no sorteio da rifa:", error);
+        return { success: false, message: error instanceof Error ? error.message : 'Erro interno no sorteio.' };
+    }
+}

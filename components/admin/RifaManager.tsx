@@ -315,7 +315,7 @@ export default function RifaManager() {
         let interval: ReturnType<typeof setInterval> | null = null;
 
         try {
-            const { drawWinner } = await import('@/app/actions/raffle');
+            const { drawWinner } = await import('@/app/actions/rifa');
 
             interval = setInterval(() => {
                 setDrawAnimation(Math.floor(Math.random() * 1000).toString().padStart(3, '0'));
