@@ -54,3 +54,6 @@ next-env.d.ts
 # Supabase CLI internal metadata
 supabase/.temp/
 .temp/
+
+# IDE / AI assistants local configs
+opencode.json
