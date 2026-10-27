@@ -74,6 +74,8 @@ export default function PWAManager({ children }: PWAManagerProps) {
             (window.navigator as any).standalone === true;
         setIsInstalled(isStandalone);
 
+        let installTimer: ReturnType<typeof setTimeout> | null = null;
+
         // 3. Listener do prompt de instalação nativo
         const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
             e.preventDefault();
@@ -81,7 +83,8 @@ export default function PWAManager({ children }: PWAManagerProps) {
 
             // Não exibe imediatamente para não poluir a tela no primeiro segundo (evita queda no PageSpeed / CLS)
             // Aguarda 10 segundos de engajamento do usuário
-            const timer = setTimeout(() => {
+            if (installTimer) clearTimeout(installTimer);
+            installTimer = setTimeout(() => {
                 const dismissedAt = localStorage.getItem('pwa_dismissed_at');
                 const sevenDays = 7 * 24 * 60 * 60 * 1000;
                 const wasRecentlyDismissed = dismissedAt && Date.now() - Number(dismissedAt) < sevenDays;
@@ -90,8 +93,6 @@ export default function PWAManager({ children }: PWAManagerProps) {
                     setShowInstallPrompt(true);
                 }
             }, 10000);
-
-            return () => clearTimeout(timer);
         };
 
         const handleAppInstalled = () => {
@@ -115,6 +116,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
         window.addEventListener('offline', handleOffline);
 
         return () => {
+            if (installTimer) clearTimeout(installTimer);
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             window.removeEventListener('appinstalled', handleAppInstalled);
             window.removeEventListener('online', handleOnline);

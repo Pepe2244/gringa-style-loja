@@ -26,6 +26,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { id } = await params;
     const categoryId = parseInt(id, 10);
 
+    if (!Number.isSafeInteger(categoryId) || categoryId <= 0) {
+        return {
+            title: 'Categoria não encontrada | Gringa Style',
+            description: 'Categoria de produtos não encontrada.',
+        };
+    }
+
     const [categoryRes, sampleProductRes] = await Promise.all([
         supabase
             .from('categorias')
@@ -92,6 +99,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CategoriaPage({ params }: Props) {
     const { id } = await params;
     const categoryId = parseInt(id, 10);
+
+    if (!Number.isSafeInteger(categoryId) || categoryId <= 0) {
+        notFound();
+    }
 
     const [categoryResult, productsResult] = await Promise.all([
         supabase.from('categorias').select('*').eq('id', categoryId).maybeSingle(),

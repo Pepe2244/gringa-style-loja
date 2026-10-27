@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import GoogleAnalyticsOptimized from "@/components/GoogleAnalyticsOptimized";
 import "./fonts.css";
@@ -8,6 +9,7 @@ import { ToastProvider } from "@/context/ToastContext";
 import CampaignBannerServer from "@/components/CampaignBannerServer";
 import CookieConsent from "@/components/CookieConsent";
 import AnalyticsLoader from "@/components/AnalyticsLoader";
+import AdvancedAnalytics from "@/components/AdvancedAnalytics";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   LocalBusinessSchema,
@@ -150,6 +152,9 @@ export default function RootLayout({
 
               <CookieConsent />
               <AnalyticsLoader />
+              <Suspense fallback={null}>
+                <AdvancedAnalytics gaTrackingId={siteConfig.analytics.gaId} />
+              </Suspense>
 
               <Footer />
               <ScrollToTop />

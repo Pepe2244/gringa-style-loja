@@ -100,6 +100,14 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Rotas de API dinâmicas (exceto endpoints em API_ENDPOINTS) não devem ser cacheadas por staleWhileRevalidate
+    if (url.pathname.startsWith('/api/')) {
+        if (isApiRequest(url)) {
+            event.respondWith(networkFirst(request).catch(() => fetch(request)));
+        }
+        return;
+    }
+
     // Estratégia baseada no tipo de recurso com try-catch de proteção
     try {
         if (isStaticResource(url)) {

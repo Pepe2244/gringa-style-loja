@@ -25,7 +25,7 @@ interface UserSession {
 }
 
 interface AdvancedAnalyticsProps {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     gaTrackingId?: string;
     enableHeatmaps?: boolean;
     enableA11yTracking?: boolean;
@@ -209,13 +209,22 @@ export default function AdvancedAnalytics({
         return () => window.removeEventListener('scroll', handleScroll);
     }, [enableHeatmaps, trackEvent]);
 
-    return <>{children}</>;
+    return children ? <>{children}</> : null;
 }
 
 export function useAnalytics() {
     const trackEvent = (event: Omit<AnalyticsEvent, 'timestamp'>) => {
-        if (typeof window !== 'undefined' && (window as any).trackAnalyticsEvent) {
-            (window as any).trackAnalyticsEvent(event);
+        if (typeof window !== 'undefined') {
+            if ((window as any).trackAnalyticsEvent) {
+                (window as any).trackAnalyticsEvent(event);
+            } else if ((window as any).gtag) {
+                (window as any).gtag('event', event.action, {
+                    event_category: event.category,
+                    event_label: event.label,
+                    value: event.value,
+                    ...event.customParameters
+                });
+            }
         }
     };
 

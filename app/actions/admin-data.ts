@@ -185,7 +185,6 @@ export async function saveProduct(input: unknown, id?: number) {
                 ? data.tags
                 : (() => { throw new Error('Tags inválidas.'); })(),
             em_estoque: booleanValue(data.em_estoque, 'Estoque'),
-            emEstoque: booleanValue(data.em_estoque, 'Estoque'),
             media_urls: mediaList,
             imagens: mediaList,
             variants: data.variants == null ? null : data.variants
@@ -212,8 +211,7 @@ export async function setProductStock(id: number, inStock: boolean) {
         const stockStatus = booleanValue(inStock, 'Estoque');
         const prodId = positiveId(id);
         const { error } = await client.from('produtos').update({
-            em_estoque: stockStatus,
-            emEstoque: stockStatus
+            em_estoque: stockStatus
         }).eq('id', prodId);
         if (error) throw error;
 

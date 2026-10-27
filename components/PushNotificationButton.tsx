@@ -48,11 +48,17 @@ export default function PushNotificationButton() {
                 return;
             }
 
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-            });
-
-            if (subscription) {
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (vapidKey) {
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: vapidKey,
+                });
+                if (subscription) {
+                    setIsSubscribed(true);
+                }
+            } else {
+                // Notificações locais permitidas no navegador
                 setIsSubscribed(true);
             }
         } catch (error) {

@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         if (!payloadJson || typeof payloadJson !== 'object' || Array.isArray(payloadJson)) {
             return NextResponse.json({ error: 'Dados de frete inválidos.' }, { status: 400 });
         }
-        const input = payloadJson as { to_postal_code?: unknown; country?: unknown; product_id?: unknown };
+        const input = payloadJson as { to_postal_code?: unknown; country?: unknown; product_id?: unknown; product_ids?: unknown };
         const { to_postal_code } = input;
         if (input.country != null && typeof input.country !== 'string') {
             return NextResponse.json({ error: 'País de destino inválido.' }, { status: 400 });
@@ -99,8 +99,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'País de destino inválido.' }, { status: 400 });
         }
 
-        let productName = '';
-        if (input.product_id != null) {
+        let isMask = false;
+        if (Array.isArray(input.product_ids) && input.product_ids.length > 0) {
+            const validIds = input.product_ids.filter((id: unknown) => Number.isSafeInteger(id) && Number(id) > 0);
+            if (validIds.length > 0) {
+                const { data: products, error: prodsError } = await supabase
+                    .from('produtos')
+                    .select('nome')
+                    .in('id', validIds);
+                if (!prodsError && products) {
+                    isMask = products.some(p => {
+                        const n = (p.nome || '').toLowerCase();
+                        return n.includes('mascara') || n.includes('máscara');
+                    });
+                }
+            }
+        } else if (input.product_id != null) {
             if (!Number.isSafeInteger(input.product_id) || Number(input.product_id) <= 0) {
                 return NextResponse.json({ error: 'Produto inválido para cotação.' }, { status: 400 });
             }
@@ -111,15 +125,12 @@ export async function POST(request: Request) {
                 .maybeSingle();
             if (productError) throw productError;
             if (!product) return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
-            productName = product.nome;
+            const n = (product.nome || '').toLowerCase();
+            isMask = n.includes('mascara') || n.includes('máscara');
         }
 
         // Determinar CEP de origem (Máscaras saem de Três Lagoas/MS)
         const MASKS_ORIGIN_CEP = '79631170'; 
-        const isMask = (
-            productName.toLowerCase().includes('mascara') ||
-            productName.toLowerCase().includes('máscara')
-        );
         const effectiveOriginCep = isMask ? MASKS_ORIGIN_CEP : ORIGIN_CEP;
 
         // ─── Lógica Nacional – SuperFrete com Fallback Automático ──────────────

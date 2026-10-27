@@ -92,3 +92,36 @@ test('buildStorageUrl resolves Supabase storage paths correctly', () => {
     assert.equal(buildStorageUrl('data:image/png;base64,abc'), 'data:image/png;base64,abc');
 });
 
+test('feed formatImageUrl correctly handles relative storage paths vs site assets', () => {
+    const SITE_URL = 'https://gringastylebr.com.br';
+    const formatImageUrl = (url: unknown): string | null => {
+        if (!url || typeof url !== 'string') return null;
+        const trimmed = url.trim();
+        if (!trimmed) return null;
+        if (/\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) return null;
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+        const resolved = buildStorageUrl(trimmed);
+        if (resolved.startsWith('http://') || resolved.startsWith('https://')) return resolved;
+        return `${SITE_URL}${resolved.startsWith('/') ? resolved : `/${resolved}`}`;
+    };
+
+    assert.ok(formatImageUrl('produtos/banner.png')?.startsWith('https://'));
+    assert.ok(formatImageUrl('produtos/banner.png')?.includes('storage/v1/object/public'));
+    assert.equal(formatImageUrl('/imagens/logo.png'), 'https://gringastylebr.com.br/imagens/logo.png');
+    assert.equal(formatImageUrl('video.mp4'), null);
+});
+
+test('mask detection logic identifies welding masks regardless of casing and accents', () => {
+    const isMask = (name: string) => {
+        const n = (name || '').toLowerCase();
+        return n.includes('mascara') || n.includes('máscara');
+    };
+
+    assert.equal(isMask('Máscara de Solda Gringa'), true);
+    assert.equal(isMask('MASCARA DE FIBRA TIG'), true);
+    assert.equal(isMask('mascara soldador'), true);
+    assert.equal(isMask('Boné Snapback 3D'), false);
+    assert.equal(isMask('Camisa Streetwear'), false);
+});
+
+

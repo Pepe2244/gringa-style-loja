@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const isDevelopment = process.env.NODE_ENV !== "production";
 const cspConnectSrc = "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://*.google.com https://*.doubleclick.net https://stats.g.doubleclick.net https://*.clarity.ms https://*.ahrefs.com https://*.cloudflareinsights.com https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev https://viacep.com.br https://api.indexnow.org;";
 const cspValue = isDevelopment
-  ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms https://static.cloudflareinsights.com https://cloudflareinsights.com; ${cspConnectSrc} object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;`
+  ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms https://static.cloudflareinsights.com https://cloudflareinsights.com; ${cspConnectSrc} object-src 'none'; frame-ancestors 'none';`
   : `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://analytics.ahrefs.com https://www.clarity.ms https://c.clarity.ms https://scripts.clarity.ms https://static.cloudflareinsights.com https://cloudflareinsights.com; ${cspConnectSrc} object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests;`;
 const r2RemotePattern = (() => {
   const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
@@ -247,11 +247,6 @@ const nextConfig: NextConfig = {
       {
         source: '/pages/contact',
         destination: '/sobre',
-        permanent: true,
-      },
-      {
-        source: '/acompanhar-rifa',
-        destination: '/historico',
         permanent: true,
       },
       {

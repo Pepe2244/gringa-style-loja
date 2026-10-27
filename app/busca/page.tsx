@@ -83,7 +83,7 @@ function SearchPageContent() {
             if (!query.trim()) {
                 if (priceRange[0] > 0 || priceRange[1] < 10000) {
                     queryBuilder = queryBuilder.or(
-                        `preco_promocional.gte.${priceRange[0]},preco_promocional.lte.${priceRange[1]},preco.gte.${priceRange[0]},preco.lte.${priceRange[1]}`
+                        `and(preco_promocional.not.is.null,preco_promocional.gte.${priceRange[0]},preco_promocional.lte.${priceRange[1]}),and(preco_promocional.is.null,preco.gte.${priceRange[0]},preco.lte.${priceRange[1]})`
                     );
                 }
 

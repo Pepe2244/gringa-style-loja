@@ -42,10 +42,12 @@ export async function GET(request: Request) {
     }
 
     if (categoryId) {
-      const isNumeric = !isNaN(Number(categoryId));
-      query = isNumeric
-        ? query.eq('categoria_id', Number(categoryId))
-        : query.eq('categoria_id', categoryId);
+      const numCategory = Number(categoryId);
+      if (Number.isSafeInteger(numCategory) && numCategory > 0) {
+        query = query.eq('categoria_id', numCategory);
+      } else {
+        return NextResponse.json({ error: 'Parâmetro categoria inválido.' }, { status: 400 });
+      }
     }
 
     if (excludeId) {

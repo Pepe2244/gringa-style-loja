@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { slugify } from '@/utils/slugify';
 import { getProductTaxonomy } from '@/lib/taxonomy';
+import { buildStorageUrl } from '@/lib/site-config';
 
 export const revalidate = 300; // Revalida a cada 5 minutos para refletir estoque rapidamente
 
@@ -46,7 +47,9 @@ export async function GET() {
       // Ignora vídeos
       if (/\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) return null;
       if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-      return `${SITE_URL}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+      const resolved = buildStorageUrl(trimmed);
+      if (resolved.startsWith('http://') || resolved.startsWith('https://')) return resolved;
+      return `${SITE_URL}${resolved.startsWith('/') ? resolved : `/${resolved}`}`;
     };
 
     let itemsXml = '';

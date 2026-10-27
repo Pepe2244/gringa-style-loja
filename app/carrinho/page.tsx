@@ -170,7 +170,11 @@ export default function CartPage() {
             const shipRes = await fetch('/api/shipping', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to_postal_code: postalCode, country: selectedCountry })
+                body: JSON.stringify({ 
+                    to_postal_code: postalCode, 
+                    country: selectedCountry,
+                    product_ids: items.map(i => i.produto_id)
+                })
             });
             const shipData = await shipRes.json();
             if (Array.isArray(shipData) && shipData.length > 0) {
@@ -339,7 +343,11 @@ export default function CartPage() {
                 const shippingResponse = await fetch('/api/shipping', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ to_postal_code: cep, country }),
+                    body: JSON.stringify({ 
+                        to_postal_code: cep, 
+                        country,
+                        product_ids: items.map(i => i.produto_id)
+                    }),
                 });
                 const shippingQuote = await shippingResponse.json();
                 if (!shippingResponse.ok) throw new Error(shippingQuote.error || 'Não foi possível validar o frete.');

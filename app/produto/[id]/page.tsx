@@ -107,18 +107,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             locale: 'pt_BR',
             images: [
                 {
-                    url: `${productUrl}/opengraph-image`,
-                    width: 1200,
-                    height: 630,
-                    alt: product.nome,
-                    type: 'image/png',
-                },
-                {
                     url: imageUrl,
                     width: 1200,
                     height: 630,
                     alt: product.nome,
-                    type: 'image/jpeg',
                 },
             ],
         },
@@ -126,7 +118,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title,
             description,
-            images: [`${productUrl}/opengraph-image`, imageUrl],
+            images: [imageUrl],
         },
         other: {
             'product:price:amount': precoFinal ? precoFinal.toFixed(2) : '',

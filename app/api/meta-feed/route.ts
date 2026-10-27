@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { slugify } from '@/utils/slugify';
 import { getProductTaxonomy } from '@/lib/taxonomy';
+import { buildStorageUrl } from '@/lib/site-config';
 
 export const revalidate = 300; // Cache de 5 minutos na borda
 
@@ -44,7 +45,9 @@ export async function GET() {
       if (!trimmed) return null;
       if (/\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) return null;
       if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-      return `${SITE_URL}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+      const resolved = buildStorageUrl(trimmed);
+      if (resolved.startsWith('http://') || resolved.startsWith('https://')) return resolved;
+      return `${SITE_URL}${resolved.startsWith('/') ? resolved : `/${resolved}`}`;
     };
 
     let itemsXml = '';

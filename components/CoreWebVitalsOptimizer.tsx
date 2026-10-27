@@ -34,21 +34,13 @@ export function useCoreWebVitals() {
         };
 
         // Importar web-vitals dinamicamente
-        import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-            // Cumulative Layout Shift (CLS)
-            getCLS(reportWebVitals);
-
-            // First Input Delay (FID)
-            getFID(reportWebVitals);
-
-            // First Contentful Paint (FCP)
-            getFCP(reportWebVitals);
-
-            // Largest Contentful Paint (LCP)
-            getLCP(reportWebVitals);
-
-            // Time to First Byte (TTFB)
-            getTTFB(reportWebVitals);
+        import('web-vitals').then((wv) => {
+            if (typeof wv.onCLS === 'function') wv.onCLS(reportWebVitals);
+            if (typeof wv.onFCP === 'function') wv.onFCP(reportWebVitals);
+            if (typeof wv.onLCP === 'function') wv.onLCP(reportWebVitals);
+            if (typeof wv.onTTFB === 'function') wv.onTTFB(reportWebVitals);
+            if (typeof wv.onINP === 'function') wv.onINP(reportWebVitals);
+            if (typeof wv.onFID === 'function') wv.onFID(reportWebVitals);
         }).catch((error) => {
             console.warn('Failed to load web-vitals:', error);
         });
