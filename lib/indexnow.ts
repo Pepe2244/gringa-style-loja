@@ -56,12 +56,21 @@ export async function submitToIndexNow(urls?: string[]): Promise<IndexNowResult>
     const isSuccess = response.status === 200 || response.status === 202;
     const responseText = await response.text().catch(() => '');
 
+    let message = `IndexNow respondeu com status ${response.status}: ${responseText}`;
+    if (isSuccess) {
+      message = `IndexNow aceitou com sucesso ${targetUrls.length} URLs para indexação instantânea.`;
+    } else if (response.status === 429) {
+      message = 'Limite de frequência temporário do IndexNow atingido (muitas solicitações em curto intervalo). Aguarde cerca de 10 a 15 minutos para enviar novamente.';
+    } else if (response.status === 403) {
+      message = 'Chave do IndexNow não autorizada ou arquivo de validação inacessível.';
+    } else if (response.status === 422) {
+      message = 'URLs inválidas ou não pertencentes ao host registrado.';
+    }
+
     return {
       success: isSuccess,
       status: response.status,
-      message: isSuccess
-        ? `IndexNow aceitou com sucesso ${targetUrls.length} URLs.`
-        : `IndexNow respondeu com status ${response.status}: ${responseText}`,
+      message,
       submittedUrls: targetUrls,
     };
   } catch (error) {

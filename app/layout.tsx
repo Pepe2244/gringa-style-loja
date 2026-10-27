@@ -69,6 +69,18 @@ export const metadata: Metadata = {
       'p:domain_verify': 'd00b84f06db1659fd65d46ee153d5415',
     },
   },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({
