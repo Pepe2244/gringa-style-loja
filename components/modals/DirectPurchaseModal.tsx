@@ -4,13 +4,14 @@ import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import Image from 'next/image';
 import { buildStorageUrl } from '@/lib/site-config';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 const resolveOriginalUrl = (path: string) => {
     if (!path) return '';
-    if (path.startsWith('http') || path.startsWith('/')) return path;
-    return buildStorageUrl(path);
+    if (path.startsWith('http') || path.startsWith('/')) return getProxiedImageUrl(path);
+    return getProxiedImageUrl(buildStorageUrl(path));
 };
 
 interface ShippingOption {
@@ -309,7 +310,7 @@ export default function DirectPurchaseModal({
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                     <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '5px', overflow: 'hidden', flexShrink: 0 }}>
                         <Image
-                            src={resolveOriginalUrl(product.media_urls?.find(u => !u.includes('.mp4')) || '/imagens/logo_gringa_style.png')}
+                            src={resolveOriginalUrl((product.media_urls || product.imagens)?.find(u => !u.includes('.mp4')) || '/imagens/logo_gringa_style.png')}
                             alt={product.nome}
                             fill
                             sizes="80px"

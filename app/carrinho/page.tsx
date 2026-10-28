@@ -9,6 +9,7 @@ import { Trash2, ShoppingCart, ShieldCheck, Truck } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShippingOption {
@@ -465,7 +466,7 @@ export default function CartPage() {
                 <ShoppingCart size={80} style={{ color: '#555', marginBottom: '25px' }} />
                 <h2 style={{ fontSize: '2rem', marginBottom: '15px' }}>Seu carrinho está vazio</h2>
                 <p style={{ color: '#aaa', marginBottom: '30px', fontSize: '1.1rem' }}>Sua próxima compra Gringa Style está esperando por você.</p>
-                <Link href="/" className="btn btn-adicionar" style={{ padding: '15px 30px', fontSize: '1.1rem', borderRadius: '6px', textDecoration: 'none' }}>
+                <Link href="/loja" className="btn btn-adicionar" style={{ padding: '15px 30px', fontSize: '1.1rem', borderRadius: '6px', textDecoration: 'none' }}>
                     Explorar Produtos
                 </Link>
             </div>
@@ -501,7 +502,7 @@ export default function CartPage() {
                                 style={{ display: 'flex', gap: '15px', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #333', position: 'relative', width: '100%', boxSizing: 'border-box' }}
                             >
                                 <div style={{ width: '100px', height: '100px', flexShrink: 0 }}>
-                                    <Link href={`/produto/${product?.slug || item.produto_id}`}>
+                                    <Link href={`/produto/${getCanonicalProductSlug(product)}`}>
                                         <Image
                                             src={getProxiedImageUrl(imageUrl)}
                                             alt={product.nome}
@@ -514,7 +515,7 @@ export default function CartPage() {
 
                                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                     <div style={{ overflow: 'hidden' }}>
-                                        <Link href={`/produto/${product?.slug || item.produto_id}`} style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', textDecoration: 'none', display: 'block', paddingRight: '25px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <Link href={`/produto/${getCanonicalProductSlug(product)}`} style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white', textDecoration: 'none', display: 'block', paddingRight: '25px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {product.nome}
                                         </Link>
                                         {item.variante && (

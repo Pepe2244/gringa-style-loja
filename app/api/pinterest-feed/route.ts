@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { slugify } from '@/utils/slugify';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 import { getProductTaxonomy } from '@/lib/taxonomy';
-import { buildStorageUrl } from '@/lib/site-config';
+import { buildStorageUrl, isLegacyDeadStorageUrl } from '@/lib/site-config';
 
 export const revalidate = 300; // Cache de 5 minutos na borda
 
@@ -42,7 +42,7 @@ export async function GET() {
     const formatImageUrl = (url: unknown): string | null => {
       if (!url || typeof url !== 'string') return null;
       const trimmed = url.trim();
-      if (!trimmed) return null;
+      if (!trimmed || isLegacyDeadStorageUrl(trimmed)) return null;
       if (/\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) return null;
       if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
       const resolved = buildStorageUrl(trimmed);
@@ -75,9 +75,7 @@ export async function GET() {
       const mainImage = validImages[0];
       const additionalImages = validImages.slice(1);
 
-      const canonicalSlug = (produto.slug && String(produto.slug).trim().length > 0)
-        ? String(produto.slug).trim()
-        : slugify(produto.nome) || String(produto.id);
+      const canonicalSlug = getCanonicalProductSlug(produto);
       const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
 
       const precoBase = (produto.preco || 0).toFixed(2);

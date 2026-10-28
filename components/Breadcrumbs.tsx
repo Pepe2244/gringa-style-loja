@@ -18,6 +18,14 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
         trackBreadcrumbClick(path, index);
     };
 
+    const firstIsHome =
+        items.length > 0 &&
+        (items[0].label.trim().toLowerCase() === 'início' ||
+            items[0].label.trim().toLowerCase() === 'inicio');
+
+    const rootHref = firstIsHome && items[0].href ? items[0].href : '/loja';
+    const normalizedItems = firstIsHome ? items.slice(1) : items;
+
     return (
         <nav aria-label="breadcrumb" className="breadcrumbs" style={{
             display: 'flex',
@@ -29,8 +37,8 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             flexWrap: 'wrap'
         }}>
             <Link 
-                href="/loja"
-                onClick={() => handleClick('/loja', 0)}
+                href={rootHref}
+                onClick={() => handleClick(rootHref, 0)}
                 style={{
                     color: 'var(--cor-destaque)',
                     textDecoration: 'none',
@@ -43,7 +51,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
                 Início
             </Link>
 
-            {items.map((item, index) => (
+            {normalizedItems.map((item, index) => (
                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ChevronRight size={16} style={{ color: '#666' }} />
                     {item.href ? (

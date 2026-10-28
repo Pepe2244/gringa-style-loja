@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 const diferenciais = [
   {
@@ -84,17 +85,17 @@ export default function GSServicosIndustriaisPage() {
       if (!error && data) {
         // 1. Hero Image
         const hero = data.find(item => item.section === 'hero');
-        if (hero) setHeroImage(hero.url);
+        if (hero && hero.url) setHeroImage(getProxiedImageUrl(hero.url));
 
         // 2. Clientes (Confiança)
         const cl = data.filter(item => item.section === 'cliente');
         if (cl.length > 0) {
-          setClientesDinamicos(cl.map(c => ({ name: c.title || 'Cliente', src: c.url })));
+          setClientesDinamicos(cl.map(c => ({ name: c.title || 'Cliente', src: getProxiedImageUrl(c.url) })));
         }
 
         // 3. Galeria
         const gal = data.filter(item => item.section === 'galeria');
-        setGaleriaImagens(gal);
+        setGaleriaImagens(gal.map(g => ({ ...g, url: getProxiedImageUrl(g.url) })));
       }
     };
 
