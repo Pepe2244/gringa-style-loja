@@ -5,9 +5,9 @@ export const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 
 // Endpoints oficiais da rede IndexNow (todos compartilham as submissões entre si, incluindo Bing e Yep/Ahrefs)
 export const INDEXNOW_ENDPOINTS = [
-  'https://api.indexnow.org/indexnow',
   'https://www.bing.com/indexnow',
   'https://indexnow.yep.com/indexnow',
+  'https://api.indexnow.org/indexnow',
   'https://yandex.com/indexnow',
 ];
 
