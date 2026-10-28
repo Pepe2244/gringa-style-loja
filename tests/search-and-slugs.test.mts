@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { slugify } from '../utils/slugify.ts';
-import { buildCanonicalUrl, buildStorageUrl } from '../lib/site-config.ts';
+import { slugify, getCanonicalProductSlug } from '../utils/slugify.ts';
+import { buildCanonicalUrl, buildStorageUrl, isLegacyDeadStorageUrl } from '../lib/site-config.ts';
 
 function normalizeSlug(str: string): string {
     return String(str || '')
@@ -32,6 +32,35 @@ test('slugify produces clean, URL-safe slugs for portuguese text', () => {
         slugify('Óculos Steelflex Neon — Proteção'),
         'oculos-steelflex-neon-protecao'
     );
+});
+
+test('getCanonicalProductSlug maps all legacy and HTML-entity slugs to canonical slugs', () => {
+    assert.equal(
+        getCanonicalProductSlug({ nome: 'Camiseta Gringa Style &quot;Oudopanda&quot; Premium - Edição Soldador' }),
+        'camiseta-gringa-style-oudopanda-premium-edicao-soldador'
+    );
+    assert.equal(
+        getCanonicalProductSlug({ slug: 'camiseta-gringa-style-quotoudopandaquot-premium-edicao-soldador' }),
+        'camiseta-gringa-style-oudopanda-premium-edicao-soldador'
+    );
+    assert.equal(
+        getCanonicalProductSlug({ slug: 'lente-de-solda-passiva-oudopanda-classe-optica-1111-profissional' }),
+        'lente-de-solda-passiva-oudopanda-classe-optica-1-1-1-1-profissional'
+    );
+    assert.equal(
+        getCanonicalProductSlug({ slug: 'mascara-de-solda-gringa-style-croco-green-sand' }),
+        'mascara-de-solda-gringa-style-linha-sand-croco'
+    );
+    assert.equal(
+        getCanonicalProductSlug({ slug: 'mascara-de-solda-personalizada-gringa-style-couro-legitimo-e-alta-performance' }),
+        'mascara-de-solda-personalizada-gringa-style-couro-legitimo-alta-performance'
+    );
+});
+
+test('isLegacyDeadStorageUrl detects dead Supabase project and buildStorageUrl sanitizes it', () => {
+    const deadUrl = 'https://tsilaaurmpahookyanbe.supabase.co/storage/v1/object/public/produtos/foto.webp';
+    assert.equal(isLegacyDeadStorageUrl(deadUrl), true);
+    assert.equal(buildStorageUrl(deadUrl), '/imagens/logo_gringa_style.webp');
 });
 
 test('normalizeSlug matches accented and unaccented product names and slugs', () => {
@@ -123,5 +152,3 @@ test('mask detection logic identifies welding masks regardless of casing and acc
     assert.equal(isMask('Boné Snapback 3D'), false);
     assert.equal(isMask('Camisa Streetwear'), false);
 });
-
-
