@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
+import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import { trackSearchQuery } from '@/utils/analytics';
@@ -23,7 +24,12 @@ export default function SearchPage() {
                     Busca de Produtos
                 </h1>
                 <p style={{ color: '#888' }}>Carregando busca...</p>
-            </main>
+            <DirectPurchaseModal
+                isOpen={false}
+                onClose={() => {}}
+                product={null}
+            />
+        </main>
         }>
             <SearchPageContent />
         </Suspense>
@@ -47,6 +53,7 @@ function SearchPageContent() {
     const [inStockOnly, setInStockOnly] = useState(false);
     const [hasDiscountOnly, setHasDiscountOnly] = useState(false);
     const [minRating, setMinRating] = useState(0);
+    const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
     const { showToast } = useToast();
 
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -295,7 +302,7 @@ function SearchPageContent() {
                             Tente refinar sua busca ou navegue por categorias
                         </p>
                         <Link
-                            href="/"
+                            href="/loja"
                             style={{
                                 display: 'inline-block',
                                 padding: '12px 30px',
@@ -358,7 +365,7 @@ function SearchPageContent() {
                             products={filteredProducts}
                             loading={loading}
                             diasNovo={7}
-                            onQuickView={() => {}}
+                            onQuickView={(prod) => setQuickViewProduct(prod)}
                         />
 
                         {/* Infinite Scroll Loading Indicator */}
@@ -410,6 +417,11 @@ function SearchPageContent() {
                     100% { transform: rotate(360deg); }
                 }
             `}</style>
+            <DirectPurchaseModal
+                isOpen={!!quickViewProduct}
+                onClose={() => setQuickViewProduct(null)}
+                product={quickViewProduct}
+            />
         </main>
     );
 }

@@ -122,6 +122,7 @@ export default function CartRecoveryBanner({ context = 'home' }: CartRecoveryBan
 
                     <Link
                         href="/carrinho"
+                        rel="nofollow"
                         onClick={handleContinue}
                         style={{
                             display: 'inline-flex',

@@ -117,6 +117,11 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: '/produto/lente-de-solda-passiva-oudopanda-classe-optica-1111-profissional',
+        destination: '/produto/lente-de-solda-passiva-oudopanda-classe-optica-1-1-1-1-profissional',
+        permanent: true,
+      },
+      {
         source: '/produto/bon-gringa-style-classic-aba-curva---casual-preto',
         destination: '/produto/bone-gringa-style-classic-aba-curva-casual-preto',
         permanent: true,
@@ -138,6 +143,11 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/produto/camiseta-gringa-style--oudopanda---premium-edio-soldador',
+        destination: '/produto/camiseta-gringa-style-oudopanda-premium-edicao-soldador',
+        permanent: true,
+      },
+      {
+        source: '/produto/camiseta-gringa-style-quotoudopandaquot-premium-edicao-soldador',
         destination: '/produto/camiseta-gringa-style-oudopanda-premium-edicao-soldador',
         permanent: true,
       },
@@ -212,7 +222,17 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: '/produto/mascara-de-solda-personalizada-gringa-style-couro-legitimo-e-alta-performance',
+        destination: '/produto/mascara-de-solda-personalizada-gringa-style-couro-legitimo-alta-performance',
+        permanent: true,
+      },
+      {
         source: '/produto/mscara-de-solda-gringa-style---croco-green--sand',
+        destination: '/produto/mascara-de-solda-gringa-style-linha-sand-croco',
+        permanent: true,
+      },
+      {
+        source: '/produto/mascara-de-solda-gringa-style-croco-green-sand',
         destination: '/produto/mascara-de-solda-gringa-style-linha-sand-croco',
         permanent: true,
       },

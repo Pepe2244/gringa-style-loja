@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 // Tipos para configuração de imagem
 export interface ImageOptimizationConfig {
@@ -82,6 +83,15 @@ async function checkAVIFSupport(): Promise<boolean> {
 
 // Gerar URL otimizada baseada nas capacidades
 export function generateOptimizedImageUrl(
+    originalUrl: string,
+    _config: ImageOptimizationConfig = {},
+    _capabilities = { supportsWebP: true, supportsAVIF: false, connectionSpeed: 'fast', saveData: false, devicePixelRatio: 1 }
+): string {
+    if (!originalUrl) return '/imagens/logo_gringa_style.webp';
+    return getProxiedImageUrl(originalUrl);
+}
+
+function _legacyGenerateOptimizedImageUrl(
     originalUrl: string,
     config: ImageOptimizationConfig = {},
     capabilities = { supportsWebP: true, supportsAVIF: false, connectionSpeed: 'fast', saveData: false, devicePixelRatio: 1 }

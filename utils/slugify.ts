@@ -2,11 +2,13 @@ const LEGACY_SLUG_MAP: Record<string, string> = {
     'culos-steelflex-neon--proteo-ocular-e-estilo-streetwear': 'oculos-steelflex-neon-protecao-ocular-e-estilo-streetwear',
     'bota-de-segurana-detroit-pro-bracol---cano-mdio-preto-e-vermelho': 'bota-de-seguranca-detroit-pro-bracol-cano-medio-preto-e-vermelho',
     'lente-de-solda-passiva-oudopanda---classe-ptica-1111-profissional': 'lente-de-solda-passiva-oudopanda-classe-optica-1-1-1-1-profissional',
+    'lente-de-solda-passiva-oudopanda-classe-optica-1111-profissional': 'lente-de-solda-passiva-oudopanda-classe-optica-1-1-1-1-profissional',
     'bon-gringa-style-classic-aba-curva---casual-preto': 'bone-gringa-style-classic-aba-curva-casual-preto',
     'tocha-tig-wp-26-profissional-alta-amperagem---punho-ergonmico-': 'tocha-tig-wp-26-profissional-alta-amperagem-punho-ergonomico',
     'camisa-de-soldador-gringa-style-manga-longa---tecido-retardante-a-chamas': 'camisa-de-soldador-gringa-style-manga-longa-tecido-retardante-a-chamas',
     'kit-consumveis-tig-completo-para-tochas--estojo': 'kit-consumiveis-tig-completo-para-tochas-estojo',
     'camiseta-gringa-style--oudopanda---premium-edio-soldador': 'camiseta-gringa-style-oudopanda-premium-edicao-soldador',
+    'camiseta-gringa-style-quotoudopandaquot-premium-edicao-soldador': 'camiseta-gringa-style-oudopanda-premium-edicao-soldador',
     'kit-guerreiro-gtaw---gringa-style': 'kit-guerreiro-gtaw-gringa-style',
     'kit-guerreiro-gtaw-': 'kit-guerreiro-gtaw-gringa-style',
     'kit-gringa-style-air--mscara-minimalista-white--botina-miura-premium': 'kit-gringa-style-air-mascara-minimalista-white-botina-miura-premium',
@@ -21,7 +23,9 @@ const LEGACY_SLUG_MAP: Record<string, string> = {
     'lente-automtica-lake-michigan-tefuwane--gringa-style': 'lente-automatica-lake-michigan-tefuwane-gringa-style',
     'cabo-de-madeira-anatmico-para-tocha-tig---gringa-style': 'cabo-de-madeira-anatomico-para-tocha-tig-gringa-style',
     'mscara-de-solda-personalizada-gringa-style---couro-legtimo--alta-performance': 'mascara-de-solda-personalizada-gringa-style-couro-legitimo-alta-performance',
+    'mascara-de-solda-personalizada-gringa-style-couro-legitimo-e-alta-performance': 'mascara-de-solda-personalizada-gringa-style-couro-legitimo-alta-performance',
     'mscara-de-solda-gringa-style---croco-green--sand': 'mascara-de-solda-gringa-style-linha-sand-croco',
+    'mascara-de-solda-gringa-style-croco-green-sand': 'mascara-de-solda-gringa-style-linha-sand-croco',
     'botina-miura-premium-em-couro-nobuck---conforto-ttico-e-resistncia-extrema': 'botina-miura-premium-em-couro-nobuck-conforto-tatico-e-resistencia-extrema',
     '8-bon-gringa-style-aba-curva': 'bone-gringa-style-aba-curva',
     '12-bon-snapback-gringa-style---bordado-3d-em-alto-relevo': 'bone-snapback-gringa-style-bordado-3d-em-alto-relevo',
@@ -29,7 +33,7 @@ const LEGACY_SLUG_MAP: Record<string, string> = {
 
 /**
  * Normaliza e gera slugs URL-friendly em português
- * Remove acentos (diacríticos) via NFD antes de remover caracteres especiais.
+ * Remove entidades HTML, acentos (diacríticos) via NFD antes de remover caracteres especiais.
  * Exemplo: "Óculos Steelflex Proteção" -> "oculos-steelflex-protecao"
  */
 export function slugify(text: string | null | undefined): string {
@@ -40,7 +44,11 @@ export function slugify(text: string | null | undefined): string {
         return LEGACY_SLUG_MAP[raw];
     }
 
-    const normalized = raw
+    const decoded = raw
+        .replace(/&quot;|&#34;|&apos;|&#39;/gi, '')
+        .replace(/&amp;/gi, ' ');
+
+    const normalized = decoded
         .normalize('NFD') // Decompõe caracteres acentuados (ex: "ó" -> "o" + acento)
         .replace(/[\u0300-\u036f]/g, '') // Remove todos os acentos
         .toLowerCase()

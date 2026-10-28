@@ -385,7 +385,7 @@ export default function RifaPage() {
                     <p className="rifa-preco">Apenas R$ {rifa.preco_numero.toFixed(2).replace('.', ',')} por número!</p>
                 )}
 
-                <Link href={`/acompanhar-rifa?id=${rifa.id}`} className="btn btn-secundario" style={{ marginBottom: '20px', display: 'inline-block' }}>
+                <Link href={`/acompanhar-rifa?id=${rifa.id}`} rel="nofollow" className="btn btn-secundario" style={{ marginBottom: '20px', display: 'inline-block' }}>
                     Ver Participantes
                 </Link>
 

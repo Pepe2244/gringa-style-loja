@@ -10,7 +10,7 @@ import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
 import { deleteProduct, saveProduct, setProductStock } from '@/app/actions/admin-data';
 import { revalidateProductCache } from '@/app/actions/produtos';
-import { slugify } from '@/utils/slugify';
+import { slugify, getCanonicalProductSlug } from '@/utils/slugify';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -200,7 +200,9 @@ export default function ProductManager() {
             opcoes: trimmedOpcoes
         } : null;
 
-        const generatedSlug = slugify(nome);
+        const generatedSlug = editingProduct && editingProduct.nome === nome && editingProduct.slug
+            ? getCanonicalProductSlug({ id: editingProduct.id, nome, slug: editingProduct.slug })
+            : slugify(nome);
 
         const parsedPreco = parseFloat(preco.replace(',', '.'));
         const parsedPromo = precoPromocional.trim() ? parseFloat(precoPromocional.replace(',', '.')) : null;
@@ -252,7 +254,7 @@ export default function ProductManager() {
 
     const handleDelete = async (id: number) => {
         if (!confirm('Tem certeza que deseja excluir este produto definitivamente? A ação não pode ser desfeita.')) return;
-        
+
         // Atualização Otimista: Remove da UI imediatamente para sensação de fluidez
         const previousProducts = [...products];
         setProducts(products.filter(p => p.id !== id));
@@ -260,7 +262,7 @@ export default function ProductManager() {
         try {
             const result = await deleteProduct(id);
             if (!result.success) throw new Error(result.error);
-            
+
             // Feedback silencioso (opcional, pode usar um toast aqui se preferir)
             console.log(`Produto ${id} excluído com sucesso e cache limpo.`);
         } catch (error: any) {
@@ -273,7 +275,7 @@ export default function ProductManager() {
 
     const toggleStock = async (id: number, currentStatus: boolean) => {
         const newStatus = !currentStatus;
-        
+
         // Atualização otimista
         setProducts(products.map(p => p.id === id ? { ...p, em_estoque: newStatus } : p));
 

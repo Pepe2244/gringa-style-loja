@@ -1,43 +1,22 @@
 // Service Worker Gringa Style - Single Endpoint Architecture
-// Cache inteligente, offline-first e limpeza de versões antigas
+// Cache inteligente para assets estáticos e suporte a Push Notifications
 
-const CACHE_NAME = 'gringa-style-v2.2';
-const STATIC_CACHE = 'gringa-style-static-v2.2';
-const DYNAMIC_CACHE = 'gringa-style-dynamic-v2.2';
-const API_CACHE = 'gringa-style-api-v2.2';
+const CACHE_NAME = 'gringa-style-v2.4';
+const STATIC_CACHE = 'gringa-style-static-v2.4';
+const DYNAMIC_CACHE = 'gringa-style-dynamic-v2.4';
 
 // Recursos críticos para cache imediato
 const CRITICAL_RESOURCES = [
-    '/',
     '/site.webmanifest',
-    '/favicon.ico',
-    '/robots.txt',
-    '/sitemap.xml'
+    '/favicon.ico'
 ];
 
 // Recursos estáticos para cache
 const STATIC_RESOURCES = [
     '/_next/static/',
     '/fonts/',
-    '/imagens/',
-    'https://fonts.googleapis.com/',
-    'https://fonts.gstatic.com/'
+    '/imagens/'
 ];
-
-// Endpoints somente GET permitidos para cache networkFirst
-const API_ENDPOINTS = [
-    '/api/google-feed',
-    '/api/produtos'
-];
-
-// Estratégia de cache: Stale While Revalidate para assets estáticos
-const CACHE_STRATEGIES = {
-    CACHE_FIRST: 'cache-first',
-    NETWORK_FIRST: 'network-first',
-    STALE_WHILE_REVALIDATE: 'stale-while-revalidate',
-    CACHE_ONLY: 'cache-only',
-    NETWORK_ONLY: 'network-only'
-};
 
 // Instalar Service Worker
 self.addEventListener('install', (event) => {
@@ -66,7 +45,6 @@ self.addEventListener('activate', (event) => {
                     cacheNames.map(cacheName => {
                         if (cacheName !== STATIC_CACHE &&
                             cacheName !== DYNAMIC_CACHE &&
-                            cacheName !== API_CACHE &&
                             cacheName !== CACHE_NAME) {
                             return caches.delete(cacheName);
                         }
@@ -78,47 +56,43 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Estratégia de fetch inteligente
+// Estratégia de fetch inteligente e segura (nunca rejeita a Promise do FetchEvent)
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Ignorar requisições não-GET
+    // 1. Ignorar requisições não-GET
     if (request.method !== 'GET') return;
 
-    // Ignorar requisições do Chrome DevTools ou schemas não-http
+    // 2. Ignorar esquemas não-HTTP (chrome-extension://, etc.)
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-    // Rotas de administração e APIs administrativas nunca devem ser cacheadas
-    if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api/admin')) {
-        return;
-    }
+    // 3. Ignorar requisições cross-origin (Clarity, GA4, Ahrefs, Supabase, R2 CDN)
+    if (url.origin !== self.location.origin) return;
 
-    // Rotas de API dinâmicas (exceto endpoints em API_ENDPOINTS) não devem ser cacheadas por staleWhileRevalidate
-    if (url.pathname.startsWith('/api/')) {
-        if (isApiRequest(url)) {
-            event.respondWith(networkFirst(request).catch(() => fetch(request)));
+        // 4. Ignorar rotas administrativas e de API
+        if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api/')) {
+            return;
         }
-        return;
-    }
 
-    // Estratégia baseada no tipo de recurso com try-catch de proteção
-    try {
-        if (isStaticResource(url)) {
-            event.respondWith(staleWhileRevalidate(request).catch(() => fetch(request)));
-        } else if (isApiRequest(url)) {
-            event.respondWith(networkFirst(request).catch(() => fetch(request)));
-        } else if (isImageRequest(url)) {
-            event.respondWith(cacheFirst(request).catch(() => fetch(request)));
-        } else if (isDocumentRequest(request) || isRscRequest(request, url)) {
-            event.respondWith(networkFirst(request).catch(() => fetch(request)));
-        } else {
-            event.respondWith(staleWhileRevalidate(request).catch(() => fetch(request)));
-        }
-    } catch (_err) {
-        event.respondWith(fetch(request));
-    }
-});
+            // 5. Ignorar prefetches e payloads RSC do Next.js App Router (evita AbortError / Failed to fetch em navegações)
+            if (
+                isRscRequest(request, url) ||
+                request.headers.get('next-router-prefetch') === '1' ||
+                request.headers.get('purpose') === 'prefetch'
+            ) {
+                return;
+            }
+
+                // 6. Interceptar apenas recursos estáticos, imagens locais e navegações de documento HTML
+                if (isStaticResource(url)) {
+                    event.respondWith(staleWhileRevalidate(request));
+                } else if (isImageRequest(url)) {
+                    event.respondWith(cacheFirst(request));
+                } else if (request.mode === 'navigate') {
+                    event.respondWith(networkFirstDocument(request));
+                }
+            });
 
 // Push notifications
 self.addEventListener('push', function (event) {
@@ -183,25 +157,17 @@ self.addEventListener('message', (event) => {
 
 // Funções utilitárias
 function isStaticResource(url) {
-    return STATIC_RESOURCES.some(resource => url.href.includes(resource));
-}
-
-function isApiRequest(url) {
-    return API_ENDPOINTS.some(endpoint => url.pathname.includes(endpoint));
+    return STATIC_RESOURCES.some(resource => url.pathname.startsWith(resource));
 }
 
 function isImageRequest(url) {
-    return url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i);
-}
-
-function isDocumentRequest(request) {
-    return request.destination === 'document' || Boolean(request.headers.get('accept')?.includes('text/html'));
+    return /\.(jpg|jpeg|png|gif|webp|avif|svg|ico)$/i.test(url.pathname);
 }
 
 function isRscRequest(request, url) {
     return url.searchParams.has('_rsc') ||
-           request.headers.get('rsc') === '1' ||
-           Boolean(request.headers.get('accept')?.includes('text/x-component'));
+        request.headers.get('rsc') === '1' ||
+        Boolean(request.headers.get('accept')?.includes('text/x-component'));
 }
 
 async function cacheFirst(request) {
@@ -210,78 +176,69 @@ async function cacheFirst(request) {
         if (cachedResponse) return cachedResponse;
 
         const networkResponse = await fetch(request);
-        if (networkResponse.ok) {
-            const cache = await caches.open(DYNAMIC_CACHE);
-            cache.put(request, networkResponse.clone());
+            if (networkResponse && networkResponse.ok) {
+                const cache = await caches.open(DYNAMIC_CACHE);
+                cache.put(request, networkResponse.clone()).catch(() => { });
+            }
+            return networkResponse;
+        } catch (_error) {
+            return new Response('Offline - Imagem não disponível', { status: 503 });
         }
-        return networkResponse;
-    } catch (_error) {
-        return new Response('Offline - Imagem não disponível', { status: 503 });
     }
-}
 
-async function networkFirst(request) {
-    try {
-        const networkResponse = await fetch(request);
-        if (networkResponse.ok) {
-            const cache = await caches.open(DYNAMIC_CACHE);
-            cache.put(request, networkResponse.clone());
-        }
-        return networkResponse;
-    } catch (_error) {
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) return cachedResponse;
-        return new Response('Offline - Conteúdo não disponível', { status: 503 });
-    }
-}
-
-async function staleWhileRevalidate(request) {
-    const cache = await caches.open(DYNAMIC_CACHE);
-    const cachedResponse = await cache.match(request);
-
-    const fetchPromise = fetch(request).then(networkResponse => {
-        if (networkResponse.ok) {
-            cache.put(request, networkResponse.clone());
-        }
-        return networkResponse;
-    });
-
-    return cachedResponse || fetchPromise;
-}
-
-async function syncPedidos() {
-    try {
-        const cache = await caches.open('pedidos-offline');
-        const requests = await cache.keys();
-        for (const request of requests) {
+        async function networkFirstDocument(request) {
             try {
-                await fetch(request);
-                await cache.delete(request);
-            } catch (_error) {}
-        }
-    } catch (error) {
-        console.log('[SW] Background sync failed:', error);
-    }
-}
-
-self.addEventListener('periodicsync', (event) => {
-    if (event.tag === 'cache-cleanup') {
-        event.waitUntil(cleanupCache());
-    }
-});
-
-async function cleanupCache() {
-    const cache = await caches.open(DYNAMIC_CACHE);
-    const keys = await cache.keys();
-    const oneHourAgo = Date.now() - (60 * 60 * 1000);
-
-    for (const request of keys) {
-        const response = await cache.match(request);
-        if (response) {
-            const date = response.headers.get('date');
-            if (date && new Date(date).getTime() < oneHourAgo) {
-                await cache.delete(request);
+                return await fetch(request);
+            } catch (_error) {
+                const cachedResponse = await caches.match(request);
+                if (cachedResponse) return cachedResponse;
+                return new Response('Offline - Conteúdo não disponível no momento.', {
+                    status: 503,
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+                });
             }
         }
-    }
-}
+
+        async function staleWhileRevalidate(request) {
+            try {
+                const cache = await caches.open(STATIC_CACHE);
+                const cachedResponse = await cache.match(request);
+
+                        const fetchPromise = fetch(request)
+                            .then(networkResponse => {
+                                if (networkResponse && networkResponse.ok) {
+                                    cache.put(request, networkResponse.clone()).catch(() => { });
+                                }
+                                return networkResponse;
+                            })
+                            .catch(() => null);
+
+                        if (cachedResponse) {
+                            return cachedResponse;
+                        }
+
+                const liveResponse = await fetchPromise;
+                if (liveResponse) {
+                    return liveResponse;
+                }
+
+                return new Response('Recurso temporariamente indisponível', { status: 503 });
+            } catch (_error) {
+                return new Response('Recurso temporariamente indisponível', { status: 503 });
+            }
+        }
+
+        async function syncPedidos() {
+            try {
+                const cache = await caches.open('pedidos-offline');
+                const requests = await cache.keys();
+                for (const request of requests) {
+                    try {
+                        await fetch(request);
+                        await cache.delete(request);
+                    } catch (_error) { }
+                }
+            } catch (error) {
+                console.log('[SW] Background sync failed:', error);
+            }
+        }

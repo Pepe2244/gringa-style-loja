@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { Product } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
+import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 
 export default function FavoritosPage() {
     const { items: wishlistItems } = useWishlistStore();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
     useEffect(() => {
         setProducts(wishlistItems || []);
@@ -43,7 +45,7 @@ export default function FavoritosPage() {
                         <p style={{ fontSize: '1.1rem', marginBottom: '20px' }}>
                             Você ainda não adicionou nenhum produto aos favoritos
                         </p>
-                        <Link href="/" style={{
+                        <Link href="/loja" style={{
                             display: 'inline-block',
                             backgroundColor: '#ff6b35',
                             color: 'white',
@@ -56,12 +58,19 @@ export default function FavoritosPage() {
                         </Link>
                     </div>
                 ) : (
-                    <ProductGrid
-                        products={products}
-                        loading={loading}
-                        diasNovo={7}
-                        onQuickView={() => {}}
-                    />
+                    <>
+                        <ProductGrid
+                            products={products}
+                            loading={loading}
+                            diasNovo={7}
+                            onQuickView={(prod) => setQuickViewProduct(prod)}
+                        />
+                        <DirectPurchaseModal
+                            isOpen={!!quickViewProduct}
+                            onClose={() => setQuickViewProduct(null)}
+                            product={quickViewProduct}
+                        />
+                    </>
                 )}
             </div>
         </div>

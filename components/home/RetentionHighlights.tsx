@@ -45,9 +45,9 @@ export default function RetentionHighlights({ diasNovo, onQuickView }: Retention
                                 <Heart size={16} color="var(--cor-destaque)" />
                                 <span>Seus favoritos</span>
                             </div>
-                            <Link href="/favoritos" style={{ color: 'var(--cor-destaque)', fontSize: '0.95rem', textDecoration: 'none' }}>
-                                Ver todos
-                            </Link>
+                                <Link href="/favoritos" rel="nofollow" style={{ color: 'var(--cor-destaque)', fontSize: '0.95rem', textDecoration: 'none' }}>
+                                    Ver todos
+                                </Link>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
                             {favorites.map(product => (

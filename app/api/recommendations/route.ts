@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { buildStorageUrl } from '@/lib/site-config';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 
 // Força o Next.js a nunca fazer cache desta rota, garantindo dados em tempo real
 export const dynamic = 'force-dynamic';
@@ -217,7 +218,7 @@ async function getFrequentlyBoughtTogether(productId: string, categoryId: number
 function toRecommendationProduct(product: RecommendationRecord) {
     const media = Array.isArray(product.media_urls) ? product.media_urls : product.imagens;
     let image = Array.isArray(media)
-        ? media.find((url: unknown) => typeof url === 'string' && url.length > 0) || ''
+        ? media.find((url: unknown) => typeof url === 'string' && url.length > 0 && !url.includes('.mp4') && !url.includes('.webm')) || ''
         : '';
 
     if (image && !image.startsWith('http') && !image.startsWith('/')) {
@@ -233,7 +234,7 @@ function toRecommendationProduct(product: RecommendationRecord) {
         nome: product.nome,
         preco: hasPromo ? product.preco_promocional : product.preco,
         preco_original: hasPromo ? product.preco : undefined,
-        imagem_principal: image,
+        imagem_principal: getProxiedImageUrl(image),
         categoria_id: product.categoria_id ?? null,
         tags: Array.isArray(product.tags) ? product.tags : [],
     };

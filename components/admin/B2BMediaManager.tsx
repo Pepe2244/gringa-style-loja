@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Edit, Image as ImageIcon, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/utils/imageCompression';
+import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
 import { deleteB2BAsset, saveB2BAsset } from '@/app/actions/admin-data';
 
@@ -208,15 +209,15 @@ export default function B2BMediaManager() {
               {isProjectModal ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', padding: '5px' }}>
                   <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '5px', overflow: 'hidden' }}>
-                    <Image src={asset.url} alt="Antes" fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} />
+                    <Image src={getProxiedImageUrl(asset.url)} alt="Antes" fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} />
                   </div>
                   <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '5px', overflow: 'hidden' }}>
-                    <Image src={asset.secondary_url || asset.url} alt="Depois" fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} />
+                    <Image src={getProxiedImageUrl(asset.secondary_url || asset.url)} alt="Depois" fill sizes="(max-width: 768px) 50vw, 200px" style={{ objectFit: 'cover' }} />
                   </div>
                 </div>
               ) : (
                 <div style={{ position: 'relative', width: '100%', aspectRatio: activeTab === 'hero' ? '16 / 9' : '1', overflow: 'hidden' }}>
-                  <Image src={asset.url} alt={asset.title || tabLabels[activeTab]} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: 'cover' }} />
+                  <Image src={getProxiedImageUrl(asset.url)} alt={asset.title || tabLabels[activeTab]} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: 'cover' }} />
                 </div>
               )}
               <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>

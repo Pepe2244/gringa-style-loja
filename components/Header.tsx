@@ -14,12 +14,12 @@ export default function Header() {
     const totalItems = useCartStore(state => state.totalItems());
     const wishlistItems = useWishlistStore(state => state.items) || [];
     const wishlistCount = wishlistItems.length;
-    
+
     // Determine the context based on the pathname
     const isPortal = pathname === '/';
     const isServices = pathname.startsWith('/gs-servicos-industriais');
     const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
-    
+
     const [mounted, setMounted] = useState(false);
     const [hasActiveRaffles, setHasActiveRaffles] = useState(false);
     const [isBouncing, setIsBouncing] = useState(false);
@@ -78,7 +78,7 @@ export default function Header() {
 
         let targetPath = href;
         let targetHash = '';
-        
+
         if (href.includes('#')) {
             const parts = href.split('#');
             targetPath = parts[0];
@@ -91,8 +91,8 @@ export default function Header() {
 
         // Se o destino for a própria página em que o usuário está
         if (pathname === targetPath) {
-            e.preventDefault(); 
-            
+            e.preventDefault();
+
             if (targetHash) {
                 // Rolar para a seção específica com compensação do Header
                 const element = document.getElementById(targetHash);
@@ -100,10 +100,10 @@ export default function Header() {
                     const headerOffset = 100; // Altura do seu header fixo
                     const elementPosition = element.getBoundingClientRect().top;
                     const offsetPosition = elementPosition + window.scrollY - headerOffset;
-                  
+
                     window.scrollTo({
-                         top: offsetPosition,
-                         behavior: "smooth"
+                        top: offsetPosition,
+                        behavior: "smooth"
                     });
                 }
             } else {
@@ -130,8 +130,8 @@ export default function Header() {
     return (
         <header className="cabecalho !sticky !top-0 !z-50 !w-full !bg-black/80 !backdrop-blur-md !border-b !border-white/5" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
             <div className="container !relative flex items-center justify-between">
-               {/* Contextual Logo Link */}
-               <Link href={homeLink} className="logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
+                {/* Contextual Logo Link */}
+                <Link href={homeLink} className="logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
                     <Image
                         src={isServices ? '/imagens/logo_gs_servicos_industriais.webp' : '/imagens/logo_gringa_style.webp'}
                         alt={isServices ? 'GS Serviços Industriais' : 'Gringa Style Logo'}
@@ -142,13 +142,13 @@ export default function Header() {
                     />
                 </Link>
 
-                <nav 
-                    className={`navegacao ${isMenuOpen ? 'menu-aberto !absolute !top-full !left-0 !w-full !flex !flex-col !bg-black/80 !backdrop-blur-md !py-4 !gap-3 !border-t !border-white/10 !shadow-2xl' : 'hidden md:flex'}`} 
+                <nav
+                    className={`navegacao ${isMenuOpen ? 'menu-aberto !absolute !top-full !left-0 !w-full !flex !flex-col !bg-black/80 !backdrop-blur-md !py-4 !gap-3 !border-t !border-white/10 !shadow-2xl' : 'hidden md:flex'}`}
                     style={isMenuOpen ? { zIndex: 49 } : {}}
                 >
                     {/* Contextual "Início" Link */}
                     <Link href={homeLink} className={`nav-item ${isActive(homeLink)}`} onClick={handleNavClick}>Início</Link>
-                    
+
                     {isPortal ? (
                         <>
                             <Link href="/loja" className="nav-item" onClick={handleNavClick}>Loja</Link>
@@ -172,7 +172,7 @@ export default function Header() {
                     {!isServices && <Link href="/sobre" className={`nav-item ${isActive('/sobre')}`} onClick={handleNavClick}>Sobre</Link>}
 
                     {!isPortal && !isServices && hasActiveRaffles && (
-                        <Link href="/acompanhar-rifa" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={handleNavClick}>
+                        <Link href="/acompanhar-rifa" rel="nofollow" className={`nav-item ${isActive('/acompanhar-rifa')}`} onClick={handleNavClick}>
                             Meus Números
                         </Link>
                     )}
@@ -180,27 +180,28 @@ export default function Header() {
 
                 <div className="header-direita" style={{ display: 'flex', alignItems: 'center', gap: '18px', zIndex: 51, position: 'relative' }}>
                     {!isPortal && !isServices && <Link
-                        href="/favoritos" 
-                        className="favoritos" 
+                        href="/favoritos"
+                        rel="nofollow"
+                        className="favoritos"
                         onClick={handleNavClick}
-                        style={{ display: 'flex', alignItems: 'center', position: 'relative', color: 'inherit' }} 
+                        style={{ display: 'flex', alignItems: 'center', position: 'relative', color: 'inherit' }}
                         title="Meus Favoritos"
                     >
-                        <Heart 
-                            size={26} 
-                            color={mounted && wishlistCount > 0 ? 'var(--cor-destaque, #ff6b00)' : 'currentColor'} 
-                            fill={mounted && wishlistCount > 0 ? 'var(--cor-destaque, #ff6b00)' : 'none'} 
+                        <Heart
+                            size={26}
+                            color={mounted && wishlistCount > 0 ? 'var(--cor-destaque, #ff6b00)' : 'currentColor'}
+                            fill={mounted && wishlistCount > 0 ? 'var(--cor-destaque, #ff6b00)' : 'none'}
                         />
-                        <span 
-                            className="favoritos-contador" 
-                            style={{ 
-                                minWidth: '18px', 
+                        <span
+                            className="favoritos-contador"
+                            style={{
+                                minWidth: '18px',
                                 height: '18px',
                                 padding: '0 4px',
                                 borderRadius: '999px',
                                 fontSize: '0.75rem',
                                 fontWeight: 'bold',
-                                display: 'inline-grid', 
+                                display: 'inline-grid',
                                 placeItems: 'center',
                                 backgroundColor: 'var(--cor-destaque, #ff6b00)',
                                 color: '#000',
@@ -213,36 +214,36 @@ export default function Header() {
                         </span>
                     </Link>}
 
-                    {!isPortal && !isServices && <Link href="/carrinho" className="carrinho" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                        <ShoppingCart size={28} />
-                        <span 
-                            className="carrinho-contador" 
-                            style={{ 
-                                minWidth: '20px', 
-                                display: 'inline-grid', 
-                                placeItems: 'center',
-                                transform: isBouncing ? 'scale(1.3)' : 'scale(1)',
-                                transition: 'transform 0.2s ease-out',
-                                backgroundColor: isBouncing ? '#fff' : 'var(--cor-destaque)',
-                                color: isBouncing ? '#000' : 'inherit'
-                            }}
-                        >
-                            {mounted ? totalItems : 0}
-                        </span>
-                    </Link>}
+                        {!isPortal && !isServices && <Link href="/carrinho" rel="nofollow" className="carrinho" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                            <ShoppingCart size={28} />
+                            <span
+                                className="carrinho-contador"
+                                style={{
+                                    minWidth: '20px',
+                                    display: 'inline-grid',
+                                    placeItems: 'center',
+                                    transform: isBouncing ? 'scale(1.3)' : 'scale(1)',
+                                    transition: 'transform 0.2s ease-out',
+                                    backgroundColor: isBouncing ? '#fff' : 'var(--cor-destaque)',
+                                    color: isBouncing ? '#000' : 'inherit'
+                                }}
+                            >
+                                {mounted ? totalItems : 0}
+                            </span>
+                        </Link>}
 
-                    <button
-                        id="hamburger-btn"
-                        className="hamburger-btn md:hidden"
-                        aria-label="Abrir menu de navegação"
-                        onClick={toggleMenu}
-                    >
-                        {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
-                    </button>
-                </div>
+                        <button
+                            id="hamburger-btn"
+                            className="hamburger-btn md:hidden"
+                            aria-label="Abrir menu de navegação"
+                            onClick={toggleMenu}
+                        >
+                            {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
+                        </button>
+                    </div>
             </div>
-            
-            {isMenuOpen && <div className="overlay-menu !fixed !inset-0 !bg-black/50 !backdrop-blur-sm" onClick={closeMenu} style={{ zIndex: 40 }}></div>}
+
+                {isMenuOpen && <div className="overlay-menu !fixed !inset-0 !bg-black/50 !backdrop-blur-sm" onClick={closeMenu} style={{ zIndex: 40 }}></div>}
         </header>
     );
 }

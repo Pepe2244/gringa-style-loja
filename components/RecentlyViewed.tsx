@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Product } from '@/types';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import ProductCard from '@/components/ProductCard';
+import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { supabase } from '@/lib/supabase';
 
 interface RecentlyViewedProps {
@@ -15,6 +16,7 @@ interface RecentlyViewedProps {
 export default function RecentlyViewed({ currentProductId, diasNovo = 7, limit = 5 }: RecentlyViewedProps) {
     const [mounted, setMounted] = useState(false);
     const [recentProducts, setRecentProducts] = useState<Product[]>([]);
+    const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
     const getRecent = useRecentlyViewedStore(state => state.getRecent);
 
     useEffect(() => {
@@ -80,10 +82,15 @@ export default function RecentlyViewed({ currentProductId, diasNovo = 7, limit =
                         key={product.id}
                         product={product}
                         diasNovo={diasNovo}
-                        onQuickView={() => {}}
+                        onQuickView={(prod) => setQuickViewProduct(prod)}
                     />
                 ))}
             </div>
+            <DirectPurchaseModal
+                isOpen={!!quickViewProduct}
+                onClose={() => setQuickViewProduct(null)}
+                product={quickViewProduct}
+            />
         </section>
     );
 }

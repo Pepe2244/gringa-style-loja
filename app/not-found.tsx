@@ -10,9 +10,9 @@ export default function NotFound() {
       <p style={{ color: '#888', fontSize: '1.2rem', marginBottom: '40px', maxWidth: '600px', lineHeight: 1.6 }}>
         Parece que a página, produto ou categoria que você estava procurando foi movida, esgotou ou não existe mais no nosso catálogo.
       </p>
-      <Link href="/" className="btn" style={{ textDecoration: 'none', padding: '15px 30px', fontSize: '1.1rem', borderRadius: '8px' }}>
-        Voltar para a Loja Segura
-      </Link>
+        <Link href="/loja" className="btn" style={{ textDecoration: 'none', padding: '15px 30px', fontSize: '1.1rem', borderRadius: '8px' }}>
+          Voltar para a Loja Segura
+        </Link>
     </div>
   );
 }

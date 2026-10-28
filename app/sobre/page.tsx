@@ -146,7 +146,7 @@ export default function SobrePage() {
                 </div>
 
                 <div style={{ textAlign: 'center', marginTop: '40px' }}>
-                    <Link href="/" style={{ backgroundColor: 'var(--cor-destaque)', color: '#000', padding: '15px 30px', borderRadius: '10px', fontWeight: 'bold', textDecoration: 'none' }}>
+                    <Link href="/loja" style={{ backgroundColor: 'var(--cor-destaque)', color: '#000', padding: '15px 30px', borderRadius: '10px', fontWeight: 'bold', textDecoration: 'none' }}>
                         Explore Nossos Produtos
                     </Link>
                 </div>
