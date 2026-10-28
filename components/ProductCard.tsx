@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { buildStorageUrl } from '@/lib/site-config';
-import { slugify } from '@/utils/slugify';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 import { trackPurchaseIntent } from '@/utils/analytics';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -33,14 +33,12 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         (Array.isArray(product?.imagens) ? product.imagens : []);
 
     const rawVideoUrl = product?.video || mediaUrls.find(url => typeof url === 'string' && (url.includes('.mp4') || url.includes('.webm'))) || "";
-    // O Vídeo continuará passando pelo proxy pois next/image não suporta <video>
     const videoUrl = resolveMediaUrl(rawVideoUrl);
 
-    // As imagens irão usar a URL original para otimização pelo Next.js
     const imageUrls = mediaUrls
         .filter(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
         .map(url => {
-            if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) return url;
+            if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) return getProxiedImageUrl(url);
             return typeof url === 'string' ? buildStorageUrl(url) : '';
         })
         .filter(Boolean) as string[];
@@ -106,7 +104,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
 
     const shouldShowVideo = !!videoUrl && isHovered && !isMobile && !prefersReducedMotion;
     const productName = product.nome || 'Produto Sem Nome';
-    const productSlug = product.slug || slugify(productName) || String(product.id);
+    const productSlug = getCanonicalProductSlug(product);
 
     return (
         <div

@@ -12,8 +12,6 @@ import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { FAQSchema, BreadcrumbSchema } from '@/components/SEO/StructuredData';
 import { motion } from 'framer-motion';
 
-// GROWTH HACK TÉCNICO: Forçamos o TypeScript a aceitar a nova coluna do banco
-// sem precisarmos reescrever os arquivos globais de tipagem agora.
 interface RifaFront extends Omit<Rifa, 'status'> {
     status: 'ativa' | 'finalizada' | 'cancelada' | string;
 }
@@ -88,13 +86,10 @@ export default function RifaPage() {
     useEffect(() => {
         let channel: ReturnType<typeof supabase.channel>;
 
-        // Busca inicial
         fetchRifa(true);
 
-        // 1. Fallback de segurança: atualiza a cada 30 segundos
         const pollInterval = setInterval(() => { fetchRifa(false); }, 30000);
 
-        // 2. Assinatura do Supabase Realtime
         const setupRealtime = async () => {
             channel = supabase
                 .channel('schema-db-changes')
@@ -221,18 +216,6 @@ export default function RifaPage() {
         }
     };
 
-    if (loading) return (
-        <div className="container" id="rifa-container">
-            <h1 className="titulo-secao" style={{ marginBottom: '25px' }}>Ações Entre Amigos & Rifas de Solda</h1>
-            <div className="rifa-card">
-                {[{ w: '70%', h: '40px' }, { w: '100%', h: '400px' }, { w: '50%', h: '24px' }, { w: '100%', h: '20px' }, { w: '100%', h: '20px' }].map((s, i) => (
-                    <div key={i} style={{ background: '#333', borderRadius: '8px', height: s.h, width: s.w, marginBottom: '16px', animation: 'pulse 1.5s infinite ease-in-out' }} />
-                ))}
-            </div>
-            <style>{`@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.25} }`}</style>
-        </div>
-    );
-
     const rifaFaq = (
         <>
             <FAQSchema questions={[
@@ -252,39 +235,76 @@ export default function RifaPage() {
             <div className="rifa-faq" style={{ marginTop: '50px', background: '#111', padding: '35px', borderRadius: '12px', border: '1px solid #27272a', textAlign: 'left' }}>
                 <h2 style={{ fontSize: '1.8rem', marginBottom: '25px', color: 'white', borderBottom: '2px solid var(--cor-destaque)', paddingBottom: '12px', display: 'inline-block' }}>Como funciona a Rifa Gringa Style? (Transparência e Regras)</h2>
                 
-                <details style={{ marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '15px' }}>
+                <details open style={{ marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '15px' }}>
                     <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
                         <span style={{ marginRight: '10px' }}>›</span> Sobre a Transparência do Sorteio
                     </summary>
                     <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é sempre baseado nos números da Loteria Federal (geralmente os últimos dígitos do 1º prêmio). Isso garante que o sorteio é imune a qualquer tipo de fraude ou manipulação por parte da Gringa Style.</p>
                 </details>
 
-                <details style={{ marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '15px' }}>
+                <details open style={{ marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '15px' }}>
                     <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
                         <span style={{ marginRight: '10px' }}>›</span> Datas e Prazos
                     </summary>
                     <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>A data exata do sorteio é marcada e comunicada em nossos grupos de WhatsApp e Instagram (<strong>@gringastyle_br</strong>) logo após a venda da última cota. Assim que você reservar seu número, é fundamental enviar o comprovante de pagamento via WhatsApp no prazo estipulado (geralmente 24 horas), caso contrário, o número voltará a ficar disponível para o público.</p>
                 </details>
 
-                <details style={{ paddingBottom: '5px' }}>
+                <details open style={{ paddingBottom: '5px' }}>
                     <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
                         <span style={{ marginRight: '10px' }}>›</span> Como recebo meu prêmio?
                     </summary>
                     <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>Se você for o ganhador, nossa equipe entrará em contato imediatamente pelo WhatsApp cadastrado na hora da reserva. O envio do equipamento de solda TIG (máscara, tocha ou acessórios) é feito via transportadora ou Correios, totalmente documentado, e entregue direto na sua casa em qualquer lugar do Brasil.</p>
                 </details>
+
+                <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #27272a', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                    <Link href="/historico" style={{ color: 'var(--cor-destaque)', textDecoration: 'underline', fontWeight: 'bold' }}>
+                        Ver Histórico de Ganhadores e Sorteios Anteriores
+                    </Link>
+                    <Link href="/loja" style={{ color: '#ccc', textDecoration: 'underline' }}>
+                        Conhecer Produtos na Loja Gringa Style
+                    </Link>
+                </div>
+            </div>
+        </>
+    );
+
+    if (loading) return (
+        <>
+            <BreadcrumbSchema items={[
+                { name: 'Gringa Style', url: '/' },
+                { name: 'Rifa', url: '/rifa' }
+            ]} />
+            <div className="container" id="rifa-container">
+                <h1 className="titulo-secao" style={{ marginBottom: '12px' }}>Ações Entre Amigos & Rifas de Solda</h1>
+                <p style={{ color: '#ccc', textAlign: 'center', marginBottom: '25px', fontSize: '1.1rem' }}>
+                    Concorra a máscaras de solda personalizadas em fibra de vidro, tochas TIG e equipamentos profissionais com sorteio pela Loteria Federal.
+                </p>
+                <div className="rifa-card">
+                    {[{ w: '70%', h: '40px' }, { w: '100%', h: '400px' }, { w: '50%', h: '24px' }, { w: '100%', h: '20px' }, { w: '100%', h: '20px' }].map((s, i) => (
+                        <div key={i} style={{ background: '#333', borderRadius: '8px', height: s.h, width: s.w, marginBottom: '16px', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                    ))}
+                </div>
+                {rifaFaq}
+                <style>{`@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.25} }`}</style>
             </div>
         </>
     );
 
     if (!rifa) {
         return (
-            <div className="container" id="rifa-container" style={{ textAlign: 'center', padding: '50px 0' }}>
-                <div className="rifa-card" style={{ marginBottom: '40px' }}>
-                    <h1 className="titulo-secao">Nenhuma Rifa no Momento</h1>
-                    <p style={{ fontSize: '1.1em' }}>Em breve teremos novidades.</p>
+            <>
+                <BreadcrumbSchema items={[
+                    { name: 'Gringa Style', url: '/' },
+                    { name: 'Rifa', url: '/rifa' }
+                ]} />
+                <div className="container" id="rifa-container" style={{ textAlign: 'center', padding: '50px 0' }}>
+                    <div className="rifa-card" style={{ marginBottom: '40px' }}>
+                        <h1 className="titulo-secao">Nenhuma Rifa no Momento</h1>
+                        <p style={{ fontSize: '1.1em' }}>Em breve teremos novidades.</p>
+                    </div>
+                    {rifaFaq}
                 </div>
-                {rifaFaq}
-            </div>
+            </>
         );
     }
 

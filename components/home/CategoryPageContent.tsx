@@ -3,8 +3,6 @@
 import { Product, Category } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import { CollectionPageSchema, BreadcrumbSchema } from '@/components/SEO/StructuredData';
-import { buildCanonicalUrl } from '@/lib/site-config';
 
 interface CategoryPageContentProps {
     category: Category;
@@ -13,67 +11,42 @@ interface CategoryPageContentProps {
 
 export default function CategoryPageContent({ category, products }: CategoryPageContentProps) {
     const categoryName = category.nome;
-    const canonicalUrl = buildCanonicalUrl(`/categoria/${category.id}`);
-
     const introText = getCategoryIntro(categoryName);
 
     return (
-        <>
-            <CollectionPageSchema page={{
-                name: `${categoryName} | Gringa Style`,
-                description: introText,
-                url: canonicalUrl,
-                products: products.map(p => ({
-                    id: p.id,
-                    nome: p.nome,
-                    preco: p.preco,
-                    preco_promocional: p.preco_promocional,
-                    em_estoque: p.em_estoque,
-                    imagens: p.imagens,
-                    media_urls: p.media_urls,
-                    slug: p.slug,
-                })),
-            }} />
-            <BreadcrumbSchema items={[
-                { name: 'Gringa Style', url: '/' },
-                { name: 'Loja', url: '/loja' },
-                { name: categoryName, url: canonicalUrl },
+        <div className="container" style={{ padding: '20px 15px 60px' }}>
+            <Breadcrumbs items={[
+                { label: 'Início', href: '/' },
+                { label: 'Loja', href: '/loja' },
+                { label: categoryName },
             ]} />
 
-            <div className="container" style={{ padding: '20px 15px 60px' }}>
-                <Breadcrumbs items={[
-                    { label: 'Início', href: '/' },
-                    { label: 'Loja', href: '/loja' },
-                    { label: categoryName },
-                ]} />
-
-                <div style={{ marginTop: '24px', marginBottom: '40px' }}>
-                    <h1 className="titulo-secao" style={{ marginBottom: '12px' }}>{categoryName}</h1>
-                    <p style={{ color: '#ccc', fontSize: '1.1rem', lineHeight: '1.7', maxWidth: '800px' }}>
-                        {introText}
-                    </p>
-                </div>
-
-                <ProductGrid
-                    products={products}
-                    loading={false}
-                    diasNovo={7}
-                    onQuickView={() => {}}
-                    hasMore={false}
-                    loadingMore={false}
-                    onLoadMore={() => {}}
-                />
-
-                <section style={{ marginTop: '60px', padding: '40px', backgroundColor: 'rgba(17,17,17,0.7)', borderRadius: '10px', border: '1px solid #333' }}>
-                    <h2 className="titulo-secao" style={{ fontSize: '1.8rem', marginBottom: '16px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
-                        Sobre {categoryName}
-                    </h2>
-                    <div style={{ color: '#bbb', lineHeight: '1.8', fontSize: '1rem' }}>
-                        {getCategoryAboutText(categoryName)}
-                    </div>
-                </section>
+            <div style={{ marginTop: '24px', marginBottom: '40px' }}>
+                <h1 className="titulo-secao" style={{ marginBottom: '12px' }}>{categoryName}</h1>
+                <p style={{ color: '#ccc', fontSize: '1.1rem', lineHeight: '1.7', maxWidth: '800px' }}>
+                    {introText}
+                </p>
             </div>
-        </>
+
+            <ProductGrid
+                products={products}
+                loading={false}
+                diasNovo={7}
+                onQuickView={() => {}}
+                hasMore={false}
+                loadingMore={false}
+                onLoadMore={() => {}}
+            />
+
+            <section style={{ marginTop: '60px', padding: '40px', backgroundColor: 'rgba(17,17,17,0.7)', borderRadius: '10px', border: '1px solid #333' }}>
+                <h2 className="titulo-secao" style={{ fontSize: '1.8rem', marginBottom: '16px', color: 'var(--cor-destaque)', fontFamily: 'var(--fonte-titulos)' }}>
+                    Sobre {categoryName}
+                </h2>
+                <div style={{ color: '#bbb', lineHeight: '1.8', fontSize: '1rem' }}>
+                    {getCategoryAboutText(categoryName)}
+                </div>
+            </section>
+        </div>
     );
 }
 

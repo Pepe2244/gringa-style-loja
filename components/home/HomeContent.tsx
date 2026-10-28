@@ -7,8 +7,6 @@ import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
 import { trackEvent, trackFilterUsage, trackSearchQuery } from '@/utils/analytics';
-import { ItemListSchema } from '@/components/SEO/StructuredData';
-import { buildCanonicalUrl } from '@/lib/site-config';
 
 // IMPORTAÇÕES DINÂMICAS: Cortam drasticamente o JavaScript inicial carregado na tela.
 // Só baixam quando o usuário chega perto delas ou precisa delas.
@@ -209,18 +207,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
             />
 
             <RetentionHighlights diasNovo={diasNovo} onQuickView={handleQuickView} />
-
-            <ItemListSchema products={filteredProducts.map(product => ({
-                id: product.id,
-                nome: product.nome,
-                descricao: product.descricao,
-                preco: product.preco,
-                preco_promocional: product.preco_promocional,
-                em_estoque: product.em_estoque,
-                imagens: product.imagens,
-                media_urls: product.media_urls,
-                slug: product.slug
-            }))} pageUrl={buildCanonicalUrl('/loja')} />
 
             <ProductGrid
                 products={filteredProducts}

@@ -3,8 +3,9 @@ import { supabase } from '@/lib/supabase';
 import ProductPageContent from '@/components/ProductPageContent';
 import { BreadcrumbSchema, ProductSchema } from '@/components/SEO/StructuredData';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
+import { buildCanonicalUrl } from '@/lib/site-config';
 import { resolveAbsoluteUrl, fetchProductBySlugOrId, getCachedCategories } from '@/lib/product-service';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 
 // Formata o título dinamicamente para não estourar os 60 caracteres da SERP do Google
 function formatSEOTitle(nome: string, precoFormatado: string, emEstoque: boolean): string {
@@ -40,15 +41,13 @@ export const dynamicParams = true; // Garante que novos produtos criados no pain
 export async function generateStaticParams() {
     const { data: products } = await supabase
         .from('produtos')
-        .select('slug, id')
+        .select('slug, id, nome')
         .limit(100);
 
     return products?.map((product) => ({
-        id: product.slug || String(product.id),
+        id: getCanonicalProductSlug(product),
     })) || [];
 }
-
-
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { id: slug } = await params;
@@ -61,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
-    const canonicalSlug = product.slug || slug;
+    const canonicalSlug = getCanonicalProductSlug(product);
     const productUrl = buildCanonicalUrl(`/produto/${canonicalSlug}`);
 
     const mediaUrls = product.media_urls || product.imagens || [];
@@ -149,12 +148,14 @@ export default async function ProductPage({ params }: Props) {
         notFound();
     }
 
-    // REGRA DE OURO SEO: Se acessou por ID ou URL legada mas existe um slug limpo, força 301 automático
-    if (product.slug && slug !== product.slug) {
-        permanentRedirect(`/produto/${product.slug}`);
+    const canonicalSlug = getCanonicalProductSlug(product);
+
+    // REGRA DE OURO SEO: Se acessou por ID ou URL legada mas existe um slug canônico limpo, força 308/301 automático
+    if (canonicalSlug && slug !== canonicalSlug) {
+        permanentRedirect(`/produto/${canonicalSlug}`);
     }
 
-    const productUrl = buildCanonicalUrl(`/produto/${product.slug || product.id}`);
+    const productUrl = buildCanonicalUrl(`/produto/${canonicalSlug}`);
     const categories = await getCachedCategories();
     const dynamicCategory = product.categoria_id ? categories.find((c: any) => c.id === product.categoria_id) : null;
     const categoryName = dynamicCategory?.nome || (product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null);
@@ -199,7 +200,7 @@ export default async function ProductPage({ params }: Props) {
                 descricao: product.descricao,
                 preco: product.preco,
                 preco_promocional: product.preco_promocional,
-                slug: product.slug,
+                slug: canonicalSlug,
                 em_estoque: product.em_estoque,
                 imagens: product.imagens,
                 media_urls: product.media_urls,

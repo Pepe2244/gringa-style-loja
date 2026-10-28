@@ -21,12 +21,13 @@ import { PaymentMethods } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import { useAnalytics } from '@/components/AdvancedAnalytics'; 
 import { buildStorageUrl } from '@/lib/site-config';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 const resolveOriginalUrl = (path: string) => {
     if (!path) return '';
-    if (path.startsWith('http') || path.startsWith('/')) return path;
+    if (path.startsWith('http') || path.startsWith('/')) return getProxiedImageUrl(path);
     return buildStorageUrl(path);
 };
 
@@ -616,7 +617,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                             const finalVideoUrl = rel.video || (isVideo ? mediaUrl : null);
 
                             return (
-                                <Link key={rel.id} href={`/produto/${rel.slug || rel.id}`} className="related-product-card" style={{ backgroundColor: '#111', borderRadius: '12px', padding: '10px', textDecoration: 'none', border: '1px solid #222', transition: 'transform 0.2s' }}>
+                                <Link key={rel.id} href={`/produto/${getCanonicalProductSlug(rel)}`} className="related-product-card" style={{ backgroundColor: '#111', borderRadius: '12px', padding: '10px', textDecoration: 'none', border: '1px solid #222', transition: 'transform 0.2s' }}>
                                     <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', marginBottom: '15px' }}>
                                         {finalVideoUrl ? (
                                             <video

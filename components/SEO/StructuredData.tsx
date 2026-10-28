@@ -1,6 +1,7 @@
 import React from 'react';
-import { buildStorageUrl, siteConfig } from '@/lib/site-config';
+import { buildStorageUrl, isLegacyDeadStorageUrl, siteConfig } from '@/lib/site-config';
 import { getProductTaxonomy } from '@/lib/taxonomy';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 
 /**
  * MOTOR DE DADOS ESTRUTURADOS - GRINGA STYLE
@@ -192,6 +193,7 @@ const resolveProductImages = (product: ProductData): string[] => {
     if (typeof raw !== 'string') continue;
     const trimmed = raw.trim();
     if (!trimmed || /\.(mp4|webm|mov|ogg|avi|mkv)($|\?)/i.test(trimmed)) continue;
+    if (isLegacyDeadStorageUrl(trimmed)) continue;
 
     let fullUrl = trimmed;
     if (!fullUrl.startsWith('http')) {
@@ -216,7 +218,8 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
   const productImages = resolveProductImages(product);
   const precoNumerico = Number(product.preco_promocional || product.preco) || 0;
   const precoFormatado = precoNumerico.toFixed(2);
-  const productUrl = `${SITE_URL}/produto/${product.slug || product.id}`;
+  const canonicalSlug = getCanonicalProductSlug(product);
+  const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
   const hasPromo = !!product.preco_promocional && product.preco_promocional < product.preco;
 
   const validUntilDate = new Date();
@@ -448,7 +451,8 @@ export const ItemListSchema = ({
       ? product.preco_promocional
       : product.preco) || 0;
 
-    const productUrl = `${SITE_URL}/produto/${product.slug || product.id}`;
+    const canonicalSlug = getCanonicalProductSlug(product);
+    const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
     const taxonomy = getProductTaxonomy(product.nome);
     const numericId = Number(product.id) || (index + 1);
     const ratingValue = (4.8 + ((numericId % 3) * 0.1)).toFixed(1);
@@ -457,6 +461,7 @@ export const ItemListSchema = ({
     return {
       '@type': 'ListItem',
       position: index + 1,
+      url: productUrl,
       item: {
         '@type': 'Product',
         'name': product.nome,
@@ -515,6 +520,7 @@ export const ItemListSchema = ({
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
+    'numberOfItems': listItems.length,
     'itemListElement': listItems,
     'url': pageUrl.startsWith('http') ? pageUrl : `${SITE_URL}${pageUrl}`
   };
@@ -590,6 +596,13 @@ interface CollectionPageData {
 }
 
 export const CollectionPageSchema = ({ page }: { page: CollectionPageData }) => {
+  const items = (page.products || []).slice(0, 20).map((product, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "name": product.nome,
+    "url": `${SITE_URL}/produto/${getCanonicalProductSlug(product)}`
+  }));
+
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -605,19 +618,13 @@ export const CollectionPageSchema = ({ page }: { page: CollectionPageData }) => 
       "@type": "Organization",
       "name": "Gringa Style",
       "url": SITE_URL
+    },
+    "mainEntity": {
+      "@type": "ItemList",
+      "numberOfItems": items.length,
+      "itemListElement": items
     }
   };
-
-  if (page.products && page.products.length > 0) {
-    schema["mainEntity"] = {
-      "@type": "ItemList",
-      "itemListElement": page.products.slice(0, 20).map((product, index) => ({
-        "@type": "ListItem",
-        "position": index + 1,
-        "url": `${SITE_URL}/produto/${product.slug || product.id}`
-      }))
-    };
-  }
 
   return (
     <script

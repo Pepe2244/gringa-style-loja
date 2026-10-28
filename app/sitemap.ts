@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 import { siteConfig } from '@/lib/site-config';
-import { slugify } from '@/utils/slugify';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 
 export const revalidate = 3600; // Revalida o sitemap a cada 1 hora
 
@@ -33,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const productUrls: MetadataRoute.Sitemap = (productsRes.data || [])
       .map((product) => {
-        const canonicalSlug = product.slug || slugify(product.nome) || String(product.id);
+        const canonicalSlug = getCanonicalProductSlug(product);
         return {
           url: `${baseUrl}/produto/${canonicalSlug}`,
           lastModified: product.created_at ? new Date(product.created_at) : new Date(),

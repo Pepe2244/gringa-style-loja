@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { submitToIndexNow } from '@/lib/indexnow';
 import { supabase } from '@/lib/supabase';
 import { siteConfig } from '@/lib/site-config';
-import { slugify } from '@/utils/slugify';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function GET() {
@@ -32,9 +32,7 @@ export async function GET() {
     );
 
     const productUrls = (produtosRes.data || []).map((p: any) => {
-      const canonicalSlug = (p.slug && String(p.slug).trim().length > 0)
-        ? String(p.slug).trim()
-        : slugify(p.nome) || String(p.id);
+      const canonicalSlug = getCanonicalProductSlug(p);
       return `${siteConfig.appUrl}/produto/${canonicalSlug}`;
     });
 

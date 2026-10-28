@@ -129,7 +129,12 @@ export default function DevolucaoReembolsoPage() {
                             Última atualização: Abril de 2026.
                         </p>
 
-                        <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                        <div style={{ marginTop: '40px', textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                            <Link href="/loja" className="btn btn-secundario">Ir para a Loja</Link>
+                            <Link href="/privacidade" className="btn btn-secundario">Política de Privacidade</Link>
+                            <Link href="/sobre" className="btn btn-secundario">Sobre Nós</Link>
+                        </div>
+                        <div style={{ marginTop: '16px', textAlign: 'center' }}>
                             <Link href="/" className="btn btn-secundario">
                                 &larr; Voltar ao Início
                             </Link>

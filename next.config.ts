@@ -48,6 +48,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
+    unoptimized: true,
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
     qualities: [60, 65, 75],
@@ -97,18 +98,6 @@ const nextConfig: NextConfig = {
           },
         ],
         destination: 'https://gringastylebr.com.br/:path*',
-        permanent: true,
-      },
-      {
-        source: '/_next/image',
-        has: [
-          {
-            type: 'query',
-            key: 'url',
-            value: '(.*)tsilaaurmpahookyanbe(.*)',
-          },
-        ],
-        destination: '/imagens/logo_gringa_style.webp',
         permanent: true,
       },
       // 1. Redirecionamento de slugs legados/malformados para os novos slugs canônicos
@@ -250,8 +239,8 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: '/blog/',
-        destination: '/blog',
+        source: '/blog',
+        destination: '/loja',
         permanent: true,
       },
     ];

@@ -1,9 +1,9 @@
 import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
-import { buildStorageUrl, siteConfig } from '@/lib/site-config';
+import { buildStorageUrl, isLegacyDeadStorageUrl, siteConfig } from '@/lib/site-config';
 
 export const resolveAbsoluteUrl = (path?: string | null) => {
-    if (!path) return `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
+    if (!path || isLegacyDeadStorageUrl(path)) return `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
     if (path.startsWith('http')) return path;
     if (path.startsWith('/')) return `${siteConfig.appUrl}${path}`;
     return buildStorageUrl(path);

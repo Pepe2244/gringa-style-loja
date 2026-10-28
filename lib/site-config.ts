@@ -40,8 +40,14 @@ export function getStorageBaseUrl() {
   return siteConfig.supabase.imageBaseUrl;
 }
 
+export function isLegacyDeadStorageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return url.includes('tsilaaurmpahookyanbe.supabase.co');
+}
+
 export function buildStorageUrl(path: string) {
   if (!path) return '';
+  if (isLegacyDeadStorageUrl(path)) return '/imagens/logo_gringa_style.webp';
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/') || path.startsWith('blob:') || path.startsWith('data:')) return path;
   return `${getStorageBaseUrl()}/${getStorageBucket()}/${path}`;
 }
