@@ -8,6 +8,21 @@ import { getPaymentDetails } from '@/app/actions/pagamento';
 import { Copy, Check, MessageCircle } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useAnalytics } from '@/components/AdvancedAnalytics';
+import { buildWhatsAppUrl } from '@/lib/site-config';
+
+function calculateRaffleTotal(count: number, r: any): number {
+    const hasDiscountTier = Boolean(
+        r?.preco_numero_desconto_quantidade &&
+        r?.preco_numero_desconto &&
+        r.preco_numero_desconto_quantidade > 0
+    );
+    const discountThreshold = r?.preco_numero_desconto_quantidade || 0;
+    const discountPrice = r?.preco_numero_desconto ?? r?.preco_numero ?? 0;
+    const unitPrice = hasDiscountTier && count >= discountThreshold
+        ? discountPrice
+        : (r?.preco_numero ?? 0);
+    return count * unitPrice;
+}
 
 function PaymentContent() {
     const { showToast } = useToast();
@@ -28,14 +43,20 @@ function PaymentContent() {
         const fetchData = async () => {
             try {
                 let token = participanteId ? sessionStorage.getItem(`payment-access-${participanteId}`) : null;
+                const queryToken = searchParams.get('token') || searchParams.get('payment_access');
                 if (!token && window.location.hash.startsWith('#payment_access=')) {
                     token = decodeURIComponent(window.location.hash.slice('#payment_access='.length));
-                    if (participanteId && token) {
-                        try {
-                            sessionStorage.setItem(`payment-access-${participanteId}`, token);
-                        } catch {
-                            // Keep the token in memory when session storage is unavailable.
-                        }
+                } else if (!token && queryToken) {
+                    token = queryToken;
+                }
+
+                if (participanteId && token) {
+                    try {
+                        sessionStorage.setItem(`payment-access-${participanteId}`, token);
+                    } catch {
+                        // Keep the token in memory when session storage is unavailable.
+                    }
+                    if (window.location.hash.startsWith('#payment_access=')) {
                         window.history.replaceState(null, '', window.location.pathname + window.location.search);
                     }
                 }
@@ -65,12 +86,12 @@ function PaymentContent() {
         } else {
             setLoading(false);
         }
-    }, [participanteId]);
+    }, [participanteId, searchParams]);
 
     // Rastreia o abandono vs início de checkout
     useEffect(() => {
         if (participante && rifa) {
-            const total = participante.numeros_escolhidos.length * rifa.preco_numero;
+            const total = calculateRaffleTotal(participante.numeros_escolhidos.length, rifa);
             trackEvent({
                 event: 'begin_checkout',
                 category: 'ecommerce',
@@ -115,7 +136,7 @@ function PaymentContent() {
     const enviarComprovante = () => {
         if (!participante || !rifa) return;
 
-        const total = participante.numeros_escolhidos.length * rifa.preco_numero;
+        const total = calculateRaffleTotal(participante.numeros_escolhidos.length, rifa);
         trackEvent({
             event: 'interaction',
             category: 'payment',
@@ -130,7 +151,7 @@ function PaymentContent() {
             `*Valor:* R$ ${total.toFixed(2).replace('.', ',')}\n\n` +
             `Segue o comprovante em anexo.`;
 
-        window.open(`https://wa.me/5515998092548?text=${encodeURIComponent(mensagem)}`, '_blank');
+        window.open(buildWhatsAppUrl(mensagem), '_blank');
     };
 
     if (loading) {
@@ -147,11 +168,33 @@ function PaymentContent() {
     }
 
     if (erro) {
+        const whatsappHelpMessage = participanteId
+            ? `Olá! Fiz a reserva de números na Rifa (Código da Reserva: #${participanteId}), mas preciso das informações para concluir o pagamento via PIX.`
+            : 'Olá! Preciso de ajuda com o pagamento da minha reserva na rifa.';
+
         return (
-            <div className="container" style={{ textAlign: 'center', padding: '100px 0' }}>
-                <h2 style={{ color: '#ff4444' }}>Erro</h2>
-                <p>{erro}</p>
-                <Link href="/rifa" className="btn" style={{ marginTop: '20px', display: 'inline-block' }}>Voltar para Rifa</Link>
+            <div className="container" style={{ textAlign: 'center', padding: '80px 20px', maxWidth: '600px', margin: '0 auto' }}>
+                <h2 style={{ color: '#ff4444', fontSize: '2rem', marginBottom: '16px' }}>Atenção à Reserva</h2>
+                <p style={{ color: '#ccc', fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '24px' }}>{erro}</p>
+
+                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <a
+                        href={buildWhatsAppUrl(whatsappHelpMessage)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', backgroundColor: '#25D366', color: '#000', fontWeight: 'bold' }}
+                    >
+                        <MessageCircle size={20} />
+                        Confirmar no WhatsApp
+                    </a>
+                    <Link href="/acompanhar-rifa" className="btn btn-secundario" style={{ display: 'inline-block' }}>
+                        Ver Meus Números
+                    </Link>
+                    <Link href="/rifa" className="btn" style={{ display: 'inline-block' }}>
+                        Voltar para Rifas
+                    </Link>
+                </div>
             </div>
         );
     }
@@ -165,7 +208,7 @@ function PaymentContent() {
         );
     }
 
-    const total = participante.numeros_escolhidos.length * rifa.preco_numero;
+    const total = calculateRaffleTotal(participante.numeros_escolhidos.length, rifa);
 
     return (
         <div className="container">

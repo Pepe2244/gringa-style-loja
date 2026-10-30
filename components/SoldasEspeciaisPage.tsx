@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { buildWhatsAppUrl, getWhatsAppFormatted } from '@/lib/site-config';
 
 const diferenciais = [
   {
@@ -130,7 +131,7 @@ export default function GSServicosIndustriaisPage() {
 
     const mensagem = `Olá, quero um orçamento industrial.\n\nNome: ${formData.nome}\nEmpresa: ${formData.empresa || 'Não informado'}\nE-mail: ${formData.email}\nTelefone: ${formData.telefone}\nMensagem: ${formData.mensagem || 'Sem mensagem adicional'}`;
 
-    const whatsappUrl = `https://wa.me/5515998092548?text=${encodeURIComponent(mensagem)}`;
+    const whatsappUrl = buildWhatsAppUrl(mensagem);
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -148,7 +149,7 @@ export default function GSServicosIndustriaisPage() {
               </p>
               <div className="b2b-hero-actions">
                 <a
-                  href={`https://wa.me/5515998092548?text=${encodeURIComponent('Olá, quero falar com a equipe da GS Serviços Industriais.')}`}
+                  href={buildWhatsAppUrl('Olá, quero falar com a equipe da GS Serviços Industriais.')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="b2b-primary-cta"
@@ -414,7 +415,7 @@ export default function GSServicosIndustriaisPage() {
           <span className="b2b-kicker">GS Serviços Industriais</span>
           <h3>Conte sua necessidade em soldagem ou mecânica industrial.</h3>
             <ul>
-              <li>Telefone: (15) 99809-2548</li>
+              <li>Telefone: {getWhatsAppFormatted()}</li>
               <li style={{ overflowWrap: 'anywhere' }}>E-mail: contato@gsservicosindustriais.com.br</li>
             </ul>
           </div>

@@ -1,8 +1,12 @@
 'use client';
 
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Product, Category } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
 import Breadcrumbs from '@/components/Breadcrumbs';
+
+const DirectPurchaseModal = dynamic(() => import('@/components/modals/DirectPurchaseModal'), { ssr: false });
 
 interface CategoryPageContentProps {
     category: Category;
@@ -12,6 +16,13 @@ interface CategoryPageContentProps {
 export default function CategoryPageContent({ category, products }: CategoryPageContentProps) {
     const categoryName = category.nome;
     const introText = getCategoryIntro(categoryName);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+
+    const handleQuickView = (product: Product) => {
+        setSelectedProduct(product);
+        setIsPurchaseModalOpen(true);
+    };
 
     return (
         <div className="container" style={{ padding: '20px 15px 60px' }}>
@@ -32,7 +43,7 @@ export default function CategoryPageContent({ category, products }: CategoryPage
                 products={products}
                 loading={false}
                 diasNovo={7}
-                onQuickView={() => {}}
+                onQuickView={handleQuickView}
                 hasMore={false}
                 loadingMore={false}
                 onLoadMore={() => {}}
@@ -46,6 +57,14 @@ export default function CategoryPageContent({ category, products }: CategoryPage
                     {getCategoryAboutText(categoryName)}
                 </div>
             </section>
+
+            {isPurchaseModalOpen && selectedProduct && (
+                <DirectPurchaseModal
+                    isOpen={isPurchaseModalOpen}
+                    onClose={() => setIsPurchaseModalOpen(false)}
+                    product={selectedProduct}
+                />
+            )}
         </div>
     );
 }

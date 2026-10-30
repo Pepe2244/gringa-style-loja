@@ -4,14 +4,17 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 export const dynamic = 'force-dynamic';
 
 function maskName(value: string | null) {
-    const firstName = value?.trim().split(/\s+/)[0];
-    return firstName ? `${firstName} ********` : '';
+    const parts = value?.trim().split(/\s+/).filter(Boolean) || [];
+    if (parts.length === 0) return '';
+    const firstName = parts[0];
+    const lastInitial = parts.length > 1 && parts[parts.length - 1]?.[0] ? ` ${parts[parts.length - 1][0]}.` : '';
+    return `${firstName}${lastInitial}`;
 }
 
 function maskPhone(value: string | null) {
     const digits = value?.replace(/\D/g, '') ?? '';
     if (digits.length < 10) return '';
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-****`;
+    return `(${digits.slice(0, 2)}) *****-**${digits.slice(-2)}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
         let raffleQuery = client.from('rifas').select('*');
         raffleQuery = rawId
             ? raffleQuery.eq('id', Number(rawId))
-            : raffleQuery.eq('status', 'ativa').limit(1);
+            : raffleQuery.eq('status', 'ativa').order('created_at', { ascending: false }).limit(1);
 
         const { data: raffle, error: raffleError } = rawId
             ? await raffleQuery.single()
@@ -39,14 +42,18 @@ export async function GET(request: NextRequest) {
             .eq('rifa_id', raffle.id);
         if (participantsError) throw participantsError;
 
-        let prizes: { vencedor_numero: number | null; vencedor_nome: string | null; vencedor_telefone: string | null }[] = [];
+        let prizes: { id: number; ordem: number | null; descricao: string | null; vencedor_numero: number | null; vencedor_nome: string | null; vencedor_telefone: string | null }[] = [];
         if (raffle.status === 'finalizada') {
             const { data, error } = await client
                 .from('premios')
-                .select('vencedor_numero, vencedor_nome, vencedor_telefone')
-                .eq('rifa_id', raffle.id);
+                .select('id, ordem, descricao, vencedor_numero, vencedor_nome, vencedor_telefone')
+                .eq('rifa_id', raffle.id)
+                .order('ordem', { ascending: true });
             if (error) throw error;
             prizes = (data || []).map((prize) => ({
+                id: prize.id,
+                ordem: prize.ordem,
+                descricao: prize.descricao,
                 vencedor_numero: prize.vencedor_numero,
                 vencedor_nome: maskName(prize.vencedor_nome),
                 vencedor_telefone: maskPhone(prize.vencedor_telefone)

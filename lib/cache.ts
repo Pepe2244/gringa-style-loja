@@ -30,7 +30,12 @@ export async function getCachedValue<T>(
 
     return await getCachedData();
   } catch (error) {
-    console.error(`Falha no cache distribuído para as keys [${keys.join(', ')}]:`, error);
-    throw error;
+    console.warn(`[Cache Fallback] Falha no cache distribuído para as keys [${keys.join(', ')}], executando fetcher direto:`, error);
+    try {
+      return await fetcher();
+    } catch (fetchError) {
+      console.error(`[Cache Fallback] Erro também no fetcher direto para as keys [${keys.join(', ')}]:`, fetchError);
+      throw fetchError;
+    }
   }
 }

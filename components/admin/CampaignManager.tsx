@@ -18,7 +18,7 @@ export default function CampaignManager() {
     const [nome, setNome] = useState('');
     const [aviso, setAviso] = useState('');
     const [corFundo, setCorFundo] = useState('#1A1A1A');
-    const [corTexto, setCorTexto] = useState('#1A1A1A');
+    const [corTexto, setCorTexto] = useState('#FFFFFF');
     const [corDestaque, setCorDestaque] = useState('#FFA500');
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerPreview, setBannerPreview] = useState('');
@@ -51,14 +51,14 @@ export default function CampaignManager() {
             setNome(campaign.nome_campanha || '');
             setAviso(campaign.aviso_deslizante_texto || '');
             setCorFundo(campaign.cor_fundo || '#1A1A1A');
-            setCorTexto(campaign.cor_texto || '#1A1A1A');
+            setCorTexto(campaign.cor_texto || '#FFFFFF');
             setCorDestaque(campaign.cor_destaque || '#FFA500');
             setBannerPreview(campaign.banner_url || '');
         } else {
             setNome('');
             setAviso('');
             setCorFundo('#1A1A1A');
-            setCorTexto('#1A1A1A');
+            setCorTexto('#FFFFFF');
             setCorDestaque('#FFA500');
             setBannerPreview('');
         }

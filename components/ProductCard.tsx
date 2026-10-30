@@ -1,9 +1,11 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/types';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
-import { buildStorageUrl } from '@/lib/site-config';
+import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { trackPurchaseIntent } from '@/utils/analytics';
 
@@ -174,8 +176,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             className="btn btn-avise-me"
                             onClick={() => {
                                 trackPurchaseIntent(product.id, productName, 'wishlist');
-                                const text = encodeURIComponent(`Olá, gostaria de ser avisado quando o produto *${productName}* estiver disponível novamente.`);
-                                window.open(`https://wa.me/5515998092548?text=${text}`, '_blank');
+                                window.open(buildWhatsAppUrl(`Olá, gostaria de ser avisado quando o produto *${productName}* estiver disponível novamente.`), '_blank');
                             }}
                             style={{ backgroundColor: '#555', color: 'white' }}
                         >

@@ -152,3 +152,12 @@ test('mask detection logic identifies welding masks regardless of casing and acc
     assert.equal(isMask('Boné Snapback 3D'), false);
     assert.equal(isMask('Camisa Streetwear'), false);
 });
+
+test('slug starting with numbers does not falsely match as numeric id', () => {
+    const isPureNumericId = (val: string) => /^\d+$/.test(val);
+    assert.equal(isPureNumericId('23'), true);
+    assert.equal(isPureNumericId('104'), true);
+    assert.equal(isPureNumericId('3m-mascara-de-solda'), false);
+    assert.equal(isPureNumericId('12-eletrodos-de-tungstenio'), false);
+    assert.equal(isPureNumericId('90-graus-esquadro'), false);
+});

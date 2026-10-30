@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { buildWhatsAppUrl } from '@/lib/site-config';
 
 export default function Error({
   error,
@@ -30,7 +31,7 @@ export default function Error({
           Tentar Novamente
         </button>
         <a 
-          href="https://wa.me/5515998092548?text=Olá, o site da Gringa Style apresentou um erro técnico." 
+          href={buildWhatsAppUrl('Olá, o site da Gringa Style apresentou um erro técnico.')} 
           target="_blank" 
           rel="noopener noreferrer"
           className="btn btn-secundario"

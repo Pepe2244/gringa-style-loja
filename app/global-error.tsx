@@ -9,6 +9,11 @@ export default function GlobalError({
 }) {
   return (
     <html lang="pt-BR">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Erro no Servidor - Gringa Style</title>
+      </head>
       <body style={{ backgroundColor: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif', margin: 0, padding: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center', padding: '1.25rem' }}>
           <h1 style={{ color: '#FF3333', fontSize: '4rem', margin: '0 0 1.25rem 0' }}>ERRO 500</h1>

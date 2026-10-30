@@ -40,14 +40,20 @@ export async function revalidateProductCache() {
         revalidatePath('/admin', 'layout');
 
         const productCanonicalUrls: string[] = [];
+        const categoryUrls: string[] = [];
 
-        // Revalidação pontual de cada produto individual
+        // Revalidação dinâmica de produtos e categorias
         try {
             const { createSupabaseAdminClient } = await import('@/lib/supabase-admin');
             const adminClient = createSupabaseAdminClient();
-            const { data: allProds } = await adminClient.from('produtos').select('id, nome, slug');
-            if (allProds) {
-                for (const p of allProds) {
+            
+            const [allProdsRes, allCatsRes] = await Promise.all([
+                adminClient.from('produtos').select('id, nome, slug'),
+                adminClient.from('categorias').select('id')
+            ]);
+
+            if (allProdsRes.data) {
+                for (const p of allProdsRes.data) {
                     const canonicalSlug = getCanonicalProductSlug(p);
                     revalidatePath(`/produto/${canonicalSlug}`, 'page');
                     if (p.slug && p.slug !== canonicalSlug) revalidatePath(`/produto/${p.slug}`, 'page');
@@ -55,8 +61,15 @@ export async function revalidateProductCache() {
                     productCanonicalUrls.push(`${siteConfig.appUrl}/produto/${canonicalSlug}`);
                 }
             }
+
+            if (allCatsRes.data) {
+                for (const cat of allCatsRes.data) {
+                    revalidatePath(`/categoria/${cat.id}`, 'page');
+                    categoryUrls.push(`${siteConfig.appUrl}/categoria/${cat.id}`);
+                }
+            }
         } catch (indErr) {
-            console.warn('[Cache] Revalidação individual de produtos ignorada:', indErr);
+            console.warn('[Cache] Revalidação individual de produtos/categorias ignorada:', indErr);
         }
 
         // Notificação IndexNow em segundo plano (não bloqueante e com cooldown anti-429)
@@ -69,11 +82,7 @@ export async function revalidateProductCache() {
             `${siteConfig.appUrl}/gs-servicos-industriais`,
             `${siteConfig.appUrl}/devolucao-e-reembolso`,
             `${siteConfig.appUrl}/privacidade`,
-            `${siteConfig.appUrl}/categoria/4`,
-            `${siteConfig.appUrl}/categoria/5`,
-            `${siteConfig.appUrl}/categoria/6`,
-            `${siteConfig.appUrl}/categoria/7`,
-            `${siteConfig.appUrl}/categoria/8`,
+            ...categoryUrls,
             ...productCanonicalUrls,
         ];
 

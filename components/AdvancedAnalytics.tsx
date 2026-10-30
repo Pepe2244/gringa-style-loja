@@ -77,33 +77,54 @@ export default function AdvancedAnalytics({
         initAnalytics();
     }, [gaTrackingId]);
 
-    // Rastreamento infalível de fim de sessão (Abandono de página)
+    // Rastreamento seguro de fim de sessão (Abandono de página / fechamento)
     useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'hidden' && sessionRef.current) {
-                const sessionData = sessionRef.current;
-                const payload = JSON.stringify({
-                    ...sessionData,
-                    endTime: Date.now(),
-                    duration: Date.now() - sessionData.startTime
-                });
+        let lastBeaconTime = 0;
 
-                // sendBeacon garante que o dado chegue ao servidor mesmo com a aba fechando
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon('/api/analytics/session', payload);
-                } else {
-                    fetch('/api/analytics/session', {
-                        method: 'POST',
-                        body: payload,
-                        keepalive: true, // Flag crucial de sobrevivência do request
-                        headers: { 'Content-Type': 'application/json' }
-                    }).catch(console.error);
-                }
+        const sendSessionBeacon = () => {
+            if (!sessionRef.current) return;
+            const now = Date.now();
+            // Evita disparos repetidos sucessivos em alternância rápida de abas (intervalo mínimo de 5s)
+            if (now - lastBeaconTime < 5000) return;
+            lastBeaconTime = now;
+
+            const sessionData = sessionRef.current;
+            const safeEvents = Array.isArray(sessionData.events)
+                ? sessionData.events.slice(-80)
+                : [];
+            const payload = JSON.stringify({
+                ...sessionData,
+                events: safeEvents,
+                endTime: now,
+                duration: Math.max(0, now - sessionData.startTime)
+            });
+
+            // sendBeacon garante que o dado chegue ao servidor mesmo com a aba fechando
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon('/api/analytics/session', payload);
+            } else {
+                fetch('/api/analytics/session', {
+                    method: 'POST',
+                    body: payload,
+                    keepalive: true, // Flag crucial de sobrevivência do request
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(console.error);
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                sendSessionBeacon();
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('pagehide', sendSessionBeacon);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('pagehide', sendSessionBeacon);
+        };
     }, []);
 
     const trackEvent = useCallback((event: Omit<AnalyticsEvent, 'timestamp'>) => {
@@ -119,10 +140,14 @@ export default function AdvancedAnalytics({
             });
         }
 
-        // Grava na sessão local
+        // Grava na sessão local (mantém no máximo os 80 eventos mais recentes)
         setSession(prev => {
             if (!prev) return null;
-            return { ...prev, events: [...prev.events, fullEvent] };
+            const updatedEvents = [...prev.events, fullEvent];
+            return {
+                ...prev,
+                events: updatedEvents.length > 80 ? updatedEvents.slice(-80) : updatedEvents
+            };
         });
     }, []);
 
@@ -187,33 +212,44 @@ export default function AdvancedAnalytics({
     useEffect(() => {
         if (!enableHeatmaps) return;
 
+        const reachedMilestones = new Set<number>();
         let scrollTimeout: NodeJS.Timeout;
+
         const handleScroll = () => {
             if (scrollTimeout) clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(() => {
-                const scrollDepth = Math.round(((window.scrollY + window.innerHeight) / document.documentElement.scrollHeight) * 100);
-                // Só registra se passou de marcos importantes (25%, 50%, 75%, 100%) para não floodar o banco
-                if ([25, 50, 75, 100].includes(Math.round(scrollDepth / 25) * 25)) {
-                    trackEvent({
-                        event: 'interaction',
-                        category: 'engagement',
-                        action: 'scroll',
-                        label: 'scroll_depth',
-                        value: scrollDepth
-                    });
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                if (totalHeight <= 0) return;
+                const scrollDepth = Math.round((window.scrollY / totalHeight) * 100);
+
+                const milestones = [25, 50, 75, 100];
+                for (const m of milestones) {
+                    if (scrollDepth >= m && !reachedMilestones.has(m)) {
+                        reachedMilestones.add(m);
+                        trackEvent({
+                            event: 'interaction',
+                            category: 'engagement',
+                            action: 'scroll',
+                            label: 'scroll_depth',
+                            value: m
+                        });
+                    }
                 }
-            }, 500);
+            }, 300);
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        return () => {
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+            window.removeEventListener('scroll', handleScroll);
+        };
     }, [enableHeatmaps, trackEvent]);
 
     return children ? <>{children}</> : null;
 }
 
 export function useAnalytics() {
-    const trackEvent = (event: Omit<AnalyticsEvent, 'timestamp'>) => {
+    const trackEvent = useCallback((event: Omit<AnalyticsEvent, 'timestamp'>) => {
         if (typeof window !== 'undefined') {
             if ((window as any).trackAnalyticsEvent) {
                 (window as any).trackAnalyticsEvent(event);
@@ -226,9 +262,9 @@ export function useAnalytics() {
                 });
             }
         }
-    };
+    }, []);
 
-    const trackConversion = (conversionType: string, value?: number, currency = 'BRL', transactionId?: string) => {
+    const trackConversion = useCallback((conversionType: string, value?: number, currency = 'BRL', transactionId?: string) => {
         trackEvent({
             event: 'conversion',
             category: 'ecommerce',
@@ -236,9 +272,9 @@ export function useAnalytics() {
             value,
             customParameters: { currency, transaction_id: transactionId }
         });
-    };
+    }, [trackEvent]);
 
-    const trackProductView = (productId: string, productName: string, category: string, price?: number) => {
+    const trackProductView = useCallback((productId: string, productName: string, category: string, price?: number) => {
         trackEvent({
             event: 'view_item',
             category: 'ecommerce',
@@ -249,9 +285,9 @@ export function useAnalytics() {
                 items: [{ item_id: productId, item_name: productName, item_category: category, price }]
             }
         });
-    };
+    }, [trackEvent]);
 
-    const trackAddToCart = (productId: string, productName: string, quantity: number, price: number) => {
+    const trackAddToCart = useCallback((productId: string, productName: string, quantity: number, price: number) => {
         trackEvent({
             event: 'add_to_cart',
             category: 'ecommerce',
@@ -263,7 +299,7 @@ export function useAnalytics() {
                 items: [{ item_id: productId, item_name: productName, price, quantity }]
             }
         });
-    };
+    }, [trackEvent]);
 
     return { trackEvent, trackConversion, trackProductView, trackAddToCart };
 }

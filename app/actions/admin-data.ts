@@ -81,6 +81,7 @@ function revalidateProducts(slug?: string, id?: number) {
             updateTag('loja');
             updateTag('categorias');
         }
+
     } catch (err) {
         console.error('Falha ao revalidar tags:', err);
     }
@@ -280,7 +281,10 @@ export async function setActiveCampaign(id: number | null) {
 export async function saveShopConfig(days: number) {
     return runAdmin(async (client) => {
         if (!Number.isSafeInteger(days) || days < 1 || days > 365) throw new Error('O período deve estar entre 1 e 365 dias.');
-        const { error } = await client.from('configuracoes').upsert({ chave: 'dias_novo', valor: String(days) });
+        const { error } = await client.from('configuracoes').upsert(
+            { chave: 'dias_novo', valor: String(days) },
+            { onConflict: 'chave' }
+        );
         if (error) throw error;
         revalidatePath('/loja', 'page');
     });
@@ -299,7 +303,8 @@ export async function saveCoupon(input: unknown, id?: number) {
         if (application === 'produto' && (!Array.isArray(applicableProducts) || applicableProducts.length > 100 || !applicableProducts.every((value) => Number.isSafeInteger(value) && value > 0))) {
             throw new Error('Produtos aplicáveis inválidos.');
         }
-        const payload = {
+        const parsedLimit = data.limite_uso == null ? null : numberValue(data.limite_uso, 'Limite de uso', 1, 1_000_000);
+        const payload: Record<string, unknown> = {
             codigo: code,
             tipo_desconto: discountType,
             valor_desconto: numberValue(data.valor_desconto, 'Valor do desconto', 0, discountType === 'percentual' ? 100 : 1_000_000),
@@ -307,18 +312,36 @@ export async function saveCoupon(input: unknown, id?: number) {
             produtos_aplicaveis: application === 'produto' ? applicableProducts : null,
             metodo_pagamento_restrito: data.metodo_pagamento_restrito == null ? null : text(data.metodo_pagamento_restrito, 'Método de pagamento', 30),
             data_validade: data.data_validade == null ? null : text(data.data_validade, 'Validade', 40),
-            limite_uso: data.limite_uso == null ? null : numberValue(data.limite_uso, 'Limite de uso', 1, 1_000_000)
+            limite_uso: parsedLimit,
+            limite_usos: parsedLimit,
         };
-        if (payload.metodo_pagamento_restrito !== null && !['pix', 'cartao_credito'].includes(payload.metodo_pagamento_restrito)) {
+        if (payload.metodo_pagamento_restrito !== null && !['pix', 'cartao_credito'].includes(payload.metodo_pagamento_restrito as string)) {
             throw new Error('Método de pagamento inválido.');
         }
-        if (payload.data_validade && !Number.isFinite(Date.parse(payload.data_validade))) {
+        if (payload.data_validade && !Number.isFinite(Date.parse(payload.data_validade as string))) {
             throw new Error('Data de validade inválida.');
         }
         const query = id
             ? client.from('cupons').update(payload).eq('id', positiveId(id))
             : client.from('cupons').insert(payload);
-        const { error } = await query;
+        let { error } = await query;
+
+        // Fallback gracioso caso colunas estendidas não existam no Supabase
+        if (error && (error.code === '42703' || error.message?.includes('does not exist'))) {
+            const legacyPayload: Record<string, unknown> = {
+                codigo: code,
+                tipo_desconto: discountType,
+                valor_desconto: payload.valor_desconto,
+                data_validade: payload.data_validade,
+                limite_usos: parsedLimit,
+            };
+            const fallbackQuery = id
+                ? client.from('cupons').update(legacyPayload).eq('id', positiveId(id))
+                : client.from('cupons').insert(legacyPayload);
+            const fallbackRes = await fallbackQuery;
+            error = fallbackRes.error;
+        }
+
         if (error) throw error;
     });
 }
@@ -371,7 +394,7 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
         const data = record(input);
         const section = text(data.section, 'Seção', 30);
         if (!['galeria', 'cliente', 'hero', 'projetos'].includes(section)) throw new Error('Seção inválida.');
-        const payload = {
+        const payload: Record<string, unknown> = {
             section,
             url: safeUrl(data.url, 'Imagem') as string,
             title: data.title == null ? null : text(data.title, 'Título', 200),
@@ -379,21 +402,43 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
         };
         if (replaceHero && section === 'hero' && !id) {
             const { error } = await client.from('b2b_assets').delete().eq('section', 'hero');
-            if (error) throw error;
+            if (error) console.warn('Erro ao substituir hero:', error.message);
         }
-        const query = id
-            ? client.from('b2b_assets').update(payload).eq('id', id)
+        const numId = id ? parseInt(id, 10) : NaN;
+        const validId = Number.isSafeInteger(numId) && numId > 0 ? numId : undefined;
+        const query = validId !== undefined
+            ? client.from('b2b_assets').update(payload).eq('id', validId)
             : client.from('b2b_assets').insert(payload);
-        const { error } = await query;
+        let { error } = await query;
+
+        // Fallback gracioso caso colunas do Supabase usem o schema alternativo (tipo, titulo, url, descricao)
+        if (error && (error.code === '42703' || error.message?.includes('does not exist'))) {
+            const legacyPayload: Record<string, unknown> = {
+                tipo: section,
+                url: payload.url,
+                titulo: payload.title || 'Mídia B2B',
+                descricao: payload.secondary_url || null,
+            };
+            const fallbackQuery = validId !== undefined
+                ? client.from('b2b_assets').update(legacyPayload).eq('id', validId)
+                : client.from('b2b_assets').insert(legacyPayload);
+            const fallbackRes = await fallbackQuery;
+            error = fallbackRes.error;
+        }
+
         if (error) throw error;
         revalidatePath('/gs-servicos-industriais', 'page');
     });
 }
 
-export async function deleteB2BAsset(id: string) {
+export async function deleteB2BAsset(id: string | number) {
     return runAdmin(async (client) => {
-        const assetId = text(id, 'Identificador da mídia', 100);
-        const { error } = await client.from('b2b_assets').delete().eq('id', assetId);
+        const strId = String(id).trim();
+        const numId = parseInt(strId, 10);
+        const query = Number.isSafeInteger(numId)
+            ? client.from('b2b_assets').delete().or(`id.eq.${strId},id.eq.${numId}`)
+            : client.from('b2b_assets').delete().eq('id', strId);
+        const { error } = await query;
         if (error) throw error;
         revalidatePath('/gs-servicos-industriais', 'page');
     });

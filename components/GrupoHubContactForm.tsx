@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { buildWhatsAppUrl } from '@/lib/site-config';
 
 export default function GrupoHubContactForm() {
   const lojaEmail = 'contato@gringastylebr.com.br';
@@ -25,7 +26,7 @@ export default function GrupoHubContactForm() {
     const deptoNome = departamento === 'loja' ? 'Loja Gringa Style (B2C)' : 'GS Serviços Industriais (B2B)';
     const mensagemTexto = `Olá! Meu nome é ${formData.nome}.\n\nDepartamento/Assunto: *${deptoNome}*\nEmpresa: ${formData.empresa || 'Não informado'}\nE-mail: ${formData.email}\nTelefone: ${formData.telefone}\nMensagem: ${formData.mensagem || 'Gostaria de mais informações.'}`;
 
-    const whatsappUrl = `https://wa.me/5515998092548?text=${encodeURIComponent(mensagemTexto)}`;
+    const whatsappUrl = buildWhatsAppUrl(mensagemTexto);
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 

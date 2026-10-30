@@ -74,21 +74,55 @@ function TrackingContent() {
             {rifa.status === 'finalizada' && (
                 <div style={{ background: 'rgba(255, 165, 0, 0.1)', border: '2px solid orange', padding: '20px', borderRadius: '10px', marginBottom: '30px', textAlign: 'center', maxWidth: '600px', margin: '0 auto 30px' }}>
                     <h2 style={{ color: 'orange', margin: '0 0 15px 0' }}>🏆 RIFA ENCERRADA E SORTEADA 🏆</h2>
-                    {premios.find(p => p.vencedor_numero === rifa.numero_vencedor) ? (() => {
-                        const vencedor = premios.find(p => p.vencedor_numero === rifa.numero_vencedor);
+                    {(() => {
                         const totalDigitos = String(rifa.total_numeros - 1).length;
-                        return (
-                            <div style={{ background: '#222', padding: '15px', borderRadius: '8px' }}>
-                                <p style={{ fontSize: '1.2rem', color: 'white', marginBottom: '10px' }}>
-                                    Número Sorteado: <br/><strong style={{ fontSize: '2.5rem', color: '#00ff88', letterSpacing: '2px' }}>{String(rifa.numero_vencedor).padStart(totalDigitos, '0')}</strong>
-                                </p>
-                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Ganhador: <strong style={{color: 'white'}}>{vencedor.vencedor_nome}</strong></p>
-                                <p style={{ color: '#ccc', margin: '5px 0', fontSize: '1.1rem' }}>Contato: <strong style={{color: 'white'}}>{vencedor.vencedor_telefone}</strong></p>
-                            </div>
-                        );
-                    })() : (
-                        <p style={{ color: 'white' }}>Nenhum vencedor atribuído no momento.</p>
-                    )}
+                        const vencedores = premios.filter(p => p.vencedor_numero !== null && p.vencedor_numero !== undefined);
+
+                        if (vencedores.length > 0) {
+                            return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    {vencedores.map((premio, idx) => (
+                                        <div key={premio.id || idx} style={{ background: '#222', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
+                                            {premio.descricao && (
+                                                <p style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1rem', margin: '0 0 8px 0' }}>
+                                                    {premio.ordem ? `${premio.ordem}º Prêmio: ` : ''}{premio.descricao}
+                                                </p>
+                                            )}
+                                            <p style={{ fontSize: '1.1rem', color: 'white', marginBottom: '8px' }}>
+                                                Número Sorteado: <br />
+                                                <strong style={{ fontSize: '2.2rem', color: '#00ff88', letterSpacing: '2px' }}>
+                                                    {String(premio.vencedor_numero).padStart(totalDigitos, '0')}
+                                                </strong>
+                                            </p>
+                                            <p style={{ color: '#ccc', margin: '4px 0', fontSize: '1.05rem' }}>
+                                                Ganhador: <strong style={{ color: 'white' }}>{premio.vencedor_nome || 'Não informado'}</strong>
+                                            </p>
+                                            {premio.vencedor_telefone && (
+                                                <p style={{ color: '#ccc', margin: '4px 0', fontSize: '1.05rem' }}>
+                                                    Contato: <strong style={{ color: 'white' }}>{premio.vencedor_telefone}</strong>
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        }
+
+                        if (rifa.numero_vencedor !== null && rifa.numero_vencedor !== undefined) {
+                            return (
+                                <div style={{ background: '#222', padding: '15px', borderRadius: '8px' }}>
+                                    <p style={{ fontSize: '1.2rem', color: 'white', marginBottom: '10px' }}>
+                                        Número Sorteado: <br />
+                                        <strong style={{ fontSize: '2.5rem', color: '#00ff88', letterSpacing: '2px' }}>
+                                            {String(rifa.numero_vencedor).padStart(totalDigitos, '0')}
+                                        </strong>
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        return <p style={{ color: 'white' }}>Nenhum vencedor atribuído no momento.</p>;
+                    })()}
                 </div>
             )}
 

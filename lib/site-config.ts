@@ -13,11 +13,16 @@ export const siteConfig = {
   },
   analytics: {
     gaId: process.env.NEXT_PUBLIC_GA_ID || 'G-2L2F9CY9JN',
-    ahrefsKey: process.env.AHREFS_KEY || 'Sam0BvC3Nm1qohD+XzVeLA',
+    ahrefsKey: process.env.AHREFS_KEY || process.env.NEXT_PUBLIC_AHREFS_KEY || '',
     clarityId: process.env.NEXT_PUBLIC_CLARITY_ID || 'ymagctc0fi',
   },
   content: {
     revalidateSeconds: Number(process.env.NEXT_PUBLIC_REVALIDATE_SECONDS || 60),
+  },
+  contact: {
+    whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5515998092548',
+    whatsappFormatted: '(15) 99809-2548',
+    email: 'contato@gringastylebr.com.br',
   },
 };
 
@@ -55,3 +60,19 @@ export function buildStorageUrl(path: string) {
 export function getAnalyticsConfig() {
   return siteConfig.analytics;
 }
+
+export function getWhatsAppNumber() {
+  return siteConfig.contact.whatsapp;
+}
+
+export function getWhatsAppFormatted() {
+  return siteConfig.contact.whatsappFormatted;
+}
+
+export function buildWhatsAppUrl(message?: string) {
+  const number = siteConfig.contact.whatsapp;
+  return message
+    ? `https://wa.me/${number}?text=${encodeURIComponent(message)}`
+    : `https://wa.me/${number}`;
+}
+

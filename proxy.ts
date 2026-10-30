@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
-
 // ==========================================
 // 1. CONFIGURAÇÕES DE FIREWALL (EDGE)
 // ==========================================
@@ -33,8 +32,8 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
     '/api/validate-coupon': { maxRequests: 20, windowMs: 60 * 60 * 1000 },
     '/api/produtos': { maxRequests: 100, windowMs: 60 * 1000 },
     '/api/calculate-total': { maxRequests: 50, windowMs: 60 * 1000 },
-    '/api/recommendations': { maxRequests: 60, windowMs: 60 * 1000 },
     '/api/analytics/session': { maxRequests: 60, windowMs: 60 * 1000 },
+    '/api/push/subscribe': { maxRequests: 10, windowMs: 10 * 60 * 1000 },
     '/api/shipping': { maxRequests: 30, windowMs: 60 * 1000 },
     'default': { maxRequests: 1000, windowMs: 60 * 60 * 1000 }
 };
@@ -139,9 +138,9 @@ function localRateLimit(key: string, config: { maxRequests: number; windowMs: nu
 }
 
 // ==========================================
-// 3. FUNÇÃO PRINCIPAL EXPORTADA COMO MIDDLEWARE
+// 3. FUNÇÃO PRINCIPAL EXPORTADA COMO PROXY
 // ==========================================
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || '';
     const pathname = request.nextUrl.pathname;
     const method = request.method;
@@ -172,6 +171,11 @@ export default async function middleware(request: NextRequest) {
     }
 
     // --- ETAPA 1: FIREWALL (Bloqueio de Bots e Paths Maliciosos) ---
+    const isMaliciousPath = MALICIOUS_PATHS.some(path => pathname.includes(path));
+    if (isMaliciousPath) {
+        return new NextResponse('Edge Firewall Blocked Request', { status: 403 });
+    }
+
     const isVerificationOrPublicFeed =
         pathname === '/robots.txt' ||
         pathname === '/sitemap.xml' ||
@@ -182,13 +186,20 @@ export default async function middleware(request: NextRequest) {
         pathname === '/api/meta-feed' ||
         pathname === '/api/pinterest-feed';
 
-    const isMaliciousPath = MALICIOUS_PATHS.some(path => pathname.includes(path));
     const isBadBot = Boolean(userAgent && BLOCKED_BOTS.some(bot =>
         userAgent.toLowerCase().includes(bot.toLowerCase())
     ));
 
-    if (!isVerificationOrPublicFeed && (isBadBot || isMaliciousPath)) {
+    if (isBadBot && !isVerificationOrPublicFeed) {
         return new NextResponse('Edge Firewall Blocked Request', { status: 403 });
+    }
+
+    // --- ETAPA 1.5: PROTEÇÃO DE ROTAS ADMINISTRATIVAS NO EDGE ---
+    if (pathname.startsWith('/api/admin') && pathname !== '/api/admin/login' && pathname !== '/api/admin/auth') {
+        const sessionCookie = request.cookies.get('admin_session')?.value;
+        if (!sessionCookie) {
+            return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+        }
     }
 
     if (pathname === '/api/upload' && method === 'POST') {
@@ -198,7 +209,7 @@ export default async function middleware(request: NextRequest) {
         }
     }
 
-    if (method === 'POST' && ['/api/calculate-total', '/api/validate-coupon', '/api/recommendations'].includes(pathname)) {
+    if (method === 'POST' && ['/api/calculate-total', '/api/validate-coupon', '/api/push/subscribe'].includes(pathname)) {
         const contentLength = Number(request.headers.get('content-length'));
         if (Number.isFinite(contentLength) && contentLength > 64 * 1024) {
             return NextResponse.json({ error: 'A requisição excede o tamanho máximo permitido.' }, { status: 413 });
@@ -262,10 +273,11 @@ export default async function middleware(request: NextRequest) {
     return response;
 }
 
-export { middleware };
+export { proxy };
 
 export const config = {
     matcher: [
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|webmanifest)$).*)',
     ],
 };
+

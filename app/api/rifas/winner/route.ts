@@ -4,14 +4,17 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 export const dynamic = 'force-dynamic';
 
 function maskName(value: string | null) {
-    const firstName = value?.trim().split(/\s+/)[0];
-    return firstName ? `${firstName} ********` : '';
+    const parts = value?.trim().split(/\s+/).filter(Boolean) || [];
+    if (parts.length === 0) return '';
+    const firstName = parts[0];
+    const lastInitial = parts.length > 1 && parts[parts.length - 1]?.[0] ? ` ${parts[parts.length - 1][0]}.` : '';
+    return `${firstName}${lastInitial}`;
 }
 
 function maskPhone(value: string | null) {
     const digits = value?.replace(/\D/g, '') ?? '';
     if (digits.length < 10) return '';
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-****`;
+    return `(${digits.slice(0, 2)}) *****-**${digits.slice(-2)}`;
 }
 
 export async function GET(request: NextRequest) {

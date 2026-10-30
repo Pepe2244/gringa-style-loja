@@ -1,7 +1,8 @@
 {
-  "name": "temp_app",
+  "name": "gringa-style-loja",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/build.cjs",
@@ -40,6 +41,7 @@
     "eslint-config-next": "16.0.5",
     "eslint-config-prettier": "^9.0.0",
     "prettier": "^3.0.0",
+    "sharp": "^0.33.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.151.1"

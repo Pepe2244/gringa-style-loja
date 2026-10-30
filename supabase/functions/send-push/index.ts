@@ -11,7 +11,23 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // 1. INICIALIZAÇÃO DO ADMIN (O que faltava no teu código)
+    // 0. AUTENTICAÇÃO E AUTORIZAÇÃO (Bloqueia chamadas anônimas públicas)
+    const authHeader = req.headers.get('authorization') || '';
+    const secretHeader = req.headers.get('x-webhook-secret') || '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const expectedSecret = Deno.env.get('PUSH_WEBHOOK_SECRET') ?? '';
+
+    const isServiceRole = serviceKey && authHeader.replace(/^Bearer\s+/i, '') === serviceKey;
+    const isWebhookSecretValid = expectedSecret && secretHeader === expectedSecret;
+
+    if (!isServiceRole && !isWebhookSecretValid) {
+      return new Response(JSON.stringify({ error: 'Não autorizado.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    // 1. INICIALIZAÇÃO DO ADMIN
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -39,44 +55,63 @@ serve(async (req) => {
 
     if (subError) throw subError
 
-    const results = await Promise.all(subs.map(async (sub) => {
-      const pushConfig = {
-        endpoint: sub.endpoint,
-        keys: {
-          auth: sub.auth,
-          p256dh: sub.p256dh
-        }
-      }
+    const allSubs = subs || []
+    const results: Array<{ success: boolean; error?: string }> = []
+    const BATCH_SIZE = 50
 
-      try {
-        await webpush.sendNotification(pushConfig, JSON.stringify({
-          title: record.titulo,
-          body: record.mensagem,
-          url: record.link_url
-        }))
-        return { success: true }
-      } catch (err) {
-        console.error(`Falha ao enviar para ${sub.endpoint}:`, err)
-        // Se a inscrição expirou, removemos do banco para manter o Growth limpo
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          await supabaseAdmin.from('push_subscriptions').delete().eq('id', sub.id)
+    for (let i = 0; i < allSubs.length; i += BATCH_SIZE) {
+      const batch = allSubs.slice(i, i + BATCH_SIZE)
+      const batchResults = await Promise.all(batch.map(async (sub) => {
+        const pushConfig = {
+          endpoint: sub.endpoint,
+          keys: {
+            auth: sub.auth,
+            p256dh: sub.p256dh
+          }
         }
-        return { success: false, error: err.message }
-      }
-    }))
+
+        try {
+          await webpush.sendNotification(pushConfig, JSON.stringify({
+            titulo: record.titulo || record.title || "Gringa Style",
+            mensagem: record.mensagem || record.body || "Nova atualização disponível!",
+            link: record.link_url || record.url || record.link || "/",
+            title: record.titulo || record.title || "Gringa Style",
+            body: record.mensagem || record.body || "Nova atualização disponível!",
+            url: record.link_url || record.url || record.link || "/"
+          }))
+          return { success: true }
+        } catch (err: any) {
+          console.error(`Falha ao enviar para ${sub.endpoint}:`, err)
+          // Se a inscrição expirou (410 Gone / 404 Not Found), removemos do banco para manter o Growth limpo
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await supabaseAdmin.from('push_subscriptions').delete().eq('id', sub.id)
+          }
+          return { success: false, error: err.message }
+        }
+      }))
+      results.push(...batchResults)
+    }
 
     // 5. ATUALIZAÇÃO DO STATUS NA FILA
-    const hasError = results.some(r => !r.success)
+    const successCount = results.filter(r => r.success).length
+    const failureCount = results.length - successCount
+    const finalStatus = (allSubs.length === 0 || successCount > 0) ? 'enviada' : 'falha'
+
     await supabaseAdmin
       .from('notificacoes_push_queue')
       .update({ 
-        status: hasError ? 'erro' : 'enviado',
+        status: finalStatus,
         enviado_em: new Date().toISOString(),
-        erro_log: hasError ? JSON.stringify(results.filter(r => !r.success)) : null
+        erro_log: failureCount > 0 ? JSON.stringify(results.filter(r => !r.success)) : null
       })
       .eq('id', record.id)
 
-    return new Response(JSON.stringify({ status: 'processado', total: subs.length }), {
+    return new Response(JSON.stringify({ 
+      status: 'processado', 
+      total: allSubs.length, 
+      sucessos: successCount, 
+      falhas: failureCount 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

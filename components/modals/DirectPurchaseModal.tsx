@@ -1,10 +1,13 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
 import Image from 'next/image';
-import { buildStorageUrl } from '@/lib/site-config';
+import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
+import { getUnitPrice } from '@/lib/checkout-pricing';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -76,13 +79,16 @@ export default function DirectPurchaseModal({
     if (!product) return null;
 
     const getPrecoFinal = (p: Product) => {
-        if (paymentMethod === 'PIX' && p.preco_pix && p.preco_pix > 0) {
-            return p.preco_pix;
-        }
-        if (p.preco_promocional && p.preco_promocional < p.preco) {
-            return p.preco_promocional;
-        }
-        return p.preco;
+        return getUnitPrice(
+            {
+                id: p.id,
+                preco: p.preco,
+                preco_promocional: p.preco_promocional,
+                preco_pix: p.preco_pix,
+                em_estoque: p.em_estoque,
+            },
+            paymentMethod === 'PIX' ? 'pix' : 'cartao_credito'
+        );
     };
 
     const calcularFrete = async (postalCode: string, selectedCountry: string) => {
@@ -117,6 +123,11 @@ export default function DirectPurchaseModal({
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 8) value = value.slice(0, 8);
             setCep(value);
+
+            if (value.length < 8) {
+                setShippingOptions([]);
+                setSelectedShipping(null);
+            }
 
             if (value.length === 8) {
                 setLoadingCep(true);
@@ -282,7 +293,7 @@ export default function DirectPurchaseModal({
             }
             message += `Aguardo as instruções finais!`;
 
-            const whatsappUrl = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+            const whatsappUrl = buildWhatsAppUrl(message);
             if (checkoutWindow && !checkoutWindow.closed) {
                 checkoutWindow.location.href = whatsappUrl;
             } else {
@@ -380,6 +391,7 @@ export default function DirectPurchaseModal({
                             setCountry(e.target.value);
                             setCep('');
                             setShippingOptions([]);
+                            setSelectedShipping(null);
                             setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
                         }}
                         className="select-pagamento"

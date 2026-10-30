@@ -6,22 +6,32 @@ import { unstable_cache } from 'next/cache';
 // Em vez de demorar 200ms para cada utilizador, vai demorar 0ms (leitura da memória).
 const getCachedCampaign = unstable_cache(
     async () => {
-        const { data: config } = await supabase
-            .from('configuracoes_site')
-            .select('campanha_ativa_id')
-            .limit(1)
-            .maybeSingle();
+        try {
+            const { data: config, error: configError } = await supabase
+                .from('configuracoes_site')
+                .select('campanha_ativa_id')
+                .limit(1)
+                .maybeSingle();
 
-        if (config && config.campanha_ativa_id) {
-            const { data: camp } = await supabase
+            if (configError || !config || !config.campanha_ativa_id) {
+                return null;
+            }
+
+            const { data: camp, error: campError } = await supabase
                 .from('campanhas')
                 .select('*')
                 .eq('id', config.campanha_ativa_id)
-                .single();
+                .maybeSingle();
+
+            if (campError || !camp) {
+                return null;
+            }
 
             return camp;
+        } catch (err) {
+            console.error('[CampaignBannerServer] Falha ao carregar campanha ativa:', err);
+            return null;
         }
-        return null;
     },
     ['active-campaign-banner'], // A chave única desta cache
     { 

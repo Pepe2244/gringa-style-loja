@@ -6,7 +6,7 @@ import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { useToast } from '@/context/ToastContext';
-import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import StickyCTA from './StickyCTA';
 import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
@@ -20,7 +20,7 @@ import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import { PaymentMethods } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import { useAnalytics } from '@/components/AdvancedAnalytics'; 
-import { buildStorageUrl } from '@/lib/site-config';
+import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -29,6 +29,13 @@ const resolveOriginalUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('http') || path.startsWith('/')) return getProxiedImageUrl(path);
     return buildStorageUrl(path);
+};
+
+const isVideoMedia = (path: string | null | undefined): boolean => {
+    if (!path || typeof path !== 'string') return false;
+    const lower = path.toLowerCase();
+    return lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov') || lower.includes('.mp4?') || lower.includes('.webm?') || lower.includes('/video/');
+
 };
 
 interface ProductPageContentProps {
@@ -55,7 +62,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     const thumbnailsRef = useRef<HTMLDivElement | null>(null);
 
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState('PIX');
+
 
     const setupProductState = useCallback((data: Product) => {
         const variants = data.variants as unknown as ProductVariant | null;
@@ -158,7 +165,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
             return;
         }
 
-        const price = getDisplayedPrice(product, paymentMethod);
+        const price = getDisplayedPrice(product, 'pix');
 
         trackAddToCart(String(product.id), product.nome, 1, price);
 
@@ -254,18 +261,24 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
 
     const mediaUrls = product.media_urls || product.imagens || [];
     const currentMedia = mediaUrls[currentImageIndex];
-    const isVideo = currentMedia?.includes('.mp4') || currentMedia?.includes('.webm') || !!product.video;
-    const videoUrl = product.video || (isVideo ? currentMedia : null);
+    const isCurrentMediaVideo = isVideoMedia(currentMedia) || (currentImageIndex === 0 && !!product.video);
+    const currentVideoUrl = (currentImageIndex === 0 && product.video) ? resolveOriginalUrl(product.video) : (currentMedia ? resolveOriginalUrl(currentMedia) : '');
+    const videoUrl = currentVideoUrl;
     const variants = product.variants as unknown as ProductVariant | null;
     const fallbackImage = '/imagens/logo_gringa_style.png';
 
     const MAX_DESC_LENGTH = 150;
     const isLongDescription = product.descricao && product.descricao.length > MAX_DESC_LENGTH;
 
-    const displayedPrice = getDisplayedPrice(product, paymentMethod);
-    const isPromo = displayedPrice < product.preco;
-    const descontoPercentual = isPromo 
-        ? Math.round(((product.preco - displayedPrice) / product.preco) * 100) 
+    const cardPrice = (product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < product.preco)
+        ? product.preco_promocional
+        : product.preco;
+    const hasPixDiscount = Boolean(product.preco_pix && product.preco_pix > 0 && product.preco_pix < cardPrice);
+    const pixPrice = hasPixDiscount ? product.preco_pix! : cardPrice;
+    const isPromo = cardPrice < product.preco;
+    const bestPrice = hasPixDiscount ? pixPrice : cardPrice;
+    const descontoPercentual = bestPrice < product.preco
+        ? Math.round(((product.preco - bestPrice) / product.preco) * 100)
         : 0;
 
     return (
@@ -309,8 +322,8 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                             <WishlistButton product={product} variant="icon" size="md" />
                         </div>
 
-                        {videoUrl && currentImageIndex === 0 && product.video ? (
-                            <video src={videoUrl} controls muted loop className="video-principal" />
+                        {isCurrentMediaVideo && currentVideoUrl ? (
+                            <video src={currentVideoUrl} controls muted loop playsInline className="video-principal" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
                             <div className="container-imagem-zoom">
                                 <Image
@@ -402,6 +415,31 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
 
                             <div className="produto-miniaturas" ref={thumbnailsRef}>
                                 {mediaUrls.map((url, idx) => {
+                                    const isThumbVideo = isVideoMedia(url) || (idx === 0 && !!product.video);
+                                    if (isThumbVideo) {
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
+                                                onClick={() => setCurrentImageIndex(idx)}
+                                                style={{
+                                                    width: 80,
+                                                    height: 80,
+                                                    backgroundColor: '#1a1a1a',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    borderRadius: '6px',
+                                                    overflow: 'hidden',
+                                                    cursor: 'pointer',
+                                                    border: idx === currentImageIndex ? '2px solid var(--cor-destaque)' : '1px solid #333'
+                                                }}
+                                                aria-label="Vídeo do produto"
+                                            >
+                                                <Play size={24} style={{ color: 'var(--cor-destaque)' }} />
+                                            </div>
+                                        );
+                                    }
                                     const originalSrc = resolveOriginalUrl(url) || fallbackImage;
                                     return (
                                         <Image
@@ -488,31 +526,47 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                     </div>
 
                     <div className="produto-detalhe-preco" style={{ margin: '10px 0 25px 0' }}>
-                        {isPromo ? (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span className="preco-antigo" style={{ fontSize: '1.1rem', color: '#888', textDecoration: 'line-through' }}>
-                                    De R$ {product.preco.toFixed(2).replace('.', ',')}
-                                </span>
-                                <span className="preco-novo" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
-                                    R$ {displayedPrice.toFixed(2).replace('.', ',')}
-                                </span>
-                            </div>
+                        {hasPixDiscount ? (
+                            <>
+                                {isPromo && (
+                                    <span className="preco-antigo" style={{ fontSize: '1.1rem', color: '#888', textDecoration: 'line-through', display: 'block', marginBottom: '2px' }}>
+                                        De R$ {product.preco.toFixed(2).replace('.', ',')}
+                                    </span>
+                                )}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+                                    <span className="preco-novo" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
+                                        R$ {pixPrice.toFixed(2).replace('.', ',')}
+                                    </span>
+                                    <span style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
+                                        no PIX
+                                    </span>
+                                </div>
+                                <p style={{ fontSize: '0.95rem', color: '#ccc', marginTop: '8px' }}>
+                                    ou <strong style={{ color: '#fff' }}>R$ {cardPrice.toFixed(2).replace('.', ',')}</strong> em até 12x de <strong style={{ color: '#fff' }}>R$ {(cardPrice / 12).toFixed(2).replace('.', ',')}</strong> sem juros no cartão
+                                </p>
+                            </>
                         ) : (
-                            <span className="preco-normal" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
-                                R$ {displayedPrice.toFixed(2).replace('.', ',')}
-                            </span>
-                        )}
-                        {paymentMethod === 'PIX' && product.preco_pix && product.preco_pix > 0 ? (
-                            <p style={{ marginTop: '8px', color: '#fff', fontSize: '0.95rem', fontWeight: '700' }}>
-                                Preço PIX
-                            </p>
-                        ) : (
-                            <p style={{ marginTop: '8px', color: '#aaa', fontSize: '0.95rem' }}>
-                                Pagamento padrão
-                            </p>
+                            <>
+                                {isPromo ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span className="preco-antigo" style={{ fontSize: '1.1rem', color: '#888', textDecoration: 'line-through' }}>
+                                            De R$ {product.preco.toFixed(2).replace('.', ',')}
+                                        </span>
+                                        <span className="preco-novo" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
+                                            R$ {cardPrice.toFixed(2).replace('.', ',')}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="preco-normal" style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff' }}>
+                                        R$ {cardPrice.toFixed(2).replace('.', ',')}
+                                    </span>
+                                )}
+                                <p style={{ fontSize: '0.95rem', color: '#ccc', marginTop: '8px' }}>
+                                    em até 12x de <strong style={{ color: '#fff' }}>R$ {(cardPrice / 12).toFixed(2).replace('.', ',')}</strong> sem juros no cartão
+                                </p>
+                            </>
                         )}
                         <PaymentMethods showLabel={true} compact={false} />
-                        <p style={{ fontSize: '0.9rem', color: '#aaa', marginTop: '5px' }}>💳 12x sem juros no cartão</p>
                     </div>
 
                     {variants && variants.opcoes && (
@@ -546,7 +600,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                         ) : (
                             <button
                                 className="btn btn-avise-me"
-                                onClick={() => window.open(`https://wa.me/5515998092548?text=Olá, gostaria de ser avisado quando o produto *${product.nome}* estiver disponível novamente.`, '_blank')}
+                                onClick={() => window.open(buildWhatsAppUrl(`Olá, gostaria de ser avisado quando o produto *${product.nome}* estiver disponível novamente.`), '_blank')}
                                 style={{ backgroundColor: '#444', color: 'white', width: '100%', padding: '18px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem' }}
                             >
                                 Avise-me quando chegar

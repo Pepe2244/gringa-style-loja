@@ -69,7 +69,8 @@ function SearchPageContent() {
         try {
             let queryBuilder = supabase
                 .from('produtos')
-                .select('*');
+                .select('id, nome, preco, preco_promocional, preco_pix, descricao, imagens, media_urls, em_estoque, categoria_id, created_at, tags, slug, variants')
+                .limit(1000);
 
             // Aplicar filtro de categoria
             if (selectedCategory) {
@@ -86,87 +87,52 @@ function SearchPageContent() {
                 queryBuilder = queryBuilder.not('preco_promocional', 'is', null);
             }
 
-            // Se NÃO houver termo de busca, faz a paginação diretamente no banco
-            if (!query.trim()) {
-                if (priceRange[0] > 0 || priceRange[1] < 10000) {
-                    queryBuilder = queryBuilder.or(
-                        `and(preco_promocional.not.is.null,preco_promocional.gte.${priceRange[0]},preco_promocional.lte.${priceRange[1]}),and(preco_promocional.is.null,preco.gte.${priceRange[0]},preco.lte.${priceRange[1]})`
-                    );
-                }
-
-                if (sortType === 'menor-preco') {
-                    queryBuilder = queryBuilder.order('preco_promocional', { ascending: true, nullsFirst: false })
-                        .order('preco', { ascending: true });
-                } else if (sortType === 'maior-preco') {
-                    queryBuilder = queryBuilder.order('preco_promocional', { ascending: false, nullsFirst: false })
-                        .order('preco', { ascending: false });
-                } else if (sortType === 'az') {
-                    queryBuilder = queryBuilder.order('nome', { ascending: true });
-                } else if (sortType === 'za') {
-                    queryBuilder = queryBuilder.order('nome', { ascending: false });
-                } else {
-                    queryBuilder = queryBuilder.order('created_at', { ascending: false });
-                }
-
-                queryBuilder = queryBuilder.range(pageNum * PRODUCTS_PER_PAGE, (pageNum + 1) * PRODUCTS_PER_PAGE - 1);
-                const { data, error } = await queryBuilder;
-                if (error) throw error;
-
-                if (data) {
-                    if (isLoadMore) {
-                        setProducts(prev => [...prev, ...data]);
-                    } else {
-                        setProducts(data);
-                    }
-                    setHasMore(data.length === PRODUCTS_PER_PAGE);
-                } else {
-                    if (!isLoadMore) setProducts([]);
-                    setHasMore(false);
-                }
-                return;
-            }
-
-            // Se houver query, busca produtos ativos e aplica busca inteligente (accent-folding e tokenização)
+            // Busca produtos com filtros estruturais (categoria, estoque, promoção)
             const { data, error } = await queryBuilder;
             if (error) throw error;
 
-            let resultList: Product[] = data || [];
+            let resultList: Product[] = (data as unknown as Product[]) || [];
 
-            const termNorm = normalizeString(query);
-            const stopWords = ['de', 'da', 'do', 'e', 'para', 'com', 'em', 'um', 'uma', 'os', 'as'];
-            const tokens = termNorm
-                .split(/\s+/)
-                .filter(t => t.length > 0 && !stopWords.includes(t));
+            // Se houver query, aplica busca inteligente (accent-folding e tokenização)
+            if (query.trim()) {
+                const termNorm = normalizeString(query);
+                const stopWords = ['de', 'da', 'do', 'e', 'para', 'com', 'em', 'um', 'uma', 'os', 'as'];
+                const tokens = termNorm
+                    .split(/\s+/)
+                    .filter(t => t.length > 0 && !stopWords.includes(t));
 
-            resultList = resultList.filter(product => {
-                const nome = normalizeString(product.nome);
-                const desc = normalizeString(product.descricao);
-                const tags = Array.isArray(product.tags) ? product.tags.map(normalizeString).join(' ') : '';
-                const combined = `${nome} ${desc} ${tags}`;
+                resultList = resultList.filter(product => {
+                    const nome = normalizeString(product.nome);
+                    const desc = normalizeString(product.descricao);
+                    const tags = Array.isArray(product.tags) ? product.tags.map(normalizeString).join(' ') : '';
+                    const combined = `${nome} ${desc} ${tags}`;
 
-                if (combined.includes(termNorm)) return true;
-                return tokens.length > 0 && tokens.every(token => combined.includes(token));
-            });
+                    if (combined.includes(termNorm)) return true;
+                    return tokens.length > 0 && tokens.every(token => combined.includes(token));
+                });
+            }
 
-            // Filtro de faixa de preço em memória para resultados de busca
+            // Filtro de faixa de preço determinístico por preço efetivo
             if (priceRange[0] > 0 || priceRange[1] < 10000) {
                 resultList = resultList.filter(p => {
-                    const price = p.preco_promocional && p.preco_promocional < p.preco ? p.preco_promocional : p.preco;
+                    const price = p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco 
+                        ? p.preco_promocional 
+                        : p.preco;
                     return price >= priceRange[0] && price <= priceRange[1];
                 });
             }
 
-            // Ordenação em memória para resultados de busca
+            // Ordenação determinística por preço efetivo / relevância
             if (sortType === 'menor-preco') {
                 resultList.sort((a, b) => {
-                    const pa = a.preco_promocional && a.preco_promocional < a.preco ? a.preco_promocional : a.preco;
-                    const pb = b.preco_promocional && b.preco_promocional < b.preco ? b.preco_promocional : b.preco;
+                    const pa = a.preco_promocional && a.preco_promocional > 0 && a.preco_promocional < a.preco ? a.preco_promocional : a.preco;
+                    const pb = b.preco_promocional && b.preco_promocional > 0 && b.preco_promocional < b.preco ? b.preco_promocional : b.preco;
                     return pa - pb;
                 });
             } else if (sortType === 'maior-preco') {
                 resultList.sort((a, b) => {
-                    const pa = a.preco_promocional && a.preco_promocional < a.preco ? a.preco_promocional : a.preco;
-                    const pb = b.preco_promocional && b.preco_promocional < b.preco ? b.preco_promocional : b.preco;
+                    const pa = a.preco_promocional && a.preco_promocional > 0 && a.preco_promocional < a.preco ? a.preco_promocional : a.preco;
+                    const pb = b.preco_promocional && b.preco_promocional > 0 && b.preco_promocional < b.preco ? b.preco_promocional : b.preco;
                     return pb - pa;
                 });
             } else if (sortType === 'az') {
@@ -183,7 +149,7 @@ function SearchPageContent() {
             setProducts(pagedSlice);
             setHasMore(resultList.length > visibleCount);
 
-            if (!isLoadMore && pageNum === 0) {
+            if (!isLoadMore && pageNum === 0 && query.trim()) {
                 trackSearchQuery(query, resultList.length);
             }
         } catch (error) {
@@ -260,17 +226,19 @@ function SearchPageContent() {
         return p.preco_promocional;
     };
 
-    // Filtro local adicional (fallback para busca por texto)
+    // Filtro local adicional com suporte a múltiplos termos
     const filteredProducts = products.filter(product => {
         if (!searchTerm.trim()) return true;
 
         const term = normalizeString(searchTerm);
-        const matchSearch =
-            normalizeString(product.nome).includes(term) ||
-            normalizeString(product.descricao).includes(term) ||
-            (product.tags && normalizeString(product.tags.join(' ')).includes(term));
+        const nome = normalizeString(product.nome);
+        const desc = normalizeString(product.descricao);
+        const tags = Array.isArray(product.tags) ? product.tags.map(normalizeString).join(' ') : '';
+        const combined = `${nome} ${desc} ${tags}`;
 
-        return matchSearch;
+        if (combined.includes(term)) return true;
+        const tokens = term.split(/\s+/).filter(t => t.length > 0 && !['de', 'da', 'do', 'e', 'para', 'com'].includes(t));
+        return tokens.length > 0 && tokens.every(token => combined.includes(token));
     });
 
     return (
@@ -285,6 +253,24 @@ function SearchPageContent() {
                     Resultados para &quot;{query}&quot;
                 </h1>
 
+                <ProductFilters
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    selectedCategory={selectedCategory}
+                    setSelectedCategory={setSelectedCategory}
+                    sortType={sortType}
+                    setSortType={setSortType}
+                    categories={categories}
+                    priceRange={priceRange}
+                    setPriceRange={setPriceRange}
+                    inStockOnly={inStockOnly}
+                    setInStockOnly={setInStockOnly}
+                    hasDiscountOnly={hasDiscountOnly}
+                    setHasDiscountOnly={setHasDiscountOnly}
+                    minRating={minRating}
+                    setMinRating={setMinRating}
+                />
+
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
                         <p>Buscando produtos...</p>
@@ -295,12 +281,27 @@ function SearchPageContent() {
                         padding: '60px 20px',
                         background: '#111',
                         borderRadius: '10px',
-                        border: '1px solid #222'
+                        border: '1px solid #222',
+                        marginTop: '30px'
                     }}>
                         <h2 style={{ color: '#888', marginBottom: '15px' }}>Nenhum produto encontrado</h2>
                         <p style={{ color: '#666', marginBottom: '20px' }}>
-                            Tente refinar sua busca ou navegue por categorias
+                            Tente refinar sua busca ou ajuste os filtros acima
                         </p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSearchTerm('');
+                                setSelectedCategory(null);
+                                setPriceRange([0, 10000]);
+                                setInStockOnly(false);
+                                setHasDiscountOnly(false);
+                            }}
+                            className="btn btn-secundario"
+                            style={{ display: 'inline-block', padding: '10px 20px', margin: '0 5px' }}
+                        >
+                            Limpar Filtros
+                        </button>
                         <Link
                             href="/loja"
                             style={{
@@ -309,32 +310,16 @@ function SearchPageContent() {
                                 background: 'var(--cor-destaque)',
                                 color: 'black',
                                 textDecoration: 'none',
-                                borderRadius: '6px',
-                                fontWeight: 'bold'
+                                borderRadius: '999px',
+                                fontWeight: 'bold',
+                                margin: '0 5px'
                             }}
                         >
-                            Voltar para Home
+                            Ver Todos os Produtos
                         </Link>
                     </div>
                 ) : (
                     <>
-                        <ProductFilters
-                            searchTerm={searchTerm}
-                            setSearchTerm={setSearchTerm}
-                            selectedCategory={selectedCategory}
-                            setSelectedCategory={setSelectedCategory}
-                            sortType={sortType}
-                            setSortType={setSortType}
-                            categories={categories}
-                            priceRange={priceRange}
-                            setPriceRange={setPriceRange}
-                            inStockOnly={inStockOnly}
-                            setInStockOnly={setInStockOnly}
-                            hasDiscountOnly={hasDiscountOnly}
-                            setHasDiscountOnly={setHasDiscountOnly}
-                            minRating={minRating}
-                            setMinRating={setMinRating}
-                        />
 
                         <WebPageSchema page={{
                             name: 'Resultados de Busca | Gringa Style',

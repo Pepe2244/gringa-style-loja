@@ -1,6 +1,6 @@
 import { siteConfig } from '@/lib/site-config';
 
-export const INDEXNOW_KEY = '46493a965afd428fb54c0ca253bfa4eb';
+export const INDEXNOW_KEY = process.env.INDEXNOW_KEY || '46493a965afd428fb54c0ca253bfa4eb';
 export const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 
 // Endpoints oficiais da rede IndexNow (todos compartilham as submissões entre si, incluindo Bing e Yep/Ahrefs)

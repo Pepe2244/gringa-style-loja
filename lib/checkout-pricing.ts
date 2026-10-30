@@ -15,17 +15,20 @@ export interface PricedProduct {
 export interface CouponForCheckout {
     codigo: string;
     ativo: boolean;
-    data_validade: string | null;
-    limite_uso: number | null;
-    usos_atuais: number;
-    metodo_pagamento_restrito: string | null;
-    valor_minimo: number | null;
-    tipo_aplicacao: string;
-    produtos_aplicaveis: number[] | null;
-    tipo_desconto: string | null;
-    valor_desconto: number | null;
-    tipo: string | null;
-    valor: number | null;
+    data_validade?: string | null;
+    limite_uso?: number | null;
+    limite_usos?: number | null;
+    usos_atuais?: number;
+    quantidade_usos?: number;
+    metodo_pagamento_restrito?: string | null;
+    valor_minimo?: number | null;
+    valor_minimo_pedido?: number | null;
+    tipo_aplicacao?: string;
+    produtos_aplicaveis?: number[] | null;
+    tipo_desconto?: string | null;
+    valor_desconto?: number | null;
+    tipo?: string | null;
+    valor?: number | null;
 }
 
 export type PaymentMethod = 'pix' | 'cartao_credito';
@@ -128,19 +131,30 @@ export function getCouponFailure(
         if (!Number.isFinite(expiration)) return 'A validade deste cupom está configurada incorretamente.';
         if (expiration < now) return 'Este cupom está expirado.';
     }
-    if (coupon.limite_uso !== null && coupon.limite_uso > 0 && coupon.usos_atuais >= coupon.limite_uso) {
+
+    const usageLimit = coupon.limite_uso ?? coupon.limite_usos ?? null;
+    const currentUses = coupon.usos_atuais ?? coupon.quantidade_usos ?? 0;
+    if (usageLimit !== null && usageLimit > 0 && currentUses >= usageLimit) {
         return 'Este cupom atingiu o limite de utilizações.';
     }
 
-    const restrictedMethod = normalizePaymentMethodValue(coupon.metodo_pagamento_restrito);
+    const rawRestricted = normalizePaymentMethodValue(coupon.metodo_pagamento_restrito);
+    const restrictedMethod: PaymentMethod | null = !rawRestricted
+        ? null
+        : rawRestricted === 'pix'
+            ? 'pix'
+            : ['cartao_credito', 'cartao_de_credito', 'credit_card', 'credito'].includes(rawRestricted)
+                ? 'cartao_credito'
+                : null;
     if (restrictedMethod && restrictedMethod !== paymentMethod) {
         return restrictedMethod === 'pix'
             ? 'Este cupom é válido apenas para PIX.'
             : 'Este cupom é válido apenas para Cartão de Crédito.';
     }
 
-    if (coupon.valor_minimo !== null && subtotal < coupon.valor_minimo) {
-        return `Valor mínimo para uso do cupom: R$ ${coupon.valor_minimo.toFixed(2).replace('.', ',')}`;
+    const minPurchase = coupon.valor_minimo ?? coupon.valor_minimo_pedido ?? null;
+    if (minPurchase !== null && minPurchase > 0 && subtotal < minPurchase) {
+        return `Valor mínimo para uso do cupom: R$ ${minPurchase.toFixed(2).replace('.', ',')}`;
     }
     return null;
 }
@@ -155,6 +169,7 @@ export function calculateCouponDiscount(
     let subtotal = 0;
     let eligibleSubtotal = 0;
     const eligibleProducts = new Set<number>();
+    const appType = coupon.tipo_aplicacao || 'geral';
 
     for (const item of items) {
         const product = productById.get(item.produto_id);
@@ -162,39 +177,52 @@ export function calculateCouponDiscount(
         const lineTotal = getUnitPrice(product, paymentMethod) * item.quantidade;
         subtotal += lineTotal;
 
-        if (coupon.tipo_aplicacao === 'produto' && coupon.produtos_aplicaveis?.includes(item.produto_id)) {
+        if (appType === 'produto' && coupon.produtos_aplicaveis?.includes(item.produto_id)) {
             eligibleProducts.add(item.produto_id);
         }
 
         if (
-            coupon.tipo_aplicacao !== 'produto' ||
+            appType !== 'produto' ||
             coupon.produtos_aplicaveis?.includes(item.produto_id)
         ) {
             eligibleSubtotal += lineTotal;
         }
     }
 
-    if (!['geral', 'carrinho', 'produto'].includes(coupon.tipo_aplicacao)) {
+    if (!['geral', 'carrinho', 'produto'].includes(appType)) {
         throw new Error('Regra de aplicação do cupom inválida.');
     }
-    if (coupon.tipo_aplicacao === 'produto' && eligibleSubtotal <= 0) {
+    if (appType === 'produto' && eligibleSubtotal <= 0) {
         throw new Error('O cupom não é aplicável aos produtos adicionados.');
     }
 
     const failure = getCouponFailure(coupon, subtotal, paymentMethod);
     if (failure) throw new Error(failure);
 
-    const discountBase = coupon.tipo_aplicacao === 'produto' ? eligibleSubtotal : subtotal;
-    const discountType = coupon.tipo_desconto || coupon.tipo;
+    const discountBase = appType === 'produto' ? eligibleSubtotal : subtotal;
+    const rawDiscountType = coupon.tipo_desconto || coupon.tipo || 'percentual';
+    const discountType = rawDiscountType.toLowerCase();
     const discountValue = coupon.valor_desconto ?? coupon.valor ?? 0;
 
     let discount = 0;
     if (discountType === 'percentual' || discountType === 'porcentagem') {
         discount = discountBase * discountValue / 100;
     } else if (discountType === 'fixo' || discountType === 'valor_fixo') {
-        discount = coupon.tipo_aplicacao === 'produto'
-            ? eligibleProducts.size * discountValue
-            : discountValue;
+        if (appType === 'produto') {
+            discount = 0;
+            for (const productId of eligibleProducts) {
+                const product = productById.get(productId);
+                if (product) {
+                    const totalQty = items
+                        .filter((i) => i.produto_id === productId)
+                        .reduce((acc, i) => acc + i.quantidade, 0);
+                    const productLineTotal = getUnitPrice(product, paymentMethod) * totalQty;
+                    discount += Math.min(productLineTotal, discountValue);
+                }
+            }
+        } else {
+            discount = discountValue;
+        }
     } else {
         throw new Error('Tipo de desconto do cupom inválido.');
     }

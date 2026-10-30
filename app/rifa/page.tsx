@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Rifa } from '@/types';
 import Link from 'next/link';
@@ -26,8 +26,38 @@ export default function RifaPage() {
     const [clientPhone, setClientPhone] = useState('');
     const [reserving, setReserving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [numberPage, setNumberPage] = useState(0);
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
     const router = useRouter();
+
+    const NUMBERS_PER_PAGE = 500;
+    const totalDigitos = rifa ? String(Math.max(0, rifa.total_numeros - 1)).length : 1;
+
+    const filteredNumbers = useMemo(() => {
+        if (!rifa || rifa.total_numeros <= 0) return [];
+        const query = searchTerm.trim();
+        if (query) {
+            const matches: number[] = [];
+            for (let i = 0; i < rifa.total_numeros; i++) {
+                const numStr = String(i).padStart(totalDigitos, '0');
+                if (numStr.includes(query)) {
+                    matches.push(i);
+                    if (matches.length >= 500) break;
+                }
+            }
+            return matches;
+        }
+        if (rifa.total_numeros <= NUMBERS_PER_PAGE) {
+            return Array.from({ length: rifa.total_numeros }, (_, i) => i);
+        }
+        const start = numberPage * NUMBERS_PER_PAGE;
+        const end = Math.min(start + NUMBERS_PER_PAGE, rifa.total_numeros);
+        const pageNumbers: number[] = [];
+        for (let i = start; i < end; i++) {
+            pageNumbers.push(i);
+        }
+        return pageNumbers;
+    }, [rifa, searchTerm, numberPage, totalDigitos]);
 
     const fetchRifa = useCallback(async (showLoadingState = true): Promise<RifaFront | null> => {
         if (showLoadingState) setLoading(true);
@@ -133,31 +163,40 @@ export default function RifaPage() {
 
     const handleSurpresinha = () => {
         if (!rifa || rifa.status === 'finalizada') return;
-        const available = [];
         const soldSet = new Set(rifa.numeros_vendidos || []);
         const reservedSet = new Set(rifa.numeros_reservados || []);
+        const totalUnavailable = soldSet.size + reservedSet.size + selectedNumbers.length;
 
-        for (let i = 0; i < rifa.total_numeros; i++) {
-            if (!soldSet.has(i) && !reservedSet.has(i) && !selectedNumbers.includes(i)) {
-                available.push(i);
-            }
-        }
-
-        if (available.length === 0) {
+        if (totalUnavailable >= rifa.total_numeros) {
             showToast('Não há números suficientes disponíveis.', 'error');
             return;
         }
 
-        const count = Math.min(5, available.length);
-        const randomSelection = [];
-        for (let i = 0; i < count; i++) {
-            const randomIndex = Math.floor(Math.random() * available.length);
-            randomSelection.push(available[randomIndex]);
-            available.splice(randomIndex, 1);
+        const count = Math.min(5, rifa.total_numeros - totalUnavailable);
+        const randomSelection: number[] = [];
+        let attempts = 0;
+        const maxAttempts = count * 200;
+
+        while (randomSelection.length < count && attempts < maxAttempts) {
+            attempts++;
+            const candidate = Math.floor(Math.random() * rifa.total_numeros);
+            if (
+                !soldSet.has(candidate) &&
+                !reservedSet.has(candidate) &&
+                !selectedNumbers.includes(candidate) &&
+                !randomSelection.includes(candidate)
+            ) {
+                randomSelection.push(candidate);
+            }
         }
 
-        setSelectedNumbers([...selectedNumbers, ...randomSelection]);
-        showToast(`${count} números aleatórios selecionados!`, 'success');
+        if (randomSelection.length === 0) {
+            showToast('Não foi possível sortear números disponíveis. Tente selecionar manualmente.', 'error');
+            return;
+        }
+
+        setSelectedNumbers(current => [...current, ...randomSelection]);
+        showToast(`${randomSelection.length} números aleatórios selecionados!`, 'success');
     };
 
     const handleReserve = async () => {
@@ -199,12 +238,12 @@ export default function RifaPage() {
             }
 
             if (!result.paymentToken) throw new Error('Não foi possível gerar o acesso seguro ao pagamento. Contate o suporte.');
-            let paymentHash = '';
             try {
                 sessionStorage.setItem(`payment-access-${participantId}`, result.paymentToken);
             } catch {
-                paymentHash = `#payment_access=${encodeURIComponent(result.paymentToken)}`;
+                // sessionStorage pode estar desabilitado no navegador
             }
+            const paymentHash = `#payment_access=${encodeURIComponent(result.paymentToken)}`;
             router.push(`/pagamento?participante_id=${participantId}${paymentHash}`);
         } catch (error: any) {
             const errorMessage = error instanceof Error ? error.message : 'Erro ao reservar. Tente novamente.';
@@ -221,7 +260,7 @@ export default function RifaPage() {
             <FAQSchema questions={[
                 {
                     q: "Sobre a Transparência do Sorteio",
-                    a: "Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é sempre baseado nos números da Loteria Federal (geralmente os últimos dígitos do 1º prêmio). Isso garante que o sorteio é imune a qualquer tipo de fraude ou manipulação por parte da Gringa Style."
+                    a: "Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é auditável e pode ser correlacionado com a extração oficial da Loteria Federal ou realizado via sorteio criptograficamente seguro no sistema, garantindo que o sorteio seja 100% imparcial e imune a manipulação."
                 },
                 {
                     q: "Datas e Prazos",
@@ -239,7 +278,7 @@ export default function RifaPage() {
                     <summary style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center' }}>
                         <span style={{ marginRight: '10px' }}>›</span> Sobre a Transparência do Sorteio
                     </summary>
-                    <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é sempre baseado nos números da Loteria Federal (geralmente os últimos dígitos do 1º prêmio). Isso garante que o sorteio é imune a qualquer tipo de fraude ou manipulação por parte da Gringa Style.</p>
+                    <p style={{ color: '#ccc', lineHeight: '1.7', marginTop: '12px', paddingLeft: '20px' }}>Nossos sorteios são realizados com total transparência assim que 100% das cotas forem vendidas e pagas. O resultado é auditável e pode ser correlacionado com a extração oficial da Loteria Federal ou realizado via sorteio criptograficamente seguro no sistema, garantindo que o sorteio seja 100% imparcial e imune a manipulação.</p>
                 </details>
 
                 <details open style={{ marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '15px' }}>
@@ -308,12 +347,15 @@ export default function RifaPage() {
         );
     }
 
-    const totalDigitos = String(rifa.total_numeros - 1).length;
     const soldSet = new Set(rifa.numeros_vendidos || []);
     const reservedSet = new Set(rifa.numeros_reservados || []);
 
     const isFinished = rifa.status === 'finalizada';
     const isSoldOut = soldSet.size >= rifa.total_numeros || isFinished;
+
+    const totalPages = Math.ceil(rifa.total_numeros / NUMBERS_PER_PAGE);
+    const startRange = numberPage * NUMBERS_PER_PAGE;
+    const endRange = Math.min(startRange + NUMBERS_PER_PAGE, rifa.total_numeros);
 
     const selectedCount = selectedNumbers.length;
     const hasDiscountTier = Boolean(rifa.preco_numero_desconto_quantidade && rifa.preco_numero_desconto && rifa.preco_numero_desconto_quantidade > 0);
@@ -419,11 +461,33 @@ export default function RifaPage() {
                     </div>
                 )}
 
-                <div className={`numeros-grid ${isSoldOut ? 'desabilitado' : ''}`}>
-                    {Array.from({ length: rifa.total_numeros }).map((_, i) => {
-                        const numStr = String(i).padStart(totalDigitos, '0');
-                        if (searchTerm && !numStr.includes(searchTerm)) return null;
+                {rifa.total_numeros > NUMBERS_PER_PAGE && !searchTerm.trim() && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', margin: '15px 0', flexWrap: 'wrap' }}>
+                        <button
+                            type="button"
+                            onClick={() => setNumberPage(p => Math.max(0, p - 1))}
+                            disabled={numberPage === 0}
+                            style={{ padding: '8px 14px', borderRadius: '5px', background: numberPage === 0 ? '#222' : '#333', color: numberPage === 0 ? '#666' : '#fff', border: '1px solid #444', cursor: numberPage === 0 ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                        >
+                            ← Faixa Anterior
+                        </button>
+                        <span style={{ color: '#ccc', fontSize: '0.95rem' }}>
+                            Mostrando números <strong>{String(startRange).padStart(totalDigitos, '0')}</strong> a <strong>{String(endRange - 1).padStart(totalDigitos, '0')}</strong> (Página {numberPage + 1} de {totalPages})
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setNumberPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={numberPage >= totalPages - 1}
+                            style={{ padding: '8px 14px', borderRadius: '5px', background: numberPage >= totalPages - 1 ? '#222' : '#333', color: numberPage >= totalPages - 1 ? '#666' : '#fff', border: '1px solid #444', cursor: numberPage >= totalPages - 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                        >
+                            Próxima Faixa →
+                        </button>
+                    </div>
+                )}
 
+                <div className={`numeros-grid ${isSoldOut ? 'desabilitado' : ''}`}>
+                    {filteredNumbers.map((i) => {
+                        const numStr = String(i).padStart(totalDigitos, '0');
                         const isOccupied = soldSet.has(i) || reservedSet.has(i);
                         const isSelected = selectedNumbers.includes(i);
 
@@ -443,6 +507,13 @@ export default function RifaPage() {
                 {!isSoldOut && !isFinished && selectedNumbers.length > 0 && (
                     <div className="resumo-selecao" style={{ display: 'block' }}>
                         <h4>Resumo da sua Seleção</h4>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '10px 0 15px' }}>
+                            {selectedNumbers.slice().sort((a, b) => a - b).map(n => (
+                                <span key={n} style={{ background: 'var(--cor-destaque)', color: '#000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                    {String(n).padStart(totalDigitos, '0')}
+                                </span>
+                            ))}
+                        </div>
                         <p>Preço por número: <strong>R$ {currentUnitPrice.toFixed(2).replace('.', ',')}</strong></p>
                         {hasDiscountTier && selectedCount >= (rifa.preco_numero_desconto_quantidade || 0) && (
                             <p style={{ color: 'var(--cor-destaque)', marginTop: '8px' }}>

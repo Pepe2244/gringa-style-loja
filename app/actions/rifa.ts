@@ -93,7 +93,7 @@ export async function manageRaffle(rifaData: unknown, premios: unknown[]) {
             throw new Error('Identificador da rifa inválido.');
         }
         const status = input.status ?? 'ativa';
-        if (!['ativa', 'finalizada', 'cancelada'].includes(String(status))) {
+        if (!['ativa', 'pausada', 'finalizada', 'cancelada'].includes(String(status))) {
             throw new Error('Status da rifa inválido.');
         }
         const imageUrl = safeRaffleUrl(input.imagem_premio_url, 'Imagem da rifa');
@@ -175,10 +175,28 @@ export async function deleteRaffle(id: number) {
 export async function toggleRaffleStatus(id: number, currentStatus: string) {
     if (!await isAdminAuthenticated()) return { success: false, error: 'Não autorizado.' };
 
-    const supabase = createSupabaseAdminClient();
-    const newStatus = currentStatus === 'ativa' ? 'finalizada' : 'ativa';
-
     try {
+        if (!Number.isSafeInteger(id) || id <= 0) {
+            throw new Error('Identificador da rifa inválido.');
+        }
+
+        const supabase = createSupabaseAdminClient();
+        const { data: currentRaffle, error: fetchError } = await supabase
+            .from('rifas')
+            .select('status')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !currentRaffle) {
+            throw new Error('Rifa não encontrada.');
+        }
+
+        if (currentRaffle.status === 'finalizada' || currentRaffle.status === 'cancelada') {
+            return { success: false, error: 'Rifas finalizadas ou canceladas não podem ser alteradas.' };
+        }
+
+        const newStatus = currentRaffle.status === 'ativa' ? 'pausada' : 'ativa';
+
         const { error } = await supabase.from('rifas').update({ status: newStatus }).eq('id', id);
         if (error) throw error;
 
@@ -189,7 +207,7 @@ export async function toggleRaffleStatus(id: number, currentStatus: string) {
 
         return { success: true, newStatus };
     } catch (error: any) {
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || 'Erro ao alterar status da rifa.' };
     }
 }
 
@@ -230,6 +248,48 @@ export async function drawWinner(rifaId: number, prizeId: number) {
         return { success: true, winner };
     } catch (error) {
         console.error("Erro no sorteio da rifa:", error);
+        return { success: false, message: error instanceof Error ? error.message : 'Erro interno no sorteio.' };
+    }
+}
+
+export async function drawWinnerByFederalLottery(rifaId: number, prizeId: number, numeroSorteado: number) {
+    if (!await isAdminAuthenticated()) {
+        return { success: false, message: 'Não autorizado.' };
+    }
+
+    try {
+        if (!Number.isSafeInteger(rifaId) || rifaId <= 0 || !Number.isSafeInteger(prizeId) || prizeId <= 0 || !Number.isSafeInteger(numeroSorteado) || numeroSorteado < 0) {
+            throw new Error('Dados do sorteio ou número sorteado inválidos.');
+        }
+        const supabase = createSupabaseAdminClient();
+        const { data, error } = await supabase.rpc('admin_set_raffle_winner_by_number', {
+            p_rifa_id: rifaId,
+            p_premio_id: prizeId,
+            p_numero: numeroSorteado
+        });
+        if (error) throw error;
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('O sorteio foi processado, mas os dados do vencedor estão inválidos.');
+        }
+        const winner = {
+            name: String(data.name),
+            phone: String(data.phone),
+            number: Number(data.number),
+            remainingPrizes: Number(data.remaining_prizes ?? 0),
+            raffleFinalized: Boolean(data.raffle_finalized ?? true),
+        };
+        if (!winner.name || !Number.isSafeInteger(winner.number) || winner.number < 0) {
+            throw new Error('O sorteio foi processado, mas os dados do vencedor estão incompletos.');
+        }
+
+        revalidatePath('/', 'layout');
+        revalidatePath('/rifa', 'page');
+        revalidatePath('/acompanhar-rifa', 'page');
+        revalidatePath('/admin', 'layout');
+
+        return { success: true, winner };
+    } catch (error) {
+        console.error("Erro ao definir vencedor por número da Loteria Federal:", error);
         return { success: false, message: error instanceof Error ? error.message : 'Erro interno no sorteio.' };
     }
 }

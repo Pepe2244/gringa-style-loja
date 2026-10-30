@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
 import { buildStorageUrl, isLegacyDeadStorageUrl, siteConfig } from '@/lib/site-config';
+import { getCachedValue } from '@/lib/cache';
 
 export const resolveAbsoluteUrl = (path?: string | null) => {
     if (!path || isLegacyDeadStorageUrl(path)) return `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
@@ -9,45 +10,74 @@ export const resolveAbsoluteUrl = (path?: string | null) => {
     return buildStorageUrl(path);
 };
 
-// Cache em memória compartilhado para evitar queries repetidas ao banco durante o ciclo de renderização
-let allProductsCache: any[] | null = null;
-let allProductsCacheTime = 0;
-let allCategoriesCache: any[] | null = null;
-let allCategoriesCacheTime = 0;
+// Cache local por execução/requisição para evitar chamadas redundantes em renderizações síncronas
+let localProductsCache: any[] | null = null;
+let localProductsCacheTime = 0;
+let localCategoriesCache: any[] | null = null;
+let localCategoriesCacheTime = 0;
 
 export function clearProductServiceCache() {
-    allProductsCache = null;
-    allProductsCacheTime = 0;
-    allCategoriesCache = null;
-    allCategoriesCacheTime = 0;
+    localProductsCache = null;
+    localProductsCacheTime = 0;
+    localCategoriesCache = null;
+    localCategoriesCacheTime = 0;
 }
 
 export async function getAllActiveProducts() {
     const now = Date.now();
-    if (allProductsCache && (now - allProductsCacheTime < 60000)) {
-        return allProductsCache;
+    if (localProductsCache && (now - localProductsCacheTime < 10000)) {
+        return localProductsCache;
     }
-    const { data } = await supabase
-        .from('produtos')
-        .select('*')
-        .limit(500);
-    allProductsCache = data || [];
-    allProductsCacheTime = now;
-    return allProductsCache;
+
+    const products = await getCachedValue<any[]>(
+        async () => {
+            const { data, error } = await supabase
+                .from('produtos')
+                .select('*')
+                .order('id', { ascending: false })
+                .limit(2000);
+            if (error) {
+                console.error('[ProductService] Erro ao buscar produtos:', error);
+                return [];
+            }
+            return data || [];
+        },
+        ['all-active-products-list'],
+        ['produtos', 'loja'],
+        60
+    );
+
+    localProductsCache = products;
+    localProductsCacheTime = now;
+    return products;
 }
 
 export async function getCachedCategories() {
     const now = Date.now();
-    if (allCategoriesCache && (now - allCategoriesCacheTime < 60000)) {
-        return allCategoriesCache;
+    if (localCategoriesCache && (now - localCategoriesCacheTime < 10000)) {
+        return localCategoriesCache;
     }
-    const { data } = await supabase
-        .from('categorias')
-        .select('*')
-        .order('nome');
-    allCategoriesCache = data || [];
-    allCategoriesCacheTime = now;
-    return allCategoriesCache;
+
+    const categories = await getCachedValue<any[]>(
+        async () => {
+            const { data, error } = await supabase
+                .from('categorias')
+                .select('*')
+                .order('nome');
+            if (error) {
+                console.error('[ProductService] Erro ao buscar categorias:', error);
+                return [];
+            }
+            return data || [];
+        },
+        ['all-categories-list'],
+        ['categorias', 'loja'],
+        120
+    );
+
+    localCategoriesCache = categories;
+    localCategoriesCacheTime = now;
+    return categories;
 }
 
 
@@ -92,21 +122,20 @@ export const fetchProductBySlugOrId = cache(async (rawSlugOrId: string) => {
         if (byClean) return byClean;
     }
 
-    // 3. Fallback por ID numérico (ex: "23" ou "23-oculos-steelflex")
-    const idMatch = decoded.match(/^(\d+)/);
-    if (idMatch) {
-        const numId = parseInt(idMatch[1], 10);
-        if (!isNaN(numId)) {
-            const { data: legacyProduct } = await supabase
+    // 3. Fallback por ID estritamente numérico (ex: "23")
+    if (/^\d+$/.test(decoded)) {
+        const numId = parseInt(decoded, 10);
+        if (Number.isSafeInteger(numId) && numId > 0) {
+            const { data: byId } = await supabase
                 .from('produtos')
                 .select('*')
                 .eq('id', numId)
                 .maybeSingle();
-            if (legacyProduct) return legacyProduct;
+            if (byId) return byId;
         }
     }
 
-    // 4. RESOLUÇÃO DEFINITIVA ACCENT-INSENSITIVE:
+    // 4. RESOLUÇÃO DEFINITIVA ACCENT-INSENSITIVE (Slug ou Nome):
     const targetNorm = normalizeSlugCompare(decoded);
     if (targetNorm) {
         const allProducts = await getAllActiveProducts();
@@ -126,7 +155,17 @@ export const fetchProductBySlugOrId = cache(async (rawSlugOrId: string) => {
 
         if (found) return found;
 
-        // 5. Fallback por similaridade de tokens principais
+        // 5. Fallback por URL legada com prefixo de ID (ex: "23-oculos-steelflex")
+        const legacyPrefixMatch = decoded.match(/^(\d+)-(.+)$/);
+        if (legacyPrefixMatch) {
+            const legacyId = parseInt(legacyPrefixMatch[1], 10);
+            if (Number.isSafeInteger(legacyId) && legacyId > 0) {
+                const candidate = allProducts.find((p: any) => p.id === legacyId);
+                if (candidate) return candidate;
+            }
+        }
+
+        // 6. Fallback por similaridade de tokens principais
         const stopWords = new Set(['de', 'da', 'do', 'em', 'para', 'com', 'sem', 'style', 'gringa', 'a', 'o', 'e']);
         const tokens = targetNorm
             .split('-')

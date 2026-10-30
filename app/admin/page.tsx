@@ -1,12 +1,28 @@
 'use client';
 import { useState, useEffect } from 'react';
-import ProductManager from '@/components/admin/ProductManager';
-import RifaManager from '@/components/admin/RifaManager';
-import CouponManager from '@/components/admin/CouponManager';
-import CampaignManager from '@/components/admin/CampaignManager';
-import CategoryManager from '@/components/admin/CategoryManager';
-import ConfigManager from '@/components/admin/ConfigManager';
-import B2BMediaManager from '@/components/admin/B2BMediaManager';
+import dynamic from 'next/dynamic';
+
+const ProductManager = dynamic(() => import('@/components/admin/ProductManager'), {
+    loading: () => <div className="text-center py-8 text-neutral-400">Carregando painel de produtos...</div>,
+});
+const RifaManager = dynamic(() => import('@/components/admin/RifaManager'), {
+    loading: () => <div className="text-center py-8 text-neutral-400">Carregando painel de rifas...</div>,
+});
+const CouponManager = dynamic(() => import('@/components/admin/CouponManager'), {
+    loading: () => <div className="text-center py-8 text-neutral-400">Carregando cupons...</div>,
+});
+const CampaignManager = dynamic(() => import('@/components/admin/CampaignManager'), {
+    loading: () => <div className="text-center py-8 text-neutral-400">Carregando campanhas...</div>,
+});
+const CategoryManager = dynamic(() => import('@/components/admin/CategoryManager'), {
+    loading: () => <div className="text-center py-8 text-neutral-400">Carregando categorias...</div>,
+});
+const ConfigManager = dynamic(() => import('@/components/admin/ConfigManager'), {
+    loading: () => <div className="text-center py-8 text-neutral-400">Carregando configurações...</div>,
+});
+const B2BMediaManager = dynamic(() => import('@/components/admin/B2BMediaManager'), {
+    loading: () => <div className="text-center py-8 text-neutral-400">Carregando mídia B2B...</div>,
+});
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);

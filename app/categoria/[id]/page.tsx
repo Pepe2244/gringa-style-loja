@@ -116,19 +116,7 @@ export default async function CategoriaPage({ params }: Props) {
     const category = categoryResult.data as Category | null;
     if (!category) notFound();
 
-    let products = (productsResult.data || []) as Product[];
-
-    // Se a categoria ainda não tiver produtos diretos vinculados, carrega vitrine de destaque para evitar ItemList vazio
-    if (products.length === 0) {
-        const { data: fallbackData } = await supabase
-            .from('produtos')
-            .select('id, nome, preco, preco_promocional, preco_pix, imagens, media_urls, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, produtos_relacionados_ids')
-            .eq('em_estoque', true)
-            .order('created_at', { ascending: false })
-            .limit(8);
-        products = (fallbackData || []) as Product[];
-    }
-
+    const products = (productsResult.data || []) as Product[];
     const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
     const schemaProducts = products.map((p) => ({
         id: p.id,

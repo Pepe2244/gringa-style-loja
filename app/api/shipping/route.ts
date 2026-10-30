@@ -74,6 +74,16 @@ function getInternationalFallback() {
     ];
 }
 
+function estimateItemWeightKg(name: string): number {
+    const lower = (name || '').toLowerCase();
+    if (lower.includes('mascara') || lower.includes('máscara')) return 0.70;
+    if (lower.includes('bota') || lower.includes('coturno') || lower.includes('calcado') || lower.includes('calçado')) return 1.40;
+    if (lower.includes('tocha') || lower.includes('cabo') || lower.includes('porta eletrodo') || lower.includes('garra')) return 1.20;
+    if (lower.includes('bone') || lower.includes('boné') || lower.includes('camiseta') || lower.includes('camisa') || lower.includes('touca') || lower.includes('luva')) return 0.30;
+    if (lower.includes('lente') || lower.includes('consumivel') || lower.includes('consumível') || lower.includes('bico') || lower.includes('difusor') || lower.includes('eletrodo') || lower.includes('escova')) return 0.25;
+    return 0.80;
+}
+
 export async function POST(request: Request) {
     let countryForFallback = 'BR';
     try {
@@ -81,7 +91,13 @@ export async function POST(request: Request) {
         if (!payloadJson || typeof payloadJson !== 'object' || Array.isArray(payloadJson)) {
             return NextResponse.json({ error: 'Dados de frete inválidos.' }, { status: 400 });
         }
-        const input = payloadJson as { to_postal_code?: unknown; country?: unknown; product_id?: unknown; product_ids?: unknown };
+        const input = payloadJson as {
+            to_postal_code?: unknown;
+            country?: unknown;
+            product_id?: unknown;
+            product_ids?: unknown;
+            items?: unknown;
+        };
         const { to_postal_code } = input;
         if (input.country != null && typeof input.country !== 'string') {
             return NextResponse.json({ error: 'País de destino inválido.' }, { status: 400 });
@@ -100,7 +116,38 @@ export async function POST(request: Request) {
         }
 
         let isMask = false;
-        if (Array.isArray(input.product_ids) && input.product_ids.length > 0) {
+        let totalCalculatedWeight = 0;
+
+        if (Array.isArray(input.items) && input.items.length > 0) {
+            const validItems = input.items.filter(
+                (item): item is { produto_id: number; quantidade?: number } =>
+                    typeof item === 'object' &&
+                    item !== null &&
+                    Number.isSafeInteger((item as { produto_id?: unknown }).produto_id) &&
+                    Number((item as { produto_id?: unknown }).produto_id) > 0
+            );
+
+            if (validItems.length > 0) {
+                const ids = validItems.map(i => i.produto_id);
+                const { data: products, error: prodsError } = await supabase
+                    .from('produtos')
+                    .select('id, nome')
+                    .in('id', ids);
+
+                if (!prodsError && products) {
+                    const productMap = new Map(products.map(p => [p.id, p.nome || '']));
+                    for (const item of validItems) {
+                        const name = productMap.get(item.produto_id) || '';
+                        const n = name.toLowerCase();
+                        if (n.includes('mascara') || n.includes('máscara')) {
+                            isMask = true;
+                        }
+                        const qty = Math.max(1, Math.min(99, Number(item.quantidade) || 1));
+                        totalCalculatedWeight += estimateItemWeightKg(name) * qty;
+                    }
+                }
+            }
+        } else if (Array.isArray(input.product_ids) && input.product_ids.length > 0) {
             const validIds = input.product_ids.filter((id: unknown) => Number.isSafeInteger(id) && Number(id) > 0);
             if (validIds.length > 0) {
                 const { data: products, error: prodsError } = await supabase
@@ -108,10 +155,13 @@ export async function POST(request: Request) {
                     .select('nome')
                     .in('id', validIds);
                 if (!prodsError && products) {
-                    isMask = products.some(p => {
+                    for (const p of products) {
                         const n = (p.nome || '').toLowerCase();
-                        return n.includes('mascara') || n.includes('máscara');
-                    });
+                        if (n.includes('mascara') || n.includes('máscara')) {
+                            isMask = true;
+                        }
+                        totalCalculatedWeight += estimateItemWeightKg(p.nome || '');
+                    }
                 }
             }
         } else if (input.product_id != null) {
@@ -127,7 +177,14 @@ export async function POST(request: Request) {
             if (!product) return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
             const n = (product.nome || '').toLowerCase();
             isMask = n.includes('mascara') || n.includes('máscara');
+            totalCalculatedWeight = estimateItemWeightKg(product.nome || '');
         }
+
+        const clampedWeight = Math.min(30.0, Math.max(0.30, totalCalculatedWeight || 0.80));
+        const weightString = clampedWeight.toFixed(2);
+        const pkgLength = Math.min(60, Math.max(20, Math.round(20 + clampedWeight * 3)));
+        const pkgHeight = Math.min(60, Math.max(15, Math.round(15 + clampedWeight * 2)));
+        const pkgWidth = Math.min(60, Math.max(15, Math.round(15 + clampedWeight * 2)));
 
         // Determinar CEP de origem (Máscaras saem de Três Lagoas/MS)
         const MASKS_ORIGIN_CEP = '79631170'; 
@@ -147,10 +204,10 @@ export async function POST(request: Request) {
                 return NextResponse.json(getNationalFallback());
             }
 
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
 
+            try {
                 const sfRes = await fetch('https://api.superfrete.com/api/v0/calculator', {
                     method: 'POST',
                     headers: {
@@ -164,11 +221,9 @@ export async function POST(request: Request) {
                         to: { postal_code: cleanDestinationCep },
                         services: '1,2', // 1 = PAC, 2 = SEDEX
                         options: { own_hand: false, receipt: false, insurance_value: 0 },
-                        package: { format: 1, weight: '0.80', length: 25, height: 20, width: 20 },
+                        package: { format: 1, weight: weightString, length: pkgLength, height: pkgHeight, width: pkgWidth },
                     }),
                 });
-
-                clearTimeout(timeoutId);
 
                 if (sfRes.ok) {
                     const sfData = await sfRes.json();
@@ -179,9 +234,11 @@ export async function POST(request: Request) {
                 
                 console.warn('[Shipping] SuperFrete indisponível ou recusada. Usando fallback padrão.');
                 return NextResponse.json(getNationalFallback());
-            } catch (err) {
+            } catch {
                 console.warn('[Shipping] Timeout/Falha na SuperFrete. Acionando fallback.');
                 return NextResponse.json(getNationalFallback());
+            } finally {
+                clearTimeout(timeoutId);
             }
         }
 
@@ -211,11 +268,11 @@ export async function POST(request: Request) {
                                 coPaisDestino,
                                 nuCepOrigem: effectiveOriginCep,
                                 nuCartaoPostagem: CORREIOS_CARTAO,
-                                psObjeto: '2000',
+                                psObjeto: Math.min(30000, Math.max(300, Math.round(clampedWeight * 1000))).toString(),
                                 tpObjeto: '2',
-                                comprimento: '25',
-                                largura: '15',
-                                altura: '10',
+                                comprimento: String(pkgLength),
+                                largura: String(pkgWidth),
+                                altura: String(pkgHeight),
                                 coServico: servico.codigo,
                             }),
                         }

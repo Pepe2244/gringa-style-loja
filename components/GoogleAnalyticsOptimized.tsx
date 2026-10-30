@@ -19,8 +19,22 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
   useEffect(() => {
     if (!gaId || typeof window === 'undefined' || window._gtmLoaded) return;
 
+    const getConsentCookie = () => {
+      try {
+        const fromCookie = document.cookie
+          .split('; ')
+          .find((cookie) => cookie.startsWith('cookie-consent='))
+          ?.split('=')[1];
+        if (fromCookie) return fromCookie;
+        return localStorage.getItem('cookie-consent');
+      } catch {
+        return null;
+      }
+    };
+
     const loadGTM = () => {
       if (window._gtmLoaded) return;
+      if (getConsentCookie() === 'false') return;
       window._gtmLoaded = true;
 
       const script = document.createElement('script');

@@ -3,6 +3,38 @@
 import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const buffer = new ArrayBuffer(rawData.length);
+    const outputArray = new Uint8Array(buffer);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function syncSubscriptionWithServer(subscription: PushSubscription) {
+    try {
+        const subJson = subscription.toJSON();
+        if (subJson.endpoint && subJson.keys?.p256dh && subJson.keys?.auth) {
+            await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    endpoint: subJson.endpoint,
+                    p256dh: subJson.keys.p256dh,
+                    auth: subJson.keys.auth,
+                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+                }),
+            });
+        }
+    } catch (err) {
+        console.error('[PWA] Erro ao sincronizar push subscription com servidor:', err);
+    }
+}
+
 export default function PushNotificationButton() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
@@ -17,6 +49,8 @@ export default function PushNotificationButton() {
                 .then((subscription) => {
                     if (subscription) {
                         setIsSubscribed(true);
+                        // Garante que a inscrição existente esteja sincronizada com o banco
+                        syncSubscriptionWithServer(subscription);
                     }
                 })
                 .catch((error) => {
@@ -44,6 +78,7 @@ export default function PushNotificationButton() {
             // Verifica se já existe subscription ativa
             const existingSubscription = await registration.pushManager.getSubscription();
             if (existingSubscription) {
+                await syncSubscriptionWithServer(existingSubscription);
                 setIsSubscribed(true);
                 return;
             }
@@ -52,9 +87,10 @@ export default function PushNotificationButton() {
             if (vapidKey) {
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
-                    applicationServerKey: vapidKey,
+                    applicationServerKey: urlBase64ToUint8Array(vapidKey),
                 });
                 if (subscription) {
+                    await syncSubscriptionWithServer(subscription);
                     setIsSubscribed(true);
                 }
             } else {

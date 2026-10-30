@@ -19,6 +19,20 @@ interface SessionData {
     timezone: string;
 }
 
+function getBrazilDateString(d: Date = new Date()): string {
+    const formatter = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    const parts = formatter.formatToParts(d);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    return `${year}-${month}-${day}`;
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body: unknown = await request.json();
@@ -69,10 +83,19 @@ export async function POST(request: NextRequest) {
         }
         const supabase = createSupabaseAdminClient();
 
-        // Inserir dados da sessão
+        // Verificar se a sessão já foi registrada anteriormente (ex: eventos de visibilitychange ou heartbeat)
+        const { data: existingSession } = await supabase
+            .from('analytics_sessions')
+            .select('session_id')
+            .eq('session_id', sessionData.sessionId)
+            .maybeSingle();
+
+        const isNewSession = !existingSession;
+
+        // Inserir ou atualizar dados da sessão (upsert com onConflict previne falha de chave duplicada)
         const { error: sessionError } = await supabase
             .from('analytics_sessions')
-            .insert({
+            .upsert({
                 session_id: sessionData.sessionId,
                 start_time: new Date(sessionData.startTime).toISOString(),
                 end_time: new Date(sessionData.endTime).toISOString(),
@@ -84,19 +107,19 @@ export async function POST(request: NextRequest) {
                 screen_resolution: sessionData.screenResolution,
                 timezone: sessionData.timezone,
                 created_at: new Date().toISOString()
-            });
+            }, { onConflict: 'session_id' });
 
         if (sessionError) {
             console.error('Erro ao salvar sessão:', sessionError);
         }
 
-        // Processar eventos da sessão
-        if (sessionData.events && sessionData.events.length > 0) {
+        // Processar eventos da sessão apenas na criação ou quando houver eventos novos
+        if (isNewSession && sessionData.events && sessionData.events.length > 0) {
             await processSessionEvents(supabase, sessionData.sessionId, sessionData.events);
         }
 
-        // Calcular métricas agregadas
-        await updateAggregatedMetrics(supabase, sessionData);
+        // Calcular métricas agregadas (evitando inflar total_sessions em múltiplas chamadas da mesma sessão)
+        await updateAggregatedMetrics(supabase, sessionData, isNewSession);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -136,11 +159,44 @@ async function processSessionEvents(supabase: ReturnType<typeof createSupabaseAd
 }
 
 // Atualizar métricas agregadas com proteção contra race conditions e retry exponencial
-async function updateAggregatedMetrics(supabase: ReturnType<typeof createSupabaseAdminClient>, sessionData: SessionData) {
+async function updateAggregatedMetrics(
+    supabase: ReturnType<typeof createSupabaseAdminClient>,
+    sessionData: SessionData,
+    isNewSession: boolean = true
+) {
+    // 1. Tenta execução atômica direta via RPC PostgreSQL
+    try {
+        const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+        const pagesList = sessionData.events
+            .filter(e => e.event === 'page_view')
+            .map(e => String(e.label || 'unknown').slice(0, 150).trim())
+            .filter(p => !FORBIDDEN_KEYS.has(p) && p.length > 0);
+
+        const hasConversion = sessionData.events.some(e =>
+            e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
+        );
+
+        const { error: rpcError } = await (supabase as any).rpc('increment_daily_metrics', {
+            p_date: getBrazilDateString(),
+            p_is_new_session: isNewSession,
+            p_page_views: Number(sessionData.pageViews) || 1,
+            p_duration: Number(sessionData.duration) || 0,
+            p_device_type: sessionData.deviceType || 'desktop',
+            p_has_conversion: hasConversion,
+            p_pages: pagesList,
+        });
+
+        if (!rpcError) {
+            return;
+        }
+    } catch {
+        // Fallback gracioso para o algoritmo local caso a RPC ainda não esteja provisionada
+    }
+
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const date = getBrazilDateString(); // YYYY-MM-DD no fuso de Brasília
 
             // Buscar métricas existentes para o dia usando maybeSingle para evitar erro PGRST116 quando não há registro
             const { data: existingMetrics, error: fetchError } = await supabase
@@ -172,44 +228,46 @@ async function updateAggregatedMetrics(supabase: ReturnType<typeof createSupabas
             metrics.device_types = { ...(metrics.device_types || {}) };
             metrics.top_pages = { ...(metrics.top_pages || {}) };
 
-            // Atualizar contadores
-            metrics.total_sessions = (Number(metrics.total_sessions) || 0) + 1;
-            metrics.total_page_views = (Number(metrics.total_page_views) || 0) + (Number(sessionData.pageViews) || 0);
-            metrics.total_duration = (Number(metrics.total_duration) || 0) + (Number(sessionData.duration) || 0);
+            // Se for uma sessão já existente, apenas atualiza duração e dados adicionais sem duplicar o total de sessões
+            if (isNewSession) {
+                metrics.total_sessions = (Number(metrics.total_sessions) || 0) + 1;
+                metrics.total_page_views = (Number(metrics.total_page_views) || 0) + (Number(sessionData.pageViews) || 0);
+                metrics.total_duration = (Number(metrics.total_duration) || 0) + (Number(sessionData.duration) || 0);
 
-            // Atualizar tipos de dispositivo
-            metrics.device_types[sessionData.deviceType] =
-                (metrics.device_types[sessionData.deviceType] || 0) + 1;
+                // Atualizar tipos de dispositivo
+                metrics.device_types[sessionData.deviceType] =
+                    (metrics.device_types[sessionData.deviceType] || 0) + 1;
+            } else {
+                // Sessão continuada: apenas acumula eventual duração adicional
+                metrics.total_duration = Math.max(Number(metrics.total_duration) || 0, Number(sessionData.duration) || 0);
+            }
+
+            const currentTotalSessions = Math.max(1, Number(metrics.total_sessions) || 1);
 
             // Calcular médias
-            metrics.avg_session_duration = metrics.total_duration / metrics.total_sessions;
+            metrics.avg_session_duration = metrics.total_duration / currentTotalSessions;
 
-            // Calcular bounce rate (sessões com apenas 1 page view)
-            const bounceSessions = sessionData.pageViews === 1 ? 1 : 0;
-            metrics.bounce_rate = (((Number(metrics.bounce_rate) || 0) * (metrics.total_sessions - 1)) + bounceSessions) / metrics.total_sessions;
+            if (isNewSession) {
+                // Calcular bounce rate (sessões com apenas 1 page view)
+                const bounceSessions = sessionData.pageViews === 1 ? 1 : 0;
+                metrics.bounce_rate = (((Number(metrics.bounce_rate) || 0) * (currentTotalSessions - 1)) + bounceSessions) / currentTotalSessions;
+            }
 
-            // Extrair páginas visitadas
+            // Extrair páginas visitadas com proteção contra prototype pollution
+            const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
             const pageEvents = sessionData.events.filter(e => e.event === 'page_view');
             pageEvents.forEach(event => {
-                const page = event.label || 'unknown';
-                metrics.top_pages[page] = (metrics.top_pages[page] || 0) + 1;
+                const rawPage = String(event.label || 'unknown').slice(0, 150).trim();
+                const page = FORBIDDEN_KEYS.has(rawPage) ? 'safe_unknown' : (rawPage || 'unknown');
+                metrics.top_pages[page] = (Number(metrics.top_pages[page]) || 0) + 1;
             });
 
-            // Verificar conversões de venda reais e faturamento
-            const purchaseEvents = sessionData.events.filter(e => e.category === 'ecommerce' && e.action === 'purchase');
+            // Verificar conversões de funil (calculado ponderadamente sobre o total de sessões)
             const hasConversion = sessionData.events.some(e =>
                 e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
             );
-            
-            if (hasConversion) {
-                metrics.conversion_rate = (((Number(metrics.conversion_rate) || 0) * (metrics.total_sessions - 1)) + 1) / metrics.total_sessions;
-            }
-
-            // Somar receita das vendas da sessão
-            const sessionRevenue = purchaseEvents.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
-            if (sessionRevenue > 0) {
-                metrics.total_revenue = (Number(metrics.total_revenue) || 0) + sessionRevenue;
-            }
+            const conversionScore = hasConversion ? 1 : 0;
+            metrics.conversion_rate = (((Number(metrics.conversion_rate) || 0) * (metrics.total_sessions - 1)) + conversionScore) / metrics.total_sessions;
 
             // Salvar ou atualizar métricas
             const { error: upsertError } = await supabase
@@ -218,7 +276,7 @@ async function updateAggregatedMetrics(supabase: ReturnType<typeof createSupabas
 
             if (upsertError) {
                 if (attempt < maxRetries) {
-                    await new Promise(res => setTimeout(res, 50 * attempt));
+                    await new Promise(res => setTimeout(res, 50 * attempt + Math.floor(Math.random() * 50)));
                     continue;
                 }
                 console.error('Erro ao salvar métricas agregadas:', upsertError);
@@ -226,7 +284,7 @@ async function updateAggregatedMetrics(supabase: ReturnType<typeof createSupabas
             break;
         } catch (error) {
             if (attempt < maxRetries) {
-                await new Promise(res => setTimeout(res, 50 * attempt));
+                await new Promise(res => setTimeout(res, 50 * attempt + Math.floor(Math.random() * 50)));
                 continue;
             }
             console.error('Erro ao atualizar métricas agregadas:', error);
@@ -256,7 +314,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabase
             .from('analytics_daily_metrics')
             .select('*')
-            .gte('date', startDate.toISOString().split('T')[0])
+            .gte('date', getBrazilDateString(startDate))
             .order('date', { ascending: false });
 
         if (error) throw error;

@@ -54,45 +54,12 @@ export default function AnalyticsLoader() {
             }
         };
 
-        // Carrega imediatamente se já aceitou, ou na primeira interação do usuário (igual ao GA4)
+        // Carrega imediatamente se o usuário já aceitou cookies anteriormente
         const consent = getConsentCookie();
         if (consent === 'true') {
             loadAnalytics();
-        } else if (consent !== 'false') {
-            const onFirstInteraction = () => {
-                loadAnalytics();
-                cleanupInteractionListeners();
-            };
-
-                const cleanupInteractionListeners = () => {
-                    window.removeEventListener('scroll', onFirstInteraction);
-                    window.removeEventListener('mousemove', onFirstInteraction);
-                    window.removeEventListener('touchstart', onFirstInteraction);
-                    window.removeEventListener('click', onFirstInteraction);
-                };
-
-                window.addEventListener('scroll', onFirstInteraction, { passive: true, once: true });
-                window.addEventListener('mousemove', onFirstInteraction, { passive: true, once: true });
-                window.addEventListener('touchstart', onFirstInteraction, { passive: true, once: true });
-                window.addEventListener('click', onFirstInteraction, { passive: true, once: true });
-
-                const fallbackTimer = setTimeout(loadAnalytics, 4000);
-
-                const handleConsent = () => {
-                    loadAnalytics();
-                    if (typeof window.clarity === 'function') {
-                        window.clarity('consent');
-                    }
-                };
-                window.addEventListener('cookieConsentGranted', handleConsent);
-
-                return () => {
-                    cleanupInteractionListeners();
-                    clearTimeout(fallbackTimer);
-                    window.removeEventListener('cookieConsentGranted', handleConsent);
-                };
-            }
-
+        } else {
+            // Aguarda consentimento explícito do usuário (LGPD/GDPR)
             const handleConsent = () => {
                 loadAnalytics();
                 if (typeof window.clarity === 'function') {
@@ -104,7 +71,8 @@ export default function AnalyticsLoader() {
             return () => {
                 window.removeEventListener('cookieConsentGranted', handleConsent);
             };
-        }, [analyticsConfig]);
+        }
+    }, [analyticsConfig]);
 
     return null;
 }

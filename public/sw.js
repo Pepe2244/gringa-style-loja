@@ -96,14 +96,21 @@ self.addEventListener('fetch', (event) => {
 
 // Push notifications
 self.addEventListener('push', function (event) {
-    const data = event.data ? event.data.json() : {};
-    const title = data.titulo || "Gringa Style";
+    let data = {};
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch {
+            data = { mensagem: event.data.text() };
+        }
+    }
+    const title = data.titulo || data.title || "Gringa Style";
     const options = {
-        body: data.mensagem || "Nova atualização disponível!",
+        body: data.mensagem || data.body || "Nova atualização disponível!",
         icon: '/apple-touch-icon.png',
         badge: '/favicon-96x96.png',
         data: {
-            url: data.link || '/'
+            url: data.link || data.url || '/'
         },
         actions: [
             { action: 'view', title: 'Ver', icon: '/favicon-96x96.png' },
@@ -140,13 +147,6 @@ self.addEventListener('notificationclick', function (event) {
             }
         })
     );
-});
-
-// Background sync para pedidos offline
-self.addEventListener('sync', (event) => {
-    if (event.tag === 'background-sync-pedidos') {
-        event.waitUntil(syncPedidos());
-    }
 });
 
 self.addEventListener('message', (event) => {
@@ -192,9 +192,30 @@ async function cacheFirst(request) {
             } catch (_error) {
                 const cachedResponse = await caches.match(request);
                 if (cachedResponse) return cachedResponse;
-                return new Response('Offline - Conteúdo não disponível no momento.', {
-                    status: 503,
-                    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+                const offlineHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sem Conexão - Gringa Style</title>
+    <style>
+        body { margin: 0; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #111; color: #fff; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; }
+        .icon { font-size: 64px; margin-bottom: 20px; }
+        h1 { font-size: 2rem; margin: 0 0 12px; color: #ff6b00; }
+        p { color: #aaa; max-width: 460px; line-height: 1.6; margin: 0 0 24px; font-size: 1rem; }
+        .btn { background: linear-gradient(135deg, #ffa500, #ff8c00); color: #111; border: none; padding: 14px 28px; border-radius: 999px; font-weight: bold; font-size: 1rem; cursor: pointer; text-decoration: none; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="icon">⚡</div>
+    <h1>Você está offline</h1>
+    <p>Não foi possível conectar aos servidores da Gringa Style. Verifique sua conexão com a internet e tente recarregar.</p>
+    <button class="btn" onclick="window.location.reload()">Tentar Novamente</button>
+</body>
+</html>`;
+                return new Response(offlineHtml, {
+                    status: 200,
+                    headers: { 'Content-Type': 'text/html; charset=utf-8' }
                 });
             }
         }
@@ -225,20 +246,5 @@ async function cacheFirst(request) {
                 return new Response('Recurso temporariamente indisponível', { status: 503 });
             } catch (_error) {
                 return new Response('Recurso temporariamente indisponível', { status: 503 });
-            }
-        }
-
-        async function syncPedidos() {
-            try {
-                const cache = await caches.open('pedidos-offline');
-                const requests = await cache.keys();
-                for (const request of requests) {
-                    try {
-                        await fetch(request);
-                        await cache.delete(request);
-                    } catch (_error) { }
-                }
-            } catch (error) {
-                console.log('[SW] Background sync failed:', error);
             }
         }

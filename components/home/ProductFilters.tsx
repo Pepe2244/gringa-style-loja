@@ -1,3 +1,5 @@
+'use client';
+
 import { Category } from '@/types';
 import Link from 'next/link';
 import { Search, X, ChevronDown, ChevronUp, SlidersHorizontal, RotateCcw } from 'lucide-react';

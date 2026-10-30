@@ -1,13 +1,34 @@
+import 'server-only';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-export const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-  },
-});
+let clientInstance: S3Client | null = null;
+
+export function getR2Client(): S3Client {
+  if (clientInstance) return clientInstance;
+
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error('Configuração de credenciais do Cloudflare R2 incompleta.');
+  }
+
+  clientInstance = new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  });
+
+  return clientInstance;
+}
+
+export const r2Client = {
+  send: (cmd: PutObjectCommand) => getR2Client().send(cmd),
+};
 
 export async function uploadToR2(fileBuffer: Buffer, fileName: string, contentType: string) {
   const bucket = process.env.R2_BUCKET_NAME;
@@ -20,7 +41,7 @@ export async function uploadToR2(fileBuffer: Buffer, fileName: string, contentTy
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   const key = `${Date.now()}-${sanitizedFileName}`;
   
-  await r2Client.send(
+  await getR2Client().send(
     new PutObjectCommand({
       Bucket: bucket,
       Key: key,

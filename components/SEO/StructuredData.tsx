@@ -19,10 +19,17 @@ interface BreadcrumbItem {
 }
 
 const SITE_URL = siteConfig.appUrl;
+const PHONE = `+${siteConfig.contact.whatsapp}`;
 
 const cleanText = (text?: string): string => {
   if (!text) return '';
   return text.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
+};
+
+const safeJsonStringify = (data: unknown): string => {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e');
 };
 
 // 1. LocalBusiness: Valida que a Gringa Style é uma empresa real com endereço e contato
@@ -36,7 +43,7 @@ export const LocalBusinessSchema = () => {
     "logo": `${SITE_URL}/imagens/logo_gringa_style.png`,
     "image": `${SITE_URL}/imagens/logo_gringa_style.png`,
     "description": "Equipamentos de alta performance para soldadores profissionais. Máscaras personalizadas em fibra de vidro, tochas e vestuário.",
-    "telephone": "+5515998092548",
+    "telephone": PHONE,
     "email": "contato@gringastylebr.com.br",
     "address": {
       "@type": "PostalAddress",
@@ -68,7 +75,7 @@ export const LocalBusinessSchema = () => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -91,7 +98,7 @@ export const WebSiteSchema = () => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -114,7 +121,7 @@ export const FAQSchema = ({ questions }: { questions: Question[] }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -130,7 +137,7 @@ export const OrganizationSchema = () => {
     "logo": `${SITE_URL}/imagens/logo_gringa_style.png`,
     "image": `${SITE_URL}/imagens/logo_gringa_style.png`,
     "description": "Equipamentos profissionais para soldadores exigentes. Máscaras personalizadas, vestuário streetwear e acessórios de solda.",
-    "telephone": "+5515998092548",
+    "telephone": PHONE,
     "email": "contato@gringastylebr.com.br",
     "address": {
       "@type": "PostalAddress",
@@ -146,7 +153,7 @@ export const OrganizationSchema = () => {
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "customer service",
-      "telephone": "+5515998092548",
+      "telephone": PHONE,
       "email": "contato@gringastylebr.com.br",
       "availableLanguage": ["Portuguese"]
     }
@@ -155,7 +162,7 @@ export const OrganizationSchema = () => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -302,28 +309,11 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
   const brandName = product.marca || 'Gringa Style';
   const gtin = product.gtin13 ? { gtin13: product.gtin13 } : {};
 
-  // Métricas de avaliação estáveis e determinísticas baseadas no ID do produto para manter histórico no Google
-  const numericId = Number(product.id) || 1;
-  const ratingValue = product.avaliacoes ? Number(product.avaliacoes).toFixed(1) : (4.8 + ((numericId % 3) * 0.1)).toFixed(1);
-  const reviewCount = String(product.totalAvaliacoes || (20 + (numericId % 15)));
+  // Avaliações reais de clientes (conforme diretrizes do Google Search e Merchant Center)
+  const hasRealReviews = typeof product.avaliacoes === 'number' && product.avaliacoes > 0 && typeof product.totalAvaliacoes === 'number' && product.totalAvaliacoes > 0;
+  const ratingValue = hasRealReviews ? Number(product.avaliacoes).toFixed(1) : null;
+  const reviewCount = hasRealReviews ? String(product.totalAvaliacoes) : null;
 
-  const productReviews = [
-    {
-      '@type': 'Review',
-      'author': {
-        '@type': 'Person',
-        'name': 'Cliente Gringa Style'
-      },
-      'datePublished': '2026-08-15',
-      'reviewRating': {
-        '@type': 'Rating',
-        'ratingValue': '5',
-        'bestRating': '5',
-        'worstRating': '1'
-      },
-      'reviewBody': `Excelente ${product.nome}. Equipamento de alta qualidade, acabamento profissional e entrega super rápida. Recomendo!`
-    }
-  ];
 
   const aggregateOffer = {
     '@type': 'AggregateOffer',
@@ -358,20 +348,38 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     },
     ...gtin,
     'offers': product.variants ? aggregateOffer : baseOffer,
-    'aggregateRating': {
-      '@type': 'AggregateRating',
-      'ratingValue': ratingValue,
-      'reviewCount': reviewCount,
-      'bestRating': '5',
-      'worstRating': '1'
-    },
-    'review': productReviews
+    ...(hasRealReviews && ratingValue && reviewCount ? {
+      'aggregateRating': {
+        '@type': 'AggregateRating',
+        'ratingValue': ratingValue,
+        'reviewCount': reviewCount,
+        'bestRating': '5',
+        'worstRating': '1'
+      }
+    } : {}),
+    ...(Array.isArray((product as any).reviews) && (product as any).reviews.length > 0 ? {
+      'review': (product as any).reviews.map((r: any) => ({
+        '@type': 'Review',
+        'author': {
+          '@type': 'Person',
+          'name': r.autor || 'Cliente'
+        },
+        'datePublished': r.data || new Date().toISOString().split('T')[0],
+        'reviewRating': {
+          '@type': 'Rating',
+          'ratingValue': String(r.nota || 5),
+          'bestRating': '5',
+          'worstRating': '1'
+        },
+        'reviewBody': r.comentario || ''
+      }))
+    } : {})
   };
 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -528,7 +536,7 @@ export const ItemListSchema = ({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -549,7 +557,7 @@ export const BreadcrumbSchema = ({ items }: { items: BreadcrumbItem[] }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -582,7 +590,7 @@ export const WebPageSchema = ({ page }: { page: WebPageData }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };
@@ -629,7 +637,7 @@ export const CollectionPageSchema = ({ page }: { page: CollectionPageData }) => 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
     />
   );
 };

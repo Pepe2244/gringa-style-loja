@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
@@ -10,6 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { getCanonicalProductSlug } from '@/utils/slugify';
+import { buildWhatsAppUrl } from '@/lib/site-config';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShippingOption {
@@ -174,7 +175,8 @@ export default function CartPage() {
                 body: JSON.stringify({ 
                     to_postal_code: postalCode, 
                     country: selectedCountry,
-                    product_ids: items.map(i => i.produto_id)
+                    product_ids: items.map(i => i.produto_id),
+                    items: items.map(i => ({ produto_id: i.produto_id, quantidade: i.quantidade }))
                 })
             });
             const shipData = await shipRes.json();
@@ -194,6 +196,11 @@ export default function CartPage() {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 8) value = value.slice(0, 8);
             setCep(value);
+
+            if (value.length < 8) {
+                setShippingOptions([]);
+                setSelectedShipping(null);
+            }
 
             if (value.length === 8) {
                 setLoadingCep(true);
@@ -254,9 +261,13 @@ export default function CartPage() {
                 })
             });
 
-            const data = await response.json();
+            const data = await response.json().catch(() => null);
 
-            if (!response.ok) throw new Error('Falha na requisição');
+            if (!response.ok || !data) {
+                setAppliedCoupon(null);
+                setCouponMessage({ text: data?.mensagem || 'Erro ao validar cupom.', type: 'error' });
+                return;
+            }
 
             if (data.valido) {
                 setAppliedCoupon(data.cupom);
@@ -273,9 +284,13 @@ export default function CartPage() {
         }
     }, [couponCode, items, products, paymentMethod, getPrecoFinal]);
 
+    const prevPaymentMethodRef = useRef(paymentMethod);
     useEffect(() => {
-        if (appliedCoupon && !appliedCoupon.metodo_pagamento_restrito && couponCode.trim()) {
-            handleApplyCoupon();
+        if (prevPaymentMethodRef.current !== paymentMethod) {
+            prevPaymentMethodRef.current = paymentMethod;
+            if (appliedCoupon && couponCode.trim()) {
+                handleApplyCoupon();
+            }
         }
     }, [paymentMethod, appliedCoupon, couponCode, handleApplyCoupon]);
 
@@ -347,7 +362,8 @@ export default function CartPage() {
                     body: JSON.stringify({ 
                         to_postal_code: cep, 
                         country,
-                        product_ids: items.map(i => i.produto_id)
+                        product_ids: items.map(i => i.produto_id),
+                        items: items.map(i => ({ produto_id: i.produto_id, quantidade: i.quantidade }))
                     }),
                 });
                 const shippingQuote = await shippingResponse.json();
@@ -427,10 +443,18 @@ export default function CartPage() {
             message += `\n💰 *TOTAL${totalIsEstimate ? ' ESTIMADO' : ''}: R$ ${formatCurrency(finalTotal)}*\n\n`;
             message += `Aguardo as instruções finais!`;
 
-            const whatsappUrl = `https://wa.me/5515998092548?text=${encodeURIComponent(message)}`;
+            const whatsappUrl = buildWhatsAppUrl(message);
+
+            let navigated = false;
             if (checkoutWindow && !checkoutWindow.closed) {
-                checkoutWindow.location.href = whatsappUrl;
-            } else {
+                try {
+                    checkoutWindow.location.href = whatsappUrl;
+                    navigated = true;
+                } catch {
+                    navigated = false;
+                }
+            }
+            if (!navigated) {
                 window.location.href = whatsappUrl;
             }
         } catch (error) {
@@ -594,6 +618,7 @@ export default function CartPage() {
                                     setCountry(e.target.value);
                                     setCep('');
                                     setShippingOptions([]);
+                                    setSelectedShipping(null);
                                     setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
                                 }}
                                 style={{ flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white' }}

@@ -1,30 +1,39 @@
-import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
+
+let sharp;
+try {
+  const mod = await import('sharp');
+  sharp = mod.default || mod;
+} catch {
+  console.warn('Aviso: Dependência "sharp" não encontrada. Para rodar a otimização de imagens, instale com "npm i -D sharp".');
+}
 
 async function optimizeImages() {
   const dir = path.join(process.cwd(), 'public', 'imagens');
 
   console.log('--- Otimizando Imagens Críticas ---');
 
-  // 1. logo_gringa_style.png
-  if (fs.existsSync(path.join(dir, 'logo_gringa_style.png'))) {
-    const logoBuf = await sharp(path.join(dir, 'logo_gringa_style.png'))
-      .resize(960, 960, { fit: 'inside' })
-      .png({ compressionLevel: 9, quality: 85, effort: 8 })
-      .toBuffer();
-    fs.writeFileSync(path.join(dir, 'logo_gringa_style.png'), logoBuf);
-    console.log('logo_gringa_style.png otimizado:', (logoBuf.length / 1024).toFixed(1), 'KB');
-  }
+  if (sharp) {
+    // 1. logo_gringa_style.png
+    if (fs.existsSync(path.join(dir, 'logo_gringa_style.png'))) {
+      const logoBuf = await sharp(path.join(dir, 'logo_gringa_style.png'))
+        .resize(960, 960, { fit: 'inside' })
+        .png({ compressionLevel: 9, quality: 85, effort: 8 })
+        .toBuffer();
+      fs.writeFileSync(path.join(dir, 'logo_gringa_style.png'), logoBuf);
+      console.log('logo_gringa_style.png otimizado:', (logoBuf.length / 1024).toFixed(1), 'KB');
+    }
 
-  // 2. logo_gs_servicos_industriais.png
-  if (fs.existsSync(path.join(dir, 'logo_gs_servicos_industriais.png'))) {
-    const gsBuf = await sharp(path.join(dir, 'logo_gs_servicos_industriais.png'))
-      .resize(960, 960, { fit: 'inside' })
-      .png({ compressionLevel: 9, quality: 85, effort: 8 })
-      .toBuffer();
-    fs.writeFileSync(path.join(dir, 'logo_gs_servicos_industriais.png'), gsBuf);
-    console.log('logo_gs_servicos_industriais.png otimizado:', (gsBuf.length / 1024).toFixed(1), 'KB');
+    // 2. logo_gs_servicos_industriais.png
+    if (fs.existsSync(path.join(dir, 'logo_gs_servicos_industriais.png'))) {
+      const gsBuf = await sharp(path.join(dir, 'logo_gs_servicos_industriais.png'))
+        .resize(960, 960, { fit: 'inside' })
+        .png({ compressionLevel: 9, quality: 85, effort: 8 })
+        .toBuffer();
+      fs.writeFileSync(path.join(dir, 'logo_gs_servicos_industriais.png'), gsBuf);
+      console.log('logo_gs_servicos_industriais.png otimizado:', (gsBuf.length / 1024).toFixed(1), 'KB');
+    }
   }
 
   // 3. favicon.svg

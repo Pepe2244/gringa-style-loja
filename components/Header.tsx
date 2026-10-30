@@ -137,7 +137,7 @@ export default function Header() {
                         alt={isServices ? 'GS Serviços Industriais' : 'Gringa Style Logo'}
                         width={120}
                         height={120}
-                        loading="lazy"
+                        priority
                         style={{ width: '125px', height: '125px', maxWidth: 'none', objectFit: 'contain' }}
                     />
                 </Link>
