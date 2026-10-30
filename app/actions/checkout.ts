@@ -2,6 +2,38 @@
 
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
+export interface CreateOrderInput {
+    clienteNome: string;
+    clienteTelefone?: string;
+    clienteEmail?: string;
+    enderecoEntrega?: {
+        rua?: string;
+        numero?: string;
+        complemento?: string;
+        bairro?: string;
+        cidade?: string;
+        estado?: string;
+        cep?: string;
+        pais?: string;
+        freteEscolhido?: string;
+        prazoDias?: number;
+    } | null;
+    itens: Array<{
+        produto_id: number;
+        nome: string;
+        quantidade: number;
+        preco_unitario: number;
+        total_item: number;
+        variante?: { tipo: string; opcao: string } | null;
+    }>;
+    subtotal: number;
+    desconto: number;
+    frete: number;
+    total: number;
+    metodoPagamento: string;
+    cupomCodigo?: string | null;
+}
+
 /**
  * Incrementa com segurança o contador de utilizações de um cupom
  * quando um pedido é concluído/encaminhado ao checkout.
@@ -79,3 +111,52 @@ export async function incrementCouponUsage(couponCode: string) {
     }
 }
 
+/**
+ * Cria o registro do pedido no banco de dados Supabase (tabela pedidos)
+ * e aciona atomicamente o incremento do cupom caso utilizado.
+ */
+export async function createOrderRecord(input: CreateOrderInput): Promise<{ success: boolean; codigoPedido: string; error?: string }> {
+    const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const codigoPedido = `GS-${Date.now().toString(36).toUpperCase()}-${randomSuffix}`;
+
+    try {
+        const client = createSupabaseAdminClient();
+        const nomeCliente = (input.clienteNome || 'Cliente WhatsApp').trim().slice(0, 150);
+        const telefoneCliente = (input.clienteTelefone || '').trim().slice(0, 40) || 'Não informado';
+        const emailCliente = (input.clienteEmail || '').trim().slice(0, 150) || null;
+
+        const payload = {
+            codigo_pedido: codigoPedido,
+            cliente_nome: nomeCliente,
+            cliente_email: emailCliente,
+            cliente_telefone: telefoneCliente,
+            endereco_entrega: input.enderecoEntrega || null,
+            itens: input.itens || [],
+            subtotal: Number(input.subtotal) || 0,
+            desconto: Number(input.desconto) || 0,
+            frete: Number(input.frete) || 0,
+            total: Number(input.total) || 0,
+            metodo_pagamento: input.metodoPagamento || 'PIX',
+            status_pagamento: 'pendente',
+            cupom_aplicado: input.cupomCodigo ? input.cupomCodigo.toUpperCase().trim() : null
+        };
+
+        const { error: insertError } = await client.from('pedidos').insert(payload);
+        if (insertError) {
+            console.error('[Checkout] Falha ao registrar pedido na tabela pedidos:', insertError);
+            // Prossegue mesmo se a inserção falhar para não bloquear a finalização no WhatsApp
+        }
+
+        // Se houver cupom aplicado, incrementa seu contador no banco
+        if (input.cupomCodigo) {
+            await incrementCouponUsage(input.cupomCodigo).catch(err => {
+                console.error('[Checkout] Falha ao registrar uso de cupom:', err);
+            });
+        }
+
+        return { success: true, codigoPedido };
+    } catch (err: any) {
+        console.error('[Checkout] Erro inesperado ao criar registro de pedido:', err);
+        return { success: true, codigoPedido };
+    }
+}

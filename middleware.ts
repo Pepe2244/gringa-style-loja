@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/cloudflare';
 
 // ==========================================
 // 1. CONFIGURAÇÕES DE FIREWALL (EDGE)
@@ -40,7 +40,10 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
 
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 const upstashRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? Redis.fromEnv()
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
     : null;
 const distributedLimiters = new Map<string, Ratelimit>();
 
@@ -138,9 +141,9 @@ function localRateLimit(key: string, config: { maxRequests: number; windowMs: nu
 }
 
 // ==========================================
-// 3. FUNÇÃO PRINCIPAL EXPORTADA COMO PROXY
+// 3. FUNÇÃO PRINCIPAL DO MIDDLEWARE (EDGE)
 // ==========================================
-export default async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || '';
     const pathname = request.nextUrl.pathname;
     const method = request.method;
@@ -273,7 +276,7 @@ export default async function proxy(request: NextRequest) {
     return response;
 }
 
-export { proxy };
+export { middleware };
 
 export const config = {
     matcher: [

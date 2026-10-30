@@ -1037,7 +1037,10 @@ BEGIN
     IF v_raffle_finalized THEN
         UPDATE public.rifas
         SET status = 'finalizada',
-            numero_vencedor = p_numero,
+            numero_vencedor = COALESCE(
+                (SELECT vencedor_numero FROM public.premios WHERE rifa_id = p_rifa_id AND ordem = 1),
+                p_numero
+            ),
             data_sorteio = timezone('utc'::text, now())
         WHERE id = p_rifa_id;
     END IF;
@@ -1073,5 +1076,21 @@ GRANT EXECUTE ON FUNCTION public.admin_set_raffle_winner_by_number(integer, inte
 GRANT EXECUTE ON FUNCTION public.increment_daily_metrics(date, boolean, integer, integer, text, boolean, text[]) TO service_role;
 GRANT EXECUTE ON FUNCTION public.increment_coupon_usage(text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.reservar_numeros_rifa(integer, integer[], text, text) TO service_role;
+
+-- ------------------------------------------------------------------------------
+-- 8. PUBLICAÇÃO SUPABASE REALTIME (ATUALIZAÇÃO EM TEMPO REAL)
+-- ------------------------------------------------------------------------------
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_publication_tables 
+            WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'rifas'
+        ) THEN
+            ALTER PUBLICATION supabase_realtime ADD TABLE public.rifas;
+        END IF;
+    END IF;
+END
+$$;
 
 COMMIT;

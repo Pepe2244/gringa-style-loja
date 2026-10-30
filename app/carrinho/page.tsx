@@ -11,6 +11,7 @@ import { useCartStore, CartState } from '@/store/useCartStore';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { buildWhatsAppUrl } from '@/lib/site-config';
+import { createOrderRecord } from '@/app/actions/checkout';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShippingOption {
@@ -398,6 +399,34 @@ export default function CartPage() {
                 quantity: item.quantidade,
             }));
 
+            // Registra o pedido no banco de dados e incrementa o uso do cupom caso utilizado
+            const orderResult = await createOrderRecord({
+                clienteNome: clientName,
+                enderecoEntrega: hasShippingAddress ? {
+                    ...endereco,
+                    cep,
+                    pais: country === 'BR' ? 'Brasil' : country,
+                    freteEscolhido: currentShipping?.name,
+                    prazoDias: currentShipping ? (currentShipping.custom_delivery_time ?? currentShipping.delivery_time) : undefined,
+                } : null,
+                itens: quoteItems.map(item => ({
+                    produto_id: item.produto_id,
+                    nome: item.nome,
+                    quantidade: item.quantidade,
+                    preco_unitario: item.preco_unitario,
+                    total_item: item.total_item,
+                    variante: item.variante,
+                })),
+                subtotal,
+                desconto: discountAmount,
+                frete: shippingAmount,
+                total: finalTotal,
+                metodoPagamento: paymentMethod === 'Cartão de Crédito' ? `Cartão de Crédito (${installments})` : 'PIX',
+                cupomCodigo: quote.cupom || appliedCoupon?.codigo || null,
+            });
+
+            const orderIdentifier = orderResult.codigoPedido || '';
+
             if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
                 (window as any).gtag('event', 'begin_checkout', {
                     currency: 'BRL',
@@ -407,7 +436,7 @@ export default function CartPage() {
             }
 
             const formatCurrency = (value: number) => value.toFixed(2).replace('.', ',');
-            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido:\n\n`;
+            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido${orderIdentifier ? ` (*${orderIdentifier}*)` : ''}:\n\n`;
             message += `🛒 *Itens:*\n`;
             quoteItems.forEach((item) => {
                 const variantInfo = item.variante ? ` (${item.variante.tipo}: ${item.variante.opcao})` : '';
