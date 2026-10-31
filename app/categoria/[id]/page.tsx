@@ -140,6 +140,7 @@ export default async function CategoriaPage({ params }: Props) {
             <ItemListSchema
                 products={schemaProducts}
                 pageUrl={canonicalUrl}
+                name={`${category.nome} | Gringa Style`}
             />
             <CollectionPageSchema page={{
                 name: `${category.nome} | Gringa Style`,

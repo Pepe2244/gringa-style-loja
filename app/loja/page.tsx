@@ -100,6 +100,7 @@ export default async function LojaPage() {
           slug: p.slug,
         }))}
         pageUrl={lojaUrl}
+        name="Catálogo de Produtos | Loja Gringa Style"
       />
       <CollectionPageSchema page={{
         name: 'Loja Gringa Style',

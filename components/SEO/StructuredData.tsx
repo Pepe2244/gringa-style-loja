@@ -401,9 +401,11 @@ export interface ItemListProduct {
 export const ItemListSchema = ({
   products,
   pageUrl,
+  name,
 }: {
   products: ItemListProduct[];
   pageUrl: string;
+  name?: string;
 }) => {
   const validUntilDate = new Date();
   validUntilDate.setFullYear(validUntilDate.getFullYear() + 1);
@@ -469,7 +471,6 @@ export const ItemListSchema = ({
     return {
       '@type': 'ListItem',
       position: index + 1,
-      url: productUrl,
       item: {
         '@type': 'Product',
         'name': product.nome,
@@ -528,6 +529,7 @@ export const ItemListSchema = ({
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
+    'name': name || 'Catálogo de Produtos | Gringa Style',
     'numberOfItems': listItems.length,
     'itemListElement': listItems,
     'url': pageUrl.startsWith('http') ? pageUrl : `${SITE_URL}${pageUrl}`

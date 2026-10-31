@@ -339,6 +339,7 @@ function SearchPageContent() {
                                 slug: product.slug
                             }))}
                             pageUrl={buildCanonicalUrl(`/busca?q=${encodeURIComponent(query || '')}`)}
+                            name={`Resultados de Busca: ${query || 'Produtos'} | Gringa Style`}
                         />
 
                         <div style={{ marginTop: '30px', marginBottom: '20px', color: '#888' }}>
