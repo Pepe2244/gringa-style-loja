@@ -17,9 +17,15 @@ async function runAdmin<T>(operation: (client: ReturnType<typeof createSupabaseA
         return { success: true, data };
     } catch (error) {
         console.error('Erro em operação administrativa:', error);
+        let errorMessage = 'Erro interno.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+            errorMessage = error.message;
+        }
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Erro interno.',
+            error: errorMessage,
             ...(error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? { code: error.code } : {})
         };
     }
@@ -404,10 +410,11 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
             const { error } = await client.from('b2b_assets').delete().eq('section', 'hero');
             if (error) console.warn('Erro ao substituir hero:', error.message);
         }
-        const numId = id ? parseInt(id, 10) : NaN;
-        const validId = Number.isSafeInteger(numId) && numId > 0 ? numId : undefined;
-        const query = validId !== undefined
-            ? client.from('b2b_assets').update(payload).eq('id', validId)
+        const cleanId = id ? String(id).trim() : undefined;
+        const isPureInteger = cleanId ? /^\d+$/.test(cleanId) : false;
+        const targetId = cleanId ? (isPureInteger ? parseInt(cleanId, 10) : cleanId) : undefined;
+        const query = targetId !== undefined
+            ? client.from('b2b_assets').update(payload).eq('id', targetId as any)
             : client.from('b2b_assets').insert(payload);
         let { error } = await query;
 
@@ -419,8 +426,8 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
                 titulo: payload.title || 'Mídia B2B',
                 descricao: payload.secondary_url || null,
             };
-            const fallbackQuery = validId !== undefined
-                ? client.from('b2b_assets').update(legacyPayload).eq('id', validId)
+            const fallbackQuery = targetId !== undefined
+                ? client.from('b2b_assets').update(legacyPayload).eq('id', targetId as any)
                 : client.from('b2b_assets').insert(legacyPayload);
             const fallbackRes = await fallbackQuery;
             error = fallbackRes.error;
@@ -434,10 +441,11 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
 export async function deleteB2BAsset(id: string | number) {
     return runAdmin(async (client) => {
         const strId = String(id).trim();
-        const numId = parseInt(strId, 10);
-        const query = Number.isSafeInteger(numId)
-            ? client.from('b2b_assets').delete().or(`id.eq.${strId},id.eq.${numId}`)
-            : client.from('b2b_assets').delete().eq('id', strId);
+        if (!strId) throw new Error('ID da mídia B2B não informado.');
+        const isPureInteger = /^\d+$/.test(strId);
+        const query = isPureInteger
+            ? client.from('b2b_assets').delete().eq('id', parseInt(strId, 10) as any)
+            : client.from('b2b_assets').delete().eq('id', strId as any);
         const { error } = await query;
         if (error) throw error;
         revalidatePath('/gs-servicos-industriais', 'page');

@@ -161,3 +161,13 @@ test('slug starting with numbers does not falsely match as numeric id', () => {
     assert.equal(isPureNumericId('12-eletrodos-de-tungstenio'), false);
     assert.equal(isPureNumericId('90-graus-esquadro'), false);
 });
+
+test('b2b asset id detection differentiates pure integers from uuids starting with numbers', () => {
+    const isPureInteger = (val: string) => /^\d+$/.test(val);
+    assert.equal(isPureInteger('123'), true);
+    assert.equal(isPureInteger('456789'), true);
+    // UUIDs starting with numbers must NOT be treated as pure integers
+    assert.equal(isPureInteger('15796ac1-ec1f-470f-9116-0d4c5ac93251'), false);
+    assert.equal(isPureInteger('e84088ad-e3c9-4d1d-88e2-6ffe7004844d'), false);
+    assert.equal(isPureInteger('b74ee4fa-4164-46d0-81d5-7fe4f95014c8'), false);
+});

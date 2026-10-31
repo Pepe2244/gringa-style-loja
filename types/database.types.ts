@@ -478,20 +478,20 @@ export interface Database {
             }
             b2b_assets: {
                 Row: {
-                    id: number
+                    id: string | number
                     created_at: string
-                    titulo: string
+                    titulo?: string
                     descricao: string | null
-                    tipo: string
+                    tipo?: string
                     url: string
-                    tamanho_bytes: number | null
-                    ordem: number
+                    tamanho_bytes?: number | null
+                    ordem?: number
                     section?: string | null
                     title?: string | null
                     secondary_url?: string | null
                 }
                 Insert: {
-                    id?: number
+                    id?: string | number
                     created_at?: string
                     titulo?: string
                     descricao?: string | null
@@ -504,7 +504,7 @@ export interface Database {
                     secondary_url?: string | null
                 }
                 Update: {
-                    id?: number
+                    id?: string | number
                     created_at?: string
                     titulo?: string
                     descricao?: string | null
