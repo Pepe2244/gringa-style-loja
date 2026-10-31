@@ -315,20 +315,6 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
   const reviewCount = hasRealReviews ? String(product.totalAvaliacoes) : null;
 
 
-  const aggregateOffer = {
-    '@type': 'AggregateOffer',
-    'priceCurrency': 'BRL',
-    'lowPrice': precoFormatado,
-    'highPrice': Number(product.preco).toFixed(2),
-    'offerCount': Array.isArray(product.variants?.opcoes) ? product.variants.opcoes.length : 1,
-    'validFrom': new Date().toISOString().split('T')[0],
-    'priceValidUntil': validUntilDate.toISOString().split('T')[0],
-    'hasMerchantReturnPolicy': merchantReturnPolicy,
-    'shippingDetails': shippingDetails,
-    'seller': seller,
-    'offers': [baseOffer]
-  };
-
   const taxonomy = getProductTaxonomy(product.nome);
 
   const schema: any = {
@@ -347,7 +333,7 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
       'name': brandName
     },
     ...gtin,
-    'offers': product.variants ? aggregateOffer : baseOffer,
+    'offers': baseOffer,
     ...(hasRealReviews && ratingValue && reviewCount ? {
       'aggregateRating': {
         '@type': 'AggregateRating',
