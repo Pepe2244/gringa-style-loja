@@ -631,6 +631,7 @@ export const CollectionPageSchema = ({ page }: { page: CollectionPageData }) => 
     },
     "mainEntity": {
       "@type": "ItemList",
+      "name": page.name,
       "numberOfItems": items.length,
       "itemListElement": items
     }
