@@ -31,6 +31,11 @@ export default function robots(): MetadataRoute.Robots {
         disallow: commonDisallow,
       },
       {
+        userAgent: ['Bingbot', 'msnbot', 'BingPreview'],
+        allow: ['/', '/llms.txt', '/llms-full.txt', ...publicFeeds],
+        disallow: [...commonDisallow, '/api/'],
+      },
+      {
         userAgent: ['facebookexternalhit', 'Facebot', 'Meta-ExternalAgent'],
         allow: publicFeeds,
         disallow: commonDisallow,
