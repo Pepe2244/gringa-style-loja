@@ -12,6 +12,7 @@ import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { buildWhatsAppUrl } from '@/lib/site-config';
 import { createOrderRecord } from '@/app/actions/checkout';
+import { formatCpf, isValidCpf } from '@/lib/validation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShippingOption {
@@ -39,6 +40,7 @@ export default function CartPage() {
     const [validatingCoupon, setValidatingCoupon] = useState(false);
 
     const [clientName, setClientName] = useState('');
+    const [clientCpf, setClientCpf] = useState('');
     const [cep, setCep] = useState('');
     const [country, setCountry] = useState('BR');
     const [loadingCep, setLoadingCep] = useState(false);
@@ -231,6 +233,14 @@ export default function CartPage() {
         }
     };
 
+    const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (country === 'BR') {
+            setClientCpf(formatCpf(e.target.value));
+        } else {
+            setClientCpf(e.target.value.slice(0, 30));
+        }
+    };
+
     const handleApplyCoupon = useCallback(async () => {
         if (!couponCode.trim()) {
             setCouponMessage({ text: 'Digite um código de cupom.', type: 'error' });
@@ -299,6 +309,16 @@ export default function CartPage() {
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome para finalizar.', 'error');
             return;
+        }
+        if (country === 'BR') {
+            if (!clientCpf.trim()) {
+                showToast('Por favor, informe seu CPF para emissão e envio.', 'error');
+                return;
+            }
+            if (!isValidCpf(clientCpf)) {
+                showToast('Por favor, informe um CPF válido.', 'error');
+                return;
+            }
         }
         if (country === 'BR' && cep.length > 0 && cep.length !== 8) {
             showToast('Informe um CEP válido de 8 dígitos.', 'error');
@@ -402,6 +422,7 @@ export default function CartPage() {
             // Registra o pedido no banco de dados e incrementa o uso do cupom caso utilizado
             const orderResult = await createOrderRecord({
                 clienteNome: clientName,
+                clienteCpf: clientCpf.trim() || undefined,
                 enderecoEntrega: hasShippingAddress ? {
                     ...endereco,
                     cep,
@@ -436,8 +457,11 @@ export default function CartPage() {
             }
 
             const formatCurrency = (value: number) => value.toFixed(2).replace('.', ',');
-            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido${orderIdentifier ? ` (*${orderIdentifier}*)` : ''}:\n\n`;
-            message += `🛒 *Itens:*\n`;
+            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de finalizar meu pedido${orderIdentifier ? ` (*${orderIdentifier}*)` : ''}:\n`;
+            if (clientCpf.trim()) {
+                message += `📄 *${country === 'BR' ? 'CPF' : 'Documento'}:* ${clientCpf.trim()}\n`;
+            }
+            message += `\n🛒 *Itens:*\n`;
             quoteItems.forEach((item) => {
                 const variantInfo = item.variante ? ` (${item.variante.tipo}: ${item.variante.opcao})` : '';
                 message += `• ${item.quantidade}x ${item.nome}${variantInfo} - R$ ${formatCurrency(item.total_item)}\n`;
@@ -635,6 +659,28 @@ export default function CartPage() {
                         </motion.div>
                     </div>
 
+                    <div style={{ marginBottom: '15px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', color: '#aaa', fontSize: '0.9rem' }}>
+                            {country === 'BR' ? 'CPF do Comprador' : 'Documento / ID (Opcional)'}
+                        </label>
+                        <motion.div
+                            animate={{ boxShadow: focusedInput === 'cpf' ? '0 0 10px rgba(255, 165, 0, 0.3)' : '0 0 0px rgba(255, 165, 0, 0)' }}
+                            transition={{ duration: 0.2 }}
+                            style={{ borderRadius: '6px' }}
+                        >
+                            <input
+                                type="text"
+                                placeholder={country === 'BR' ? "000.000.000-00" : "Passaporte / Tax ID"}
+                                maxLength={country === 'BR' ? 14 : 30}
+                                value={clientCpf}
+                                onChange={handleCpfChange}
+                                onFocus={() => setFocusedInput('cpf')}
+                                onBlur={() => setFocusedInput(null)}
+                                style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white', boxSizing: 'border-box' }}
+                            />
+                        </motion.div>
+                    </div>
+
                     <div style={{ marginBottom: '15px', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                             <label style={{ color: '#aaa', fontSize: '0.9rem' }}>CEP de Entrega (Opcional)</label>
@@ -644,11 +690,15 @@ export default function CartPage() {
                             <select
                                 value={country}
                                 onChange={(e) => {
-                                    setCountry(e.target.value);
+                                    const nextCountry = e.target.value;
+                                    setCountry(nextCountry);
                                     setCep('');
                                     setShippingOptions([]);
                                     setSelectedShipping(null);
                                     setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
+                                    if (nextCountry === 'BR' && clientCpf) {
+                                        setClientCpf(formatCpf(clientCpf));
+                                    }
                                 }}
                                 style={{ flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: 'white' }}
                             >

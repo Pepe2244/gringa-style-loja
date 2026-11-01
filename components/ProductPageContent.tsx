@@ -542,7 +542,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                     </span>
                                 </div>
                                 <p style={{ fontSize: '0.95rem', color: '#ccc', marginTop: '8px' }}>
-                                    ou <strong style={{ color: '#fff' }}>R$ {cardPrice.toFixed(2).replace('.', ',')}</strong> em até 12x de <strong style={{ color: '#fff' }}>R$ {(cardPrice / 12).toFixed(2).replace('.', ',')}</strong> sem juros no cartão
+                                    ou <strong style={{ color: '#fff' }}>R$ {cardPrice.toFixed(2).replace('.', ',')}</strong> em até 12x no cartão
                                 </p>
                             </>
                         ) : (
@@ -562,7 +562,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                     </span>
                                 )}
                                 <p style={{ fontSize: '0.95rem', color: '#ccc', marginTop: '8px' }}>
-                                    em até 12x de <strong style={{ color: '#fff' }}>R$ {(cardPrice / 12).toFixed(2).replace('.', ',')}</strong> sem juros no cartão
+                                    em até 12x no cartão
                                 </p>
                             </>
                         )}

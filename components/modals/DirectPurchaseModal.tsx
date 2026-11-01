@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { getUnitPrice } from '@/lib/checkout-pricing';
+import { createOrderRecord } from '@/app/actions/checkout';
+import { formatCpf, isValidCpf } from '@/lib/validation';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -42,6 +44,7 @@ export default function DirectPurchaseModal({
 }: DirectPurchaseModalProps) {
     const { showToast } = useToast();
     const [clientName, setClientName] = useState('');
+    const [clientCpf, setClientCpf] = useState('');
     const [cep, setCep] = useState('');
     const [country, setCountry] = useState('BR');
     const [loadingCep, setLoadingCep] = useState(false);
@@ -60,6 +63,7 @@ export default function DirectPurchaseModal({
     useEffect(() => {
         if (isOpen && product) {
             setClientName('');
+            setClientCpf('');
             setPaymentMethod('PIX');
             setInstallments('1x');
 
@@ -157,11 +161,29 @@ export default function DirectPurchaseModal({
         }
     };
 
+    const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (country === 'BR') {
+            setClientCpf(formatCpf(e.target.value));
+        } else {
+            setClientCpf(e.target.value.slice(0, 30));
+        }
+    };
+
     const handleDirectPurchase = async () => {
         if (isCheckingOut) return;
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome.', 'error');
             return;
+        }
+        if (country === 'BR') {
+            if (!clientCpf.trim()) {
+                showToast('Por favor, informe seu CPF para emissão e envio.', 'error');
+                return;
+            }
+            if (!isValidCpf(clientCpf)) {
+                showToast('Por favor, informe um CPF válido.', 'error');
+                return;
+            }
         }
         if (country === 'BR' && cep.length > 0 && cep.length !== 8) {
             showToast('Informe um CEP válido de 8 dígitos.', 'error');
@@ -262,8 +284,39 @@ export default function DirectPurchaseModal({
                 });
             }
 
-            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item:\n\n`;
-            message += `*Produto:* ${quotedItem.nome}`;
+            // Registra o pedido no banco de dados
+            const orderResult = await createOrderRecord({
+                clienteNome: clientName,
+                clienteCpf: clientCpf.trim() || undefined,
+                enderecoEntrega: hasShippingAddress ? {
+                    ...endereco,
+                    cep,
+                    pais: country === 'BR' ? 'Brasil' : country,
+                    freteEscolhido: currentShipping?.name,
+                    prazoDias: currentShipping ? (currentShipping.custom_delivery_time ?? currentShipping.delivery_time) : undefined,
+                } : null,
+                itens: [{
+                    produto_id: product.id,
+                    nome: quotedItem.nome,
+                    quantidade: 1,
+                    preco_unitario: Number(quotedItem.preco_unitario),
+                    total_item: productPrice,
+                    variante: selectedVariant,
+                }],
+                subtotal: productPrice,
+                desconto: 0,
+                frete: shippingAmount,
+                total: finalTotal,
+                metodoPagamento: paymentMethod === 'Cartão de Crédito' ? `Cartão de Crédito (${installments})` : 'PIX',
+            }).catch(() => ({ success: false, codigoPedido: '' }));
+
+            const orderIdentifier = orderResult?.codigoPedido || '';
+
+            let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item${orderIdentifier ? ` (*${orderIdentifier}*)` : ''}:\n`;
+            if (clientCpf.trim()) {
+                message += `📄 *${country === 'BR' ? 'CPF' : 'Documento'}:* ${clientCpf.trim()}\n`;
+            }
+            message += `\n*Produto:* ${quotedItem.nome}`;
             if (selectedVariant) message += `\n*Opção:* ${selectedVariant.tipo}: ${selectedVariant.opcao}`;
             message += `\n*Valor:* R$ ${formatCurrency(productPrice)}\n\n`;
             message += paymentMethod === 'Cartão de Crédito'
@@ -379,6 +432,22 @@ export default function DirectPurchaseModal({
                 />
             </div>
 
+            <div className="campo-cliente" style={{ marginTop: '10px' }}>
+                <label htmlFor="modal-cpf-cliente">
+                    {country === 'BR' ? 'CPF do Comprador' : 'Documento / ID (Opcional)'}
+                </label>
+                <input
+                    type="text"
+                    id="modal-cpf-cliente"
+                    className="input-cliente"
+                    placeholder={country === 'BR' ? "000.000.000-00" : "Passaporte / Tax ID"}
+                    maxLength={country === 'BR' ? 14 : 30}
+                    value={clientCpf}
+                    onChange={handleCpfChange}
+                    required={country === 'BR'}
+                />
+            </div>
+
             <div className="endereco-container" style={{ marginTop: '15px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid #333' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <label htmlFor="modal-cep" style={{ fontWeight: 'bold' }}>CEP de Entrega (Opcional)</label>
@@ -388,11 +457,15 @@ export default function DirectPurchaseModal({
                     <select
                         value={country}
                         onChange={(e) => {
-                            setCountry(e.target.value);
+                            const nextCountry = e.target.value;
+                            setCountry(nextCountry);
                             setCep('');
                             setShippingOptions([]);
                             setSelectedShipping(null);
                             setEndereco({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
+                            if (nextCountry === 'BR' && clientCpf) {
+                                setClientCpf(formatCpf(clientCpf));
+                            }
                         }}
                         className="select-pagamento"
                         style={{ flex: '0 0 120px', minWidth: '120px', padding: '10px' }}
@@ -493,7 +566,7 @@ export default function DirectPurchaseModal({
                         value={installments}
                         onChange={(e) => setInstallments(e.target.value)}
                     >
-                        <option value="1x">1x sem juros</option>
+                        <option value="1x">1x (à vista)</option>
                         <option value="2x">2x</option>
                         <option value="3x">3x</option>
                         <option value="12x">12x</option>

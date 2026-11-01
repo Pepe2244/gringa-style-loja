@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s | Gringa Style",
   },
   description:
-    "Máscaras de solda personalizadas em fibra de vidro, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.",
+    "Máscaras de solda personalizadas em fibra de vidro, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x no cartão.",
   keywords: [
     "máscara de solda personalizada",
     "máscara de solda tig",

@@ -92,17 +92,17 @@ function getCategoryAboutText(categoryName: string): string {
     const name = categoryName.toLowerCase();
 
     if (name.includes('máscara') || name.includes('mascara')) {
-        return 'Nossas máscaras de solda são fabricadas em fibra de vidro leve e resistente, oferecendo proteção contra raios UV e infravermelhos gerados pelo arco elétrico. As lentes passivas escuras garantem visibilidade cristalina da poça de fusão, minimizando a fadiga ocular mesmo após horas de trabalho contínuo. Cada máscara pode ser personalizada com designs exclusivos, tornando-se uma extensão da identidade do soldador. Enviamos para todo o Brasil com pagamento via PIX (aprovação imediata) ou cartão de crédito em até 12x sem juros.';
+        return 'Nossas máscaras de solda são fabricadas em fibra de vidro leve e resistente, oferecendo proteção contra raios UV e infravermelhos gerados pelo arco elétrico. As lentes passivas escuras garantem visibilidade cristalina da poça de fusão, minimizando a fadiga ocular mesmo após horas de trabalho contínuo. Cada máscara pode ser personalizada com designs exclusivos, tornando-se uma extensão da identidade do soldador. Enviamos para todo o Brasil com pagamento via PIX (aprovação imediata) ou cartão de crédito em até 12x.';
     }
     if (name.includes('vestu') || name.includes('camiseta') || name.includes('boné') || name.includes('bone')) {
         return 'Linha de vestuário e acessórios desenvolvida para soldadores que não abrem mão do estilo. Bonés aba curva estruturados, camisetas em algodão estampadas e itens de streetwear industrial que combinam durabilidade e atitude. Peças pensadas para o dia a dia da oficina e para o orgulho da profissão. Pronta entrega e envio para todo o Brasil.';
     }
     if (name.includes('epi') || name.includes('proteção') || name.includes('protecao')) {
-        return 'Equipamentos de Proteção Individual selecionados para a segurança do soldador. Luvas térmicas, botinas com bico de composite ou aço, mangotes e demais acessórios que garantem proteção contra calor, faíscas e impactos. Conforto para uso prolongado e certificação de segurança. Compre com PIX ou cartão em até 12x sem juros.';
+        return 'Equipamentos de Proteção Individual selecionados para a segurança do soldador. Luvas térmicas, botinas com bico de composite ou aço, mangotes e demais acessórios que garantem proteção contra calor, faíscas e impactos. Conforto para uso prolongado e certificação de segurança. Compre com PIX ou cartão em até 12x.';
     }
     if (name.includes('tocha') || name.includes('acessóri') || name.includes('acessori')) {
         return 'Tochas, bocais e acessórios de precisão para soldagem TIG e MIG. Peças de reposição originais e compatíveis, selecionadas para garantir o melhor desempenho e acabamento no cordão de solda. Produtos para quem exige performance e durabilidade no equipamento. Entrega rápida para todo o Brasil.';
     }
 
-    return `Seleção de ${categoryName.toLowerCase()} para profissionais de soldagem. Produtos com qualidade garantida, envio para todo o Brasil e pagamento via PIX ou cartão de crédito em até 12x sem juros.`;
+    return `Seleção de ${categoryName.toLowerCase()} para profissionais de soldagem. Produtos com qualidade garantida, envio para todo o Brasil e pagamento via PIX ou cartão de crédito em até 12x.`;
 }

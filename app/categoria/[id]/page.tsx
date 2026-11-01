@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const categoryName = category.nome;
     const rawTitle = `${categoryName} | Compre Online | Gringa Style`;
     const title = rawTitle.length <= 60 ? rawTitle : `${categoryName} | Gringa Style`;
-    const description = `${categoryName} para soldadores profissionais: máscaras, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x sem juros.`;
+    const description = `${categoryName} para soldadores profissionais: máscaras, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x no cartão.`;
     const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
 
     const sampleMedia = sampleProductRes.data?.media_urls || sampleProductRes.data?.imagens || [];

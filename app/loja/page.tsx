@@ -10,7 +10,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: { absolute: 'Loja Gringa Style | Máscaras de Solda e Acessórios TIG' },
-  description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega, PIX e até 12x sem juros para todo o Brasil.',
+  description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega, PIX e até 12x no cartão para todo o Brasil.',
   alternates: { canonical: buildCanonicalUrl('/loja') },
   keywords: [
     'loja solda',

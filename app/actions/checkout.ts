@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export interface CreateOrderInput {
     clienteNome: string;
+    clienteCpf?: string;
     clienteTelefone?: string;
     clienteEmail?: string;
     enderecoEntrega?: {
@@ -17,6 +18,7 @@ export interface CreateOrderInput {
         pais?: string;
         freteEscolhido?: string;
         prazoDias?: number;
+        cpf?: string;
     } | null;
     itens: Array<{
         produto_id: number;
@@ -125,12 +127,16 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
         const telefoneCliente = (input.clienteTelefone || '').trim().slice(0, 40) || 'Não informado';
         const emailCliente = (input.clienteEmail || '').trim().slice(0, 150) || null;
 
+        const enderecoEntrega = input.enderecoEntrega
+            ? { ...input.enderecoEntrega, ...(input.clienteCpf ? { cpf: input.clienteCpf.trim() } : {}) }
+            : (input.clienteCpf ? { cpf: input.clienteCpf.trim() } : null);
+
         const payload = {
             codigo_pedido: codigoPedido,
             cliente_nome: nomeCliente,
             cliente_email: emailCliente,
             cliente_telefone: telefoneCliente,
-            endereco_entrega: input.enderecoEntrega || null,
+            endereco_entrega: enderecoEntrega,
             itens: input.itens || [],
             subtotal: Number(input.subtotal) || 0,
             desconto: Number(input.desconto) || 0,
