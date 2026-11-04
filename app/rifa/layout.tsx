@@ -16,7 +16,7 @@ export const metadata: Metadata = {
         type: 'website',
         images: [
             {
-                url: `${siteConfig.appUrl}/imagens/logo_gringa_style.png`,
+                url: `${siteConfig.appUrl}/imagens/logo_gringa_style.webp`,
                 width: 800,
                 height: 600,
                 alt: 'Rifa Gringa Style',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'Ação Entre Amigos / Rifa de Solda | Gringa Style',
         description: 'Concorra a máscaras de solda exclusivas e prêmios profissionais.',
-        images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.png`],
+        images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.webp`],
     },
 };
 

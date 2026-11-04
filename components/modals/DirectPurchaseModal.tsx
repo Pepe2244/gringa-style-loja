@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
 import { useToast } from '@/context/ToastContext';
@@ -577,6 +578,12 @@ export default function DirectPurchaseModal({
             <button className="btn btn-finalizar" onClick={handleDirectPurchase} disabled={isCheckingOut} style={{ marginTop: '20px' }}>
                 {isCheckingOut ? 'Validando pedido...' : 'Confirmar Pedido no WhatsApp'}
             </button>
+            <p style={{ marginTop: '14px', fontSize: '0.78rem', color: '#777', textAlign: 'center', lineHeight: '1.4' }}>
+                Compra protegida conforme nossa{' '}
+                <Link href="/privacidade" style={{ color: '#aaa', textDecoration: 'underline' }}>Política de Privacidade</Link>
+                {' '}e garantia legal de{' '}
+                <Link href="/devolucao-e-reembolso" style={{ color: '#aaa', textDecoration: 'underline' }}>Devolução e Reembolso</Link>.
+            </p>
             </div>
         </Modal>
     );

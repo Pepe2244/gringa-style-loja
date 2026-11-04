@@ -185,8 +185,9 @@ function TrackingContent() {
                 )}
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '40px' }}>
+            <div style={{ textAlign: 'center', marginTop: '40px', display: 'flex', justifyContent: 'center', gap: '15px', flexWrap: 'wrap' }}>
                 <Link href="/rifa" className="btn btn-secundario">Voltar para a Rifa</Link>
+                <Link href="/historico" className="btn" style={{ background: '#333', color: '#fff' }}>Histórico de Ganhadores</Link>
             </div>
         </div>
     );

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
+import { BreadcrumbSchema, WebPageSchema, ArticleSchema } from '@/components/SEO/StructuredData';
 import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
         type: 'website',
         images: [
             {
-                url: `${siteConfig.appUrl}/imagens/logo_gringa_style.png`,
+                url: `${siteConfig.appUrl}/imagens/logo_gringa_style.webp`,
                 width: 800,
                 height: 600,
                 alt: 'Sobre o Grupo Gringa Style',
@@ -28,13 +28,21 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
         description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
-        images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.png`],
+        images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.webp`],
     },
 };
 
 export default function SobrePage() {
     return (
         <>
+            <ArticleSchema article={{
+                headline: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
+                description: 'Conheça a história e estrutura do Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
+                url: buildCanonicalUrl('/sobre'),
+                image: `${siteConfig.appUrl}/imagens/logo_gringa_style.webp`,
+                datePublished: '2026-01-15T00:00:00+00:00',
+                dateModified: '2026-11-01T00:00:00+00:00'
+            }} />
             <WebPageSchema page={{
                 name: 'Sobre o Grupo Gringa Style',
                 description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
@@ -69,7 +77,7 @@ export default function SobrePage() {
                     <h2 className="titulo-secao" style={{ fontSize: '2.5rem', textAlign: 'center' }}>Nossa História</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
                         <Image 
-                            src="/imagens/logo_gringa_style.png" 
+                            src="/imagens/logo_gringa_style.webp" 
                             alt="Logo Gringa Style" 
                             width={150} 
                             height={150} 

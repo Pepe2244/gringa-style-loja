@@ -148,29 +148,21 @@ export default async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
     const method = request.method;
 
-    // --- ETAPA 0: FORÇAR HTTPS E NON-WWW (301 PERMANENTE) ---
-    const host = request.headers.get('host') || request.nextUrl.host;
-    if (host && (host.includes('netlify.app') || host.includes('gringa-style.netlify.app'))) {
+    // --- ETAPA 0: FORÇAR HTTPS E CANONICAL DOMAIN EM UM ÚNICO HOP (301 PERMANENTE) ---
+    const hostRaw = (request.headers.get('host') || request.nextUrl.host || '').toLowerCase();
+    const proto = request.headers.get('x-forwarded-proto') || request.nextUrl.protocol.replace(':', '');
+    const isLocalhost = hostRaw.includes('localhost') || hostRaw.includes('127.0.0.1');
+    const isWww = hostRaw.startsWith('www.');
+    const isNetlify = hostRaw.includes('netlify.app');
+    const isHttp = proto === 'http';
+
+    if (!isLocalhost && (isWww || isNetlify || isHttp)) {
+        const canonicalHost = isNetlify ? 'gringastylebr.com.br' : (isWww ? hostRaw.replace(/^www\./i, '') : hostRaw);
         const targetUrl = new URL(
             `${request.nextUrl.pathname}${request.nextUrl.search}`,
-            'https://gringastylebr.com.br'
+            `https://${canonicalHost}`
         );
         return NextResponse.redirect(targetUrl, 301);
-    }
-
-    if (host && host.toLowerCase().startsWith('www.')) {
-        const nonWwwHost = host.replace(/^www\./i, '');
-        const targetUrl = new URL(
-            `${request.nextUrl.pathname}${request.nextUrl.search}`,
-            `https://${nonWwwHost}`
-        );
-        return NextResponse.redirect(targetUrl, 301);
-    }
-
-    const proto = request.headers.get('x-forwarded-proto');
-    if (proto === 'http') {
-        const httpsUrl = new URL(`https://${request.nextUrl.host}${request.nextUrl.pathname}${request.nextUrl.search}`);
-        return NextResponse.redirect(httpsUrl, 301);
     }
 
     // --- ETAPA 1: FIREWALL (Bloqueio de Bots e Paths Maliciosos) ---

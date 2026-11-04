@@ -630,3 +630,49 @@ export const CollectionPageSchema = ({ page }: { page: CollectionPageData }) => 
     />
   );
 };
+
+// 10. Article: Schema para páginas institucionais com conteúdo editorial ou história
+interface ArticleData {
+  headline: string;
+  description: string;
+  url: string;
+  datePublished?: string;
+  dateModified?: string;
+  image?: string;
+}
+
+export const ArticleSchema = ({ article }: { article: ArticleData }) => {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": article.url.startsWith('http') ? article.url : `${SITE_URL}${article.url}`
+    },
+    "headline": article.headline,
+    "description": cleanText(article.description),
+    "image": article.image || `${SITE_URL}/imagens/logo_gringa_style.webp`,
+    "datePublished": article.datePublished || "2026-01-01T00:00:00+00:00",
+    "dateModified": article.dateModified || new Date().toISOString(),
+    "author": {
+      "@type": "Organization",
+      "name": "Gringa Style",
+      "url": SITE_URL
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Gringa Style",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${SITE_URL}/imagens/logo_gringa_style.webp`
+      }
+    }
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: safeJsonStringify(schema) }}
+    />
+  );
+};

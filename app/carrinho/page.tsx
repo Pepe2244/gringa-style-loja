@@ -900,6 +900,12 @@ export default function CartPage() {
                             <Truck size={20} color="var(--cor-destaque)" /> <span>Envio Rápido</span>
                         </div>
                     </div>
+                    <p style={{ marginTop: '16px', fontSize: '0.78rem', color: '#777', textAlign: 'center', lineHeight: '1.4' }}>
+                        Seus dados estão protegidos pela nossa{' '}
+                        <Link href="/privacidade" style={{ color: '#aaa', textDecoration: 'underline' }}>Política de Privacidade</Link>
+                        . Garantia legal com direito de{' '}
+                        <Link href="/devolucao-e-reembolso" style={{ color: '#aaa', textDecoration: 'underline' }}>Devolução e Reembolso</Link>.
+                    </p>
                 </div>
             </div>
 

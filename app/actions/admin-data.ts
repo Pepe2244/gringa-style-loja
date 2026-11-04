@@ -4,6 +4,8 @@ import { revalidatePath, revalidateTag, updateTag } from 'next/cache';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { clearProductServiceCache } from '@/lib/product-service';
+import { submitToIndexNow } from '@/lib/indexnow';
+import { siteConfig } from '@/lib/site-config';
 
 type AdminResult<T = undefined> =
     | { success: true; data: T }
@@ -108,6 +110,16 @@ function revalidateProducts(slug?: string, id?: number) {
     revalidatePath('/busca', 'page');
     revalidatePath('/carrinho', 'page');
     revalidatePath('/admin', 'layout');
+
+    // Despacho assíncrono para o IndexNow (Bing, Yep/Ahrefs) para indexação instantânea
+    const urlsToNotify = [
+        `${siteConfig.appUrl}/`,
+        `${siteConfig.appUrl}/loja`,
+        ...(slug ? [`${siteConfig.appUrl}/produto/${slug}`] : []),
+    ];
+    submitToIndexNow(urlsToNotify, { isBackground: true }).catch((err) => {
+        console.warn('Falha ao despachar URLs para IndexNow:', err);
+    });
 }
 
 function revalidateCategories() {
@@ -126,6 +138,8 @@ function revalidateCategories() {
     revalidatePath('/categoria/[id]', 'page');
     revalidatePath('/categoria', 'layout');
     revalidatePath('/admin', 'layout');
+
+    submitToIndexNow([`${siteConfig.appUrl}/loja`], { isBackground: true }).catch(() => {});
 }
 
 function revalidateCampaigns() {

@@ -3,7 +3,7 @@ import { submitToIndexNow } from '@/lib/indexnow';
 import { supabase } from '@/lib/supabase';
 import { siteConfig } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
-import { isAdminAuthenticated } from '@/lib/admin-auth';
+import { isAdminAuthenticated, isValidAdminPassword } from '@/lib/admin-auth';
 
 async function collectAllCanonicalUrls(): Promise<string[]> {
   const [produtosRes, categoriasRes] = await Promise.all([
@@ -34,8 +34,10 @@ async function collectAllCanonicalUrls(): Promise<string[]> {
   return [...staticUrls, ...categoryUrls, ...productUrls];
 }
 
-export async function GET() {
-  if (!await isAdminAuthenticated()) {
+export async function GET(request: NextRequest) {
+  const key = request.nextUrl.searchParams.get('key');
+  const isAuthorized = (key && isValidAdminPassword(key)) || (await isAdminAuthenticated());
+  if (!isAuthorized) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 
@@ -50,7 +52,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!await isAdminAuthenticated()) {
+  const key = request.nextUrl.searchParams.get('key');
+  const isAuthorized = (key && isValidAdminPassword(key)) || (await isAdminAuthenticated());
+  if (!isAuthorized) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 

@@ -113,11 +113,11 @@ export default function GSServicosIndustriaisPage() {
   }, []);
 
   const clientesFinais = clientesDinamicos.length > 0 ? clientesDinamicos : [
-    { name: 'Cliente A', src: '/imagens/logo_gringa_style.png' },
-    { name: 'Cliente B', src: '/imagens/logo_gringa_style.png' },
-    { name: 'Cliente C', src: '/imagens/logo_gringa_style.png' },
-    { name: 'Cliente D', src: '/imagens/logo_gringa_style.png' },
-    { name: 'Cliente E', src: '/imagens/logo_gringa_style.png' },
+    { name: 'Cliente A', src: '/imagens/logo_gringa_style.webp' },
+    { name: 'Cliente B', src: '/imagens/logo_gringa_style.webp' },
+    { name: 'Cliente C', src: '/imagens/logo_gringa_style.webp' },
+    { name: 'Cliente D', src: '/imagens/logo_gringa_style.webp' },
+    { name: 'Cliente E', src: '/imagens/logo_gringa_style.webp' },
   ];
   const carouselItems = [...clientesFinais, ...clientesFinais];
 

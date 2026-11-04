@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     description: "Estilo e proteção para soldadores profissionais.",
     url: siteConfig.appUrl,
     siteName: "Gringa Style",
-    images: [{ url: new URL("/imagens/logo_gringa_style.png", siteConfig.appUrl).toString(), width: 800, height: 600 }],
+    images: [{ url: new URL("/imagens/logo_gringa_style.webp", siteConfig.appUrl).toString(), width: 800, height: 600 }],
     locale: "pt_BR",
     type: "website",
   },
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Gringa Style",
     description: "Máscaras de solda personalizadas e acessórios para TIG.",
-    images: [new URL("/imagens/logo_gringa_style.png", siteConfig.appUrl).toString()],
+    images: [new URL("/imagens/logo_gringa_style.webp", siteConfig.appUrl).toString()],
   },
   manifest: "/site.webmanifest",
   icons: {
