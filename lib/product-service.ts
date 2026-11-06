@@ -80,6 +80,38 @@ export async function getCachedCategories() {
     return categories;
 }
 
+export async function getCachedRelatedProducts(product: any) {
+    if (!product) return [];
+    return getCachedValue<any[]>(
+        async () => {
+            try {
+                if (product.produtos_relacionados_ids && product.produtos_relacionados_ids.length > 0) {
+                    const { data } = await supabase
+                        .from('produtos')
+                        .select('*')
+                        .in('id', product.produtos_relacionados_ids)
+                        .limit(4);
+                    return data || [];
+                } else if (product.categoria_id) {
+                    const { data } = await supabase
+                        .from('produtos')
+                        .select('*')
+                        .eq('categoria_id', product.categoria_id)
+                        .neq('id', product.id)
+                        .order('id', { ascending: false })
+                        .limit(4);
+                    return data || [];
+                }
+            } catch {
+                return [];
+            }
+            return [];
+        },
+        [`related-products-${product.id}`],
+        ['produtos', 'relacionados'],
+        3600
+    );
+}
 
 // Normaliza uma string para comparação fonética/de slug (remove acentos, pontuações e hifens extras)
 export function normalizeSlugCompare(str: string): string {
@@ -102,83 +134,90 @@ export const fetchProductBySlugOrId = cache(async (rawSlugOrId: string) => {
         decoded = raw;
     }
 
-    // 1. Busca exata pelo slug oficial no banco
-    const { data: exactProduct } = await supabase
-        .from('produtos')
-        .select('*')
-        .eq('slug', decoded)
-        .maybeSingle();
-
-    if (exactProduct) return exactProduct;
-
-    // 2. Busca limpando traços duplicados ou nas extremidades
-    const cleanedSlug = decoded.replace(/^-+|-+$/g, '').replace(/-+/g, '-');
-    if (cleanedSlug && cleanedSlug !== decoded) {
-        const { data: byClean } = await supabase
-            .from('produtos')
-            .select('*')
-            .eq('slug', cleanedSlug)
-            .maybeSingle();
-        if (byClean) return byClean;
-    }
-
-    // 3. Fallback por ID estritamente numérico (ex: "23")
-    if (/^\d+$/.test(decoded)) {
-        const numId = parseInt(decoded, 10);
-        if (Number.isSafeInteger(numId) && numId > 0) {
-            const { data: byId } = await supabase
+    return getCachedValue(
+        async () => {
+            // 1. Busca exata pelo slug oficial no banco
+            const { data: exactProduct } = await supabase
                 .from('produtos')
                 .select('*')
-                .eq('id', numId)
+                .eq('slug', decoded)
                 .maybeSingle();
-            if (byId) return byId;
-        }
-    }
 
-    // 4. RESOLUÇÃO DEFINITIVA ACCENT-INSENSITIVE (Slug ou Nome):
-    const targetNorm = normalizeSlugCompare(decoded);
-    if (targetNorm) {
-        const allProducts = await getAllActiveProducts();
-        const found = allProducts.find((p: any) => {
-            if (!p) return false;
-            if (p.slug && normalizeSlugCompare(p.slug) === targetNorm) return true;
-            if (p.nome && normalizeSlugCompare(p.nome) === targetNorm) return true;
-            const legacyStripped = (p.nome || '')
-                .toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, '')
-                .trim()
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-');
-            if (legacyStripped && legacyStripped === targetNorm) return true;
-            return false;
-        });
+            if (exactProduct) return exactProduct;
 
-        if (found) return found;
-
-        // 5. Fallback por URL legada com prefixo de ID (ex: "23-oculos-steelflex")
-        const legacyPrefixMatch = decoded.match(/^(\d+)-(.+)$/);
-        if (legacyPrefixMatch) {
-            const legacyId = parseInt(legacyPrefixMatch[1], 10);
-            if (Number.isSafeInteger(legacyId) && legacyId > 0) {
-                const candidate = allProducts.find((p: any) => p.id === legacyId);
-                if (candidate) return candidate;
+            // 2. Busca limpando traços duplicados ou nas extremidades
+            const cleanedSlug = decoded.replace(/^-+|-+$/g, '').replace(/-+/g, '-');
+            if (cleanedSlug && cleanedSlug !== decoded) {
+                const { data: byClean } = await supabase
+                    .from('produtos')
+                    .select('*')
+                    .eq('slug', cleanedSlug)
+                    .maybeSingle();
+                if (byClean) return byClean;
             }
-        }
 
-        // 6. Fallback por similaridade de tokens principais
-        const stopWords = new Set(['de', 'da', 'do', 'em', 'para', 'com', 'sem', 'style', 'gringa', 'a', 'o', 'e']);
-        const tokens = targetNorm
-            .split('-')
-            .filter(t => t.length > 2 && !stopWords.has(t));
+            // 3. Fallback por ID estritamente numérico (ex: "23")
+            if (/^\d+$/.test(decoded)) {
+                const numId = parseInt(decoded, 10);
+                if (Number.isSafeInteger(numId) && numId > 0) {
+                    const { data: byId } = await supabase
+                        .from('produtos')
+                        .select('*')
+                        .eq('id', numId)
+                        .maybeSingle();
+                    if (byId) return byId;
+                }
+            }
 
-        if (tokens.length >= 2) {
-            const candidate = allProducts.find((p: any) => {
-                const normName = normalizeSlugCompare(p.nome || '');
-                return tokens.every(token => normName.includes(token));
-            });
-            if (candidate) return candidate;
-        }
-    }
+            // 4. RESOLUÇÃO DEFINITIVA ACCENT-INSENSITIVE (Slug ou Nome):
+            const targetNorm = normalizeSlugCompare(decoded);
+            if (targetNorm) {
+                const allProducts = await getAllActiveProducts();
+                const found = allProducts.find((p: any) => {
+                    if (!p) return false;
+                    if (p.slug && normalizeSlugCompare(p.slug) === targetNorm) return true;
+                    if (p.nome && normalizeSlugCompare(p.nome) === targetNorm) return true;
+                    const legacyStripped = (p.nome || '')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .trim()
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-');
+                    if (legacyStripped && legacyStripped === targetNorm) return true;
+                    return false;
+                });
 
-    return null;
+                if (found) return found;
+
+                // 5. Fallback por URL legada com prefixo de ID (ex: "23-oculos-steelflex")
+                const legacyPrefixMatch = decoded.match(/^(\d+)-(.+)$/);
+                if (legacyPrefixMatch) {
+                    const legacyId = parseInt(legacyPrefixMatch[1], 10);
+                    if (Number.isSafeInteger(legacyId) && legacyId > 0) {
+                        const candidate = allProducts.find((p: any) => p.id === legacyId);
+                        if (candidate) return candidate;
+                    }
+                }
+
+                // 6. Fallback por similaridade de tokens principais
+                const stopWords = new Set(['de', 'da', 'do', 'em', 'para', 'com', 'sem', 'style', 'gringa', 'a', 'o', 'e']);
+                const tokens = targetNorm
+                    .split('-')
+                    .filter(t => t.length > 2 && !stopWords.has(t));
+
+                if (tokens.length >= 2) {
+                    const candidate = allProducts.find((p: any) => {
+                        const normName = normalizeSlugCompare(p.nome || '');
+                        return tokens.every(token => normName.includes(token));
+                    });
+                    if (candidate) return candidate;
+                }
+            }
+
+            return null;
+        },
+        [`fetch-product-${decoded}`],
+        ['produtos', `produto-${decoded}`],
+        3600
+    );
 });

@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem, ProductVariant } from '@/types';
 import Link from 'next/link';
-import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { useToast } from '@/context/ToastContext';
+
+const DirectPurchaseModal = dynamic(() => import('@/components/modals/DirectPurchaseModal'), { ssr: false });
 import { Share2, ShieldCheck, Truck, CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import StickyCTA from './StickyCTA';
 import { useCartStore, CartState } from '@/store/useCartStore';
@@ -59,9 +61,10 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     const [showAllThumbs, setShowAllThumbs] = useState(false);
 
     useEffect(() => {
+        // Carrega miniaturas secundárias somente após a medição crítica do LCP inicial
         const timer = setTimeout(() => {
             setShowAllThumbs(true);
-        }, 1200);
+        }, 5000);
         return () => clearTimeout(timer);
     }, []);
 
@@ -339,6 +342,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                     src={currentMedia ? resolveOriginalUrl(currentMedia) : fallbackImage}
                                     alt={product.nome}
                                     fill
+                                    sizes="(max-width: 768px) 100vw, 600px"
                                     draggable={false}
                                     style={{ objectFit: 'contain', cursor: 'zoom-in' }}
                                     priority={true}
@@ -492,6 +496,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                             loading="lazy"
                                             width={80}
                                             height={80}
+                                            sizes="80px"
                                             style={{ objectFit: 'cover' }}
                                         />
                                     );

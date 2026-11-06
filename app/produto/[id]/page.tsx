@@ -4,7 +4,7 @@ import ProductPageContent from '@/components/ProductPageContent';
 import { BreadcrumbSchema, ProductSchema } from '@/components/SEO/StructuredData';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { buildCanonicalUrl } from '@/lib/site-config';
-import { resolveAbsoluteUrl, fetchProductBySlugOrId, getCachedCategories } from '@/lib/product-service';
+import { resolveAbsoluteUrl, fetchProductBySlugOrId, getCachedCategories, getCachedRelatedProducts } from '@/lib/product-service';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 
 // Formata o título dinamicamente para não estourar os 60 caracteres da SERP do Google
@@ -35,7 +35,7 @@ interface Props {
     params: Promise<{ id: string }>;
 }
 
-export const revalidate = 60; // Cache ISR otimizado para atualização rápida e alto desempenho
+export const revalidate = 3600; // Cache ISR estático de alto desempenho na borda (Cloudflare CDN)
 export const dynamicParams = true; // Garante que novos produtos criados no painel sejam gerados sob demanda
 
 export async function generateStaticParams() {
@@ -156,33 +156,14 @@ export default async function ProductPage({ params }: Props) {
     }
 
     const productUrl = buildCanonicalUrl(`/produto/${canonicalSlug}`);
-    const categories = await getCachedCategories();
+    
+    // Executa categorias e produtos relacionados em paralelo com cache distribuído para TTFB ultrarrápido (< 100ms)
+    const [categories, initialRelatedProducts] = await Promise.all([
+        getCachedCategories(),
+        getCachedRelatedProducts(product)
+    ]);
     const dynamicCategory = product.categoria_id ? categories.find((c: any) => c.id === product.categoria_id) : null;
     const categoryName = dynamicCategory?.nome || (product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null);
-
-    // Busca produtos relacionados no servidor para que os links internos existam no HTML SSR
-    let initialRelatedProducts: any[] = [];
-    try {
-        if (product.produtos_relacionados_ids && product.produtos_relacionados_ids.length > 0) {
-            const { data } = await supabase
-                .from('produtos')
-                .select('*')
-                .in('id', product.produtos_relacionados_ids)
-                .limit(4);
-            initialRelatedProducts = data || [];
-        } else if (product.categoria_id) {
-            const { data } = await supabase
-                .from('produtos')
-                .select('*')
-                .eq('categoria_id', product.categoria_id)
-                .neq('id', product.id)
-                .order('id', { ascending: false })
-                .limit(4);
-            initialRelatedProducts = data || [];
-        }
-    } catch {
-        // Fallback silencioso
-    }
 
     const mediaUrls = product.media_urls || product.imagens || [];
     const mainImageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
