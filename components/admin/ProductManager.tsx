@@ -156,12 +156,12 @@ export default function ProductManager() {
             let fileToUpload: File = file;
             let fileName = file.name;
 
-            if (file.type.startsWith('image/')) {
+            const isImage = file.type?.startsWith('image/') || /\.(jpe?g|png|webp|avif|bmp|gif)$/i.test(file.name);
+            if (isImage) {
                 try {
-                    const compressedBlob = await compressImage(file);
-                    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || 'image';
-                    fileName = `${baseName}.webp`;
-                    fileToUpload = new File([compressedBlob], fileName, { type: 'image/webp' });
+                    const compressedFile = await compressImage(file);
+                    fileToUpload = compressedFile;
+                    fileName = compressedFile.name;
                 } catch (error) {
                     console.error('Erro na compressão:', error);
                 }

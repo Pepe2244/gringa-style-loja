@@ -334,6 +334,8 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                     draggable={false}
                                     style={{ objectFit: 'contain', cursor: 'zoom-in' }}
                                     priority={true}
+                                    loading="eager"
+                                    fetchPriority="high"
                                     placeholder="blur"
                                     blurDataURL={BLUR_DATA_URL}
                                 />
@@ -571,10 +573,12 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
 
                     {variants && variants.opcoes && (
                         <div className="produto-variantes" style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#1a1a1a', borderRadius: '8px', border: '1px solid #333' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#eee' }}>
+                            <label htmlFor="select-variante" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#eee' }}>
                                 Escolha {variants.tipo}:
                             </label>
                             <select
+                                id="select-variante"
+                                aria-label={`Escolha ${variants.tipo}`}
                                 className="select-variante"
                                 value={selectedVariant}
                                 onChange={(e) => setSelectedVariant(e.target.value)}
@@ -693,7 +697,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                             />
                                         )}
                                     </div>
-                                    <h4 style={{ fontSize: '0.95rem', margin: '0 0 10px 0', color: '#eee', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rel.nome}</h4>
+                                    <h3 style={{ fontSize: '0.95rem', margin: '0 0 10px 0', color: '#eee', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rel.nome}</h3>
                                     <p style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>R$ {(rel.preco_promocional || rel.preco).toFixed(2).replace('.', ',')}</p>
                                 </Link>
                             );

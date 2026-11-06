@@ -183,6 +183,7 @@ export default function Header() {
                         href="/favoritos"
                         rel="nofollow"
                         className="favoritos"
+                        aria-label="Ver produtos favoritos"
                         onClick={handleNavClick}
                         style={{ display: 'flex', alignItems: 'center', position: 'relative', color: 'inherit' }}
                         title="Meus Favoritos"
@@ -214,7 +215,7 @@ export default function Header() {
                         </span>
                     </Link>}
 
-                        {!isPortal && !isServices && <Link href="/carrinho" rel="nofollow" className="carrinho" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                        {!isPortal && !isServices && <Link href="/carrinho" rel="nofollow" className="carrinho" aria-label="Ver carrinho de compras" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                             <ShoppingCart size={28} />
                             <span
                                 className="carrinho-contador"

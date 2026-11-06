@@ -73,6 +73,7 @@ export default function ShippingEstimator({ productId }: { productId?: number })
                 {/* Linha 1: País + CEP — encolhem juntos sem estourar a tela */}
                 <div style={{ display: 'flex', gap: '8px', width: '100%', minWidth: 0 }}>
                     <select
+                        aria-label="Selecione o país para entrega"
                         value={country}
                         onChange={(e) => {
                             setCountry(e.target.value);

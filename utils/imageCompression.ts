@@ -1,9 +1,12 @@
-export async function compressImage(file: File, maxWidth = 1200, quality = 0.75): Promise<File> {
-    if (file.type.indexOf('image') === -1) {
+export async function compressImage(file: File, maxWidth = 1200, quality = 0.8): Promise<File> {
+    const isImageByMime = file.type && file.type.toLowerCase().includes('image');
+    const isImageByExt = /\.(jpe?g|png|webp|avif|bmp|gif)$/i.test(file.name);
+
+    if (!isImageByMime && !isImageByExt) {
         return file;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (event) => {
@@ -14,9 +17,14 @@ export async function compressImage(file: File, maxWidth = 1200, quality = 0.75)
                 let width = img.width;
                 let height = img.height;
 
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
+                if (width > maxWidth || height > maxWidth) {
+                    if (width > height) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    } else {
+                        width = Math.round((width * maxWidth) / height);
+                        height = maxWidth;
+                    }
                 }
 
                 canvas.width = width;
@@ -28,16 +36,32 @@ export async function compressImage(file: File, maxWidth = 1200, quality = 0.75)
                     return;
                 }
 
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(img, 0, 0, width, height);
 
+                // Tenta salvar como WebP primeiro
                 canvas.toBlob(
                     (blob) => {
                         if (!blob) {
-                            resolve(file);
+                            // Se falhar o WebP, tenta JPEG
+                            canvas.toBlob(
+                                (fallbackBlob) => {
+                                    if (!fallbackBlob) {
+                                        resolve(file);
+                                        return;
+                                    }
+                                    const baseName = file.name.replace(/\.[^/.]+$/, "");
+                                    resolve(new File([fallbackBlob], `${baseName}.jpg`, { type: 'image/jpeg', lastModified: Date.now() }));
+                                },
+                                'image/jpeg',
+                                quality
+                            );
                             return;
                         }
-                        const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-                        const newFile = new File([blob], newFileName, {
+
+                        const baseName = file.name.replace(/\.[^/.]+$/, "");
+                        const newFile = new File([blob], `${baseName}.webp`, {
                             type: 'image/webp',
                             lastModified: Date.now(),
                         });
@@ -47,8 +71,8 @@ export async function compressImage(file: File, maxWidth = 1200, quality = 0.75)
                     quality
                 );
             };
-            img.onerror = (error) => reject(error);
+            img.onerror = () => resolve(file);
         };
-        reader.onerror = (error) => reject(error);
+        reader.onerror = () => resolve(file);
     });
 }
