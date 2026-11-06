@@ -56,6 +56,14 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     const [selectedVariant, setSelectedVariant] = useState<string>('');
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isDescExpanded, setIsDescExpanded] = useState(false);
+    const [showAllThumbs, setShowAllThumbs] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowAllThumbs(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+    }, []);
 
     const touchStartX = useRef<number | null>(null);
     const touchEndX = useRef<number | null>(null);
@@ -415,7 +423,12 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                 </button>
                             )}
 
-                            <div className="produto-miniaturas" ref={thumbnailsRef}>
+                            <div 
+                                className="produto-miniaturas" 
+                                ref={thumbnailsRef}
+                                onMouseEnter={() => setShowAllThumbs(true)}
+                                onTouchStart={() => setShowAllThumbs(true)}
+                            >
                                 {mediaUrls.map((url, idx) => {
                                     const isThumbVideo = isVideoMedia(url) || (idx === 0 && !!product.video);
                                     if (isThumbVideo) {
@@ -442,6 +455,32 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                             </div>
                                         );
                                     }
+
+                                    // Para fotos além da 4ª miniatura: renderiza placeholder leve inicialmente para não saturar banda 4G
+                                    const shouldRenderImg = idx < 4 || idx === currentImageIndex || showAllThumbs;
+                                    if (!shouldRenderImg) {
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
+                                                onClick={() => {
+                                                    setShowAllThumbs(true);
+                                                    setCurrentImageIndex(idx);
+                                                }}
+                                                style={{
+                                                    width: 80,
+                                                    height: 80,
+                                                    backgroundColor: '#1c1c1c',
+                                                    borderRadius: '6px',
+                                                    flexShrink: 0,
+                                                    cursor: 'pointer',
+                                                    border: '1px solid #333'
+                                                }}
+                                                aria-label={`${product?.nome || 'Equipamento'} - Foto ${idx + 1}`}
+                                            />
+                                        );
+                                    }
+
                                     const originalSrc = resolveOriginalUrl(url) || fallbackImage;
                                     return (
                                         <Image

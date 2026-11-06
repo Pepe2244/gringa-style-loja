@@ -124,6 +124,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://analytics.google.com" />
         <link rel="dns-prefetch" href="https://stats.g.doubleclick.net" />
+        <link rel="preconnect" href="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev" />
         {/* Preload dinâmico do banco de dados */}
         {supabaseOrigin && (

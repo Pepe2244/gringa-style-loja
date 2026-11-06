@@ -64,10 +64,10 @@ export default function ShippingEstimator({ productId }: { productId?: number })
 
     return (
         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#1a1a1a', borderRadius: '8px', border: '1px solid #333' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '10px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 style={{ fontSize: '1rem', marginBottom: '10px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
                 Calcular Frete e Prazo
-            </h3>
+            </h2>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
                 {/* Linha 1: País + CEP — encolhem juntos sem estourar a tela */}

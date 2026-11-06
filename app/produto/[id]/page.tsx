@@ -184,8 +184,19 @@ export default async function ProductPage({ params }: Props) {
         // Fallback silencioso
     }
 
+    const mediaUrls = product.media_urls || product.imagens || [];
+    const mainImageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
+
     return (
         <>
+            {mainImageUrl && (
+                <link
+                    rel="preload"
+                    as="image"
+                    href={mainImageUrl}
+                    fetchPriority="high"
+                />
+            )}
             <BreadcrumbSchema items={[
                 { name: 'Início', url: '/' },
                 { name: 'Loja', url: '/loja' },
