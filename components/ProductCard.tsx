@@ -130,37 +130,47 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                 <span className="status-estoque fora-de-estoque">Fora de Estoque</span>
             )}
 
-            <div className="card-imagem-container">
-                {shouldShowVideo ? (
-                    <video
-                        src={videoUrl}
-                        className="card-video"
-                        loop
-                        muted
-                        autoPlay
-                        playsInline
-                    />
-                ) : (
-                    <Image
-                        src={displayImages[currentImageIndex]}
-                        alt={`Produto ${product.nome}`}
-                        fill
-                        sizes="(max-width: 639px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="card-imagem visivel"
-                        style={{ objectFit: 'cover' }}
-                        priority={priority}
-                        fetchPriority={priority ? 'high' : 'auto'}
-                        loading={priority ? 'eager' : 'lazy'}
-                        placeholder="blur"
-                        blurDataURL={BLUR_DATA_URL}
-                    />
-                )}
-            </div>
+            <Link
+                href={`/produto/${productSlug}`}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                onClick={() => trackPurchaseIntent(product.id, productName, 'view_item')}
+                aria-label={`Ver produto ${productName}`}
+            >
+                <div className="card-imagem-container">
+                    {shouldShowVideo ? (
+                        <video
+                            src={videoUrl}
+                            className="card-video"
+                            loop
+                            muted
+                            autoPlay
+                            playsInline
+                        />
+                    ) : (
+                        <Image
+                            src={displayImages[currentImageIndex]}
+                            alt={`Produto ${product.nome}`}
+                            fill
+                            sizes="(max-width: 639px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="card-imagem visivel"
+                            style={{ objectFit: 'cover' }}
+                            priority={priority}
+                            fetchPriority={priority ? 'high' : 'auto'}
+                            loading={priority ? 'eager' : 'lazy'}
+                            placeholder="blur"
+                            blurDataURL={BLUR_DATA_URL}
+                        />
+                    )}
+                </div>
 
-            <div className="produto-info">
-                <h2 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {productName}
-                </h2>
+                <div className="produto-info" style={{ paddingBottom: '0' }}>
+                    <h2 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {productName}
+                    </h2>
+                </div>
+            </Link>
+
+            <div className="produto-info" style={{ paddingTop: '0' }}>
                 {isPromo ? (
                     <p className="preco">
                         <span className="preco-antigo">De R$ {precoOriginal.toFixed(2).replace('.', ',')}</span>

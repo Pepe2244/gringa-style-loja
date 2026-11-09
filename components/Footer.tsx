@@ -66,6 +66,7 @@ export default function Footer() {
                 <div className="rodape-coluna">
                     <h3>Categorias</h3>
                     <p><Link href="/categoria/6">Máscaras de Solda</Link></p>
+                    <p><Link href="/categoria/9">Lentes de Solda</Link></p>
                     <p><Link href="/categoria/7">Acessórios e Tochas TIG</Link></p>
                     <p><Link href="/categoria/4">Camisas e Vestuário</Link></p>
                     <p><Link href="/categoria/5">Bonés</Link></p>

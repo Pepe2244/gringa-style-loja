@@ -175,11 +175,11 @@ export const trackCheckoutStart = (source: string, itemCount: number) => {
     });
 };
 
-export const trackPurchaseIntent = (productId: number, productName: string, intent: 'quick_view' | 'buy_now' | 'wishlist' | 'favorite') => {
-    trackEvent('purchase_intent', {
-        product_id: productId,
-        product_name: productName,
-        intent,
-        timestamp: new Date().toISOString()
-    });
-};
+    export const trackPurchaseIntent = (productId: number, productName: string, intent: 'quick_view' | 'buy_now' | 'wishlist' | 'favorite' | 'view_item') => {
+        trackEvent('purchase_intent', {
+            product_id: productId,
+            product_name: productName,
+            intent,
+            timestamp: new Date().toISOString()
+        });
+    };

@@ -138,6 +138,7 @@ const CATEGORY_NAMES: Record<number, string> = {
     6: 'Máscaras',
     7: 'Acessórios',
     8: 'Kits',
+    9: 'Lentes',
 };
 
 export default async function ProductPage({ params }: Props) {
@@ -198,7 +199,10 @@ export default async function ProductPage({ params }: Props) {
                 media_urls: product.media_urls,
                 variants: product.variants,
                 tags: product.tags,
-                marca: 'Gringa Style'
+                marca: product.marca || 'Gringa Style',
+                avaliacoes: product.avaliacoes,
+                totalAvaliacoes: product.total_avaliacoes || product.totalAvaliacoes,
+                gtin13: product.gtin13 || product.codigo_barras
             }} />
             <ProductPageContent
                 id={product.id}
