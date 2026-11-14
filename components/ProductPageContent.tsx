@@ -475,8 +475,9 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                     const shouldRenderImg = idx < 4 || idx === currentImageIndex || showAllThumbs;
                                     if (!shouldRenderImg) {
                                         return (
-                                            <div
+                                            <button
                                                 key={idx}
+                                                type="button"
                                                 className={`miniatura-img ${idx === currentImageIndex ? 'ativa' : ''}`}
                                                 onClick={() => {
                                                     setShowAllThumbs(true);
@@ -485,6 +486,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                                 style={{
                                                     width: 80,
                                                     height: 80,
+                                                    padding: 0,
                                                     backgroundColor: '#1c1c1c',
                                                     borderRadius: '6px',
                                                     flexShrink: 0,

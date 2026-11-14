@@ -173,19 +173,8 @@ export default async function ProductPage({ params }: Props) {
     const dynamicCategory = product.categoria_id ? categories.find((c: any) => c.id === product.categoria_id) : null;
     const categoryName = dynamicCategory?.nome || (product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null);
 
-    const mediaUrls = getProductMediaUrls(product);
-    const mainImageUrl = resolveAbsoluteUrl(mediaUrls.find((url) => !url.includes('.mp4') && !url.includes('.webm')));
-
     return (
         <>
-            {mainImageUrl && (
-                <link
-                    rel="preload"
-                    as="image"
-                    href={mainImageUrl}
-                    fetchPriority="high"
-                />
-            )}
             <BreadcrumbSchema items={[
                 { name: 'Início', url: '/' },
                 { name: 'Loja', url: '/loja' },

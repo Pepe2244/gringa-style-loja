@@ -155,7 +155,8 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                             src={displayImages[currentImageIndex]}
                             alt={`Produto ${product.nome}`}
                             fill
-                            sizes="(max-width: 639px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            sizes="(max-width: 639px) 92vw, (max-width: 1024px) 50vw, 33vw"
+                            quality={65}
                             className="card-imagem visivel"
                             style={{ objectFit: 'cover' }}
                             priority={priority}
