@@ -135,8 +135,8 @@ export default function Header() {
                     <Image
                         src={isServices ? '/imagens/logo_gs_servicos_industriais.webp' : '/imagens/logo_gringa_style.webp'}
                         alt={isServices ? 'GS Serviços Industriais' : 'Gringa Style Logo'}
-                        width={120}
-                        height={120}
+                        width={125}
+                        height={125}
                         priority
                         style={{ width: '125px', height: '125px', maxWidth: 'none', objectFit: 'contain' }}
                     />

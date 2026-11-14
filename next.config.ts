@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    unoptimized: true,
+    unoptimized: false,
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
     qualities: [60, 65, 75],
