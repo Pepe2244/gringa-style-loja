@@ -209,7 +209,9 @@ export default function RifaPage() {
         setReserving(true);
         try {
             const freshRifa = await fetchRifa(false);
-            if (!freshRifa) throw new Error('Não foi possível verificar a disponibilidade. Tente novamente.');
+            if (!freshRifa || freshRifa.id !== rifa.id || freshRifa.status !== 'ativa') {
+                throw new Error('Esta rifa foi pausada, encerrada ou substituída. A página foi atualizada.');
+            }
 
             const soldSet = new Set(freshRifa.numeros_vendidos || []);
             const reservedSet = new Set(freshRifa.numeros_reservados || []);
@@ -351,7 +353,11 @@ export default function RifaPage() {
     const reservedSet = new Set(rifa.numeros_reservados || []);
 
     const isFinished = rifa.status === 'finalizada';
-    const isSoldOut = soldSet.size >= rifa.total_numeros || isFinished;
+    const occupiedCount = new Set([...soldSet, ...reservedSet]).size;
+    const isSoldOut = rifa.total_numeros <= 0 || occupiedCount >= rifa.total_numeros || isFinished;
+    const progressPercent = rifa.total_numeros > 0
+        ? Math.min(100, Math.round((soldSet.size / rifa.total_numeros) * 100))
+        : 0;
 
     const totalPages = Math.ceil(rifa.total_numeros / NUMBERS_PER_PAGE);
     const startRange = numberPage * NUMBERS_PER_PAGE;
@@ -434,10 +440,10 @@ export default function RifaPage() {
                 <div className="rifa-progresso-container" style={{ margin: '20px 0', textAlign: 'left' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                         <span>Progresso:</span>
-                        <span>{Math.round((soldSet.size / rifa.total_numeros) * 100)}% vendido</span>
+                        <span>{progressPercent}% vendido</span>
                     </div>
                     <div style={{ width: '100%', height: '20px', backgroundColor: '#333', borderRadius: '10px', overflow: 'hidden' }}>
-                        <div style={{ width: `${(soldSet.size / rifa.total_numeros) * 100}%`, height: '100%', backgroundColor: 'var(--cor-destaque)', transition: 'width 0.5s ease-in-out' }} />
+                        <div style={{ width: `${progressPercent}%`, height: '100%', backgroundColor: 'var(--cor-destaque)', transition: 'width 0.5s ease-in-out' }} />
                     </div>
                 </div>
 

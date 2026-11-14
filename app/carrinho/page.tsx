@@ -25,6 +25,12 @@ interface ShippingOption {
     is_estimate?: boolean;
 }
 
+const parseShippingPrice = (option: ShippingOption | null | undefined): number | null => {
+    if (!option) return null;
+    const parsed = parseFloat(String(option.custom_price ?? option.price));
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
 export default function CartPage() {
     const { showToast } = useToast();
     const items = useCartStore((state: CartState) => state.items);
@@ -56,43 +62,81 @@ export default function CartPage() {
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
     const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const [allowManualAddress, setAllowManualAddress] = useState(false);
+    const [qtyDrafts, setQtyDrafts] = useState<Record<number, string>>({});
+
+    const isCheckingOutRef = useRef(false);
+    const cepAbortControllerRef = useRef<AbortController | null>(null);
+    const shippingAbortControllerRef = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+        setMounted(true);
+        return () => {
+            cepAbortControllerRef.current?.abort();
+            shippingAbortControllerRef.current?.abort();
+        };
+    }, []);
 
     useEffect(() => {
         const fetchCartData = async () => {
             setLoading(true);
-            if (items.length > 0) {
-                const productIds = items.map((item) => item.produto_id);
-                const { data } = await supabase
-                    .from('produtos')
-                    .select('*')
-                    .in('id', productIds);
+            try {
+                if (items.length > 0) {
+                    const productIds = items.map((item) => item.produto_id);
+                    const { data, error } = await supabase
+                        .from('produtos')
+                        .select('*')
+                        .in('id', productIds);
 
-                if (data) setProducts(data);
-            } else {
-                setProducts([]);
+                    if (error) {
+                        console.error('Erro ao carregar produtos do carrinho:', error);
+                        showToast('Erro ao carregar produtos do carrinho.', 'error');
+                    } else if (data) {
+                        setProducts(data);
+                        const foundIds = new Set(data.map((p: Product) => p.id));
+                        const missingIndices: number[] = [];
+                        items.forEach((item, idx) => {
+                            if (!foundIds.has(item.produto_id)) {
+                                missingIndices.push(idx);
+                            }
+                        });
+                        if (missingIndices.length > 0) {
+                            for (let i = missingIndices.length - 1; i >= 0; i--) {
+                                removeItem(missingIndices[i]);
+                            }
+                            showToast('Alguns itens indisponíveis foram removidos do carrinho.', 'error');
+                        }
+                    }
+                } else {
+                    setProducts([]);
+                }
+            } catch (error) {
+                console.error('Erro inesperado ao carregar carrinho:', error);
+                showToast('Erro ao carregar produtos do carrinho.', 'error');
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchCartData();
-    }, [items]);
-
-    useEffect(() => {
-        if (appliedCoupon && appliedCoupon.metodo_pagamento_restrito) {
-            const metodoExigido = appliedCoupon.metodo_pagamento_restrito === 'pix' ? 'PIX' : 'Cartão de Crédito';
-            if (paymentMethod !== metodoExigido) {
-                setAppliedCoupon(null);
-                setCouponMessage({ text: `O cupom ${appliedCoupon.codigo} é válido apenas para ${metodoExigido}.`, type: 'error' });
-            }
-        }
-    }, [paymentMethod, appliedCoupon]);
+    }, [items, removeItem, showToast]);
 
     const handleUpdateQuantity = (index: number, newQuantity: number) => {
-        updateQuantity(index, newQuantity);
+        const clampedQuantity = Math.max(1, Math.min(99, newQuantity));
+        updateQuantity(index, clampedQuantity);
 
         if (appliedCoupon) {
             setAppliedCoupon(null);
             setCouponMessage({ text: 'Carrinho alterado. Aplique o cupom novamente.', type: 'error' });
+        }
+
+        const hasValidCep = country === 'BR' ? cep.length === 8 : cep.length >= 3;
+        if (hasValidCep) {
+            calcularFrete(cep, country, useCartStore.getState().items);
+        } else {
+            setShippingOptions([]);
+            setSelectedShipping(null);
         }
     };
 
@@ -101,10 +145,20 @@ export default function CartPage() {
 
         removeItem(itemToDelete);
         setItemToDelete(null);
+        setQtyDrafts({});
 
         if (appliedCoupon) {
             setAppliedCoupon(null);
             setCouponMessage({ text: 'Carrinho alterado. Aplique o cupom novamente.', type: 'error' });
+        }
+
+        const nextItems = useCartStore.getState().items;
+        const hasValidCep = country === 'BR' ? cep.length === 8 : cep.length >= 3;
+        if (hasValidCep && nextItems.length > 0) {
+            calcularFrete(cep, country, nextItems);
+        } else {
+            setShippingOptions([]);
+            setSelectedShipping(null);
         }
     };
 
@@ -136,7 +190,7 @@ export default function CartPage() {
         
         let shippingCost = 0;
         if (selectedShipping) {
-            shippingCost = parseFloat(String(selectedShipping.custom_price || selectedShipping.price));
+            shippingCost = parseShippingPrice(selectedShipping) ?? 0;
         }
 
         return subtotal - discount + shippingCost;
@@ -166,8 +220,19 @@ export default function CartPage() {
         }
     }, [products, items, calculateTotal, getPrecoFinal]);
 
-    const calcularFrete = async (postalCode: string, selectedCountry: string) => {
+    const calcularFrete = async (postalCode: string, selectedCountry: string, cartItemsOverride?: CartItem[]) => {
         if (!postalCode) return;
+        const currentItems = cartItemsOverride ?? useCartStore.getState().items;
+        if (currentItems.length === 0) {
+            setShippingOptions([]);
+            setSelectedShipping(null);
+            return;
+        }
+
+        shippingAbortControllerRef.current?.abort();
+        const controller = new AbortController();
+        shippingAbortControllerRef.current = controller;
+
         setLoadingShipping(true);
         setShippingOptions([]);
         setSelectedShipping(null);
@@ -175,22 +240,34 @@ export default function CartPage() {
             const shipRes = await fetch('/api/shipping', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    to_postal_code: postalCode, 
+                signal: controller.signal,
+                body: JSON.stringify({
+                    to_postal_code: postalCode,
                     country: selectedCountry,
-                    product_ids: items.map(i => i.produto_id),
-                    items: items.map(i => ({ produto_id: i.produto_id, quantidade: i.quantidade }))
+                    product_ids: currentItems.map(i => i.produto_id),
+                    items: currentItems.map(i => ({ produto_id: i.produto_id, quantidade: i.quantidade }))
                 })
             });
+            if (!shipRes.ok) {
+                const errData = await shipRes.json().catch(() => null);
+                showToast(errData?.error || 'Não foi possível calcular o frete.', 'error');
+                return;
+            }
             const shipData = await shipRes.json();
             if (Array.isArray(shipData) && shipData.length > 0) {
                 setShippingOptions(shipData);
-                setSelectedShipping(shipData[0]); 
+                setSelectedShipping(shipData[0]);
+            } else {
+                showToast('Nenhuma opção de frete disponível para este CEP.', 'error');
             }
         } catch (e) {
+            if (e instanceof Error && e.name === 'AbortError') return;
             console.error('Erro ao calcular frete:', e);
+            showToast('Erro ao calcular o frete. Tente novamente.', 'error');
         } finally {
-            setLoadingShipping(false);
+            if (shippingAbortControllerRef.current === controller) {
+                setLoadingShipping(false);
+            }
         }
     };
 
@@ -201,14 +278,26 @@ export default function CartPage() {
             setCep(value);
 
             if (value.length < 8) {
+                cepAbortControllerRef.current?.abort();
+                shippingAbortControllerRef.current?.abort();
+                setLoadingCep(false);
+                setAllowManualAddress(false);
                 setShippingOptions([]);
                 setSelectedShipping(null);
             }
 
             if (value.length === 8) {
+                cepAbortControllerRef.current?.abort();
+                const controller = new AbortController();
+                cepAbortControllerRef.current = controller;
+
                 setLoadingCep(true);
+                setAllowManualAddress(false);
                 try {
-                    const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
+                    const res = await fetch(`https://viacep.com.br/ws/${value}/json/`, {
+                        signal: controller.signal,
+                    });
+                    if (!res.ok) throw new Error('Falha na consulta do CEP');
                     const data = await res.json();
                     if (!data.erro) {
                         setEndereco(prev => ({
@@ -218,14 +307,22 @@ export default function CartPage() {
                             cidade: data.localidade || '',
                             estado: data.uf || ''
                         }));
+                        setAllowManualAddress(!data.localidade || !data.uf);
                         calcularFrete(value, 'BR');
                     } else {
-                        showToast('CEP não encontrado.', 'error');
+                        setAllowManualAddress(true);
+                        showToast('CEP não encontrado. Preencha Cidade e UF manualmente.', 'error');
+                        calcularFrete(value, 'BR');
                     }
                 } catch (error) {
-                    showToast('Erro ao buscar CEP.', 'error');
+                    if (error instanceof Error && error.name === 'AbortError') return;
+                    setAllowManualAddress(true);
+                    showToast('Erro ao buscar CEP. Preencha Cidade e UF manualmente.', 'error');
+                    calcularFrete(value, 'BR');
                 } finally {
-                    setLoadingCep(false);
+                    if (cepAbortControllerRef.current === controller) {
+                        setLoadingCep(false);
+                    }
                 }
             }
         } else {
@@ -289,6 +386,7 @@ export default function CartPage() {
             }
         } catch (error) {
             console.error('Error validating coupon:', error);
+            setAppliedCoupon(null);
             setCouponMessage({ text: 'Erro ao validar cupom.', type: 'error' });
         } finally {
             setValidatingCoupon(false);
@@ -299,13 +397,25 @@ export default function CartPage() {
     useEffect(() => {
         if (prevPaymentMethodRef.current !== paymentMethod) {
             prevPaymentMethodRef.current = paymentMethod;
-            if (appliedCoupon && couponCode.trim()) {
-                handleApplyCoupon();
+            if (appliedCoupon) {
+                if (appliedCoupon.metodo_pagamento_restrito) {
+                    const metodoExigido = appliedCoupon.metodo_pagamento_restrito === 'pix' ? 'PIX' : 'Cartão de Crédito';
+                    if (paymentMethod !== metodoExigido) {
+                        setAppliedCoupon(null);
+                        setCouponMessage({ text: `O cupom ${appliedCoupon.codigo} é válido apenas para ${metodoExigido}.`, type: 'error' });
+                        return;
+                    }
+                }
+                if (couponCode.trim()) {
+                    handleApplyCoupon();
+                }
             }
         }
     }, [paymentMethod, appliedCoupon, couponCode, handleApplyCoupon]);
 
     const handleCheckout = async () => {
+        if (isCheckingOutRef.current) return;
+
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome para finalizar.', 'error');
             return;
@@ -358,6 +468,7 @@ export default function CartPage() {
             }
         }
 
+        isCheckingOutRef.current = true;
         setIsCheckingOut(true);
         const cartSnapshot = JSON.stringify(items);
 
@@ -400,6 +511,20 @@ export default function CartPage() {
                     setShippingOptions(currentOptions);
                     throw new Error('O frete selecionado mudou. Escolha uma opção atualizada e tente novamente.');
                 }
+                const displayedShippingPrice = parseShippingPrice(selectedShipping);
+                const updatedShippingPrice = parseShippingPrice(currentShipping);
+                if (updatedShippingPrice === null) {
+                    setSelectedShipping(null);
+                    setShippingOptions(currentOptions);
+                    throw new Error('O frete selecionado retornou um valor inválido. Escolha outra opção.');
+                }
+                if (displayedShippingPrice === null || Math.abs(displayedShippingPrice - updatedShippingPrice) > 0.009) {
+                    setShippingOptions(currentOptions);
+                    setSelectedShipping(currentShipping);
+                    throw new Error(
+                        `O valor do frete foi atualizado para R$ ${updatedShippingPrice.toFixed(2).replace('.', ',')}. Confira o novo total e tente novamente.`
+                    );
+                }
             }
             if (JSON.stringify(useCartStore.getState().items) !== cartSnapshot) {
                 throw new Error('O carrinho foi alterado durante a validação. Confira os itens e tente novamente.');
@@ -408,7 +533,7 @@ export default function CartPage() {
             const subtotal = Number(quote.subtotal);
             const discountAmount = Number(quote.desconto);
             const shippingAmount = currentShipping
-                ? Number(currentShipping.custom_price ?? currentShipping.price)
+                ? (parseShippingPrice(currentShipping) ?? 0)
                 : 0;
             const finalTotal = Number(quote.total) + shippingAmount;
             const quoteItems = quote.itens as Array<CartItem & { nome: string; preco_unitario: number; total_item: number }>;
@@ -445,6 +570,10 @@ export default function CartPage() {
                 metodoPagamento: paymentMethod === 'Cartão de Crédito' ? `Cartão de Crédito (${installments})` : 'PIX',
                 cupomCodigo: quote.cupom || appliedCoupon?.codigo || null,
             });
+
+            if (!orderResult.success) {
+                throw new Error(orderResult.error || 'Não foi possível registrar o pedido.');
+            }
 
             const orderIdentifier = orderResult.codigoPedido || '';
 
@@ -516,11 +645,12 @@ export default function CartPage() {
             }
             showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
         } finally {
+            isCheckingOutRef.current = false;
             setIsCheckingOut(false);
         }
     };
 
-    if (loading && items.length > 0 && products.length === 0) {
+    if (!mounted || (loading && items.length > 0 && products.length === 0)) {
         return (
             <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '40px 15px', boxSizing: 'border-box' }}>
                 <div style={{ background: '#333', borderRadius: '8px', height: '40px', width: '40%', marginBottom: '30px', animation: 'pulse 1.5s infinite ease-in-out' }} />
@@ -565,7 +695,27 @@ export default function CartPage() {
                     <AnimatePresence>
                         {items.map((item, index) => {
                         const product = products.find(p => p.id === item.produto_id);
-                        if (!product) return null;
+                        if (!product) {
+                            if (loading) return null;
+                            return (
+                                <motion.div
+                                    key={`missing-${item.produto_id}-${index}`}
+                                    initial={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
+                                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px', backgroundColor: '#2a1515', padding: '15px', borderRadius: '8px', border: '1px solid #662222', width: '100%', boxSizing: 'border-box' }}
+                                >
+                                    <div style={{ color: '#ffb3b3', fontSize: '0.95rem' }}>
+                                        Este item (ID #{item.produto_id}) não está mais disponível.
+                                    </div>
+                                    <button
+                                        onClick={() => removeItem(index)}
+                                        style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', backgroundColor: '#dc3545', color: 'white', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                                    >
+                                        Remover
+                                    </button>
+                                </motion.div>
+                            );
+                        }
 
                         const mediaUrls = Array.isArray(product.media_urls) ? product.media_urls : (Array.isArray(product.imagens) ? product.imagens : []);
                         const foundImg = mediaUrls.find((url: string) => url && typeof url === 'string' && !url.includes('.mp4'));
@@ -605,19 +755,57 @@ export default function CartPage() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', gap: '10px', flexWrap: 'wrap' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#000', borderRadius: '4px', border: '1px solid #444', flexShrink: 0 }}>
                                             <button 
-                                                onClick={() => handleUpdateQuantity(index, Math.max(1, item.quantidade - 1))}
+                                                onClick={() => {
+                                                    setQtyDrafts(prev => {
+                                                        const next = { ...prev };
+                                                        delete next[index];
+                                                        return next;
+                                                    });
+                                                    handleUpdateQuantity(index, Math.max(1, item.quantidade - 1));
+                                                }}
                                                 style={{ background: 'none', border: 'none', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontSize: '1.2rem' }}
                                             >-</button>
                                             <input
                                                 type="number"
-                                                value={item.quantidade}
+                                                value={qtyDrafts[index] ?? String(item.quantidade)}
                                                 min="1"
-                                                onChange={(e) => handleUpdateQuantity(index, parseInt(e.target.value) || 1)}
-                                                style={{ width: '30px', textAlign: 'center', background: 'transparent', border: 'none', color: 'white', fontWeight: 'bold', MozAppearance: 'textfield' }}
+                                                max="99"
+                                                onChange={(e) => {
+                                                    const raw = e.target.value;
+                                                    setQtyDrafts(prev => ({ ...prev, [index]: raw }));
+                                                    const parsed = parseInt(raw, 10);
+                                                    if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 99) {
+                                                        handleUpdateQuantity(index, parsed);
+                                                    }
+                                                }}
+                                                onBlur={() => {
+                                                    const raw = qtyDrafts[index];
+                                                    setQtyDrafts(prev => {
+                                                        const next = { ...prev };
+                                                        delete next[index];
+                                                        return next;
+                                                    });
+                                                    if (raw !== undefined) {
+                                                        const parsed = parseInt(raw, 10);
+                                                        const clamped = Number.isNaN(parsed) ? 1 : Math.max(1, Math.min(99, parsed));
+                                                        if (clamped !== item.quantidade) {
+                                                            handleUpdateQuantity(index, clamped);
+                                                        }
+                                                    }
+                                                }}
+                                                style={{ width: '36px', textAlign: 'center', background: 'transparent', border: 'none', color: 'white', fontWeight: 'bold', MozAppearance: 'textfield' }}
                                             />
                                             <button 
-                                                onClick={() => handleUpdateQuantity(index, item.quantidade + 1)}
-                                                style={{ background: 'none', border: 'none', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontSize: '1.2rem' }}
+                                                onClick={() => {
+                                                    setQtyDrafts(prev => {
+                                                        const next = { ...prev };
+                                                        delete next[index];
+                                                        return next;
+                                                    });
+                                                    handleUpdateQuantity(index, Math.min(99, item.quantidade + 1));
+                                                }}
+                                                disabled={item.quantidade >= 99}
+                                                style={{ background: 'none', border: 'none', color: '#fff', padding: '5px 12px', cursor: item.quantidade >= 99 ? 'not-allowed' : 'pointer', fontSize: '1.2rem', opacity: item.quantidade >= 99 ? 0.4 : 1 }}
                                             >+</button>
                                         </div>
                                         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--cor-destaque)', whiteSpace: 'nowrap' }}>
@@ -691,6 +879,11 @@ export default function CartPage() {
                                 value={country}
                                 onChange={(e) => {
                                     const nextCountry = e.target.value;
+                                    cepAbortControllerRef.current?.abort();
+                                    shippingAbortControllerRef.current?.abort();
+                                    setLoadingCep(false);
+                                    setLoadingShipping(false);
+                                    setAllowManualAddress(false);
                                     setCountry(nextCountry);
                                     setCep('');
                                     setShippingOptions([]);
@@ -735,8 +928,8 @@ export default function CartPage() {
                                 </div>
                                 <input type="text" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: 'white', boxSizing: 'border-box' }} />
                                 <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                                    <input type="text" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: country === 'BR' ? '#aaa' : 'white', boxSizing: 'border-box' }} readOnly={country === 'BR'} />
-                                    <input type="text" placeholder={country === 'BR' ? "UF" : "Estado"} value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ width: '90px', flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: country === 'BR' ? '#aaa' : 'white', textAlign: 'center', boxSizing: 'border-box' }} readOnly={country === 'BR'} />
+                                    <input type="text" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 1, minWidth: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: country === 'BR' && !allowManualAddress ? '#aaa' : 'white', boxSizing: 'border-box' }} readOnly={country === 'BR' && !allowManualAddress} />
+                                    <input type="text" placeholder={country === 'BR' ? "UF" : "Estado"} value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ width: '90px', flexShrink: 0, padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: country === 'BR' && !allowManualAddress ? '#aaa' : 'white', textAlign: 'center', boxSizing: 'border-box' }} readOnly={country === 'BR' && !allowManualAddress} />
                                 </div>
                                 
                                 <div style={{ marginTop: '15px' }}>
@@ -746,7 +939,7 @@ export default function CartPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                             <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#aaa' }}>Selecione o Frete:</p>
                                             {shippingOptions.map((option) => {
-                                                const priceValue = parseFloat(String(option.custom_price ?? option.price));
+                                                const priceValue = parseShippingPrice(option);
                                                 const days = option.custom_delivery_time ?? option.delivery_time;
                                                 return (
                                                     <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#1a1a1a', padding: '10px', borderRadius: '6px', cursor: 'pointer', border: selectedShipping?.id === option.id ? '1px solid var(--cor-destaque)' : '1px solid #333' }}>
@@ -763,7 +956,7 @@ export default function CartPage() {
                                                                 {option.is_estimate && <div style={{ fontSize: '0.75rem', color: '#d6b36a' }}>Estimativa; confirmar no WhatsApp</div>}
                                                             </div>
                                                             <div style={{ fontWeight: 'bold', color: 'var(--cor-destaque)' }}>
-                                                                R$ {priceValue.toFixed(2).replace('.', ',')}
+                                                                {priceValue !== null ? `R$ ${priceValue.toFixed(2).replace('.', ',')}` : 'A confirmar'}
                                                             </div>
                                                         </div>
                                                     </label>
@@ -859,7 +1052,14 @@ export default function CartPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ccc' }}>
                         <span>Frete</span>
                         <span style={{ whiteSpace: 'nowrap' }}>
-                            {selectedShipping ? `+ R$ ${parseFloat(String(selectedShipping.custom_price || selectedShipping.price)).toFixed(2).replace('.', ',')}` : 'A calcular'}
+                            {selectedShipping
+                                ? (() => {
+                                    const priceValue = parseShippingPrice(selectedShipping);
+                                    return priceValue !== null
+                                        ? `+ R$ ${priceValue.toFixed(2).replace('.', ',')}`
+                                        : 'A confirmar';
+                                })()
+                                : 'A calcular'}
                         </span>
                     </div>
 

@@ -4,6 +4,7 @@ import {
     calculateCouponDiscount,
     getUnitPrice,
     normalizePaymentMethod,
+    roundCurrency,
     type CouponForCheckout,
     type PricedProduct,
 } from '@/lib/checkout-pricing';
@@ -65,15 +66,15 @@ export async function POST(request: Request) {
             } else if (item.variante) {
                 throw new Error(`O produto ${product.nome} não possui opções selecionáveis.`);
             }
-            const unitPrice = getUnitPrice(product, paymentMethod);
+            const unitPrice = roundCurrency(getUnitPrice(product, paymentMethod));
             return {
                 ...item,
                 nome: product.nome,
                 preco_unitario: unitPrice,
-                total_item: unitPrice * item.quantidade,
+                total_item: roundCurrency(unitPrice * item.quantidade),
             };
         });
-        const subtotal = validatedItems.reduce((total, item) => total + item.total_item, 0);
+        const subtotal = roundCurrency(validatedItems.reduce((total, item) => total + item.total_item, 0));
 
         let discount = 0;
         let couponCode: string | null = null;
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             subtotal,
             desconto: discount,
-            total: Math.max(0, subtotal - discount),
+            total: roundCurrency(Math.max(0, subtotal - discount)),
             itens: validatedItems,
             cupom: couponCode,
         });

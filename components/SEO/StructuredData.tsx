@@ -167,6 +167,37 @@ export const OrganizationSchema = () => {
   );
 };
 
+const DEFAULT_VALID_FROM = '2026-01-01';
+const DEFAULT_PRICE_VALID_UNTIL = '2027-12-31';
+
+const formatUtcDate = (date: Date): string => date.toISOString().split('T')[0];
+
+const resolveOfferDates = (dateInput?: string | null): { validFrom: string; priceValidUntil: string } => {
+  if (!dateInput) {
+    return {
+      validFrom: DEFAULT_VALID_FROM,
+      priceValidUntil: DEFAULT_PRICE_VALID_UNTIL,
+    };
+  }
+
+  const parsed = new Date(dateInput);
+  if (Number.isNaN(parsed.getTime())) {
+    return {
+      validFrom: DEFAULT_VALID_FROM,
+      priceValidUntil: DEFAULT_PRICE_VALID_UNTIL,
+    };
+  }
+
+  const validFrom = formatUtcDate(parsed);
+  const until = new Date(Date.UTC(parsed.getUTCFullYear() + 1, parsed.getUTCMonth(), parsed.getUTCDate()));
+  const untilStr = formatUtcDate(until);
+
+  return {
+    validFrom,
+    priceValidUntil: untilStr < DEFAULT_PRICE_VALID_UNTIL ? DEFAULT_PRICE_VALID_UNTIL : untilStr,
+  };
+};
+
 // 5. Product: Schema dinâmico com Rich Snippets completos
 export interface ProductData {
   id: number;
@@ -185,6 +216,8 @@ export interface ProductData {
   totalAvaliacoes?: number;
   marca?: string;
   gtin13?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const resolveProductImages = (product: ProductData): string[] => {
@@ -221,7 +254,13 @@ const resolveProductImages = (product: ProductData): string[] => {
   return validImages;
 };
 
-export const ProductSchema = ({ product }: { product: ProductData }) => {
+export const ProductSchema = ({
+  product,
+  referenceDate,
+}: {
+  product: ProductData;
+  referenceDate?: string;
+}) => {
   const productImages = resolveProductImages(product);
   const precoNumerico = Number(product.preco_promocional || product.preco) || 0;
   const precoFormatado = precoNumerico.toFixed(2);
@@ -229,8 +268,9 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
   const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
   const hasPromo = !!product.preco_promocional && product.preco_promocional < product.preco;
 
-  const validUntilDate = new Date();
-  validUntilDate.setFullYear(validUntilDate.getFullYear() + 1);
+  const { validFrom, priceValidUntil } = resolveOfferDates(
+    referenceDate || product.updated_at || product.created_at
+  );
 
   const merchantReturnPolicy = {
     '@type': 'MerchantReturnPolicy',
@@ -283,8 +323,8 @@ export const ProductSchema = ({ product }: { product: ProductData }) => {
     'price': precoFormatado,
     'itemCondition': 'https://schema.org/NewCondition',
     'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-    'validFrom': new Date().toISOString().split('T')[0],
-    'priceValidUntil': validUntilDate.toISOString().split('T')[0],
+    'validFrom': validFrom,
+    'priceValidUntil': priceValidUntil,
     'hasMerchantReturnPolicy': merchantReturnPolicy,
     'shippingDetails': shippingDetails,
     'seller': seller,
@@ -399,34 +439,37 @@ export interface ItemListProduct {
   media_urls?: string[] | null;
   slug?: string;
   gtin13?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const ItemListSchema = ({
   products,
   pageUrl,
   name,
+  referenceDate,
 }: {
   products: ItemListProduct[];
   pageUrl: string;
   name?: string;
+  referenceDate?: string;
 }) => {
-  const validUntilDate = new Date();
-  validUntilDate.setFullYear(validUntilDate.getFullYear() + 1);
 
   const merchantReturnPolicy = {
     '@type': 'MerchantReturnPolicy',
     'applicableCountry': 'BR',
     'returnPolicyCategory': 'https://schema.org/MerchantReturnFiniteReturnWindow',
-    'merchantReturnDays': 14,
+    'merchantReturnDays': 7,
     'returnMethod': 'https://schema.org/ReturnByMail',
-    'returnFees': 'https://schema.org/ReturnFeesCustomerResponsibility'
+    'returnFees': 'https://schema.org/FreeReturn',
+    'merchantReturnLink': `${SITE_URL}/devolucao-e-reembolso`
   };
 
   const shippingDetails = {
     '@type': 'OfferShippingDetails',
     'shippingRate': {
       '@type': 'MonetaryAmount',
-      'value': '0.00',
+      'value': '28.90',
       'currency': 'BRL'
     },
     'shippingDestination': {
@@ -444,7 +487,7 @@ export const ItemListSchema = ({
       'transitTime': {
         '@type': 'QuantitativeValue',
         'minValue': 3,
-        'maxValue': 10,
+        'maxValue': 8,
         'unitCode': 'd'
       }
     }
@@ -470,6 +513,9 @@ export const ItemListSchema = ({
     const numericId = Number(product.id) || (index + 1);
     const ratingValue = (4.8 + ((numericId % 3) * 0.1)).toFixed(1);
     const reviewCount = String(20 + (numericId % 15));
+    const { validFrom, priceValidUntil } = resolveOfferDates(
+      referenceDate || product.updated_at || product.created_at
+    );
 
     return {
       '@type': 'ListItem',
@@ -519,8 +565,8 @@ export const ItemListSchema = ({
           'price': precoNumerico.toFixed(2),
           'itemCondition': 'https://schema.org/NewCondition',
           'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-          'validFrom': new Date().toISOString().split('T')[0],
-          'priceValidUntil': validUntilDate.toISOString().split('T')[0],
+          'validFrom': validFrom,
+          'priceValidUntil': priceValidUntil,
           'hasMerchantReturnPolicy': merchantReturnPolicy,
           'shippingDetails': shippingDetails,
           'seller': seller
@@ -658,7 +704,16 @@ interface ArticleData {
   image?: string;
 }
 
-export const ArticleSchema = ({ article }: { article: ArticleData }) => {
+export const ArticleSchema = ({
+  article,
+  referenceDate,
+}: {
+  article: ArticleData;
+  referenceDate?: string;
+}) => {
+  const datePublished = article.datePublished || "2026-01-01T00:00:00+00:00";
+  const dateModified = article.dateModified || referenceDate || datePublished;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -669,8 +724,8 @@ export const ArticleSchema = ({ article }: { article: ArticleData }) => {
     "headline": article.headline,
     "description": cleanText(article.description),
     "image": article.image || `${SITE_URL}/imagens/logo_gringa_style.webp`,
-    "datePublished": article.datePublished || "2026-01-01T00:00:00+00:00",
-    "dateModified": article.dateModified || new Date().toISOString(),
+    "datePublished": datePublished,
+    "dateModified": dateModified,
     "author": {
       "@type": "Organization",
       "name": "Gringa Style",

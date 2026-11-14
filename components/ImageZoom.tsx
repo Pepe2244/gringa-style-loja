@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn } from 'lucide-react';
 import Image from 'next/image';
@@ -15,6 +15,17 @@ interface ImageZoomProps {
 
 export default function ImageZoom({ src, alt, imageIndex = 0, productId }: ImageZoomProps) {
     const [isZoomed, setIsZoomed] = useState(false);
+
+    useEffect(() => {
+        if (!isZoomed) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsZoomed(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isZoomed]);
 
     const handleZoomClick = () => {
         setIsZoomed(true);

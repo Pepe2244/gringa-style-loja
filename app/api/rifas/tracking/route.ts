@@ -36,11 +36,23 @@ export async function GET(request: NextRequest) {
         if (raffleError && raffleError.code !== 'PGRST116') throw raffleError;
         if (!raffle) return NextResponse.json({ rifa: null, participantes: [], premios: [] });
 
-        const { data: participants, error: participantsError } = await client
-            .from('participantes_rifa')
-            .select('nome, numeros_escolhidos, status_pagamento')
-            .eq('rifa_id', raffle.id);
-        if (participantsError) throw participantsError;
+        const PAGE_SIZE = 1000;
+        const MAX_PAGES = 20;
+        const participants: Array<{ nome: string | null; numeros_escolhidos: number[] | null; status_pagamento: string | null }> = [];
+        for (let page = 0; page < MAX_PAGES; page++) {
+            const from = page * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
+            const { data: batch, error: participantsError } = await client
+                .from('participantes_rifa')
+                .select('nome, numeros_escolhidos, status_pagamento')
+                .eq('rifa_id', raffle.id)
+                .order('id', { ascending: true })
+                .range(from, to);
+            if (participantsError) throw participantsError;
+            if (!batch || batch.length === 0) break;
+            participants.push(...batch);
+            if (batch.length < PAGE_SIZE) break;
+        }
 
         let prizes: { id: number; ordem: number | null; descricao: string | null; vencedor_numero: number | null; vencedor_nome: string | null; vencedor_telefone: string | null }[] = [];
         if (raffle.status === 'finalizada') {

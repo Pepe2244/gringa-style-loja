@@ -34,10 +34,24 @@ async function collectAllCanonicalUrls(): Promise<string[]> {
   return [...staticUrls, ...categoryUrls, ...productUrls];
 }
 
+async function isIndexNowAuthorized(request: NextRequest): Promise<boolean> {
+  if (await isAdminAuthenticated()) {
+    return true;
+  }
+
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token && isValidAdminPassword(token)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function GET(request: NextRequest) {
-  const key = request.nextUrl.searchParams.get('key');
-  const isAuthorized = (key && isValidAdminPassword(key)) || (await isAdminAuthenticated());
-  if (!isAuthorized) {
+  if (!(await isIndexNowAuthorized(request))) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 
@@ -52,9 +66,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const key = request.nextUrl.searchParams.get('key');
-  const isAuthorized = (key && isValidAdminPassword(key)) || (await isAdminAuthenticated());
-  if (!isAuthorized) {
+  if (!(await isIndexNowAuthorized(request))) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 

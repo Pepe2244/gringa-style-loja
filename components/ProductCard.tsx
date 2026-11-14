@@ -29,19 +29,22 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const [isHovered, setIsHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+    const [nowMs, setNowMs] = useState<number | null>(null);
 
     // Acesso seguro às propriedades do produto
-    const mediaUrls = Array.isArray(product?.media_urls) ? product.media_urls :
-        (Array.isArray(product?.imagens) ? product.imagens : []);
+    const rawMediaUrls = (Array.isArray(product?.media_urls) && product.media_urls.length > 0)
+        ? product.media_urls
+        : (Array.isArray(product?.imagens) ? product.imagens : []);
+    const mediaUrls = rawMediaUrls.filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
 
-    const rawVideoUrl = product?.video || mediaUrls.find(url => typeof url === 'string' && (url.includes('.mp4') || url.includes('.webm'))) || "";
+    const rawVideoUrl = product?.video || mediaUrls.find(url => url.includes('.mp4') || url.includes('.webm')) || "";
     const videoUrl = resolveMediaUrl(rawVideoUrl);
 
     const imageUrls = mediaUrls
-        .filter(url => typeof url === 'string' && !url.includes('.mp4') && !url.includes('.webm'))
+        .filter(url => !url.includes('.mp4') && !url.includes('.webm'))
         .map(url => {
-            if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) return getProxiedImageUrl(url);
-            return typeof url === 'string' ? buildStorageUrl(url) : '';
+            if (url.startsWith('http') || url.startsWith('/')) return getProxiedImageUrl(url);
+            return buildStorageUrl(url);
         })
         .filter(Boolean) as string[];
 
@@ -56,6 +59,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
 
         checkMobile();
         updateMotionPreference();
+        setNowMs(Date.now());
         window.addEventListener('resize', checkMobile);
         motionPreference.addEventListener('change', updateMotionPreference);
         return () => {
@@ -97,11 +101,11 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
         : 0;
 
     const isNew = () => {
-        if (!product.created_at) return false;
-        const date = new Date(product.created_at);
-        const limitDate = new Date();
-        limitDate.setDate(limitDate.getDate() - (diasNovo || 7));
-        return date > limitDate;
+        if (!nowMs || !product.created_at) return false;
+        const dateMs = new Date(product.created_at).getTime();
+        if (Number.isNaN(dateMs)) return false;
+        const limitMs = nowMs - (diasNovo || 7) * 24 * 60 * 60 * 1000;
+        return dateMs > limitMs;
     };
 
     const shouldShowVideo = !!videoUrl && isHovered && !isMobile && !prefersReducedMotion;

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Meus Favoritos | Gringa Style',
+  title: {
+    absolute: 'Meus Favoritos | Gringa Style',
+  },
   robots: {
     index: false,
     follow: true,

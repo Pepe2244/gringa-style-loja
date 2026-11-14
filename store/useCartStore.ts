@@ -9,6 +9,17 @@ const getBannerKey = (item: CartItem) => {
     return `${item.produto_id}:${variantKey}`;
 };
 
+const isSameVariant = (
+    a?: CartItem['variante'] | null,
+    b?: CartItem['variante'] | null
+) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return a.tipo.trim() === b.tipo.trim() && a.opcao.trim() === b.opcao.trim();
+};
+
+const clampQuantity = (quantity: number) => Math.max(1, Math.min(99, Math.floor(quantity)));
+
 export interface CartState {
     items: CartItem[];
     showCartRecoveryBanner: boolean;
@@ -30,23 +41,25 @@ export const useCartStore = create<CartState>()(
             dismissedCartRecoveryBannerFor: {},
             addItem: (item: CartItem) => set((state) => {
                 // Trava de segurança: ignora se quantidade for menor que 1
-                if (!item.quantidade || item.quantidade < 1) {
+                if (!item.quantidade || !Number.isFinite(item.quantidade) || item.quantidade < 1) {
                     return { items: state.items, showCartRecoveryBanner: state.showCartRecoveryBanner, dismissedCartRecoveryBannerFor: state.dismissedCartRecoveryBannerFor };
                 }
 
+                const normalizedQuantity = clampQuantity(item.quantidade);
+
                 const existingItemIndex = state.items.findIndex((i) =>
                     i.produto_id === item.produto_id &&
-                    JSON.stringify(i.variante) === JSON.stringify(item.variante)
+                    isSameVariant(i.variante, item.variante)
                 );
 
                 let newItems = [...state.items];
                 if (existingItemIndex > -1) {
                     newItems[existingItemIndex] = {
                         ...newItems[existingItemIndex],
-                        quantidade: newItems[existingItemIndex].quantidade + item.quantidade
+                        quantidade: clampQuantity(newItems[existingItemIndex].quantidade + normalizedQuantity)
                     };
                 } else {
-                    newItems = [...state.items, item];
+                    newItems = [...state.items, { ...item, quantidade: normalizedQuantity }];
                 }
 
                 const bannerKey = getBannerKey(item);
@@ -65,12 +78,12 @@ export const useCartStore = create<CartState>()(
             updateQuantity: (index: number, quantity: number) => set((state) => {
                 const newItems = [...state.items];
                 // Se quantidade for inválida ou menor que 1, remove o item
-                if (!quantity || quantity < 1) {
+                if (!quantity || !Number.isFinite(quantity) || quantity < 1) {
                     newItems.splice(index, 1);
                 } else {
                     newItems[index] = {
                         ...newItems[index],
-                        quantidade: quantity
+                        quantidade: clampQuantity(quantity)
                     };
                 }
                 return { items: newItems };

@@ -20,18 +20,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const [productsRes, categoriesRes] = await Promise.all([
-      supabase
+    const PAGE_SIZE = 1000;
+    const allProducts: Array<{ id: number; nome: string; slug: string | null; created_at: string | null }> = [];
+    let from = 0;
+
+    const categoriesPromise = supabase
+      .from('categorias')
+      .select('id, nome, created_at')
+      .order('nome');
+
+    while (true) {
+      const { data, error } = await supabase
         .from('produtos')
         .select('id, nome, slug, created_at')
-        .order('id', { ascending: false }),
-      supabase
-        .from('categorias')
-        .select('id, nome, created_at')
-        .order('nome'),
-    ]);
+        .order('id', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
 
-    const productUrls: MetadataRoute.Sitemap = (productsRes.data || [])
+      if (error) {
+        console.error('Erro ao buscar produtos para sitemap:', error);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+      allProducts.push(...data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+
+    const categoriesRes = await categoriesPromise;
+
+    const productUrls: MetadataRoute.Sitemap = allProducts
       .map((product) => {
         const canonicalSlug = getCanonicalProductSlug(product);
         return {

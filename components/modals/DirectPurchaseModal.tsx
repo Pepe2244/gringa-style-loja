@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Product, ProductVariant } from '@/types';
 import Modal from '@/components/Modal';
@@ -29,6 +29,12 @@ interface ShippingOption {
     delivery_time: number;
     is_estimate?: boolean;
 }
+
+const parseShippingPrice = (option: ShippingOption | null | undefined): number | null => {
+    if (!option) return null;
+    const parsed = parseFloat(String(option.custom_price ?? option.price));
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
 
 interface DirectPurchaseModalProps {
     isOpen: boolean;
@@ -59,14 +65,34 @@ export default function DirectPurchaseModal({
     const [installments, setInstallments] = useState('1x');
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
     const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const [allowManualAddress, setAllowManualAddress] = useState(false);
+
+    const isCheckingOutRef = useRef(false);
+    const cepAbortControllerRef = useRef<AbortController | null>(null);
+    const shippingAbortControllerRef = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+        return () => {
+            cepAbortControllerRef.current?.abort();
+            shippingAbortControllerRef.current?.abort();
+        };
+    }, []);
 
     // Effect to reset state and handle variants when product opens
     useEffect(() => {
+        if (!isOpen) {
+            cepAbortControllerRef.current?.abort();
+            shippingAbortControllerRef.current?.abort();
+            setLoadingCep(false);
+            setLoadingShipping(false);
+            return;
+        }
         if (isOpen && product) {
             setClientName('');
             setClientCpf('');
             setPaymentMethod('PIX');
             setInstallments('1x');
+            setAllowManualAddress(false);
 
             // Handle Variant Logic
             const variants = product.variants as unknown as ProductVariant;
@@ -98,6 +124,10 @@ export default function DirectPurchaseModal({
 
     const calcularFrete = async (postalCode: string, selectedCountry: string) => {
         if (!postalCode) return;
+        shippingAbortControllerRef.current?.abort();
+        const controller = new AbortController();
+        shippingAbortControllerRef.current = controller;
+
         setLoadingShipping(true);
         setShippingOptions([]);
         setSelectedShipping(null);
@@ -105,21 +135,33 @@ export default function DirectPurchaseModal({
             const shipRes = await fetch('/api/shipping', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({ 
                     to_postal_code: postalCode, 
                     country: selectedCountry,
                     product_id: product.id
                 })
             });
+            if (!shipRes.ok) {
+                const errData = await shipRes.json().catch(() => null);
+                showToast(errData?.error || 'Não foi possível calcular o frete.', 'error');
+                return;
+            }
             const shipData = await shipRes.json();
             if (Array.isArray(shipData) && shipData.length > 0) {
                 setShippingOptions(shipData);
                 setSelectedShipping(shipData[0]); 
+            } else {
+                showToast('Nenhuma opção de frete disponível para este CEP.', 'error');
             }
         } catch (e) {
+            if (e instanceof Error && e.name === 'AbortError') return;
             console.error('Erro ao calcular frete:', e);
+            showToast('Erro ao calcular o frete. Tente novamente.', 'error');
         } finally {
-            setLoadingShipping(false);
+            if (shippingAbortControllerRef.current === controller) {
+                setLoadingShipping(false);
+            }
         }
     };
 
@@ -130,14 +172,26 @@ export default function DirectPurchaseModal({
             setCep(value);
 
             if (value.length < 8) {
+                cepAbortControllerRef.current?.abort();
+                shippingAbortControllerRef.current?.abort();
+                setLoadingCep(false);
+                setAllowManualAddress(false);
                 setShippingOptions([]);
                 setSelectedShipping(null);
             }
 
             if (value.length === 8) {
+                cepAbortControllerRef.current?.abort();
+                const controller = new AbortController();
+                cepAbortControllerRef.current = controller;
+
                 setLoadingCep(true);
+                setAllowManualAddress(false);
                 try {
-                    const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
+                    const res = await fetch(`https://viacep.com.br/ws/${value}/json/`, {
+                        signal: controller.signal,
+                    });
+                    if (!res.ok) throw new Error('Falha na consulta do CEP');
                     const data = await res.json();
                     if (!data.erro) {
                         setEndereco(prev => ({
@@ -147,14 +201,22 @@ export default function DirectPurchaseModal({
                             cidade: data.localidade || '',
                             estado: data.uf || ''
                         }));
+                        setAllowManualAddress(!data.localidade || !data.uf);
                         calcularFrete(value, 'BR');
                     } else {
-                        showToast('CEP não encontrado.', 'error');
+                        setAllowManualAddress(true);
+                        showToast('CEP não encontrado. Preencha Cidade e UF manualmente.', 'error');
+                        calcularFrete(value, 'BR');
                     }
                 } catch (error) {
-                    showToast('Erro ao buscar CEP.', 'error');
+                    if (error instanceof Error && error.name === 'AbortError') return;
+                    setAllowManualAddress(true);
+                    showToast('Erro ao buscar CEP. Preencha Cidade e UF manualmente.', 'error');
+                    calcularFrete(value, 'BR');
                 } finally {
-                    setLoadingCep(false);
+                    if (cepAbortControllerRef.current === controller) {
+                        setLoadingCep(false);
+                    }
                 }
             }
         } else {
@@ -171,7 +233,7 @@ export default function DirectPurchaseModal({
     };
 
     const handleDirectPurchase = async () => {
-        if (isCheckingOut) return;
+        if (isCheckingOutRef.current) return;
         if (!clientName.trim()) {
             showToast('Por favor, preencha seu nome.', 'error');
             return;
@@ -223,6 +285,7 @@ export default function DirectPurchaseModal({
                 checkoutWindow = null;
             }
         }
+        isCheckingOutRef.current = true;
         setIsCheckingOut(true);
 
         try {
@@ -260,13 +323,27 @@ export default function DirectPurchaseModal({
                     setSelectedShipping(null);
                     throw new Error('O frete selecionado mudou. Escolha uma opção atualizada e tente novamente.');
                 }
+                const displayedShippingPrice = parseShippingPrice(selectedShipping);
+                const updatedShippingPrice = parseShippingPrice(currentShipping);
+                if (updatedShippingPrice === null) {
+                    setShippingOptions(options);
+                    setSelectedShipping(null);
+                    throw new Error('O frete selecionado retornou um valor inválido. Escolha outra opção.');
+                }
+                if (displayedShippingPrice === null || Math.abs(displayedShippingPrice - updatedShippingPrice) > 0.009) {
+                    setShippingOptions(options);
+                    setSelectedShipping(currentShipping);
+                    throw new Error(
+                        `O valor do frete foi atualizado para R$ ${updatedShippingPrice.toFixed(2).replace('.', ',')}. Confira o novo total e tente novamente.`
+                    );
+                }
             }
 
             const quotedItem = quote.itens?.[0];
             if (!quotedItem) throw new Error('Não foi possível obter o preço atualizado do produto.');
             const productPrice = Number(quotedItem.total_item);
             const shippingAmount = currentShipping
-                ? Number(currentShipping.custom_price ?? currentShipping.price)
+                ? (parseShippingPrice(currentShipping) ?? 0)
                 : 0;
             const finalTotal = Number(quote.total) + shippingAmount;
             const formatCurrency = (value: number) => value.toFixed(2).replace('.', ',');
@@ -309,9 +386,13 @@ export default function DirectPurchaseModal({
                 frete: shippingAmount,
                 total: finalTotal,
                 metodoPagamento: paymentMethod === 'Cartão de Crédito' ? `Cartão de Crédito (${installments})` : 'PIX',
-            }).catch(() => ({ success: false, codigoPedido: '' }));
+            });
 
-            const orderIdentifier = orderResult?.codigoPedido || '';
+            if (!orderResult.success) {
+                throw new Error(orderResult.error || 'Não foi possível registrar o pedido.');
+            }
+
+            const orderIdentifier = orderResult.codigoPedido || '';
 
             let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item${orderIdentifier ? ` (*${orderIdentifier}*)` : ''}:\n`;
             if (clientCpf.trim()) {
@@ -360,6 +441,7 @@ export default function DirectPurchaseModal({
             }
             showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
         } finally {
+            isCheckingOutRef.current = false;
             setIsCheckingOut(false);
         }
     };
@@ -459,6 +541,11 @@ export default function DirectPurchaseModal({
                         value={country}
                         onChange={(e) => {
                             const nextCountry = e.target.value;
+                            cepAbortControllerRef.current?.abort();
+                            shippingAbortControllerRef.current?.abort();
+                            setLoadingCep(false);
+                            setLoadingShipping(false);
+                            setAllowManualAddress(false);
                             setCountry(nextCountry);
                             setCep('');
                             setShippingOptions([]);
@@ -502,8 +589,8 @@ export default function DirectPurchaseModal({
                         </div>
                         <input type="text" className="input-cliente" placeholder="Bairro" value={endereco.bairro} onChange={e => setEndereco({...endereco, bairro: e.target.value})} />
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <input type="text" className="input-cliente" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 2 }} readOnly={country === 'BR'} />
-                            <input type="text" className="input-cliente" placeholder={country === 'BR' ? "UF" : "Estado"} value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ flex: 1 }} readOnly={country === 'BR'} />
+                            <input type="text" className="input-cliente" placeholder="Cidade" value={endereco.cidade} onChange={e => setEndereco({...endereco, cidade: e.target.value})} style={{ flex: 2 }} readOnly={country === 'BR' && !allowManualAddress} />
+                            <input type="text" className="input-cliente" placeholder={country === 'BR' ? "UF" : "Estado"} value={endereco.estado} onChange={e => setEndereco({...endereco, estado: e.target.value})} style={{ flex: 1 }} readOnly={country === 'BR' && !allowManualAddress} />
                         </div>
                         
                         <div style={{ marginTop: '10px' }}>
@@ -513,7 +600,7 @@ export default function DirectPurchaseModal({
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#aaa' }}>Fretes disponíveis:</p>
                                     {shippingOptions.map((option) => {
-                                        const priceValue = parseFloat(String(option.custom_price ?? option.price));
+                                        const priceValue = parseShippingPrice(option);
                                         const days = option.custom_delivery_time ?? option.delivery_time;
                                         return (
                                             <label key={option.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#111', padding: '10px', borderRadius: '6px', cursor: 'pointer', border: selectedShipping?.id === option.id ? '1px solid var(--cor-destaque)' : '1px solid #333' }}>
@@ -530,7 +617,7 @@ export default function DirectPurchaseModal({
                                                         {option.is_estimate && <div style={{ fontSize: '0.75rem', color: '#d6b36a' }}>Estimativa; confirmar no WhatsApp</div>}
                                                     </div>
                                                     <div style={{ fontWeight: 'bold', color: 'var(--cor-destaque)', fontSize: '0.9rem' }}>
-                                                        R$ {priceValue.toFixed(2).replace('.', ',')}
+                                                        {priceValue !== null ? `R$ ${priceValue.toFixed(2).replace('.', ',')}` : 'A confirmar'}
                                                     </div>
                                                 </div>
                                             </label>

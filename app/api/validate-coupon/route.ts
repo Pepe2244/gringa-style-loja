@@ -3,6 +3,7 @@ import {
     aggregateCartItems,
     calculateCouponDiscount,
     normalizePaymentMethod,
+    roundCurrency,
     type CouponForCheckout,
     type PricedProduct,
 } from '@/lib/checkout-pricing';
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
                 desconto_calculado: calculation.discount,
                 metodo_pagamento_restrito: coupon.metodo_pagamento_restrito || null,
             },
-            total_recalculado: calculation.subtotal - calculation.discount,
+            total_recalculado: roundCurrency(Math.max(0, calculation.subtotal - calculation.discount)),
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Erro interno no servidor.';

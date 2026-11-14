@@ -15,23 +15,30 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
     return outputArray;
 }
 
-async function syncSubscriptionWithServer(subscription: PushSubscription) {
+async function syncSubscriptionWithServer(subscription: PushSubscription): Promise<boolean> {
     try {
         const subJson = subscription.toJSON();
-        if (subJson.endpoint && subJson.keys?.p256dh && subJson.keys?.auth) {
-            await fetch('/api/push/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    endpoint: subJson.endpoint,
-                    p256dh: subJson.keys.p256dh,
-                    auth: subJson.keys.auth,
-                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-                }),
-            });
+        if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) {
+            return false;
         }
+        const res = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                endpoint: subJson.endpoint,
+                p256dh: subJson.keys.p256dh,
+                auth: subJson.keys.auth,
+                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+            }),
+        });
+        if (!res.ok) {
+            console.error('[PWA] Falha ao sincronizar push subscription:', res.status);
+            return false;
+        }
+        return true;
     } catch (err) {
         console.error('[PWA] Erro ao sincronizar push subscription com servidor:', err);
+        return false;
     }
 }
 
@@ -39,6 +46,7 @@ export default function PushNotificationButton() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window) {
@@ -46,11 +54,12 @@ export default function PushNotificationButton() {
 
             navigator.serviceWorker.register('/sw.js')
                 .then((registration) => registration.pushManager.getSubscription())
-                .then((subscription) => {
+                .then(async (subscription) => {
                     if (subscription) {
-                        setIsSubscribed(true);
-                        // Garante que a inscrição existente esteja sincronizada com o banco
-                        syncSubscriptionWithServer(subscription);
+                        const synced = await syncSubscriptionWithServer(subscription);
+                        if (synced) {
+                            setIsSubscribed(true);
+                        }
                     }
                 })
                 .catch((error) => {
@@ -62,11 +71,12 @@ export default function PushNotificationButton() {
     const handleSubscribe = async () => {
         if (!isSupported || loading || isSubscribed) return;
         setLoading(true);
+        setErrorMessage(null);
 
         try {
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                alert('Permissão de notificações não concedida no navegador.');
+                setErrorMessage('Permissão de notificações não concedida no navegador.');
                 return;
             }
 
@@ -78,27 +88,39 @@ export default function PushNotificationButton() {
             // Verifica se já existe subscription ativa
             const existingSubscription = await registration.pushManager.getSubscription();
             if (existingSubscription) {
-                await syncSubscriptionWithServer(existingSubscription);
+                const synced = await syncSubscriptionWithServer(existingSubscription);
+                if (!synced) {
+                    setErrorMessage('Não foi possível sincronizar a inscrição de notificações.');
+                    return;
+                }
                 setIsSubscribed(true);
                 return;
             }
 
             const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-            if (vapidKey) {
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(vapidKey),
-                });
-                if (subscription) {
-                    await syncSubscriptionWithServer(subscription);
-                    setIsSubscribed(true);
-                }
-            } else {
-                // Notificações locais permitidas no navegador
-                setIsSubscribed(true);
+            if (!vapidKey) {
+                setErrorMessage('Notificações push não configuradas no momento.');
+                return;
             }
+
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey),
+            });
+            if (!subscription) {
+                setErrorMessage('Não foi possível criar a inscrição de notificações.');
+                return;
+            }
+
+            const synced = await syncSubscriptionWithServer(subscription);
+            if (!synced) {
+                setErrorMessage('Não foi possível salvar sua inscrição no servidor.');
+                return;
+            }
+            setIsSubscribed(true);
         } catch (error) {
             console.error('Erro ao ativar notificações:', error);
+            setErrorMessage('Erro ao ativar notificações. Tente novamente.');
         } finally {
             setLoading(false);
         }
@@ -109,27 +131,34 @@ export default function PushNotificationButton() {
     }
 
     return (
-        <button
-            onClick={handleSubscribe}
-            disabled={isSubscribed || loading}
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                backgroundColor: isSubscribed ? '#10b981' : 'var(--cor-destaque)',
-                color: isSubscribed ? 'white' : 'black',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: isSubscribed || loading ? 'default' : 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                transition: 'background-color 0.3s',
-            }}
-            className="hover:opacity-90"
-        >
-            <Bell size={16} />
-            {loading ? 'Ativando...' : isSubscribed ? 'Notificações Ativadas' : 'Ativar Notificações'}
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <button
+                onClick={handleSubscribe}
+                disabled={isSubscribed || loading}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    backgroundColor: isSubscribed ? '#10b981' : 'var(--cor-destaque)',
+                    color: isSubscribed ? 'white' : 'black',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: isSubscribed || loading ? 'default' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    transition: 'background-color 0.3s',
+                }}
+                className="hover:opacity-90"
+            >
+                <Bell size={16} />
+                {loading ? 'Ativando...' : isSubscribed ? 'Notificações Ativadas' : 'Ativar Notificações'}
+            </button>
+            {errorMessage && (
+                <p role="alert" style={{ margin: 0, fontSize: '12px', color: '#ef4444' }}>
+                    {errorMessage}
+                </p>
+            )}
+        </div>
     );
 }

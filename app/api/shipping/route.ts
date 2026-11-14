@@ -134,7 +134,12 @@ export async function POST(request: Request) {
                     .select('id, nome')
                     .in('id', ids);
 
-                if (!prodsError && products) {
+                if (prodsError) {
+                    console.error('[Shipping] Erro ao consultar produtos (items):', prodsError);
+                    throw prodsError;
+                }
+
+                if (products) {
                     const productMap = new Map(products.map(p => [p.id, p.nome || '']));
                     for (const item of validItems) {
                         const name = productMap.get(item.produto_id) || '';
@@ -154,7 +159,13 @@ export async function POST(request: Request) {
                     .from('produtos')
                     .select('nome')
                     .in('id', validIds);
-                if (!prodsError && products) {
+
+                if (prodsError) {
+                    console.error('[Shipping] Erro ao consultar produtos (product_ids):', prodsError);
+                    throw prodsError;
+                }
+
+                if (products) {
                     for (const p of products) {
                         const n = (p.nome || '').toLowerCase();
                         if (n.includes('mascara') || n.includes('máscara')) {
@@ -254,6 +265,8 @@ export async function POST(request: Request) {
 
         const resultados = await Promise.all(
             CORREIOS_SERVICOS.map(async (servico, idx) => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
                 try {
                     const correiosRes = await fetch(
                         'https://api.correios.com.br/preco/v1/internacional',
@@ -264,6 +277,7 @@ export async function POST(request: Request) {
                                 'Content-Type': 'application/json',
                                 Authorization: `Bearer ${CORREIOS_TOKEN}`,
                             },
+                            signal: controller.signal,
                             body: JSON.stringify({
                                 coPaisDestino,
                                 nuCepOrigem: effectiveOriginCep,
@@ -295,6 +309,8 @@ export async function POST(request: Request) {
                     };
                 } catch {
                     return null;
+                } finally {
+                    clearTimeout(timeoutId);
                 }
             })
         );

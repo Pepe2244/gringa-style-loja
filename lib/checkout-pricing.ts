@@ -33,6 +33,8 @@ export interface CouponForCheckout {
 
 export type PaymentMethod = 'pix' | 'cartao_credito';
 
+export const roundCurrency = (value: number): number => Math.round(value * 100) / 100;
+
 const normalizePaymentMethodValue = (value: unknown): string => {
     if (value == null) return '';
     return String(value)
@@ -174,8 +176,8 @@ export function calculateCouponDiscount(
     for (const item of items) {
         const product = productById.get(item.produto_id);
         if (!product) throw new Error('Um ou mais produtos não estão disponíveis.');
-        const lineTotal = getUnitPrice(product, paymentMethod) * item.quantidade;
-        subtotal += lineTotal;
+        const lineTotal = roundCurrency(getUnitPrice(product, paymentMethod) * item.quantidade);
+        subtotal = roundCurrency(subtotal + lineTotal);
 
         if (appType === 'produto' && coupon.produtos_aplicaveis?.includes(item.produto_id)) {
             eligibleProducts.add(item.produto_id);
@@ -185,7 +187,7 @@ export function calculateCouponDiscount(
             appType !== 'produto' ||
             coupon.produtos_aplicaveis?.includes(item.produto_id)
         ) {
-            eligibleSubtotal += lineTotal;
+            eligibleSubtotal = roundCurrency(eligibleSubtotal + lineTotal);
         }
     }
 
@@ -206,7 +208,7 @@ export function calculateCouponDiscount(
 
     let discount = 0;
     if (discountType === 'percentual' || discountType === 'porcentagem') {
-        discount = discountBase * discountValue / 100;
+        discount = roundCurrency((discountBase * discountValue) / 100);
     } else if (discountType === 'fixo' || discountType === 'valor_fixo') {
         if (appType === 'produto') {
             discount = 0;
@@ -216,17 +218,20 @@ export function calculateCouponDiscount(
                     const totalQty = items
                         .filter((i) => i.produto_id === productId)
                         .reduce((acc, i) => acc + i.quantidade, 0);
-                    const productLineTotal = getUnitPrice(product, paymentMethod) * totalQty;
-                    discount += Math.min(productLineTotal, discountValue);
+                    const productLineTotal = roundCurrency(getUnitPrice(product, paymentMethod) * totalQty);
+                    discount = roundCurrency(discount + Math.min(productLineTotal, discountValue));
                 }
             }
         } else {
-            discount = discountValue;
+            discount = roundCurrency(discountValue);
         }
     } else {
         throw new Error('Tipo de desconto do cupom inválido.');
     }
 
     if (!Number.isFinite(discount) || discount < 0) throw new Error('Valor de desconto inválido.');
-    return { subtotal, discount: Math.min(discount, discountBase) };
+    return {
+        subtotal: roundCurrency(subtotal),
+        discount: roundCurrency(Math.min(discount, discountBase)),
+    };
 }

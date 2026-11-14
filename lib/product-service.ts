@@ -31,16 +31,30 @@ export async function getAllActiveProducts() {
 
     const products = await getCachedValue<any[]>(
         async () => {
-            const { data, error } = await supabase
-                .from('produtos')
-                .select('*')
-                .order('id', { ascending: false })
-                .limit(2000);
-            if (error) {
-                console.error('[ProductService] Erro ao buscar produtos:', error);
-                return [];
+            const PAGE_SIZE = 1000;
+            const MAX_PAGES = 10;
+            const allProducts: any[] = [];
+
+            for (let page = 0; page < MAX_PAGES; page++) {
+                const from = page * PAGE_SIZE;
+                const to = from + PAGE_SIZE - 1;
+                const { data, error } = await supabase
+                    .from('produtos')
+                    .select('*')
+                    .order('id', { ascending: false })
+                    .range(from, to);
+
+                if (error) {
+                    console.error('[ProductService] Erro ao buscar produtos:', error);
+                    throw error;
+                }
+
+                if (!data || data.length === 0) break;
+                allProducts.push(...data);
+                if (data.length < PAGE_SIZE) break;
             }
-            return data || [];
+
+            return allProducts;
         },
         ['all-active-products-list'],
         ['produtos', 'loja'],
@@ -66,7 +80,7 @@ export async function getCachedCategories() {
                 .order('nome');
             if (error) {
                 console.error('[ProductService] Erro ao buscar categorias:', error);
-                return [];
+                throw error;
             }
             return data || [];
         },
@@ -137,22 +151,24 @@ export const fetchProductBySlugOrId = cache(async (rawSlugOrId: string) => {
     return getCachedValue(
         async () => {
             // 1. Busca exata pelo slug oficial no banco
-            const { data: exactProduct } = await supabase
+            const { data: exactProduct, error: exactError } = await supabase
                 .from('produtos')
                 .select('*')
                 .eq('slug', decoded)
                 .maybeSingle();
 
+            if (exactError) throw exactError;
             if (exactProduct) return exactProduct;
 
             // 2. Busca limpando traços duplicados ou nas extremidades
             const cleanedSlug = decoded.replace(/^-+|-+$/g, '').replace(/-+/g, '-');
             if (cleanedSlug && cleanedSlug !== decoded) {
-                const { data: byClean } = await supabase
+                const { data: byClean, error: cleanError } = await supabase
                     .from('produtos')
                     .select('*')
                     .eq('slug', cleanedSlug)
                     .maybeSingle();
+                if (cleanError) throw cleanError;
                 if (byClean) return byClean;
             }
 
@@ -160,11 +176,12 @@ export const fetchProductBySlugOrId = cache(async (rawSlugOrId: string) => {
             if (/^\d+$/.test(decoded)) {
                 const numId = parseInt(decoded, 10);
                 if (Number.isSafeInteger(numId) && numId > 0) {
-                    const { data: byId } = await supabase
+                    const { data: byId, error: idError } = await supabase
                         .from('produtos')
                         .select('*')
                         .eq('id', numId)
                         .maybeSingle();
+                    if (idError) throw idError;
                     if (byId) return byId;
                 }
             }

@@ -8,28 +8,35 @@ import {
     isValidAdminPassword,
 } from '@/lib/admin-auth';
 import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
+import { Redis } from '@upstash/redis/cloudflare';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const loginAttempts = new Map<string, { count: number; resetTime: number }>();
 
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? Redis.fromEnv()
-    : null;
+let distributedAdminLimiter: Ratelimit | null = null;
 
-const distributedAdminLimiter = redis
-    ? new Ratelimit({
+function getDistributedAdminLimiter(): Ratelimit | null {
+    if (distributedAdminLimiter) return distributedAdminLimiter;
+
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) return null;
+
+    const redis = new Redis({ url, token });
+    distributedAdminLimiter = new Ratelimit({
         redis,
         limiter: Ratelimit.slidingWindow(MAX_LOGIN_ATTEMPTS, '15 m'),
         prefix: 'gringa-style:admin-login-action',
-    })
-    : null;
+    });
+    return distributedAdminLimiter;
+}
 
 async function checkActionRateLimit(ip: string): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
-    if (distributedAdminLimiter) {
+    const limiter = getDistributedAdminLimiter();
+    if (limiter) {
         try {
-            const { success, reset } = await distributedAdminLimiter.limit(`admin_action:${ip}`);
+            const { success, reset } = await limiter.limit(`admin_action:${ip}`);
             if (!success) {
                 const remaining = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
                 return { allowed: false, retryAfterSeconds: remaining };

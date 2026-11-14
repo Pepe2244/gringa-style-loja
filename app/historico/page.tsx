@@ -38,6 +38,10 @@ export default function HistoricoPage() {
         return numeroString.substring(0, metadeVisivel) + '*'.repeat(numeroString.length - metadeVisivel);
     };
 
+    const rifasComPremios = rifas.filter(rifa =>
+        premios.some(p => p.rifa_id === rifa.id)
+    );
+
     return (
         <>
             <WebPageSchema page={{
@@ -58,12 +62,11 @@ export default function HistoricoPage() {
                     <div style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando histórico...</div>
                 ) : (
                     <div id="historico-lista" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {rifas.length === 0 ? (
+                        {rifasComPremios.length === 0 ? (
                             <p style={{ textAlign: 'center', color: '#ccc' }}>Nenhuma rifa foi finalizada ainda.</p>
                         ) : (
-                            rifas.map(rifa => {
+                            rifasComPremios.map(rifa => {
                                 const premiosDaRifa = premios.filter(p => p.rifa_id === rifa.id);
-                                if (premiosDaRifa.length === 0) return null;
 
                                 const totalDigitos = String(rifa.total_numeros - 1).length;
 
@@ -72,7 +75,11 @@ export default function HistoricoPage() {
                                     ? getProxiedImageUrl(rifa.imagem_premio_url)
                                     : '/imagens/logo_gringa_style.png';
 
-                                return (
+                                const rifasComPremios = rifas.filter(rifa =>
+        premios.some(p => p.rifa_id === rifa.id)
+    );
+
+    return (
                                     <div key={rifa.id} className="historico-card" style={{
                                         backgroundColor: 'var(--cor-fundo-secundaria)',
                                         padding: '20px',

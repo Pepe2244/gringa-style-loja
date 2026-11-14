@@ -59,12 +59,32 @@ export default async function Image({ params }: Props) {
       );
     }
 
-    const mediaUrls = product.media_urls || product.imagens || [];
-    const validPhoto = mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm'));
-    const imageUrl = resolveAbsoluteUrl(validPhoto);
+    const isSatoriSupportedImage = (url: unknown): url is string => {
+      if (typeof url !== 'string') return false;
+      const trimmed = url.trim();
+      if (!trimmed) return false;
+      if (/\.(mp4|webm|mov|ogg|avi|mkv|webp)($|\?)/i.test(trimmed)) return false;
+      return true;
+    };
 
-    const precoFinal = product.preco_promocional || product.preco;
-    const precoFormatado = precoFinal ? precoFinal.toFixed(2).replace('.', ',') : '';
+    const primaryMedia =
+      Array.isArray(product.media_urls) && product.media_urls.length > 0
+        ? product.media_urls
+        : Array.isArray(product.imagens)
+          ? product.imagens
+          : [];
+    const validPhoto =
+      primaryMedia.find(isSatoriSupportedImage) ??
+      (Array.isArray(product.imagens) ? product.imagens.find(isSatoriSupportedImage) : undefined);
+    const resolvedImageUrl = resolveAbsoluteUrl(validPhoto);
+    const imageUrl = /\.webp($|\?)/i.test(resolvedImageUrl)
+      ? resolveAbsoluteUrl('/imagens/logo_gringa_style.png')
+      : resolvedImageUrl;
+
+    const precoFinal = Number(product.preco_promocional || product.preco);
+    const precoFormatado = Number.isFinite(precoFinal) && precoFinal > 0
+      ? precoFinal.toFixed(2).replace('.', ',')
+      : '';
     const isProntaEntrega = Boolean(product.em_estoque);
 
     return new ImageResponse(
@@ -153,7 +173,7 @@ export default async function Image({ params }: Props) {
                   borderRadius: '999px',
                 }}
               >
-                {isProntaEntrega ? '✓ PRONTA ENTREGA' : '🛠️ SOB ENCOMENDA'}
+                {isProntaEntrega ? 'PRONTA ENTREGA' : 'SOB ENCOMENDA'}
               </div>
             </div>
 
@@ -198,7 +218,7 @@ export default async function Image({ params }: Props) {
               }}
             >
               <span>gringastylebr.com.br</span>
-              <span>🇧🇷 Envio para todo o Brasil</span>
+              <span>Envio para todo o Brasil</span>
             </div>
           </div>
         </div>

@@ -39,24 +39,96 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
 };
 
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
-const upstashRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-    : null;
+let upstashRedis: Redis | null = null;
 const distributedLimiters = new Map<string, Ratelimit>();
 
-function getClientIP(request: NextRequest): string {
-    const forwarded = request.headers.get('x-forwarded-for');
-    const realIP = request.headers.get('x-real-ip');
-    const cfIP = request.headers.get('cf-connecting-ip');
+function getUpstashRedis(): Redis | null {
+    if (upstashRedis) return upstashRedis;
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) return null;
+    upstashRedis = new Redis({ url, token });
+    return upstashRedis;
+}
 
+function getClientIP(request: NextRequest): string {
+    const cfIP = request.headers.get('cf-connecting-ip')?.trim();
     if (cfIP) return cfIP;
-    if (forwarded) return forwarded.split(',')[0].trim();
+
+    const realIP = request.headers.get('x-real-ip')?.trim();
     if (realIP) return realIP;
 
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) {
+        const parts = forwarded.split(',').map((ip) => ip.trim()).filter(Boolean);
+        if (parts.length > 0) return parts[parts.length - 1];
+    }
+
     return 'unknown';
+}
+
+function base64UrlToUint8Array(base64Url: string): Uint8Array | null {
+    try {
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const padLength = (4 - (base64.length % 4)) % 4;
+        const padded = base64 + '='.repeat(padLength);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    } catch {
+        return null;
+    }
+}
+
+async function verifyAdminSessionToken(token: string | undefined): Promise<boolean> {
+    if (!token) return false;
+    const secret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD;
+    if (!secret) return false;
+
+    const parts = token.split('.');
+    if (parts.length !== 2) return false;
+    const [payload, signature] = parts;
+    if (!payload || !signature) return false;
+
+    const sigBytes = base64UrlToUint8Array(signature);
+    if (!sigBytes) return false;
+
+    try {
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+            'raw',
+            encoder.encode(secret),
+            { name: 'HMAC', hash: 'SHA-256' },
+            false,
+            ['verify']
+        );
+
+        const isValidSig = await crypto.subtle.verify(
+            'HMAC',
+            key,
+            sigBytes as BufferSource,
+            encoder.encode(payload)
+        );
+        if (!isValidSig) return false;
+
+        const payloadBytes = base64UrlToUint8Array(payload);
+        if (!payloadBytes) return false;
+
+        const session = JSON.parse(new TextDecoder().decode(payloadBytes)) as {
+            expiresAt?: unknown;
+            nonce?: unknown;
+        };
+        return (
+            typeof session.expiresAt === 'number' &&
+            session.expiresAt > Date.now() &&
+            typeof session.nonce === 'string'
+        );
+    } catch {
+        return false;
+    }
 }
 
 function shouldSkipRateLimit(path: string, method: string): boolean {
@@ -77,15 +149,15 @@ function shouldSkipRateLimit(path: string, method: string): boolean {
     return skipPaths.some(skipPath => path.startsWith(skipPath));
 }
 
-function getRateLimitConfig(path: string) {
-    if (RATE_LIMITS[path]) return RATE_LIMITS[path];
+function getRateLimitConfig(path: string): { pattern: string; maxRequests: number; windowMs: number } {
+    if (RATE_LIMITS[path]) return { pattern: path, ...RATE_LIMITS[path] };
 
     for (const [pattern, config] of Object.entries(RATE_LIMITS)) {
         if (pattern !== 'default' && path.startsWith(pattern)) {
-            return config;
+            return { pattern, ...config };
         }
     }
-    return RATE_LIMITS.default;
+    return { pattern: 'default', ...RATE_LIMITS.default };
 }
 
 function cleanupExpiredCounters() {
@@ -101,18 +173,19 @@ function cleanupExpiredCounters() {
     toDelete.forEach(key => requestCounts.delete(key));
 }
 
-function getDistributedLimiter(path: string, config: { maxRequests: number; windowMs: number }) {
-    if (!upstashRedis) return null;
+function getDistributedLimiter(pattern: string, config: { maxRequests: number; windowMs: number }) {
+    const redis = getUpstashRedis();
+    if (!redis) return null;
 
-    const existingLimiter = distributedLimiters.get(path);
+    const existingLimiter = distributedLimiters.get(pattern);
     if (existingLimiter) return existingLimiter;
 
     const limiter = new Ratelimit({
-        redis: upstashRedis,
+        redis,
         limiter: Ratelimit.slidingWindow(config.maxRequests, `${Math.ceil(config.windowMs / 1000)} s`),
         prefix: 'gringa-style:ratelimit',
     });
-    distributedLimiters.set(path, limiter);
+    distributedLimiters.set(pattern, limiter);
     return limiter;
 }
 
@@ -190,9 +263,9 @@ export default async function middleware(request: NextRequest) {
     }
 
     // --- ETAPA 1.5: PROTEÇÃO DE ROTAS ADMINISTRATIVAS NO EDGE ---
-    if (pathname.startsWith('/api/admin') && pathname !== '/api/admin/login' && pathname !== '/api/admin/auth') {
+    if (pathname.startsWith('/api/admin') && pathname !== '/api/admin/login' && pathname !== '/api/admin/auth' && pathname !== '/api/admin/logout') {
         const sessionCookie = request.cookies.get('admin_session')?.value;
-        if (!sessionCookie) {
+        if (!(await verifyAdminSessionToken(sessionCookie))) {
             return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
         }
     }
@@ -225,7 +298,7 @@ export default async function middleware(request: NextRequest) {
     const ip = getClientIP(request);
     const key = `${ip}:${pathname}`;
     const config = getRateLimitConfig(pathname);
-    const limiter = getDistributedLimiter(pathname, config);
+    const limiter = getDistributedLimiter(config.pattern, config);
     let result;
 
     try {

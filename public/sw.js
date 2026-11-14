@@ -132,18 +132,20 @@ self.addEventListener('notificationclick', function (event) {
     const urlToOpen = event.notification.data ? event.notification.data.url : '/';
     if (event.action === 'dismiss') return;
 
+    const targetUrl = new URL(urlToOpen, self.location.origin).href;
+
     event.waitUntil(
         clients.matchAll({
             type: 'window',
             includeUncontrolled: true
         }).then((clientList) => {
             for (let client of clientList) {
-                if (client.url === urlToOpen && 'focus' in client) {
+                if (targetUrl === client.url && 'focus' in client) {
                     return client.focus();
                 }
             }
             if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
+                return clients.openWindow(targetUrl);
             }
         })
     );

@@ -42,7 +42,14 @@ function PaymentContent() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                let token = participanteId ? sessionStorage.getItem(`payment-access-${participanteId}`) : null;
+                let token: string | null = null;
+                if (participanteId) {
+                    try {
+                        token = sessionStorage.getItem(`payment-access-${participanteId}`);
+                    } catch {
+                        // Keep token lookup working via hash/query when sessionStorage is blocked.
+                    }
+                }
                 const queryToken = searchParams.get('token') || searchParams.get('payment_access');
                 if (!token && window.location.hash.startsWith('#payment_access=')) {
                     token = decodeURIComponent(window.location.hash.slice('#payment_access='.length));

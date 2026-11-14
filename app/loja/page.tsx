@@ -48,11 +48,12 @@ export default async function LojaPage() {
   const [products, categories, diasNovo] = await Promise.all([
     getCachedValue(
       async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('produtos')
           .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
           .order('created_at', { ascending: false })
           .limit(12);
+        if (error) throw error;
         return (data || []) as Product[];
       },
       ['loja-products-list'],
@@ -61,7 +62,8 @@ export default async function LojaPage() {
     ),
     getCachedValue(
       async () => {
-        const { data } = await supabase.from('categorias').select('*').order('nome');
+        const { data, error } = await supabase.from('categorias').select('*').order('nome');
+        if (error) throw error;
         return data || [];
       },
       ['loja-categories-list'],
@@ -70,8 +72,9 @@ export default async function LojaPage() {
     ),
     getCachedValue(
       async () => {
-        const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle();
-        return data ? parseInt(data.valor) : 7;
+        const { data, error } = await supabase.from('configuracoes').select('*').eq('chave', 'dias_novo').maybeSingle();
+        if (error) throw error;
+        return (data ? parseInt(data.valor, 10) : 0) || 7;
       },
       ['loja-config-dias-novo'],
       ['configuracoes', 'loja'],
@@ -98,6 +101,7 @@ export default async function LojaPage() {
           imagens: p.imagens,
           media_urls: p.media_urls,
           slug: p.slug,
+          created_at: p.created_at,
         }))}
         pageUrl={lojaUrl}
         name="Catálogo de Produtos | Loja Gringa Style"

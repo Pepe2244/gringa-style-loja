@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: { absolute: 'Página não encontrada | Gringa Style' },
+  robots: { index: false, follow: false },
+};
 
 export default function NotFound() {
   return (

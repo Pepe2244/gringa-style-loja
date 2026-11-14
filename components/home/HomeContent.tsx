@@ -37,6 +37,11 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     const [loadingMore, setLoadingMore] = useState(false);
 
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+    const [nowMs, setNowMs] = useState<number | null>(null);
+
+    useEffect(() => {
+        setNowMs(Date.now());
+    }, []);
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -120,13 +125,16 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
             if (aHasPromo && !bHasPromo) return -1;
             if (!aHasPromo && bHasPromo) return 1;
 
-            const limitDate = new Date();
-            limitDate.setDate(limitDate.getDate() - diasNovo);
-            const aNew = a.created_at && new Date(a.created_at) > limitDate;
-            const bNew = b.created_at && new Date(b.created_at) > limitDate;
+            if (nowMs !== null) {
+                const limitMs = nowMs - diasNovo * 24 * 60 * 60 * 1000;
+                const aTime = a.created_at ? new Date(a.created_at).getTime() : NaN;
+                const bTime = b.created_at ? new Date(b.created_at).getTime() : NaN;
+                const aNew = !Number.isNaN(aTime) && aTime > limitMs;
+                const bNew = !Number.isNaN(bTime) && bTime > limitMs;
 
-            if (aNew && !bNew) return -1;
-            if (!aNew && bNew) return 1;
+                if (aNew && !bNew) return -1;
+                if (!aNew && bNew) return 1;
+            }
 
             return a.nome.localeCompare(b.nome);
         }

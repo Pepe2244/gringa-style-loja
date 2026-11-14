@@ -27,8 +27,15 @@ export async function reservarNumerosRifa(
         const supabase = createSupabaseAdminClient();
 
         // Validação de segurança no SERVIDOR: checa se a rifa já encerrou
-        const { data: rifaCheck, error: rifaError } = await supabase.from('rifas').select('status').eq('id', rifaId).single();
+        const { data: rifaCheck, error: rifaError } = await supabase
+            .from('rifas')
+            .select('status')
+            .eq('id', rifaId)
+            .maybeSingle();
         if (rifaError) throw rifaError;
+        if (!rifaCheck) {
+            throw new Error('Rifa não encontrada ou indisponível no momento.');
+        }
         if (rifaCheck.status !== 'ativa') {
             throw new Error('CUIDADO: Tentativa de compra em rifa já encerrada e sorteada. Ação bloqueada.');
         }
@@ -197,8 +204,16 @@ export async function toggleRaffleStatus(id: number, currentStatus: string) {
 
         const newStatus = currentRaffle.status === 'ativa' ? 'pausada' : 'ativa';
 
-        const { error } = await supabase.from('rifas').update({ status: newStatus }).eq('id', id);
+        const { data: updatedRows, error } = await supabase
+            .from('rifas')
+            .update({ status: newStatus })
+            .eq('id', id)
+            .eq('status', currentRaffle.status)
+            .select('id');
         if (error) throw error;
+        if (!updatedRows || updatedRows.length === 0) {
+            return { success: false, error: 'O status da rifa foi alterado concorrentemente. Atualize a página e tente novamente.' };
+        }
 
         // OBLITERAÇÃO DE CACHE: Reflete a mudança de status na vitrine
         revalidatePath('/', 'layout');

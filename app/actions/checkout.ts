@@ -1,6 +1,15 @@
 'use server';
 
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
+import {
+    aggregateCartItems,
+    calculateCouponDiscount,
+    getUnitPrice,
+    normalizePaymentMethod,
+    roundCurrency,
+    type CouponForCheckout,
+    type PricedProduct,
+} from '@/lib/checkout-pricing';
 
 export interface CreateOrderInput {
     clienteNome: string;
@@ -100,11 +109,14 @@ export async function incrementCouponUsage(couponCode: string) {
             .eq('id', coupon.id);
 
         if (usageLimit !== null && usageLimit > 0) {
-            query = query.lte('usos_atuais', currentUses);
+            query = query.or(`usos_atuais.is.null,usos_atuais.lte.${currentUses}`);
         }
 
-        const { error: updateError } = await query;
+        const { data: updatedRows, error: updateError } = await query.select('id');
         if (updateError) throw updateError;
+        if (!updatedRows || updatedRows.length === 0) {
+            return { success: false, error: 'Limite de utilização do cupom atingido.' };
+        }
 
         return { success: true, count: nextCount };
     } catch (err: any) {
@@ -127,6 +139,95 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
         const telefoneCliente = (input.clienteTelefone || '').trim().slice(0, 40) || 'Não informado';
         const emailCliente = (input.clienteEmail || '').trim().slice(0, 150) || null;
 
+        const aggregatedItems = aggregateCartItems(input.itens);
+        const basePaymentMethod = (input.metodoPagamento || 'PIX').replace(/\s*\(.*\)\s*$/, '').trim();
+        const paymentMethod = normalizePaymentMethod(basePaymentMethod);
+
+        const productIds = Array.from(new Set(aggregatedItems.map((item) => item.produto_id)));
+        const { data: products, error: productsError } = await client
+            .from('produtos')
+            .select('id, nome, preco, preco_promocional, preco_pix, em_estoque, variants')
+            .in('id', productIds);
+
+        if (productsError) {
+            console.error('[Checkout] Erro ao consultar produtos para validação do pedido:', productsError);
+            return { success: false, codigoPedido, error: 'Erro ao validar produtos do pedido.' };
+        }
+        if (!products || products.length !== productIds.length) {
+            return { success: false, codigoPedido, error: 'Um ou mais produtos não estão disponíveis.' };
+        }
+        if (products.some((p) => p.em_estoque !== true)) {
+            return { success: false, codigoPedido, error: 'Um ou mais produtos estão fora de estoque.' };
+        }
+
+        const productMap = new Map((products as Array<PricedProduct & { nome: string; variants?: unknown }>).map((p) => [p.id, p]));
+        const validatedItems = aggregatedItems.map((item) => {
+            const product = productMap.get(item.produto_id);
+            if (!product) {
+                throw new Error('Um ou mais produtos não estão disponíveis.');
+            }
+            const rawVariants = product.variants;
+            const variants = rawVariants && typeof rawVariants === 'object' && !Array.isArray(rawVariants)
+                ? rawVariants as { tipo?: unknown; opcoes?: unknown }
+                : null;
+            const options = variants && Array.isArray(variants.opcoes) ? variants.opcoes : [];
+            if (options.length > 0) {
+                if (
+                    !item.variante ||
+                    item.variante.tipo !== variants?.tipo ||
+                    !options.includes(item.variante.opcao)
+                ) {
+                    throw new Error(`Selecione uma opção válida para o produto ${product.nome}.`);
+                }
+            } else if (item.variante) {
+                throw new Error(`O produto ${product.nome} não possui opções selecionáveis.`);
+            }
+            const unitPrice = roundCurrency(getUnitPrice(product, paymentMethod));
+            return {
+                produto_id: item.produto_id,
+                nome: product.nome,
+                quantidade: item.quantidade,
+                preco_unitario: unitPrice,
+                total_item: roundCurrency(unitPrice * item.quantidade),
+                ...(item.variante ? { variante: item.variante } : {}),
+            };
+        });
+
+        const serverSubtotal = roundCurrency(validatedItems.reduce((sum, item) => sum + item.total_item, 0));
+
+        let serverDiscount = 0;
+        const cleanCouponCode = input.cupomCodigo ? input.cupomCodigo.toUpperCase().trim() : null;
+        if (cleanCouponCode) {
+            if (!/^[\p{L}\p{N}_-]{1,64}$/u.test(cleanCouponCode)) {
+                return { success: false, codigoPedido, error: 'Código de cupom inválido.' };
+            }
+            const { data: coupon, error: couponError } = await client
+                .from('cupons')
+                .select('*')
+                .eq('codigo', cleanCouponCode)
+                .maybeSingle();
+
+            if (couponError) {
+                console.error('[Checkout] Erro ao consultar cupom:', couponError);
+                return { success: false, codigoPedido, error: 'Erro ao validar cupom.' };
+            }
+            if (!coupon) {
+                return { success: false, codigoPedido, error: 'Cupom não encontrado.' };
+            }
+
+            const calculation = calculateCouponDiscount(
+                coupon as CouponForCheckout,
+                aggregatedItems,
+                products as PricedProduct[],
+                paymentMethod,
+            );
+            serverDiscount = roundCurrency(calculation.discount);
+        }
+
+        const parsedFrete = Number(input.frete);
+        const serverFrete = Number.isFinite(parsedFrete) && parsedFrete >= 0 ? roundCurrency(parsedFrete) : 0;
+        const serverTotal = roundCurrency(Math.max(0, serverSubtotal - serverDiscount) + serverFrete);
+
         const enderecoEntrega = input.enderecoEntrega
             ? { ...input.enderecoEntrega, ...(input.clienteCpf ? { cpf: input.clienteCpf.trim() } : {}) }
             : (input.clienteCpf ? { cpf: input.clienteCpf.trim() } : null);
@@ -137,32 +238,37 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
             cliente_email: emailCliente,
             cliente_telefone: telefoneCliente,
             endereco_entrega: enderecoEntrega,
-            itens: input.itens || [],
-            subtotal: Number(input.subtotal) || 0,
-            desconto: Number(input.desconto) || 0,
-            frete: Number(input.frete) || 0,
-            total: Number(input.total) || 0,
+            itens: validatedItems,
+            subtotal: serverSubtotal,
+            desconto: serverDiscount,
+            frete: serverFrete,
+            total: serverTotal,
             metodo_pagamento: input.metodoPagamento || 'PIX',
             status_pagamento: 'pendente',
-            cupom_aplicado: input.cupomCodigo ? input.cupomCodigo.toUpperCase().trim() : null
+            cupom_aplicado: cleanCouponCode,
         };
 
         const { error: insertError } = await client.from('pedidos').insert(payload);
         if (insertError) {
             console.error('[Checkout] Falha ao registrar pedido na tabela pedidos:', insertError);
-            // Prossegue mesmo se a inserção falhar para não bloquear a finalização no WhatsApp
+            return { success: false, codigoPedido, error: insertError.message || 'Erro ao registrar pedido.' };
         }
 
         // Se houver cupom aplicado, incrementa seu contador no banco
-        if (input.cupomCodigo) {
-            await incrementCouponUsage(input.cupomCodigo).catch(err => {
-                console.error('[Checkout] Falha ao registrar uso de cupom:', err);
-            });
+        if (cleanCouponCode) {
+            const incResult = await incrementCouponUsage(cleanCouponCode);
+            if (!incResult.success) {
+                console.error('[Checkout] Falha ao registrar uso de cupom:', {
+                    codigoPedido,
+                    cupom: cleanCouponCode,
+                    error: incResult.error,
+                });
+            }
         }
 
         return { success: true, codigoPedido };
     } catch (err: any) {
         console.error('[Checkout] Erro inesperado ao criar registro de pedido:', err);
-        return { success: true, codigoPedido };
+        return { success: false, codigoPedido, error: err?.message || 'Erro inesperado ao criar registro de pedido.' };
     }
 }

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         // Validar dados obrigatórios
         if (
             typeof sessionData.sessionId !== 'string' ||
-            !/^[a-zA-Z0-9_-]{1,128}$/.test(sessionData.sessionId) ||
+            !/^[a-zA-Z0-9_-]{8,128}$/.test(sessionData.sessionId) ||
             !Number.isFinite(sessionData.startTime) ||
             !Number.isFinite(sessionData.endTime) ||
             sessionData.startTime < 0 ||
@@ -86,31 +86,47 @@ export async function POST(request: NextRequest) {
         // Verificar se a sessão já foi registrada anteriormente (ex: eventos de visibilitychange ou heartbeat)
         const { data: existingSession } = await supabase
             .from('analytics_sessions')
-            .select('session_id')
+            .select('session_id, duration, page_views, end_time')
             .eq('session_id', sessionData.sessionId)
             .maybeSingle();
 
         const isNewSession = !existingSession;
 
-        // Inserir ou atualizar dados da sessão (upsert com onConflict previne falha de chave duplicada)
-        const { error: sessionError } = await supabase
-            .from('analytics_sessions')
-            .upsert({
-                session_id: sessionData.sessionId,
-                start_time: new Date(sessionData.startTime).toISOString(),
-                end_time: new Date(sessionData.endTime).toISOString(),
-                duration: sessionData.duration,
-                page_views: sessionData.pageViews,
-                user_agent: sessionData.userAgent,
-                referrer: sessionData.referrer,
-                device_type: sessionData.deviceType,
-                screen_resolution: sessionData.screenResolution,
-                timezone: sessionData.timezone,
-                created_at: new Date().toISOString()
-            }, { onConflict: 'session_id' });
+        if (isNewSession) {
+            const { error: sessionError } = await supabase
+                .from('analytics_sessions')
+                .upsert({
+                    session_id: sessionData.sessionId,
+                    start_time: new Date(sessionData.startTime).toISOString(),
+                    end_time: new Date(sessionData.endTime).toISOString(),
+                    duration: sessionData.duration,
+                    page_views: sessionData.pageViews,
+                    user_agent: sessionData.userAgent,
+                    referrer: sessionData.referrer,
+                    device_type: sessionData.deviceType,
+                    screen_resolution: sessionData.screenResolution,
+                    timezone: sessionData.timezone,
+                    created_at: new Date().toISOString()
+                }, { onConflict: 'session_id', ignoreDuplicates: true });
 
-        if (sessionError) {
-            console.error('Erro ao salvar sessão:', sessionError);
+            if (sessionError) {
+                console.error('Erro ao salvar sessão:', sessionError);
+            }
+        } else {
+            const existingEndTime = existingSession.end_time ? new Date(existingSession.end_time).getTime() : 0;
+            const nextEndTime = Math.max(existingEndTime, sessionData.endTime);
+            const { error: sessionError } = await supabase
+                .from('analytics_sessions')
+                .update({
+                    end_time: new Date(nextEndTime).toISOString(),
+                    duration: Math.max(Number(existingSession.duration) || 0, sessionData.duration),
+                    page_views: Math.max(Number(existingSession.page_views) || 0, sessionData.pageViews),
+                })
+                .eq('session_id', sessionData.sessionId);
+
+            if (sessionError) {
+                console.error('Erro ao atualizar sessão:', sessionError);
+            }
         }
 
         // Processar eventos da sessão apenas na criação ou quando houver eventos novos
@@ -267,7 +283,7 @@ async function updateAggregatedMetrics(
                 e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
             );
             const conversionScore = hasConversion ? 1 : 0;
-            metrics.conversion_rate = (((Number(metrics.conversion_rate) || 0) * (metrics.total_sessions - 1)) + conversionScore) / metrics.total_sessions;
+            metrics.conversion_rate = (((Number(metrics.conversion_rate) || 0) * (currentTotalSessions - 1)) + conversionScore) / currentTotalSessions;
 
             // Salvar ou atualizar métricas
             const { error: upsertError } = await supabase

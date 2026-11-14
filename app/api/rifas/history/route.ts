@@ -18,14 +18,23 @@ export async function GET() {
             .from('rifas')
             .select('*')
             .eq('status', 'finalizada')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false })
+            .limit(50);
         if (raffleError) throw raffleError;
+
+        const finalizedRaffleIds = (raffles || []).map((r) => r.id);
+        if (finalizedRaffleIds.length === 0) {
+            return NextResponse.json({ rifas: [], premios: [] });
+        }
 
         const { data: prizes, error: prizesError } = await client
             .from('premios')
             .select('id, rifa_id, ordem, descricao, imagem_url, vencedor_numero, vencedor_nome')
+            .in('rifa_id', finalizedRaffleIds)
             .not('vencedor_nome', 'is', null)
-            .order('ordem', { ascending: true });
+            .order('ordem', { ascending: true })
+            .limit(500);
         if (prizesError) throw prizesError;
 
         return NextResponse.json({

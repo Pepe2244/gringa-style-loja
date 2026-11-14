@@ -7,8 +7,12 @@ const MAX_REQUEST_SIZE = MAX_FILE_SIZE + 64 * 1024;
 
 // Função que descobre o formato REAL através dos primeiros bytes do arquivo
 function detectMimeType(bytes: Uint8Array): string | null {
-  // JPEG: Inicia com FF D8
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+  if (bytes.length < 12) {
+    return null;
+  }
+
+  // JPEG: Inicia com FF D8 FF
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
     return 'image/jpeg';
   }
 
@@ -72,6 +76,10 @@ export async function POST(request: Request) {
     }
 
     const bytes = await file.arrayBuffer();
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'O arquivo deve ter até 10 MB.' }, { status: 413 });
+    }
+
     const buffer = Buffer.from(bytes);
 
     // Detecta o tipo real a partir dos bytes da imagem

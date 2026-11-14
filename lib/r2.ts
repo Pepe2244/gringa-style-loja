@@ -30,6 +30,17 @@ export const r2Client = {
   send: (cmd: PutObjectCommand) => getR2Client().send(cmd),
 };
 
+const MIME_TO_EXTENSION: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/avif': '.avif',
+  'image/heic': '.heic',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+};
+
 export async function uploadToR2(fileBuffer: Buffer, fileName: string, contentType: string) {
   const bucket = process.env.R2_BUCKET_NAME;
   const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
@@ -37,9 +48,15 @@ export async function uploadToR2(fileBuffer: Buffer, fileName: string, contentTy
     throw new Error('Configuração de armazenamento R2 incompleta.');
   }
 
-  // Limpeza de caracteres especiais do nome do arquivo para evitar erros de URL
-  const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const key = `${Date.now()}-${sanitizedFileName}`;
+  const ext = MIME_TO_EXTENSION[contentType];
+  if (!ext) {
+    throw new Error(`Tipo de conteúdo não suportado para upload: ${contentType}`);
+  }
+
+  // Remove qualquer extensão original e deriva a extensão final estritamente do MIME detectado
+  const rawBaseName = fileName.replace(/\.[^/.]+$/, '');
+  const sanitizedBaseName = rawBaseName.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64) || 'arquivo';
+  const key = `${Date.now()}-${sanitizedBaseName}${ext}`;
   
   await getR2Client().send(
     new PutObjectCommand({

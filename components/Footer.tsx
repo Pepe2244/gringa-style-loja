@@ -110,7 +110,7 @@ export default function Footer() {
                     <p>Usamos armazenamento local para salvar seu carrinho. Ao navegar, você concorda com nossa <Link href="/privacidade" style={{ textDecoration: 'underline', color: 'var(--cor-destaque)' }}>Política de Privacidade</Link>.</p>
                 )}
                 <p style={{ marginTop: '10px' }}>
-                    &copy; <span onClick={handleSecretClick} style={{ cursor: 'default', userSelect: 'none' }}>{new Date().getFullYear()}</span> Gringa Style. Todos os direitos reservados.
+                    &copy; <span onClick={handleSecretClick} style={{ cursor: 'default', userSelect: 'none' }} suppressHydrationWarning>{new Date().getFullYear()}</span> Gringa Style. Todos os direitos reservados.
                 </p>
             </div>
         </footer>

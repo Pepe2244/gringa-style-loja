@@ -7,6 +7,13 @@ import { buildCanonicalUrl } from '@/lib/site-config';
 import { resolveAbsoluteUrl, fetchProductBySlugOrId, getCachedCategories, getCachedRelatedProducts } from '@/lib/product-service';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 
+function getProductMediaUrls(product: any): string[] {
+    const raw = (Array.isArray(product?.media_urls) && product.media_urls.length > 0)
+        ? product.media_urls
+        : (Array.isArray(product?.imagens) ? product.imagens : []);
+    return raw.filter((url: unknown): url is string => typeof url === 'string' && url.trim().length > 0);
+}
+
 // Formata o título dinamicamente para não estourar os 60 caracteres da SERP do Google
 function formatSEOTitle(nome: string, precoFormatado: string, emEstoque: boolean): string {
     const estoqueBadge = emEstoque ? 'Pronta Entrega' : 'Sob Encomenda';
@@ -63,8 +70,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const canonicalSlug = getCanonicalProductSlug(product);
     const productUrl = buildCanonicalUrl(`/produto/${canonicalSlug}`);
 
-    const mediaUrls = product.media_urls || product.imagens || [];
-    const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
+    const mediaUrls = getProductMediaUrls(product);
+    const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url) => !url.includes('.mp4') && !url.includes('.webm')));
 
     const precoFinal = product.preco_promocional || product.preco;
     const precoFormatado = precoFinal ? precoFinal.toFixed(2).replace('.', ',') : '';
@@ -166,8 +173,8 @@ export default async function ProductPage({ params }: Props) {
     const dynamicCategory = product.categoria_id ? categories.find((c: any) => c.id === product.categoria_id) : null;
     const categoryName = dynamicCategory?.nome || (product.categoria_id ? CATEGORY_NAMES[product.categoria_id] : null);
 
-    const mediaUrls = product.media_urls || product.imagens || [];
-    const mainImageUrl = resolveAbsoluteUrl(mediaUrls.find((url: string) => !url.includes('.mp4') && !url.includes('.webm')));
+    const mediaUrls = getProductMediaUrls(product);
+    const mainImageUrl = resolveAbsoluteUrl(mediaUrls.find((url) => !url.includes('.mp4') && !url.includes('.webm')));
 
     return (
         <>
@@ -202,7 +209,9 @@ export default async function ProductPage({ params }: Props) {
                 marca: product.marca || 'Gringa Style',
                 avaliacoes: product.avaliacoes,
                 totalAvaliacoes: product.total_avaliacoes || product.totalAvaliacoes,
-                gtin13: product.gtin13 || product.codigo_barras
+                gtin13: product.gtin13 || product.codigo_barras,
+                created_at: product.created_at,
+                updated_at: product.updated_at,
             }} />
             <ProductPageContent
                 id={product.id}

@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!Number.isSafeInteger(categoryId) || categoryId <= 0) {
         return {
-            title: 'Categoria não encontrada | Gringa Style',
+            title: { absolute: 'Categoria não encontrada | Gringa Style' },
             description: 'Categoria de produtos não encontrada.',
         };
     }
@@ -47,6 +47,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             .maybeSingle(),
     ]);
 
+    if (categoryRes.error) {
+        throw categoryRes.error;
+    }
+    if (sampleProductRes.error) {
+        throw sampleProductRes.error;
+    }
+
     const category = categoryRes.data;
 
     if (!category) {
@@ -62,8 +69,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description = `${categoryName} para soldadores profissionais: máscaras, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x no cartão.`;
     const canonicalUrl = buildCanonicalUrl(`/categoria/${id}`);
 
-    const sampleMedia = sampleProductRes.data?.media_urls || sampleProductRes.data?.imagens || [];
-    const firstImageUrl = sampleMedia.find((u: string) => !u.includes('.mp4') && !u.includes('.webm'));
+    const rawSampleMedia = (Array.isArray(sampleProductRes.data?.media_urls) && sampleProductRes.data.media_urls.length > 0)
+        ? sampleProductRes.data.media_urls
+        : (Array.isArray(sampleProductRes.data?.imagens) ? sampleProductRes.data.imagens : []);
+    const sampleMedia = rawSampleMedia.filter((u: unknown): u is string => typeof u === 'string' && u.trim().length > 0);
+    const firstImageUrl = sampleMedia.find((u) => !u.includes('.mp4') && !u.includes('.webm'));
     const categoryOgImage = firstImageUrl ? resolveAbsoluteUrl(firstImageUrl) : `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
 
     return {
@@ -113,6 +123,13 @@ export default async function CategoriaPage({ params }: Props) {
             .order('created_at', { ascending: false }),
     ]);
 
+    if (categoryResult.error) {
+        throw categoryResult.error;
+    }
+    if (productsResult.error) {
+        throw productsResult.error;
+    }
+
     const category = categoryResult.data as Category | null;
     if (!category) notFound();
 
@@ -128,6 +145,7 @@ export default async function CategoriaPage({ params }: Props) {
         imagens: p.imagens,
         media_urls: p.media_urls,
         slug: p.slug,
+        created_at: p.created_at,
     }));
 
     return (

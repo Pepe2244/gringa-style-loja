@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 
@@ -7,6 +7,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 
+  revalidateTag('campaign', 'max');
   revalidatePath('/', 'layout');
   return NextResponse.json({ success: true });
 }

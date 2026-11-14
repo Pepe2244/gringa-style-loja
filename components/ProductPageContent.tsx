@@ -40,6 +40,14 @@ const isVideoMedia = (path: string | null | undefined): boolean => {
 
 };
 
+const getProductMediaUrls = (product?: Product | null): string[] => {
+    if (!product) return [];
+    const raw = (Array.isArray(product.media_urls) && product.media_urls.length > 0)
+        ? product.media_urls
+        : (Array.isArray(product.imagens) ? product.imagens : []);
+    return raw.filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
+};
+
 interface ProductPageContentProps {
     id: number;
     initialProduct?: Product | null;
@@ -77,8 +85,10 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
 
     const setupProductState = useCallback((data: Product) => {
         const variants = data.variants as unknown as ProductVariant | null;
-        if (variants && variants.opcoes && variants.opcoes.length > 0) {
+        if (variants && Array.isArray(variants.opcoes) && variants.opcoes.length > 0) {
             setSelectedVariant(variants.opcoes[0]);
+        } else {
+            setSelectedVariant('');
         }
     }, []);
 
@@ -171,8 +181,9 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
         if (!product) return;
 
         const variants = product.variants as unknown as ProductVariant | null;
-        if (variants && !selectedVariant) {
-            showToast(`Por favor, selecione uma opção de ${variants.tipo}`, 'error');
+        const hasValidVariants = Boolean(variants && Array.isArray(variants.opcoes) && variants.opcoes.length > 0);
+        if (hasValidVariants && !selectedVariant) {
+            showToast(`Por favor, selecione uma opção de ${variants?.tipo || 'variação'}`, 'error');
             return;
         }
 
@@ -183,7 +194,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
         const cartItem: CartItem = {
             produto_id: product.id,
             quantidade: 1,
-            variante: variants ? { tipo: variants.tipo, opcao: selectedVariant } : null
+            variante: hasValidVariants && variants ? { tipo: variants.tipo, opcao: selectedVariant } : null
         };
 
         addItem(cartItem);
@@ -231,7 +242,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
         const isLeftSwipe = distance > 50;
         const isRightSwipe = distance < -50;
 
-        const mediaUrls = product?.media_urls || product?.imagens || [];
+        const mediaUrls = getProductMediaUrls(product);
         if (mediaUrls.length <= 1) return;
 
         if (isLeftSwipe) {
@@ -243,13 +254,13 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     };
 
     const handlePrevMedia = useCallback(() => {
-        const mediaUrls = product?.media_urls || product?.imagens || [];
+        const mediaUrls = getProductMediaUrls(product);
         if (mediaUrls.length <= 1) return;
         setCurrentImageIndex((prev) => (prev - 1 + mediaUrls.length) % mediaUrls.length);
     }, [product]);
 
     const handleNextMedia = useCallback(() => {
-        const mediaUrls = product?.media_urls || product?.imagens || [];
+        const mediaUrls = getProductMediaUrls(product);
         if (mediaUrls.length <= 1) return;
         setCurrentImageIndex((prev) => (prev + 1) % mediaUrls.length);
     }, [product]);
@@ -270,7 +281,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     if (loading) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Carregando produto...</div>;
     if (!product) return <div className="container" style={{ padding: '50px 0', textAlign: 'center', color: 'white' }}>Produto não encontrado.</div>;
 
-    const mediaUrls = product.media_urls || product.imagens || [];
+    const mediaUrls = getProductMediaUrls(product);
     const currentMedia = mediaUrls[currentImageIndex];
     const isCurrentMediaVideo = isVideoMedia(currentMedia) || (currentImageIndex === 0 && !!product.video);
     const currentVideoUrl = (currentImageIndex === 0 && product.video) ? resolveOriginalUrl(product.video) : (currentMedia ? resolveOriginalUrl(currentMedia) : '');
@@ -615,7 +626,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                         <PaymentMethods showLabel={true} compact={false} />
                     </div>
 
-                    {variants && variants.opcoes && (
+                    {variants && Array.isArray(variants.opcoes) && variants.opcoes.length > 0 && (
                         <div className="produto-variantes" style={{ marginBottom: '25px', padding: '15px', backgroundColor: '#1a1a1a', borderRadius: '8px', border: '1px solid #333' }}>
                             <label htmlFor="select-variante" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#eee' }}>
                                 Escolha {variants.tipo}:
@@ -714,7 +725,8 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                     <h2 className="related-title" style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '2rem', marginBottom: '30px', color: 'var(--cor-destaque)' }}>Você também pode gostar</h2>
                     <div className="related-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                         {relatedProducts.map(rel => {
-                            const mediaUrl = rel.media_urls?.[0] || rel.imagens?.[0] || fallbackImage;
+                            const relMediaUrls = getProductMediaUrls(rel);
+                            const mediaUrl = relMediaUrls[0] || fallbackImage;
                             const isVideo = mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || !!rel.video;
                             const finalVideoUrl = rel.video || (isVideo ? mediaUrl : null);
 
@@ -755,7 +767,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                     isOpen={showPurchaseModal}
                     onClose={() => setShowPurchaseModal(false)}
                     product={product}
-                    initialVariant={variants && selectedVariant ? { tipo: variants.tipo, opcao: selectedVariant } : null}
+                    initialVariant={variants && Array.isArray(variants.opcoes) && variants.opcoes.length > 0 && selectedVariant ? { tipo: variants.tipo, opcao: selectedVariant } : null}
                 />
             )}
 

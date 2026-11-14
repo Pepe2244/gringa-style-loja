@@ -8,35 +8,50 @@ export const revalidate = 300; // Cache de 5 minutos na borda
 
 export async function GET() {
   try {
-    const { data: produtos, error } = await supabase
-      .from('produtos')
-      .select(`
-        *,
-        categorias (
-          nome
-        )
-      `)
-      .eq('em_estoque', true);
+    const PAGE_SIZE = 1000;
+    const produtos: any[] = [];
+    let from = 0;
 
-    if (error) {
-      console.error('[Pinterest Feed] Erro no banco de dados:', error);
-      throw error;
+    while (true) {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select(`
+          *,
+          categorias (
+            nome
+          )
+        `)
+        .eq('em_estoque', true)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        console.error('[Pinterest Feed] Erro no banco de dados:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) break;
+      produtos.push(...data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
     }
 
-    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gringastylebr.com.br';
+    const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://gringastylebr.com.br').replace(/\/+$/, '');
 
     const escapeXml = (unsafe: string | null | undefined) => {
       if (!unsafe) return '';
-      return String(unsafe).replace(/[<>&'"]/g, (c) => {
-        switch (c) {
-          case '<': return '&lt;';
-          case '>': return '&gt;';
-          case '&': return '&amp;';
-          case '\'': return '&apos;';
-          case '"': return '&quot;';
-          default: return c;
-        }
-      });
+      return String(unsafe)
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+        .replace(/[<>&'"]/g, (c) => {
+          switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+          }
+        });
     };
 
     const formatImageUrl = (url: unknown): string | null => {
@@ -78,9 +93,15 @@ export async function GET() {
       const canonicalSlug = getCanonicalProductSlug(produto);
       const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
 
-      const precoBase = (produto.preco || 0).toFixed(2);
-      const salePrice = (produto.preco_promocional && produto.preco_promocional < produto.preco)
-        ? produto.preco_promocional.toFixed(2)
+      const precoNum = Number(produto.preco);
+      if (!Number.isFinite(precoNum) || precoNum <= 0) return;
+
+      const precoBase = precoNum.toFixed(2);
+      const promoNum = produto.preco_promocional !== null && produto.preco_promocional !== undefined
+        ? Number(produto.preco_promocional)
+        : NaN;
+      const salePrice = (Number.isFinite(promoNum) && promoNum > 0 && promoNum < precoNum)
+        ? promoNum.toFixed(2)
         : null;
 
       const descricaoText = produto.descricao?.replace(/<[^>]*>?/gm, '').trim() || produto.nome;
@@ -119,7 +140,7 @@ export async function GET() {
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
     <channel>
         <title>Gringa Style - Catálogo Oficial Pinterest</title>
-        <link>${SITE_URL}</link>
+        <link>${escapeXml(SITE_URL)}</link>
         <description>Catálogo de Máscaras de Solda e Acessórios para Pinterest Catalogs</description>
 ${itemsXml}
     </channel>

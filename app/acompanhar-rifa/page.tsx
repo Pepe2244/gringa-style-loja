@@ -37,8 +37,8 @@ function TrackingContent() {
     }, [rifaIdParam]);
 
     const filteredParticipantes = participantes.filter(p =>
-        p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.numeros_escolhidos.some((n: number) => String(n).includes(searchTerm))
+        (p.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (Array.isArray(p.numeros_escolhidos) ? p.numeros_escolhidos : []).some((n: number) => String(n).includes(searchTerm))
     );
 
     if (loading) {
@@ -163,7 +163,7 @@ function TrackingContent() {
                                 borderRadius: '8px',
                                 borderLeft: p.status_pagamento === 'pago' ? '4px solid #00ff88' : (p.status_pagamento === 'cancelado' ? '4px solid #ff4444' : '4px solid #ffcc00')
                             }}>
-                                <h4 style={{ margin: '0 0 10px 0', color: 'white' }}>{p.nome}</h4>
+                                <h4 style={{ margin: '0 0 10px 0', color: 'white' }}>{p.nome || 'Participante'}</h4>
                                 <p style={{ fontSize: '0.9em', color: '#ccc', marginBottom: '5px' }}>
                                     Status: <span style={{
                                         color: p.status_pagamento === 'pago' ? '#00ff88' : (p.status_pagamento === 'cancelado' ? '#ff4444' : '#ffcc00'),
@@ -173,9 +173,9 @@ function TrackingContent() {
                                     </span>
                                 </p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                    {p.numeros_escolhidos.map((n: number) => (
+                                    {(Array.isArray(p.numeros_escolhidos) ? p.numeros_escolhidos : []).map((n: number) => (
                                         <span key={n} style={{ background: '#333', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85em' }}>
-                                            {String(n).padStart(String(rifa.total_numeros - 1).length, '0')}
+                                            {String(n).padStart(String(Math.max(0, (rifa.total_numeros || 1) - 1)).length, '0')}
                                         </span>
                                     ))}
                                 </div>
