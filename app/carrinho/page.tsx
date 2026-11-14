@@ -453,21 +453,6 @@ export default function CartPage() {
             return;
         }
 
-        const isMobile = typeof window !== 'undefined' && (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768);
-        let checkoutWindow: Window | null = null;
-        if (!isMobile) {
-            try {
-                checkoutWindow = window.open('', '_blank');
-                if (checkoutWindow) {
-                    checkoutWindow.opener = null;
-                    checkoutWindow.document.title = 'Validando pedido...';
-                    checkoutWindow.document.body.textContent = 'Validando preços, estoque e frete...';
-                }
-            } catch {
-                checkoutWindow = null;
-            }
-        }
-
         isCheckingOutRef.current = true;
         setIsCheckingOut(true);
         const cartSnapshot = JSON.stringify(items);
@@ -626,23 +611,8 @@ export default function CartPage() {
             message += `Aguardo as instruções finais!`;
 
             const whatsappUrl = buildWhatsAppUrl(message);
-
-            let navigated = false;
-            if (checkoutWindow && !checkoutWindow.closed) {
-                try {
-                    checkoutWindow.location.href = whatsappUrl;
-                    navigated = true;
-                } catch {
-                    navigated = false;
-                }
-            }
-            if (!navigated) {
-                window.location.href = whatsappUrl;
-            }
+            window.location.href = whatsappUrl;
         } catch (error) {
-            if (checkoutWindow && !checkoutWindow.closed) {
-                checkoutWindow.close();
-            }
             showToast(error instanceof Error ? error.message : 'Não foi possível validar o pedido.', 'error');
         } finally {
             isCheckingOutRef.current = false;
