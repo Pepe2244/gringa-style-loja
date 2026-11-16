@@ -19,10 +19,14 @@ export async function revalidateProductCache() {
             revalidateTag('produtos', 'max');
             revalidateTag('loja', 'max');
             revalidateTag('categorias', 'max');
+            revalidateTag('relacionados', 'max');
+            revalidateTag('configuracoes', 'max');
             if (typeof updateTag === 'function') {
                 updateTag('produtos');
                 updateTag('loja');
                 updateTag('categorias');
+                updateTag('relacionados');
+                updateTag('configuracoes');
             }
         } catch (e) {
             console.error('[Cache] Falha ao revalidar tags:', e);
@@ -37,6 +41,10 @@ export async function revalidateProductCache() {
         revalidatePath('/produto/[id]', 'page');
         revalidatePath('/busca', 'page');
         revalidatePath('/carrinho', 'page');
+        revalidatePath('/api/google-feed');
+        revalidatePath('/api/meta-feed');
+        revalidatePath('/api/pinterest-feed');
+        revalidatePath('/sitemap.xml');
         revalidatePath('/admin', 'layout');
 
         const productCanonicalUrls: string[] = [];

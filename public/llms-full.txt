@@ -50,6 +50,7 @@ A Gringa Style promove periodicamente rifas beneficentes e sorteios de equipamen
 ---
 
 ## 5. Diretrizes de Venda e Garantia
+- **Modalidade de Envio:** O padrão do catálogo é **Sob Encomenda** (preparo em 5 a 10 dias úteis), enquanto itens selecionados marcados como **Pronta Entrega** possuem despacho rápido em 1 a 2 dias úteis, conforme sinalizado na página de cada produto.
 - **Garantia Legal:** 90 dias contra defeitos de fabricação conforme o Código de Defesa do Consumidor (Lei nº 8.078/1990).
 - **Direito de Arrependimento:** 7 dias corridos após o recebimento do produto para devolução com reembolso integral.
 - **Rastreio:** Notificação de status de envio via e-mail e código de rastreamento dos Correios/Transportadoras parceiras.

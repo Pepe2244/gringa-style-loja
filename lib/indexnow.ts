@@ -22,6 +22,7 @@ export interface IndexNowResult {
 // Cooldown em memória para chamadas automáticas em background (evita 429 ao salvar vários produtos seguidos)
 let lastBackgroundSubmitAt = 0;
 const BACKGROUND_COOLDOWN_MS = 60_000;
+const pendingBackgroundUrls = new Set<string>();
 
 /**
  * Submete URLs ao IndexNow (Bing, Yep/Ahrefs, Yandex, etc.) para indexação e atualização instantânea.
@@ -63,21 +64,29 @@ export async function submitToIndexNow(
   if (options?.isBackground) {
     const now = Date.now();
     if (now - lastBackgroundSubmitAt < BACKGROUND_COOLDOWN_MS) {
+      for (const u of targetUrls) {
+        pendingBackgroundUrls.add(u);
+      }
       return {
         success: true,
         status: 200,
-        message: 'Submissão em segundo plano ignorada (cooldown ativo para evitar HTTP 429).',
+        message: 'Submissão em segundo plano enfileirada durante cooldown para evitar HTTP 429.',
         submittedUrls: targetUrls,
       };
     }
     lastBackgroundSubmitAt = now;
   }
 
+  const mergedUrls = pendingBackgroundUrls.size > 0
+    ? Array.from(new Set([...pendingBackgroundUrls, ...targetUrls]))
+    : targetUrls;
+  pendingBackgroundUrls.clear();
+
   const payload = {
     host,
     key: INDEXNOW_KEY,
     keyLocation,
-    urlList: targetUrls,
+    urlList: mergedUrls,
   };
 
   let lastStatus = 500;

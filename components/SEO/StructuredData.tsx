@@ -291,11 +291,11 @@ export const ProductSchema = ({
   referenceDate?: string;
 }) => {
   const productImages = resolveProductImages(product);
-  const precoNumerico = Number(product.preco_promocional || product.preco) || 0;
+  const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
+  const precoNumerico = Number(hasPromo ? product.preco_promocional : product.preco) || 0;
   const precoFormatado = precoNumerico.toFixed(2);
   const canonicalSlug = getCanonicalProductSlug(product);
   const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
-  const hasPromo = !!product.preco_promocional && product.preco_promocional < product.preco;
   const prontaEntrega = isProntaEntrega(product);
 
   const { validFrom, priceValidUntil } = resolveOfferDates(

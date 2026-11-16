@@ -118,7 +118,7 @@ export default async function CategoriaPage({ params }: Props) {
         supabase.from('categorias').select('*').eq('id', categoryId).maybeSingle(),
         supabase
             .from('produtos')
-            .select('id, nome, preco, preco_promocional, preco_pix, imagens, media_urls, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, produtos_relacionados_ids')
+            .select('id, nome, preco, preco_promocional, preco_pix, imagens, media_urls, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, produtos_relacionados_ids')
             .eq('categoria_id', categoryId)
             .order('created_at', { ascending: false }),
     ]);

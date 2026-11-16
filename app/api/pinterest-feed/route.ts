@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { getProductTaxonomy } from '@/lib/taxonomy';
 import { buildStorageUrl, isLegacyDeadStorageUrl } from '@/lib/site-config';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 export const revalidate = 300; // Cache de 5 minutos na borda
 
@@ -105,7 +106,7 @@ export async function GET() {
         : null;
 
       const descricaoText = produto.descricao?.replace(/<[^>]*>?/gm, '').trim() || produto.nome;
-      const categoriaNome = produto.categorias?.nome || 'Equipamentos';
+      const categoriaNome = produto.categorias?.nome || 'Diversos';
       const brandName = produto.marca || 'Gringa Style';
 
       const taxonomy = getProductTaxonomy(produto.nome, categoriaNome);
@@ -126,7 +127,13 @@ export async function GET() {
             <g:condition>new</g:condition>
             <g:brand>${escapeXml(brandName)}</g:brand>
             <g:google_product_category>${escapeXml(taxonomy.googleCategoryPath)}</g:google_product_category>
-            <g:product_type>${escapeXml(taxonomy.productType)}</g:product_type>`;
+            <g:product_type>${escapeXml(taxonomy.productType)}</g:product_type>
+            <g:custom_label_0>${isProntaEntrega(produto) ? 'Pronta Entrega' : 'Sob Encomenda'}</g:custom_label_0>
+            <g:shipping>
+                <g:country>BR</g:country>
+                <g:service>Correios PAC</g:service>
+                <g:price>28.90 BRL</g:price>
+            </g:shipping>`;
 
       if (salePrice) {
         itemsXml += `\n            <g:sale_price>${salePrice} BRL</g:sale_price>`;
@@ -149,7 +156,7 @@ ${itemsXml}
     return new NextResponse(xml, {
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 's-maxage=300, stale-while-revalidate=3600',
       },
     });
   } catch (error) {

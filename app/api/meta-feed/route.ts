@@ -106,7 +106,7 @@ export async function GET() {
         : null;
 
       const descricaoText = produto.descricao?.replace(/<[^>]*>?/gm, '').trim() || produto.nome;
-      const categoriaNome = produto.categorias?.nome || 'Equipamentos';
+      const categoriaNome = produto.categorias?.nome || 'Diversos';
       const brandName = produto.marca || 'Gringa Style';
       const mpnCode = `GS-${String(produto.id).padStart(3, '0')}`;
       const rawGtin = produto.gtin13 ? String(produto.gtin13).trim() : '';
@@ -167,7 +167,7 @@ ${itemsXml}
     return new NextResponse(xml, {
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 's-maxage=300, stale-while-revalidate=3600',
       },
     });
   } catch (error) {

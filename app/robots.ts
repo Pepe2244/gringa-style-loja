@@ -32,7 +32,7 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: ['Bingbot', 'msnbot', 'BingPreview'],
-        allow: ['/', '/llms.txt', '/llms-full.txt', ...publicFeeds],
+        allow: ['/llms.txt', '/llms-full.txt', ...publicFeeds],
         disallow: [...commonDisallow, '/api/'],
       },
       {
@@ -56,7 +56,7 @@ export default function robots(): MetadataRoute.Robots {
           'cohere-ai',
           'Amazonbot',
         ],
-        allow: ['/', '/llms.txt', '/llms-full.txt', ...publicFeeds],
+        allow: ['/llms.txt', '/llms-full.txt', ...publicFeeds],
         disallow: [...commonDisallow, '/api/'],
       },
       {

@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { getProductTaxonomy } from '@/lib/taxonomy';
 import { buildStorageUrl, isLegacyDeadStorageUrl } from '@/lib/site-config';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 export const revalidate = 300; // Revalida a cada 5 minutos para refletir estoque rapidamente
 
@@ -118,6 +119,7 @@ export async function GET() {
 
       // Taxonomia oficial rigorosa da Gringa Style (impede desvios como CDs/DVDs no Google Shopping)
       const taxonomy = getProductTaxonomy(produto.nome, categoriaNome);
+      const prontaEntrega = isProntaEntrega(produto);
 
       const additionalImagesXml = additionalImages
         .map((img) => `\n            <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`)
@@ -136,7 +138,10 @@ export async function GET() {
             <g:google_product_category>${escapeXml(taxonomy.googleCategoryPath)}</g:google_product_category>
             <g:product_type>${escapeXml(taxonomy.productType)}</g:product_type>
             <g:brand>${escapeXml(brandName)}</g:brand>
-            <g:mpn>${escapeXml(mpnCode)}</g:mpn>`;
+            <g:mpn>${escapeXml(mpnCode)}</g:mpn>
+            <g:custom_label_0>${prontaEntrega ? 'Pronta Entrega' : 'Sob Encomenda'}</g:custom_label_0>
+            <g:min_handling_time>${prontaEntrega ? 1 : 5}</g:min_handling_time>
+            <g:max_handling_time>${prontaEntrega ? 2 : 10}</g:max_handling_time>`;
       
       // Validação de Identificadores (Conforme diretrizes oficiais do Google Merchant Center)
       if (hasValidGtin) {
@@ -160,7 +165,7 @@ export async function GET() {
         const priceEffectiveEnd = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('.')[0] + 'Z';
         itemsXml += `
             <g:sale_price>${salePrice} BRL</g:sale_price>
-            <g:price_effective_date>${priceEffectiveStart}/${priceEffectiveEnd}</g:price_effective_date>`;
+            <g:sale_price_effective_date>${priceEffectiveStart}/${priceEffectiveEnd}</g:sale_price_effective_date>`;
       }
 
       itemsXml += `
@@ -180,7 +185,7 @@ ${itemsXml}
     return new NextResponse(xml, {
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 's-maxage=3600, stale-while-revalidate',
+        'Cache-Control': 's-maxage=300, stale-while-revalidate=3600',
       },
     });
   } catch (error) {

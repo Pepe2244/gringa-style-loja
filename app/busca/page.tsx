@@ -12,8 +12,8 @@ import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import { trackSearchQuery } from '@/utils/analytics';
 import { ItemListSchema, WebPageSchema } from '@/components/SEO/StructuredData';
-import { buildCanonicalUrl } from '@/lib/site-config';
 import { getSearchableAvailabilityText } from '@/utils/productAvailability';
+import { buildCanonicalUrl } from '@/lib/site-config';
 
 const PRODUCTS_PER_PAGE = 12;
 const STOP_WORDS = ['de', 'da', 'do', 'e', 'para', 'com', 'em', 'um', 'uma', 'os', 'as'];
@@ -99,7 +99,7 @@ function SearchPageContent() {
         try {
             let queryBuilder = supabase
                 .from('produtos')
-                .select('id, nome, preco, preco_promocional, preco_pix, descricao, imagens, media_urls, em_estoque, categoria_id, created_at, tags, slug, variants')
+                .select('id, nome, preco, preco_promocional, preco_pix, descricao, imagens, media_urls, video, em_estoque, categoria_id, created_at, tags, slug, variants')
                 .limit(1000);
 
             if (selectedCategory) {
@@ -325,6 +325,7 @@ function SearchPageContent() {
                                 preco: product.preco,
                                 preco_promocional: product.preco_promocional,
                                 em_estoque: product.em_estoque,
+                                tags: product.tags,
                                 imagens: product.imagens,
                                 media_urls: product.media_urls,
                                 slug: product.slug,

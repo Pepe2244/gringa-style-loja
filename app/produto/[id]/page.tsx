@@ -18,25 +18,31 @@ function getProductMediaUrls(product: any): string[] {
 // Formata o título dinamicamente para não estourar os 60 caracteres da SERP do Google
 function formatSEOTitle(nome: string, precoFormatado: string, emEstoque: boolean, prontaEntrega: boolean): string {
     const estoqueBadge = !emEstoque ? 'Indisponível' : prontaEntrega ? 'Pronta Entrega' : 'Sob Encomenda';
-    
-    // Simplifica separadores longos como "---" ou títulos com subtítulos excessivos
     const nomeLimpo = nome.split('---')[0].trim();
-    
-    const candidateWithPrice = `${nomeLimpo} - R$ ${precoFormatado} | Gringa Style`;
-    if (candidateWithPrice.length <= 60) {
-        return candidateWithPrice;
+
+    if (!emEstoque) {
+        const unavailableWithBadge = `${nomeLimpo} | ${estoqueBadge} | Gringa Style`;
+        if (unavailableWithBadge.length <= 60) return unavailableWithBadge;
+    }
+
+    if (prontaEntrega && precoFormatado) {
+        const readyWithPrice = `${nomeLimpo} - R$ ${precoFormatado} | Pronta Entrega | Gringa Style`;
+        if (readyWithPrice.length <= 60) return readyWithPrice;
+    }
+
+    if (precoFormatado) {
+        const candidateWithPrice = `${nomeLimpo} - R$ ${precoFormatado} | Gringa Style`;
+        if (candidateWithPrice.length <= 60) return candidateWithPrice;
     }
 
     const candidateWithBadge = `${nomeLimpo} | ${estoqueBadge} | Gringa Style`;
-    if (candidateWithBadge.length <= 60) {
-        return candidateWithBadge;
-    }
+    if (candidateWithBadge.length <= 60) return candidateWithBadge;
 
     if (`${nomeLimpo} | Gringa Style`.length <= 60) {
         return `${nomeLimpo} | Gringa Style`;
     }
 
-    return `${nomeLimpo.substring(0, 45)}... | Gringa Style`;
+    return `${nomeLimpo.substring(0, 42)}... | Gringa Style`;
 }
 
 interface Props {
@@ -74,7 +80,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const mediaUrls = getProductMediaUrls(product);
     const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url) => !url.includes('.mp4') && !url.includes('.webm')));
 
-    const precoFinal = product.preco_promocional || product.preco;
+    const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
+    const precoFinal = hasPromo ? product.preco_promocional : product.preco;
     const precoFormatado = precoFinal ? precoFinal.toFixed(2).replace('.', ',') : '';
     const emEstoque = Boolean(product.em_estoque);
     const prontaEntrega = isProntaEntrega(product);

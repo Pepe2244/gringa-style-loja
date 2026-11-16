@@ -64,7 +64,7 @@ export default async function Image({ params }: Props) {
       if (typeof url !== 'string') return false;
       const trimmed = url.trim();
       if (!trimmed) return false;
-      if (/\.(mp4|webm|mov|ogg|avi|mkv|webp)($|\?)/i.test(trimmed)) return false;
+      if (/\.(mp4|webm|mov|ogg|avi|mkv|webp|avif|heic|heif|svg)($|\?)/i.test(trimmed)) return false;
       return true;
     };
 
@@ -82,7 +82,8 @@ export default async function Image({ params }: Props) {
       ? resolveAbsoluteUrl('/imagens/logo_gringa_style.png')
       : resolvedImageUrl;
 
-    const precoFinal = Number(product.preco_promocional || product.preco);
+    const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
+    const precoFinal = Number(hasPromo ? product.preco_promocional : product.preco);
     const precoFormatado = Number.isFinite(precoFinal) && precoFinal > 0
       ? precoFinal.toFixed(2).replace('.', ',')
       : '';

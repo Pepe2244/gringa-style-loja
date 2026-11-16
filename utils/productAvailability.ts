@@ -33,6 +33,9 @@ export function applyProntaEntregaToTags(tags: string[], prontaEntrega: boolean)
     return clean.slice(0, 50);
 }
 
+/**
+ * Retorna texto pesquisável de tags e disponibilidade sem expor a tag técnica `__pronta_entrega__`.
+ */
 export function getSearchableAvailabilityText(
     product?: { tags?: string[] | null; pronta_entrega?: boolean | null; em_estoque?: boolean | null } | null
 ): string {

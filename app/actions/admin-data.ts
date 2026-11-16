@@ -86,10 +86,12 @@ function revalidateProducts(slug?: string, id?: number) {
         revalidateTag('produtos', 'max');
         revalidateTag('loja', 'max');
         revalidateTag('categorias', 'max');
+        revalidateTag('relacionados', 'max');
         if (typeof updateTag === 'function') {
             updateTag('produtos');
             updateTag('loja');
             updateTag('categorias');
+            updateTag('relacionados');
         }
 
     } catch (err) {
@@ -104,6 +106,7 @@ function revalidateProducts(slug?: string, id?: number) {
     if (slug) {
         revalidatePath(`/produto/${slug}`, 'page');
         revalidatePath(`/produto/${slug}`, 'layout');
+        revalidatePath(`/produto/${slug}/opengraph-image`);
     }
     if (id) {
         revalidatePath(`/produto/${id}`, 'page');
@@ -111,6 +114,10 @@ function revalidateProducts(slug?: string, id?: number) {
     }
     revalidatePath('/busca', 'page');
     revalidatePath('/carrinho', 'page');
+    revalidatePath('/api/google-feed');
+    revalidatePath('/api/meta-feed');
+    revalidatePath('/api/pinterest-feed');
+    revalidatePath('/sitemap.xml');
     revalidatePath('/admin', 'layout');
 
     // Despacho assíncrono para o IndexNow (Bing, Yep/Ahrefs) para indexação instantânea
@@ -217,15 +224,19 @@ export async function saveProduct(input: unknown, id?: number) {
             : client.from('produtos').insert(payload);
         const { error } = await query;
         if (error) throw error;
-        revalidateProducts(payload.slug, id);
+        const canonicalSlug = getCanonicalProductSlug({ id: id ?? 0, nome: payload.nome, slug: payload.slug });
+        revalidateProducts(canonicalSlug, id);
     });
 }
 
 export async function deleteProduct(id: number) {
     return runAdmin(async (client) => {
-        const { error } = await client.from('produtos').delete().eq('id', positiveId(id));
+        const prodId = positiveId(id);
+        const { data: prod } = await client.from('produtos').select('slug, nome').eq('id', prodId).maybeSingle();
+        const { error } = await client.from('produtos').delete().eq('id', prodId);
         if (error) throw error;
-        revalidateProducts(undefined, id);
+        const canonicalSlug = prod ? getCanonicalProductSlug({ id: prodId, nome: prod.nome, slug: prod.slug }) : undefined;
+        revalidateProducts(canonicalSlug, prodId);
     });
 }
 
@@ -233,14 +244,21 @@ export async function setProductStock(id: number, inStock: boolean) {
     return runAdmin(async (client) => {
         const stockStatus = booleanValue(inStock, 'Estoque');
         const prodId = positiveId(id);
+        const { data: prod, error: fetchError } = await client
+            .from('produtos')
+            .select('slug, nome')
+            .eq('id', prodId)
+            .maybeSingle();
+        if (fetchError) throw fetchError;
+        if (!prod) throw new Error('Produto não encontrado.');
+
         const { error } = await client.from('produtos').update({
             em_estoque: stockStatus
         }).eq('id', prodId);
         if (error) throw error;
 
-        // Recupera o slug para revalidar a URL individual do produto na vitrine
-        const { data: prod } = await client.from('produtos').select('slug').eq('id', prodId).maybeSingle();
-        revalidateProducts(prod?.slug, prodId);
+        const canonicalSlug = getCanonicalProductSlug({ id: prodId, nome: prod.nome, slug: prod.slug });
+        revalidateProducts(canonicalSlug, prodId);
     });
 }
 
@@ -332,6 +350,14 @@ export async function saveShopConfig(days: number) {
             { onConflict: 'chave' }
         );
         if (error) throw error;
+        try {
+            revalidateTag('configuracoes', 'max');
+            revalidateTag('loja', 'max');
+            if (typeof updateTag === 'function') {
+                updateTag('configuracoes');
+                updateTag('loja');
+            }
+        } catch {}
         revalidatePath('/loja', 'page');
     });
 }
