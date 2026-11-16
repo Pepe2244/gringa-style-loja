@@ -11,6 +11,12 @@ import {
     type CouponForCheckout,
     type PricedProduct,
 } from '@/lib/checkout-pricing';
+import {
+    quoteShipping,
+    parseShippingOptionPrice,
+    ShippingInputError,
+    type ShippingQuoteOption,
+} from '@/lib/shipping';
 
 export interface CreateOrderInput {
     clienteNome: string;
@@ -229,7 +235,42 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
         if (!Number.isFinite(parsedFrete) || parsedFrete < 0 || parsedFrete > 10_000) {
             return { success: false, codigoPedido, error: 'Valor de frete inválido.' };
         }
-        const serverFrete = roundCurrency(parsedFrete);
+
+        // O frete é sempre recalculado no servidor: o valor vindo do navegador
+        // serve apenas para detectar divergência com o que o cliente viu.
+        let serverFrete = 0;
+        const freteEscolhido = input.enderecoEntrega?.freteEscolhido?.trim();
+        const cepEntrega = input.enderecoEntrega?.cep?.trim();
+        if (freteEscolhido && cepEntrega) {
+            let shippingOptions: ShippingQuoteOption[];
+            try {
+                shippingOptions = await quoteShipping({
+                    to_postal_code: cepEntrega,
+                    country: input.enderecoEntrega?.pais || 'BR',
+                    items: aggregatedItems.map((item) => ({ produto_id: item.produto_id, quantidade: item.quantidade })),
+                });
+            } catch (shippingError) {
+                if (shippingError instanceof ShippingInputError) {
+                    return { success: false, codigoPedido, error: shippingError.message };
+                }
+                throw shippingError;
+            }
+            const matchedOption = shippingOptions.find((option) => option.name === freteEscolhido);
+            const matchedPrice = parseShippingOptionPrice(matchedOption);
+            if (!matchedOption || matchedPrice === null) {
+                return { success: false, codigoPedido, error: 'O frete selecionado mudou. Recalcule o frete e tente novamente.' };
+            }
+            serverFrete = roundCurrency(matchedPrice);
+            if (Math.abs(serverFrete - roundCurrency(parsedFrete)) > 0.009) {
+                return {
+                    success: false,
+                    codigoPedido,
+                    error: `O valor do frete foi atualizado para R$ ${serverFrete.toFixed(2).replace('.', ',')}. Recalcule o frete e tente novamente.`,
+                };
+            }
+        } else if (parsedFrete > 0) {
+            return { success: false, codigoPedido, error: 'Selecione uma opção de frete válida.' };
+        }
         const serverTotal = roundCurrency(Math.max(0, serverSubtotal - serverDiscount) + serverFrete);
 
         const isInternational = Boolean(
