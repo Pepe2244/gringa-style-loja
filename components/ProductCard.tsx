@@ -141,10 +141,10 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
             style={{ position: 'relative', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}
             className={`produto-card${isHovered ? ' ativo' : ''}`}
         >
-            <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
-                {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10, textAlign: 'center' }}>
+                {isNew() && <span className="badge-novo" style={{ position: 'static', textAlign: 'center' }}>NOVO</span>}
                 {isPromo && (
-                    <span style={{ backgroundColor: 'var(--cor-destaque)', color: '#000', padding: '4px 8px', fontWeight: '900', borderRadius: '4px', fontSize: '0.8rem', boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                    <span style={{ backgroundColor: 'var(--cor-destaque)', color: '#000', padding: '4px 8px', fontWeight: '900', borderRadius: '4px', fontSize: '0.8rem', boxShadow: '0 2px 4px rgba(0,0,0,0.5)', textAlign: 'center' }}>
                         {descontoPercentual}% OFF
                     </span>
                 )}

@@ -11,7 +11,6 @@ import { getSearchableAvailabilityText } from '@/utils/productAvailability';
 
 // IMPORTAÇÕES DINÂMICAS: Cortam drasticamente o JavaScript inicial carregado na tela.
 // Só baixam quando o usuário chega perto delas ou precisa delas.
-const RetentionHighlights = dynamic(() => import('@/components/home/RetentionHighlights'), { ssr: false });
 const CartRecoveryBanner = dynamic(() => import('@/components/home/CartRecoveryBanner'), { ssr: false });
 const PersonalizedRecommendations = dynamic(() => import('@/components/home/PersonalizedRecommendations'), { ssr: false });
 const DirectPurchaseModal = dynamic(() => import('@/components/modals/DirectPurchaseModal'), { ssr: false });
@@ -214,8 +213,6 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
                 setHasDiscountOnly={setHasDiscountOnly}
                 onResetFilters={hasActiveFilters ? resetFilters : undefined}
             />
-
-            <RetentionHighlights diasNovo={diasNovo} onQuickView={handleQuickView} />
 
             <ProductGrid
                 products={filteredProducts}

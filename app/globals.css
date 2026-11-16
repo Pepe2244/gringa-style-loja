@@ -1184,7 +1184,7 @@ transform: none;
 .status-estoque.em-estoque { background-color: #001a0a !important; color: #00ff88 !important; font-weight: 800; border: 1px solid #00ff88; }
 .status-estoque.sob-encomenda { background-color: rgba(20, 12, 0, 0.92) !important; color: #ffb347 !important; font-weight: 800; border: 1px solid rgba(255, 165, 0, 0.6); }
 .status-estoque.fora-de-estoque { background-color: #dc3545; }
-.badge-novo { background-color: #111; color: #00d2ff; border: 1px solid #00d2ff; padding: 3px 8px; font-weight: 800; border-radius: 4px; font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase; }
+.badge-novo { display: inline-flex; align-items: center; justify-content: center; text-align: center; background-color: #111; color: #00d2ff; border: 1px solid #00d2ff; padding: 3px 8px; font-weight: 800; border-radius: 4px; font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2; }
 .status-estoque-detalhe { font-weight: bold; margin-bottom: 15px; padding: 8px; border-radius: 5px; display: inline-block; }
 .status-estoque-detalhe.em-estoque { color: #28a745; background-color: rgba(40, 167, 69, 0.15); }
 .status-estoque-detalhe.fora-de-estoque { color: #dc3545; background-color: rgba(220, 53, 69, 0.15); }

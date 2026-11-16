@@ -12,6 +12,8 @@ interface ProductGridProps {
     hasMore?: boolean;
     loadingMore?: boolean;
     onLoadMore?: () => void;
+    compact?: boolean;
+    id?: string;
 }
 
 export default function ProductGrid({
@@ -21,14 +23,25 @@ export default function ProductGrid({
     onQuickView,
     hasMore,
     loadingMore,
-    onLoadMore
+    onLoadMore,
+    compact = false,
+    id = 'vitrine-produtos',
 }: ProductGridProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
             <div
-                id="vitrine-produtos"
+                id={id}
                 className="vitrine"
-                style={{ minHeight: 'calc(4 * 360px + 3 * 25px)', width: '100%' }}
+                style={{
+                    minHeight: compact ? 'auto' : 'calc(4 * 360px + 3 * 25px)',
+                    ...(compact
+                        ? {
+                              containIntrinsicSize: 'auto',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                          }
+                        : {}),
+                    width: '100%',
+                }}
             >
                 {loading ? (
                     Array.from({ length: 8 }).map((_, i) => (
