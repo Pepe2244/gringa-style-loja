@@ -10,7 +10,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: { absolute: 'Loja Gringa Style | Máscaras de Solda e Acessórios TIG' },
-  description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega, PIX e até 12x no cartão para todo o Brasil.',
+  description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Envio para todo o Brasil, PIX e até 12x no cartão.',
   alternates: { canonical: buildCanonicalUrl('/loja') },
   keywords: [
     'loja solda',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: 'Loja Gringa Style | Máscaras de Solda, EPIs e Acessórios TIG',
-    description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil.',
+    description: 'Compre máscaras de solda personalizadas, EPIs, tochas e acessórios para soldagem TIG/MIG. Envio para todo o Brasil.',
     url: buildCanonicalUrl('/loja'),
     siteName: 'Gringa Style',
     locale: 'pt_BR',
@@ -98,6 +98,7 @@ export default async function LojaPage() {
           preco: p.preco,
           preco_promocional: p.preco_promocional,
           em_estoque: p.em_estoque,
+          tags: p.tags,
           imagens: p.imagens,
           media_urls: p.media_urls,
           slug: p.slug,
@@ -117,6 +118,7 @@ export default async function LojaPage() {
           preco: p.preco,
           preco_promocional: p.preco_promocional,
           em_estoque: p.em_estoque,
+          tags: p.tags,
           imagens: p.imagens,
           media_urls: p.media_urls,
           slug: p.slug,

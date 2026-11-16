@@ -7,6 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
 import { trackEvent, trackFilterUsage, trackSearchQuery } from '@/utils/analytics';
+import { getSearchableAvailabilityText } from '@/utils/productAvailability';
 
 // IMPORTAÇÕES DINÂMICAS: Cortam drasticamente o JavaScript inicial carregado na tela.
 // Só baixam quando o usuário chega perto delas ou precisa delas.
@@ -100,7 +101,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         const term = normalizeString(debouncedSearchTerm);
         const stopWords = ['de', 'da', 'do', 'e', 'para', 'com', 'em', 'um', 'uma'];
         const tokens = term.split(/\s+/).filter(t => t.length > 0 && !stopWords.includes(t));
-        const combined = `${normalizeString(product.nome)} ${normalizeString(product.descricao)} ${Array.isArray(product.tags) ? product.tags.map(normalizeString).join(' ') : ''}`;
+        const combined = `${normalizeString(product.nome)} ${normalizeString(product.descricao)} ${normalizeString(getSearchableAvailabilityText(product))}`;
         const matchSearch = !term || combined.includes(term) || (tokens.length > 0 && tokens.every(token => combined.includes(token)));
 
         const matchCategory = selectedCategory ? product.categoria_id === selectedCategory : true;

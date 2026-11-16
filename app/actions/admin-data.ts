@@ -6,6 +6,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { clearProductServiceCache } from '@/lib/product-service';
 import { submitToIndexNow } from '@/lib/indexnow';
 import { siteConfig } from '@/lib/site-config';
+import { applyProntaEntregaToTags } from '@/utils/productAvailability';
+import { getCanonicalProductSlug } from '@/utils/slugify';
 
 type AdminResult<T = undefined> =
     | { success: true; data: T }
@@ -239,6 +241,30 @@ export async function setProductStock(id: number, inStock: boolean) {
         // Recupera o slug para revalidar a URL individual do produto na vitrine
         const { data: prod } = await client.from('produtos').select('slug').eq('id', prodId).maybeSingle();
         revalidateProducts(prod?.slug, prodId);
+    });
+}
+
+export async function setProductProntaEntrega(id: number, prontaEntrega: boolean) {
+    return runAdmin(async (client) => {
+        const isReady = booleanValue(prontaEntrega, 'Pronta Entrega');
+        const prodId = positiveId(id);
+        const { data: prod, error: fetchError } = await client
+            .from('produtos')
+            .select('slug, nome, tags')
+            .eq('id', prodId)
+            .maybeSingle();
+        if (fetchError) throw fetchError;
+        if (!prod) throw new Error('Produto não encontrado.');
+
+        const updatedTags = applyProntaEntregaToTags(Array.isArray(prod.tags) ? prod.tags : [], isReady);
+        const { error } = await client
+            .from('produtos')
+            .update({ tags: updatedTags })
+            .eq('id', prodId);
+        if (error) throw error;
+
+        const canonicalSlug = getCanonicalProductSlug({ id: prodId, nome: prod.nome, slug: prod.slug });
+        revalidateProducts(canonicalSlug, prodId);
     });
 }
 

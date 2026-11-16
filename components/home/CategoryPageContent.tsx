@@ -73,7 +73,7 @@ function getCategoryIntro(categoryName: string): string {
     const name = categoryName.toLowerCase();
 
     if (name.includes('máscara') || name.includes('mascara')) {
-        return 'Máscaras de solda personalizadas em fibra de vidro com proteção UV/IR para soldagem TIG e MIG. Lentes passivas escuras com visibilidade cristalina da poça de fusão, design exclusivo e pronta entrega para todo o Brasil.';
+        return 'Máscaras de solda personalizadas em fibra de vidro com proteção UV/IR para soldagem TIG e MIG. Lentes passivas escuras com visibilidade cristalina da poça de fusão, design exclusivo sob encomenda e envio para todo o Brasil.';
     }
     if (name.includes('vestu') || name.includes('camiseta') || name.includes('boné') || name.includes('bone')) {
         return 'Vestuário e acessórios para soldadores: bonés aba curva estruturados, camisetas estampadas e itens de streetwear industrial. Conforto, estilo e durabilidade para o profissional que orgulha a profissão.';
@@ -85,7 +85,7 @@ function getCategoryIntro(categoryName: string): string {
         return 'Tochas, bocais e acessórios de alta precisão para soldagem TIG/MIG. Peças de reposição e equipamentos para quem busca o melhor acabamento e performance no cordão de solda.';
     }
 
-    return `${categoryName} para soldadores profissionais: equipamentos de alta performance para soldagem TIG/MIG com qualidade, estilo e pronta entrega para todo o Brasil.`;
+    return `${categoryName} para soldadores profissionais: equipamentos de alta performance para soldagem TIG/MIG com qualidade, estilo e envio para todo o Brasil.`;
 }
 
 function getCategoryAboutText(categoryName: string): string {
@@ -95,7 +95,7 @@ function getCategoryAboutText(categoryName: string): string {
         return 'Nossas máscaras de solda são fabricadas em fibra de vidro leve e resistente, oferecendo proteção contra raios UV e infravermelhos gerados pelo arco elétrico. As lentes passivas escuras garantem visibilidade cristalina da poça de fusão, minimizando a fadiga ocular mesmo após horas de trabalho contínuo. Cada máscara pode ser personalizada com designs exclusivos, tornando-se uma extensão da identidade do soldador. Enviamos para todo o Brasil com pagamento via PIX (aprovação imediata) ou cartão de crédito em até 12x.';
     }
     if (name.includes('vestu') || name.includes('camiseta') || name.includes('boné') || name.includes('bone')) {
-        return 'Linha de vestuário e acessórios desenvolvida para soldadores que não abrem mão do estilo. Bonés aba curva estruturados, camisetas em algodão estampadas e itens de streetwear industrial que combinam durabilidade e atitude. Peças pensadas para o dia a dia da oficina e para o orgulho da profissão. Pronta entrega e envio para todo o Brasil.';
+        return 'Linha de vestuário e acessórios desenvolvida para soldadores que não abrem mão do estilo. Bonés aba curva estruturados, camisetas em algodão estampadas e itens de streetwear industrial que combinam durabilidade e atitude. Peças pensadas para o dia a dia da oficina e para o orgulho da profissão. Envio para todo o Brasil.';
     }
     if (name.includes('epi') || name.includes('proteção') || name.includes('protecao')) {
         return 'Equipamentos de Proteção Individual selecionados para a segurança do soldador. Luvas térmicas, botinas com bico de composite ou aço, mangotes e demais acessórios que garantem proteção contra calor, faíscas e impactos. Conforto para uso prolongado e certificação de segurança. Compre com PIX ou cartão em até 12x.';

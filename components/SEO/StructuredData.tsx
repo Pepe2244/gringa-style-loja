@@ -2,6 +2,7 @@ import React from 'react';
 import { buildStorageUrl, isLegacyDeadStorageUrl, siteConfig } from '@/lib/site-config';
 import { getProductTaxonomy } from '@/lib/taxonomy';
 import { getCanonicalProductSlug } from '@/utils/slugify';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 /**
  * MOTOR DE DADOS ESTRUTURADOS - GRINGA STYLE
@@ -254,6 +255,34 @@ const resolveProductImages = (product: ProductData): string[] => {
   return validImages;
 };
 
+const buildShippingDetails = (prontaEntrega: boolean) => ({
+  '@type': 'OfferShippingDetails',
+  'shippingRate': {
+    '@type': 'MonetaryAmount',
+    'value': '28.90',
+    'currency': 'BRL'
+  },
+  'shippingDestination': {
+    '@type': 'DefinedRegion',
+    'addressCountry': 'BR'
+  },
+  'deliveryTime': {
+    '@type': 'ShippingDeliveryTime',
+    'handlingTime': {
+      '@type': 'QuantitativeValue',
+      'minValue': prontaEntrega ? 1 : 5,
+      'maxValue': prontaEntrega ? 2 : 10,
+      'unitCode': 'd'
+    },
+    'transitTime': {
+      '@type': 'QuantitativeValue',
+      'minValue': 3,
+      'maxValue': 8,
+      'unitCode': 'd'
+    }
+  }
+});
+
 export const ProductSchema = ({
   product,
   referenceDate,
@@ -267,6 +296,7 @@ export const ProductSchema = ({
   const canonicalSlug = getCanonicalProductSlug(product);
   const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
   const hasPromo = !!product.preco_promocional && product.preco_promocional < product.preco;
+  const prontaEntrega = isProntaEntrega(product);
 
   const { validFrom, priceValidUntil } = resolveOfferDates(
     referenceDate || product.updated_at || product.created_at
@@ -282,39 +312,13 @@ export const ProductSchema = ({
     'merchantReturnLink': `${SITE_URL}/devolucao-e-reembolso`
   };
 
-  const shippingDetails = {
-    '@type': 'OfferShippingDetails',
-    'shippingRate': {
-      '@type': 'MonetaryAmount',
-      'value': '28.90',
-      'currency': 'BRL'
-    },
-    'shippingDestination': {
-      '@type': 'DefinedRegion',
-      'addressCountry': 'BR'
-    },
-    'deliveryTime': {
-      '@type': 'ShippingDeliveryTime',
-      'handlingTime': {
-        '@type': 'QuantitativeValue',
-        'minValue': 1,
-        'maxValue': 2,
-        'unitCode': 'd'
-      },
-      'transitTime': {
-        '@type': 'QuantitativeValue',
-        'minValue': 3,
-        'maxValue': 8,
-        'unitCode': 'd'
-      }
-    }
-  };
-
   const seller = {
     '@type': 'Organization',
     'name': 'Gringa Style',
     'url': SITE_URL
   };
+
+  const shippingDetails = buildShippingDetails(prontaEntrega);
 
   const baseOffer: any = {
     '@type': 'Offer',
@@ -366,7 +370,7 @@ export const ProductSchema = ({
           autor: 'Soldador Profissional',
           data: '2026-09-15',
           nota: 5,
-          comentario: `Excelente qualidade do produto ${product.nome}. Envio rápido e acabamento diferenciado para o trabalho diário.`
+          comentario: `Excelente qualidade do produto ${product.nome}. Acabamento diferenciado e excelente proteção para o trabalho diário.`
         },
         {
           autor: 'Cliente Verificado',
@@ -383,7 +387,7 @@ export const ProductSchema = ({
     '@type': 'Product',
     '@id': `${productUrl}#product`,
     'name': product.nome,
-    'description': cleanText(product.descricao) || `Compre ${product.nome} com melhor preço e envio rápido na Gringa Style.`,
+    'description': cleanText(product.descricao) || `Compre ${product.nome} com qualidade profissional e envio para todo o Brasil na Gringa Style.`,
     'image': productImages,
     'url': productUrl,
     'sku': String(product.id),
@@ -435,6 +439,7 @@ export interface ItemListProduct {
   preco: number;
   preco_promocional?: number | null;
   em_estoque?: boolean;
+  tags?: string[] | null;
   imagens?: string[] | null;
   media_urls?: string[] | null;
   slug?: string;
@@ -463,34 +468,6 @@ export const ItemListSchema = ({
     'returnMethod': 'https://schema.org/ReturnByMail',
     'returnFees': 'https://schema.org/FreeReturn',
     'merchantReturnLink': `${SITE_URL}/devolucao-e-reembolso`
-  };
-
-  const shippingDetails = {
-    '@type': 'OfferShippingDetails',
-    'shippingRate': {
-      '@type': 'MonetaryAmount',
-      'value': '28.90',
-      'currency': 'BRL'
-    },
-    'shippingDestination': {
-      '@type': 'DefinedRegion',
-      'addressCountry': 'BR'
-    },
-    'deliveryTime': {
-      '@type': 'ShippingDeliveryTime',
-      'handlingTime': {
-        '@type': 'QuantitativeValue',
-        'minValue': 1,
-        'maxValue': 2,
-        'unitCode': 'd'
-      },
-      'transitTime': {
-        '@type': 'QuantitativeValue',
-        'minValue': 3,
-        'maxValue': 8,
-        'unitCode': 'd'
-      }
-    }
   };
 
   const seller = {
@@ -555,7 +532,7 @@ export const ItemListSchema = ({
               'bestRating': '5',
               'worstRating': '1'
             },
-            'reviewBody': `Excelente ${product.nome}. Equipamento de alta qualidade e entrega super rápida.`
+            'reviewBody': `Excelente ${product.nome}. Equipamento de alta qualidade e acabamento impecável.`
           }
         ],
         'offers': {
@@ -568,7 +545,7 @@ export const ItemListSchema = ({
           'validFrom': validFrom,
           'priceValidUntil': priceValidUntil,
           'hasMerchantReturnPolicy': merchantReturnPolicy,
-          'shippingDetails': shippingDetails,
+          'shippingDetails': buildShippingDetails(isProntaEntrega(product)),
           'seller': seller
         }
       }

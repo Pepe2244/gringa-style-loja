@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { fetchProductBySlugOrId, resolveAbsoluteUrl } from '@/lib/product-service';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 export const alt = 'Gringa Style - Equipamentos de Solda Personalizados';
 export const size = {
@@ -85,7 +86,15 @@ export default async function Image({ params }: Props) {
     const precoFormatado = Number.isFinite(precoFinal) && precoFinal > 0
       ? precoFinal.toFixed(2).replace('.', ',')
       : '';
-    const isProntaEntrega = Boolean(product.em_estoque);
+    const emEstoque = Boolean(product.em_estoque);
+    const prontaEntrega = isProntaEntrega(product);
+    const badgeColor = !emEstoque ? '#EF4444' : prontaEntrega ? '#10B981' : '#F59E0B';
+    const badgeBg = !emEstoque
+      ? 'rgba(239, 68, 68, 0.2)'
+      : prontaEntrega
+        ? 'rgba(16, 185, 129, 0.2)'
+        : 'rgba(245, 158, 11, 0.2)';
+    const badgeLabel = !emEstoque ? 'ESGOTADO' : prontaEntrega ? 'PRONTA ENTREGA' : 'SOB ENCOMENDA';
 
     return new ImageResponse(
       (
@@ -164,16 +173,16 @@ export default async function Image({ params }: Props) {
               <div
                 style={{
                   display: 'flex',
-                  backgroundColor: isProntaEntrega ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                  color: isProntaEntrega ? '#10B981' : '#F59E0B',
-                  border: `1px solid ${isProntaEntrega ? '#10B981' : '#F59E0B'}`,
+                  backgroundColor: badgeBg,
+                  color: badgeColor,
+                  border: `1px solid ${badgeColor}`,
                   fontWeight: 700,
                   fontSize: '14px',
                   padding: '5px 14px',
                   borderRadius: '999px',
                 }}
               >
-                {isProntaEntrega ? 'PRONTA ENTREGA' : 'SOB ENCOMENDA'}
+                {badgeLabel}
               </div>
             </div>
 

@@ -6,6 +6,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { buildCanonicalUrl } from '@/lib/site-config';
 import { resolveAbsoluteUrl, fetchProductBySlugOrId, getCachedCategories, getCachedRelatedProducts } from '@/lib/product-service';
 import { getCanonicalProductSlug } from '@/utils/slugify';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 function getProductMediaUrls(product: any): string[] {
     const raw = (Array.isArray(product?.media_urls) && product.media_urls.length > 0)
@@ -15,8 +16,8 @@ function getProductMediaUrls(product: any): string[] {
 }
 
 // Formata o título dinamicamente para não estourar os 60 caracteres da SERP do Google
-function formatSEOTitle(nome: string, precoFormatado: string, emEstoque: boolean): string {
-    const estoqueBadge = emEstoque ? 'Pronta Entrega' : 'Sob Encomenda';
+function formatSEOTitle(nome: string, precoFormatado: string, emEstoque: boolean, prontaEntrega: boolean): string {
+    const estoqueBadge = !emEstoque ? 'Indisponível' : prontaEntrega ? 'Pronta Entrega' : 'Sob Encomenda';
     
     // Simplifica separadores longos como "---" ou títulos com subtítulos excessivos
     const nomeLimpo = nome.split('---')[0].trim();
@@ -75,15 +76,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const precoFinal = product.preco_promocional || product.preco;
     const precoFormatado = precoFinal ? precoFinal.toFixed(2).replace('.', ',') : '';
-    const estoqueTexto = product.em_estoque ? 'Pronta entrega' : 'Sob encomenda';
+    const emEstoque = Boolean(product.em_estoque);
+    const prontaEntrega = isProntaEntrega(product);
+    const estoqueTexto = !emEstoque
+        ? 'Temporariamente indisponível'
+        : prontaEntrega
+            ? 'Pronta entrega com envio rápido'
+            : 'Sob encomenda com envio para todo o Brasil';
 
-    const title = formatSEOTitle(product.nome, precoFormatado, product.em_estoque);
+    const title = formatSEOTitle(product.nome, precoFormatado, emEstoque, prontaEntrega);
 
     // Limpa tags HTML e resumos quebrados
     const descricaoLimpa = product.descricao?.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim() || '';
     
     // Descrição orientada a conversão (CTR) para os snippets do Google
-    const description = `Compre ${product.nome}${precoFormatado ? ` por R$ ${precoFormatado}` : ''}. ${estoqueTexto} com envio rápido, PIX com desconto e até 12x no cartão. ${descricaoLimpa}`.substring(0, 155);
+    const description = `Compre ${product.nome}${precoFormatado ? ` por R$ ${precoFormatado}` : ''}. ${estoqueTexto}, PIX com desconto e até 12x no cartão. ${descricaoLimpa}`.substring(0, 155);
 
     return {
         title: {

@@ -4,7 +4,7 @@ import { siteConfig, buildCanonicalUrl } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: { absolute: 'Gringa Style | Máscaras de Solda e Acessórios TIG' },
-  description: 'Máscaras de solda personalizadas em fibra de vidro, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil, PIX e até 12x no cartão.',
+  description: 'Máscaras de solda personalizadas em fibra de vidro, EPIs e acessórios para soldagem TIG/MIG. Envio para todo o Brasil, PIX e até 12x no cartão.',
   alternates: { canonical: buildCanonicalUrl('/') },
   keywords: [
     'máscara de solda personalizada',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: 'Gringa Style | Máscaras de Solda Personalizadas e Acessórios TIG',
-    description: 'Máscaras de solda personalizadas, EPIs e acessórios para soldagem TIG/MIG. Pronta entrega para todo o Brasil.',
+    description: 'Máscaras de solda personalizadas, EPIs e acessórios para soldagem TIG/MIG. Envio para todo o Brasil.',
     url: siteConfig.appUrl,
     siteName: 'Gringa Style',
     images: [{ url: new URL('/imagens/logo_gringa_style.png', siteConfig.appUrl).toString(), width: 800, height: 600 }],

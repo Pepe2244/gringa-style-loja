@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { getProductTaxonomy } from '@/lib/taxonomy';
 import { buildStorageUrl, isLegacyDeadStorageUrl } from '@/lib/site-config';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 export const revalidate = 300; // Cache de 5 minutos na borda
 
@@ -132,7 +133,7 @@ export async function GET() {
             <g:google_product_category>${escapeXml(taxonomy.googleCategoryPath)}</g:google_product_category>
             <g:product_type>${escapeXml(taxonomy.productType)}</g:product_type>
             <g:mpn>${escapeXml(mpnCode)}</g:mpn>
-            <g:custom_label_0>${produto.em_estoque ? 'Pronta Entrega' : 'Sob Encomenda'}</g:custom_label_0>`;
+            <g:custom_label_0>${isProntaEntrega(produto) ? 'Pronta Entrega' : 'Sob Encomenda'}</g:custom_label_0>`;
 
       if (hasValidGtin) {
         itemsXml += `\n            <g:gtin>${escapeXml(rawGtin)}</g:gtin>`;

@@ -8,9 +8,10 @@ import { Product, Category, ProductVariant } from '../../types';
 import { Trash2, Edit, Plus, AlertCircle, Loader2, Package, Tag, Settings2, RefreshCw } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
-import { deleteProduct, saveProduct, setProductStock } from '@/app/actions/admin-data';
+import { deleteProduct, saveProduct, setProductStock, setProductProntaEntrega } from '@/app/actions/admin-data';
 import { revalidateProductCache } from '@/app/actions/produtos';
 import { slugify, getCanonicalProductSlug } from '@/utils/slugify';
+import { isProntaEntrega, stripAvailabilityTags, applyProntaEntregaToTags } from '@/utils/productAvailability';
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -20,6 +21,7 @@ export default function ProductManager() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [syncingCache, setSyncingCache] = useState(false);
+    const [togglingIds, setTogglingIds] = useState<number[]>([]);
 
     // Campos do Formulário Restaurados
     const [nome, setNome] = useState('');
@@ -30,6 +32,7 @@ export default function ProductManager() {
     const [categoriaId, setCategoriaId] = useState('');
     const [tags, setTags] = useState('');
     const [em_estoque, setEmEstoque] = useState(true);
+    const [prontaEntrega, setProntaEntrega] = useState(false);
     const [variantTipo, setVariantTipo] = useState('');
     const [variantOpcoes, setVariantOpcoes] = useState('');
 
@@ -80,8 +83,9 @@ export default function ProductManager() {
             setPrecoPromocional(product.preco_promocional != null ? String(product.preco_promocional) : '');
             setPrecoPix(product.preco_pix != null ? String(product.preco_pix) : '');
             setCategoriaId(product.categoria_id != null ? String(product.categoria_id) : '');
-            setTags(product.tags ? product.tags.join(', ') : '');
+            setTags(stripAvailabilityTags(product.tags).join(', '));
             setEmEstoque(Boolean(product.em_estoque));
+            setProntaEntrega(isProntaEntrega(product));
 
             const variants = product.variants as unknown as ProductVariant | null;
             setVariantTipo(variants?.tipo || '');
@@ -115,6 +119,7 @@ export default function ProductManager() {
         setCategoriaId('');
         setTags('');
         setEmEstoque(true);
+        setProntaEntrega(false);
         setVariantTipo('');
         setVariantOpcoes('');
         setExistingMedia([]);
@@ -232,7 +237,7 @@ export default function ProductManager() {
             preco_promocional: parsedPromo,
             preco_pix: parsedPix,
             categoria_id: categoriaId ? parseInt(categoriaId) : null,
-            tags: tags.split(',').map(s => s.trim()).filter(Boolean),
+            tags: applyProntaEntregaToTags(tags.split(',').map(s => s.trim()).filter(Boolean), prontaEntrega),
             em_estoque,
             media_urls: finalMediaUrls,
             variants
@@ -274,10 +279,12 @@ export default function ProductManager() {
     };
 
     const toggleStock = async (id: number, currentStatus: boolean) => {
+        if (togglingIds.includes(id)) return;
         const newStatus = !currentStatus;
 
+        setTogglingIds((prev) => [...prev, id]);
         // Atualização otimista
-        setProducts(products.map(p => p.id === id ? { ...p, em_estoque: newStatus } : p));
+        setProducts((prev) => prev.map(p => p.id === id ? { ...p, em_estoque: newStatus } : p));
 
         try {
             const result = await setProductStock(id, newStatus);
@@ -286,7 +293,31 @@ export default function ProductManager() {
             console.error('Erro ao alterar estoque:', error);
             alert('Falha ao atualizar o status de estoque.');
             // Reverte a atualização otimista caso falhe
-            setProducts(products.map(p => p.id === id ? { ...p, em_estoque: currentStatus } : p));
+            setProducts((prev) => prev.map(p => p.id === id ? { ...p, em_estoque: currentStatus } : p));
+        } finally {
+            setTogglingIds((prev) => prev.filter((item) => item !== id));
+        }
+    };
+
+    const toggleProntaEntrega = async (prod: Product) => {
+        if (togglingIds.includes(prod.id)) return;
+        const currentStatus = isProntaEntrega(prod);
+        const newStatus = !currentStatus;
+        const previousTags = Array.isArray(prod.tags) ? prod.tags : [];
+        const updatedTags = applyProntaEntregaToTags(previousTags, newStatus);
+
+        setTogglingIds((prev) => [...prev, prod.id]);
+        setProducts((prev) => prev.map(p => p.id === prod.id ? { ...p, tags: updatedTags } : p));
+
+        try {
+            const result = await setProductProntaEntrega(prod.id, newStatus);
+            if (!result.success) throw new Error(result.error);
+        } catch (error: any) {
+            console.error('Erro ao alterar modalidade de entrega:', error);
+            alert('Falha ao atualizar a modalidade de entrega.');
+            setProducts((prev) => prev.map(p => p.id === prod.id ? { ...p, tags: previousTags } : p));
+        } finally {
+            setTogglingIds((prev) => prev.filter((item) => item !== prod.id));
         }
     };
 
@@ -362,8 +393,8 @@ export default function ProductManager() {
                 <>
                     <div className="admin-items-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {products.map(prod => (
-                            <div key={prod.id} style={{ background: '#111', padding: '12px 16px', borderRadius: '12px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ flex: 1 }}>
+                            <div key={prod.id} style={{ background: '#111', padding: '12px 16px', borderRadius: '12px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: '220px' }}>
                                     <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1rem' }}>{prod.nome}</h3>
                                     <div style={{ fontSize: '0.82rem', color: '#888', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                         {prod.preco_promocional && prod.preco_promocional < prod.preco ? (
@@ -377,18 +408,48 @@ export default function ProductManager() {
                                             <span style={{ color: '#eee' }}>R$ {prod.preco.toFixed(2)}</span>
                                         )}
                                         {prod.preco_pix ? <span style={{ color: '#00d2ff' }}>| PIX R$ {prod.preco_pix.toFixed(2)}</span> : null}
-                                        <span style={{ color: prod.em_estoque ? '#4ade80' : '#f87171' }}>
-                                            | {prod.em_estoque ? 'Em Estoque' : 'Esgotado'}
-                                        </span>
+                                        {!prod.em_estoque ? (
+                                            <span style={{ color: '#f87171', fontWeight: 600 }}>| Esgotado</span>
+                                        ) : isProntaEntrega(prod) ? (
+                                            <span style={{ color: '#4ade80', fontWeight: 600 }}>| ⚡ Pronta Entrega</span>
+                                        ) : (
+                                            <span style={{ color: '#FFA500', fontWeight: 600 }}>| 📦 Sob Encomenda</span>
+                                        )}
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <label className="switch" style={{ transform: 'scale(0.7)', cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={prod.em_estoque} onChange={() => toggleStock(prod.id, prod.em_estoque)} />
-                                        <span className="slider"></span>
-                                    </label>
-                                    <button onClick={() => openModal(prod)} style={{ background: '#222', border: 'none', color: 'white', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}><Edit size={16} /></button>
-                                    <button onClick={() => handleDelete(prod.id)} style={{ background: '#311', border: 'none', color: '#ff4444', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                        <label className="switch" style={{ transform: 'scale(0.68)', cursor: 'pointer' }} title="Alternar entre Sob Encomenda e Pronta Entrega">
+                                            <input
+                                                type="checkbox"
+                                                checked={isProntaEntrega(prod)}
+                                                disabled={togglingIds.includes(prod.id)}
+                                                onChange={() => toggleProntaEntrega(prod)}
+                                                aria-label={`Pronta entrega para ${prod.nome}`}
+                                            />
+                                            <span className="slider"></span>
+                                        </label>
+                                        <span style={{ fontSize: '0.65rem', color: isProntaEntrega(prod) ? '#4ade80' : '#ffb347', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                            {isProntaEntrega(prod) ? 'Pronta Entrega' : 'Sob Encomenda'}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                        <label className="switch" style={{ transform: 'scale(0.68)', cursor: 'pointer' }} title="Alternar disponibilidade para compra">
+                                            <input
+                                                type="checkbox"
+                                                checked={prod.em_estoque}
+                                                disabled={togglingIds.includes(prod.id)}
+                                                onChange={() => toggleStock(prod.id, prod.em_estoque)}
+                                                aria-label={`Disponibilidade para ${prod.nome}`}
+                                            />
+                                            <span className="slider"></span>
+                                        </label>
+                                        <span style={{ fontSize: '0.65rem', color: prod.em_estoque ? '#aaa' : '#f87171', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                            {prod.em_estoque ? 'Disponível' : 'Esgotado'}
+                                        </span>
+                                    </div>
+                                    <button onClick={() => openModal(prod)} style={{ background: '#222', border: 'none', color: 'white', padding: '8px', borderRadius: '6px', cursor: 'pointer' }} aria-label={`Editar ${prod.nome}`}><Edit size={16} /></button>
+                                    <button onClick={() => handleDelete(prod.id)} style={{ background: '#311', border: 'none', color: '#ff4444', padding: '8px', borderRadius: '6px', cursor: 'pointer' }} aria-label={`Excluir ${prod.nome}`}><Trash2 size={16} /></button>
                                 </div>
                             </div>
                         ))}
@@ -457,14 +518,29 @@ export default function ProductManager() {
                                     </select>
                                 </div>
                                 <div className="form-campo">
-                                    <label>Em Estoque?</label>
+                                    <label>Disponível para Compra?</label>
                                     <div style={{ display: 'flex', alignItems: 'center', height: '45px' }}>
                                         <label className="switch" style={{ cursor: 'pointer' }}>
                                             <input type="checkbox" checked={em_estoque} onChange={e => setEmEstoque(e.target.checked)} />
                                             <span className="slider"></span>
                                         </label>
-                                        <span style={{ marginLeft: '10px', fontSize: '0.9rem' }}>{em_estoque ? 'Sim' : 'Não'}</span>
+                                        <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: em_estoque ? '#eee' : '#f87171' }}>
+                                            {em_estoque ? 'Disponível' : 'Fora de Estoque / Esgotado'}
+                                        </span>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="form-campo" style={{ background: '#181818', padding: '12px 14px', borderRadius: '10px', border: '1px solid #2b2b2b' }}>
+                                <label style={{ marginBottom: '6px', display: 'block' }}>Modalidade de Envio</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                    <label className="switch" style={{ cursor: 'pointer' }}>
+                                        <input type="checkbox" checked={prontaEntrega} onChange={e => setProntaEntrega(e.target.checked)} />
+                                        <span className="slider"></span>
+                                    </label>
+                                    <span style={{ fontSize: '0.92rem', fontWeight: 600, color: prontaEntrega ? '#4ade80' : '#ffb347' }}>
+                                        {prontaEntrega ? '⚡ Pronta Entrega (envio imediato)' : '📦 Sob Encomenda (Padrão)'}
+                                    </span>
                                 </div>
                             </div>
 

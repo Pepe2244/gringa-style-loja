@@ -24,6 +24,7 @@ import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import { useAnalytics } from '@/components/AdvancedAnalytics'; 
 import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -572,13 +573,17 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                     </div>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '18px' }}>
-                        {product.em_estoque ? (
+                        {!product.em_estoque ? (
+                            <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(220, 53, 69, 0.15)', color: '#f87171', border: '1px solid rgba(220, 53, 69, 0.3)' }}>
+                                ✕ Fora de Estoque
+                            </p>
+                        ) : isProntaEntrega(product) ? (
                             <p className="status-estoque-detalhe em-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(40, 167, 69, 0.15)', color: '#4ade80', border: '1px solid rgba(40, 167, 69, 0.3)' }}>
                                 ✓ Pronta Entrega
                             </p>
                         ) : (
-                            <p className="status-estoque-detalhe fora-de-estoque" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(220, 53, 69, 0.15)', color: '#f87171', border: '1px solid rgba(220, 53, 69, 0.3)' }}>
-                                ✕ Fora de Estoque
+                            <p className="status-estoque-detalhe sob-encomenda" style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.35)' }}>
+                                📦 Sob Encomenda
                             </p>
                         )}
                         <SavingsBadge originalPrice={product.preco} promotionalPrice={product.preco_promocional} />
@@ -683,7 +688,11 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                     <div style={{ marginTop: '16px', padding: '14px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(255, 107, 0, 0.12) 0%, rgba(255, 107, 0, 0.06) 100%)', border: '1px solid rgba(255, 107, 0, 0.25)' }}>
                         <div style={{ fontWeight: 800, color: 'white', marginBottom: '6px' }}>Compra rápida e segura</div>
                         <div style={{ color: '#ffd2ae', fontSize: '0.92rem', lineHeight: 1.6 }}>
-                            Envio rápido, pagamento confiável e atendimento direto no WhatsApp para você comprar com mais praticidade.
+                            {!product.em_estoque
+                                ? 'Produto temporariamente esgotado. Clique em "Avise-me quando chegar" para ser avisado no WhatsApp assim que retornar.'
+                                : isProntaEntrega(product)
+                                    ? 'Pronta entrega com envio rápido, pagamento confiável e atendimento direto no WhatsApp para você comprar com mais praticidade.'
+                                    : 'Produção sob encomenda com envio seguro para todo o Brasil, pagamento confiável e atendimento direto no WhatsApp.'}
                         </div>
                     </div>
 

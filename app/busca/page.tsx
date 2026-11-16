@@ -13,6 +13,7 @@ import ProductFilters from '@/components/home/ProductFilters';
 import { trackSearchQuery } from '@/utils/analytics';
 import { ItemListSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 import { buildCanonicalUrl } from '@/lib/site-config';
+import { getSearchableAvailabilityText } from '@/utils/productAvailability';
 
 const PRODUCTS_PER_PAGE = 12;
 const STOP_WORDS = ['de', 'da', 'do', 'e', 'para', 'com', 'em', 'um', 'uma', 'os', 'as'];
@@ -39,7 +40,7 @@ const matchesSearchTerm = (product: Product, term: string): boolean => {
 
     const nome = normalizeString(product.nome);
     const desc = normalizeString(product.descricao || '');
-    const tags = Array.isArray(product.tags) ? product.tags.map(normalizeString).join(' ') : '';
+    const tags = normalizeString(getSearchableAvailabilityText(product));
     const combined = `${nome} ${desc} ${tags}`;
 
     if (combined.includes(termNorm)) return true;

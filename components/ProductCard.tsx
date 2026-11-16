@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/types';
@@ -8,6 +8,7 @@ import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { trackPurchaseIntent } from '@/utils/analytics';
+import { isProntaEntrega } from '@/utils/productAvailability';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -30,6 +31,7 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const [isMobile, setIsMobile] = useState(false);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
     const [nowMs, setNowMs] = useState<number | null>(null);
+    const lastPointerTypeRef = useRef<string>('mouse');
 
     // Acesso seguro às propriedades do produto
     const rawMediaUrls = (Array.isArray(product?.media_urls) && product.media_urls.length > 0)
@@ -111,13 +113,33 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
     const shouldShowVideo = !!videoUrl && isHovered && !isMobile && !prefersReducedMotion;
     const productName = product.nome || 'Produto Sem Nome';
     const productSlug = getCanonicalProductSlug(product);
+    const prontaEntrega = isProntaEntrega(product);
+
+    const handleCardImageClick = () => {
+        const isTouchInteraction =
+            lastPointerTypeRef.current === 'touch' ||
+            lastPointerTypeRef.current === 'pen' ||
+            isMobile ||
+            (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches);
+        if (isTouchInteraction) {
+            setIsHovered((prev) => !prev);
+        }
+    };
 
     return (
         <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onPointerEnter={(e) => {
+                if (e.pointerType === 'mouse') {
+                    setIsHovered(true);
+                }
+            }}
+            onPointerLeave={(e) => {
+                if (e.pointerType === 'mouse') {
+                    setIsHovered(false);
+                }
+            }}
             style={{ position: 'relative', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}
-            className="produto-card"
+            className={`produto-card${isHovered ? ' ativo' : ''}`}
         >
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '5px', zIndex: 10 }}>
                 {isNew() && <span className="badge-novo" style={{ position: 'static' }}>NOVO</span>}
@@ -128,54 +150,53 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                 )}
             </div>
 
-            {product.em_estoque ? (
-                <span className="status-estoque em-estoque">Em Estoque</span>
-            ) : (
+            {!product.em_estoque ? (
                 <span className="status-estoque fora-de-estoque">Fora de Estoque</span>
+            ) : prontaEntrega ? (
+                <span className="status-estoque em-estoque">Pronta Entrega</span>
+            ) : (
+                <span className="status-estoque sob-encomenda">Sob Encomenda</span>
             )}
 
-            <Link
-                href={`/produto/${productSlug}`}
-                style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                onClick={() => trackPurchaseIntent(product.id, productName, 'view_item')}
-                aria-label={`Ver produto ${productName}`}
+            <div
+                className="card-imagem-container"
+                onPointerDown={(e) => {
+                    lastPointerTypeRef.current = e.pointerType || 'mouse';
+                }}
+                onClick={handleCardImageClick}
+                style={{ cursor: isMobile ? 'pointer' : 'default' }}
             >
-                <div className="card-imagem-container">
-                    {shouldShowVideo ? (
-                        <video
-                            src={videoUrl}
-                            className="card-video"
-                            loop
-                            muted
-                            autoPlay
-                            playsInline
-                        />
-                    ) : (
-                        <Image
-                            src={displayImages[currentImageIndex]}
-                            alt={`Produto ${product.nome}`}
-                            fill
-                            sizes="(max-width: 639px) 92vw, (max-width: 1024px) 50vw, 33vw"
-                            quality={65}
-                            className="card-imagem visivel"
-                            style={{ objectFit: 'cover' }}
-                            priority={priority}
-                            fetchPriority={priority ? 'high' : 'auto'}
-                            loading={priority ? 'eager' : 'lazy'}
-                            placeholder="blur"
-                            blurDataURL={BLUR_DATA_URL}
-                        />
-                    )}
-                </div>
+                {shouldShowVideo ? (
+                    <video
+                        src={videoUrl}
+                        className="card-video"
+                        loop
+                        muted
+                        autoPlay
+                        playsInline
+                    />
+                ) : (
+                    <Image
+                        src={displayImages[currentImageIndex]}
+                        alt={`Produto ${product.nome}`}
+                        fill
+                        sizes="(max-width: 639px) 92vw, (max-width: 1024px) 50vw, 33vw"
+                        quality={65}
+                        className="card-imagem visivel"
+                        style={{ objectFit: 'cover' }}
+                        priority={priority}
+                        fetchPriority={priority ? 'high' : 'auto'}
+                        loading={priority ? 'eager' : 'lazy'}
+                        placeholder="blur"
+                        blurDataURL={BLUR_DATA_URL}
+                    />
+                )}
+            </div>
 
-                <div className="produto-info" style={{ paddingBottom: '0' }}>
-                    <h2 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {productName}
-                    </h2>
-                </div>
-            </Link>
-
-            <div className="produto-info" style={{ paddingTop: '0' }}>
+            <div className="produto-info">
+                <h2 style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {productName}
+                </h2>
                 {isPromo ? (
                     <p className="preco">
                         <span className="preco-antigo">De R$ {precoOriginal.toFixed(2).replace('.', ',')}</span>
