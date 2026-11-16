@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BreadcrumbSchema } from '@/components/SEO/StructuredData';
+import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
@@ -38,6 +38,11 @@ export const metadata: Metadata = {
 export default function DevolucaoReembolsoPage() {
     return (
         <>
+            <WebPageSchema page={{
+                name: 'Trocas, Devoluções e Reembolso | Gringa Style',
+                description: 'Conheça nossa política de trocas, devoluções e reembolso. Garantia legal de 90 dias e direito de arrependimento de 7 dias na Gringa Style.',
+                url: buildCanonicalUrl('/devolucao-e-reembolso'),
+            }} />
             <BreadcrumbSchema items={[
                 { name: 'Gringa Style', url: '/' },
                 { name: 'Trocas e Devoluções', url: '/devolucao-e-reembolso' }

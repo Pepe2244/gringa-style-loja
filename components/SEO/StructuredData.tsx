@@ -22,9 +22,21 @@ interface BreadcrumbItem {
 const SITE_URL = siteConfig.appUrl;
 const PHONE = `+${siteConfig.contact.whatsapp}`;
 
+const decodeHtmlEntities = (text: string): string => {
+  return text
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&apos;|&#39;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&nbsp;/gi, ' ');
+};
+
 const cleanText = (text?: string): string => {
   if (!text) return '';
-  return text.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
+  return decodeHtmlEntities(text.replace(/<[^>]*>?/gm, ''))
+    .replace(/\s+/g, ' ')
+    .trim();
 };
 
 const safeJsonStringify = (data: unknown): string => {
@@ -363,6 +375,7 @@ export const ProductSchema = ({
     ? String(product.totalAvaliacoes)
     : String(18 + (numericId % 15));
 
+  const cleanedName = cleanText(product.nome);
   const reviewsList = Array.isArray((product as any).reviews) && (product as any).reviews.length > 0
     ? (product as any).reviews
     : [
@@ -370,7 +383,7 @@ export const ProductSchema = ({
           autor: 'Soldador Profissional',
           data: '2026-09-15',
           nota: 5,
-          comentario: `Excelente qualidade do produto ${product.nome}. Acabamento diferenciado e excelente proteção para o trabalho diário.`
+          comentario: `Excelente qualidade do produto ${cleanedName}. Acabamento diferenciado e excelente proteção para o trabalho diário.`
         },
         {
           autor: 'Cliente Verificado',
@@ -380,18 +393,19 @@ export const ProductSchema = ({
         }
       ];
 
-  const taxonomy = getProductTaxonomy(product.nome);
+  const taxonomy = getProductTaxonomy(cleanedName);
+  const mpnCode = `GS-${String(product.id).padStart(3, '0')}`;
 
   const schema: any = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     '@id': `${productUrl}#product`,
-    'name': product.nome,
-    'description': cleanText(product.descricao) || `Compre ${product.nome} com qualidade profissional e envio para todo o Brasil na Gringa Style.`,
+    'name': cleanedName,
+    'description': cleanText(product.descricao) || `Compre ${cleanedName} com qualidade profissional e envio para todo o Brasil na Gringa Style.`,
     'image': productImages,
     'url': productUrl,
     'sku': String(product.id),
-    'mpn': String(product.id),
+    'mpn': mpnCode,
     'category': taxonomy.schemaCategory,
     'brand': {
       '@type': 'Brand',
@@ -419,7 +433,7 @@ export const ProductSchema = ({
         'bestRating': '5',
         'worstRating': '1'
       },
-      'reviewBody': r.comentario || `Excelente ${product.nome}.`
+      'reviewBody': cleanText(r.comentario) || `Excelente ${cleanedName}.`
     }))
   };
 
@@ -443,7 +457,10 @@ export interface ItemListProduct {
   imagens?: string[] | null;
   media_urls?: string[] | null;
   slug?: string;
+  marca?: string;
   gtin13?: string;
+  avaliacoes?: number;
+  totalAvaliacoes?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -479,17 +496,24 @@ export const ItemListSchema = ({
   const listItems = products.slice(0, 20).map((product, index) => {
     const images = resolveProductImages(product);
     const imageUrl = images[0] || `${SITE_URL}/imagens/logo_gringa_style.png`;
+    const cleanedName = cleanText(product.nome);
 
-    const precoNumerico = Number(product.preco_promocional && product.preco_promocional < product.preco
-      ? product.preco_promocional
-      : product.preco) || 0;
+    const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
+    const precoNumerico = Number(hasPromo ? product.preco_promocional : product.preco) || 0;
+    const precoFormatado = precoNumerico.toFixed(2);
 
     const canonicalSlug = getCanonicalProductSlug(product);
     const productUrl = `${SITE_URL}/produto/${canonicalSlug}`;
-    const taxonomy = getProductTaxonomy(product.nome);
+    const taxonomy = getProductTaxonomy(cleanedName);
     const numericId = Number(product.id) || (index + 1);
-    const ratingValue = (4.8 + ((numericId % 3) * 0.1)).toFixed(1);
-    const reviewCount = String(20 + (numericId % 15));
+    const hasRealReviews = typeof product.avaliacoes === 'number' && product.avaliacoes > 0 && typeof product.totalAvaliacoes === 'number' && product.totalAvaliacoes > 0;
+    const ratingValue = hasRealReviews
+      ? Number(product.avaliacoes).toFixed(1)
+      : (4.8 + ((numericId % 3) * 0.1)).toFixed(1);
+    const reviewCount = hasRealReviews
+      ? String(product.totalAvaliacoes)
+      : String(18 + (numericId % 15));
+    const mpnCode = `GS-${String(product.id).padStart(3, '0')}`;
     const { validFrom, priceValidUntil } = resolveOfferDates(
       referenceDate || product.updated_at || product.created_at
     );
@@ -499,16 +523,16 @@ export const ItemListSchema = ({
       position: index + 1,
       item: {
         '@type': 'Product',
-        'name': product.nome,
+        'name': cleanedName,
         'image': imageUrl,
-        'description': cleanText(product.descricao) || `Compre ${product.nome} na Gringa Style`,
+        'description': cleanText(product.descricao) || `Compre ${cleanedName} na Gringa Style`,
         'sku': String(product.id),
-        'mpn': String(product.id),
+        'mpn': mpnCode,
         'url': productUrl,
         'category': taxonomy.schemaCategory,
         'brand': {
           '@type': 'Brand',
-          'name': 'Gringa Style'
+          'name': product.marca || 'Gringa Style'
         },
         ...(product.gtin13 ? { gtin13: product.gtin13 } : {}),
         'aggregateRating': {
@@ -532,21 +556,37 @@ export const ItemListSchema = ({
               'bestRating': '5',
               'worstRating': '1'
             },
-            'reviewBody': `Excelente ${product.nome}. Equipamento de alta qualidade e acabamento impecável.`
+            'reviewBody': `Excelente ${cleanedName}. Equipamento de alta qualidade e acabamento impecável.`
           }
         ],
         'offers': {
           '@type': 'Offer',
           'url': productUrl,
           'priceCurrency': 'BRL',
-          'price': precoNumerico.toFixed(2),
+          'price': precoFormatado,
           'itemCondition': 'https://schema.org/NewCondition',
           'availability': product.em_estoque ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
           'validFrom': validFrom,
           'priceValidUntil': priceValidUntil,
           'hasMerchantReturnPolicy': merchantReturnPolicy,
           'shippingDetails': buildShippingDetails(isProntaEntrega(product)),
-          'seller': seller
+          'seller': seller,
+          ...(hasPromo && {
+            'priceSpecification': [
+              {
+                '@type': 'UnitPriceSpecification',
+                'price': Number(product.preco).toFixed(2),
+                'priceCurrency': 'BRL',
+                'priceType': 'https://schema.org/ListPrice'
+              },
+              {
+                '@type': 'UnitPriceSpecification',
+                'price': precoFormatado,
+                'priceCurrency': 'BRL',
+                'priceType': 'https://schema.org/SalePrice'
+              }
+            ]
+          })
         }
       }
     };
@@ -635,7 +675,7 @@ export const CollectionPageSchema = ({ page }: { page: CollectionPageData }) => 
   const items = (page.products || []).slice(0, 20).map((product, index) => ({
     "@type": "ListItem",
     "position": index + 1,
-    "name": product.nome,
+    "name": cleanText(product.nome),
     "url": `${SITE_URL}/produto/${getCanonicalProductSlug(product)}`
   }));
 

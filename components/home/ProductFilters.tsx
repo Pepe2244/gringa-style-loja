@@ -83,7 +83,7 @@ export default function ProductFilters({
                             style={{
                                 width: '100%',
                                 height: '44px',
-                                padding: '0 42px 0 14px',
+                                padding: '0 42px 0 38px',
                                 backgroundColor: '#171717',
                                 border: '1px solid #333',
                                 borderRadius: '10px',
@@ -93,6 +93,7 @@ export default function ProductFilters({
                         />
                         {searchTerm && (
                             <button
+                                type="button"
                                 className="search-clear-btn"
                                 style={{
                                     position: 'absolute',
@@ -103,7 +104,10 @@ export default function ProductFilters({
                                     border: 'none',
                                     color: '#888',
                                     cursor: 'pointer',
-                                    padding: '4px'
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }}
                                 onClick={() => setSearchTerm('')}
                                 aria-label="Limpar busca"

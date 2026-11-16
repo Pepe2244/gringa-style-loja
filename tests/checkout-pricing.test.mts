@@ -144,3 +144,24 @@ test('counts fixed product discounts once per product even when the same product
     );
     assert.deepEqual(result, { subtotal: 475, discount: 20 });
 });
+
+test('treats tipo_aplicacao "total" from DB default identically to "geral" and aggregates variants separately', () => {
+    const dbDefaultCoupon = {
+        ...coupon,
+        tipo_aplicacao: 'total',
+    } satisfies CouponForCheckout;
+
+    const aggregated = aggregateCartItems([
+        { produto_id: 1, quantidade: 60, variante: { tipo: 'Tamanho', opcao: 'P' } },
+        { produto_id: 1, quantidade: 50, variante: { tipo: 'Tamanho', opcao: 'M' } },
+    ]);
+    assert.equal(aggregated.length, 2);
+
+    const result = calculateCouponDiscount(
+        dbDefaultCoupon,
+        aggregated,
+        products,
+        'pix',
+    );
+    assert.deepEqual(result, { subtotal: 9350, discount: 935 });
+});

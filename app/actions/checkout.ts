@@ -1,6 +1,7 @@
 'use server';
 
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
+import { isValidCpf } from '@/lib/validation';
 import {
     aggregateCartItems,
     calculateCouponDiscount,
@@ -225,12 +226,25 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
         }
 
         const parsedFrete = Number(input.frete);
-        const serverFrete = Number.isFinite(parsedFrete) && parsedFrete >= 0 ? roundCurrency(parsedFrete) : 0;
+        if (!Number.isFinite(parsedFrete) || parsedFrete < 0 || parsedFrete > 10_000) {
+            return { success: false, codigoPedido, error: 'Valor de frete inválido.' };
+        }
+        const serverFrete = roundCurrency(parsedFrete);
         const serverTotal = roundCurrency(Math.max(0, serverSubtotal - serverDiscount) + serverFrete);
 
+        const isInternational = Boolean(
+            input.enderecoEntrega?.pais &&
+            input.enderecoEntrega.pais.trim().toLowerCase() !== 'brasil' &&
+            input.enderecoEntrega.pais.trim().toUpperCase() !== 'BR'
+        );
+        const trimmedCpf = input.clienteCpf ? input.clienteCpf.trim().slice(0, 30) : '';
+        if (trimmedCpf && !isInternational && !isValidCpf(trimmedCpf)) {
+            return { success: false, codigoPedido, error: 'CPF inválido.' };
+        }
+
         const enderecoEntrega = input.enderecoEntrega
-            ? { ...input.enderecoEntrega, ...(input.clienteCpf ? { cpf: input.clienteCpf.trim() } : {}) }
-            : (input.clienteCpf ? { cpf: input.clienteCpf.trim() } : null);
+            ? { ...input.enderecoEntrega, ...(trimmedCpf ? { cpf: trimmedCpf } : {}) }
+            : (trimmedCpf ? { cpf: trimmedCpf } : null);
 
         const payload = {
             codigo_pedido: codigoPedido,

@@ -32,12 +32,15 @@ export default function StickyCTA({ product }: { product: Product }) {
 
     if (!isVisible || !product.em_estoque) return null;
 
+    const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
+    const precoFinal = hasPromo ? product.preco_promocional! : product.preco;
+
     return (
         <div className="sticky-cta">
             <div className="sticky-cta-info">
                 <span className="sticky-cta-name">{product.nome}</span>
                 <span className="sticky-cta-price">
-                    R$ {(product.preco_promocional || product.preco).toFixed(2).replace('.', ',')}
+                    R$ {precoFinal.toFixed(2).replace('.', ',')}
                 </span>
             </div>
             <button onClick={handleBuy} className="btn-sticky-buy">
@@ -55,8 +58,8 @@ export default function StickyCTA({ product }: { product: Product }) {
                     border-radius: 16px;
                     padding: 12px 14px;
                     display: flex;
-                    justifyContent: space-between;
-                    alignItems: center;
+                    justify-content: space-between;
+                    align-items: center;
                     z-index: 1000;
                     box-shadow: 0 16px 35px rgba(0,0,0,0.28);
                     animation: slideUp 0.3s ease-out;

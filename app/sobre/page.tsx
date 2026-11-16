@@ -17,7 +17,7 @@ export const metadata: Metadata = {
         type: 'website',
         images: [
             {
-                url: `${siteConfig.appUrl}/imagens/logo_gringa_style.webp`,
+                url: `${siteConfig.appUrl}/imagens/logo_gringa_style.png`,
                 width: 800,
                 height: 600,
                 alt: 'Sobre o Grupo Gringa Style',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'Sobre o Grupo Gringa Style | Loja e Serviços Industriais',
         description: 'Conheça o Grupo Gringa Style, formado pela loja de equipamentos para soldadores e pela GS Serviços Industriais.',
-        images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.webp`],
+        images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.png`],
     },
 };
 

@@ -15,31 +15,28 @@ interface WishlistButtonProps {
 }
 
 export default function WishlistButton({ product, variant = 'icon', size = 'md' }: WishlistButtonProps) {
-    const [isInWishlist, setIsInWishlist] = useState(false);
     const [mounted, setMounted] = useState(false);
     const addItem = useWishlistStore(state => state.addItem);
     const removeItem = useWishlistStore(state => state.removeItem);
-    const isInList = useWishlistStore(state => state.isInWishlist);
+    const isInWishlist = useWishlistStore(state => state.items.some(item => item.id === product.id));
     const { showToast } = useToast();
 
     useEffect(() => {
         setMounted(true);
-        setIsInWishlist(isInList(product.id));
-    }, [product.id, isInList]);
+    }, []);
 
     const handleToggleWishlist = (e?: React.MouseEvent) => {
+        e?.preventDefault();
         e?.stopPropagation();
 
         if (!mounted) return;
 
         if (isInWishlist) {
             removeItem(product.id);
-            setIsInWishlist(false);
             showToast(`Removido de favoritos`, 'success');
             trackWishlistAction('remove', product.id, product.nome);
         } else {
             addItem(product);
-            setIsInWishlist(true);
             showToast(`Adicionado aos favoritos!`, 'success');
             trackWishlistAction('add', product.id, product.nome);
         }
@@ -76,7 +73,7 @@ export default function WishlistButton({ product, variant = 'icon', size = 'md' 
                 }}
                 onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 165, 0, 0.2)'}
                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(8, 8, 8, 0.6)'}
-                aria-label="Adicionar aos favoritos"
+                aria-label={isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                 title={isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
             >
                 <Heart

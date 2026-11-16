@@ -40,6 +40,20 @@ export async function GET() {
 
     const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://gringastylebr.com.br').replace(/\/+$/, '');
 
+    const cleanFeedText = (text: string | null | undefined): string => {
+      if (!text) return '';
+      return String(text)
+        .replace(/<[^>]*>?/gm, '')
+        .replace(/&quot;|&#34;/gi, '"')
+        .replace(/&apos;|&#39;/gi, "'")
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
     const escapeXml = (unsafe: string | null | undefined) => {
       if (!unsafe) return '';
       return String(unsafe)
@@ -108,7 +122,8 @@ export async function GET() {
         ? promoNum.toFixed(2)
         : null;
 
-      const descricaoText = produto.descricao?.replace(/<[^>]*>?/gm, '').trim() || produto.nome;
+      const productTitle = cleanFeedText(produto.nome);
+      const descricaoText = cleanFeedText(produto.descricao) || productTitle;
       
       // Extração de dados dinâmicos e taxonomia Google oficial
       const categoriaNome = produto.categorias?.nome || 'Diversos';
@@ -118,7 +133,7 @@ export async function GET() {
       const hasValidGtin = /^\d{8,14}$/.test(rawGtin);
 
       // Taxonomia oficial rigorosa da Gringa Style (impede desvios como CDs/DVDs no Google Shopping)
-      const taxonomy = getProductTaxonomy(produto.nome, categoriaNome);
+      const taxonomy = getProductTaxonomy(productTitle, categoriaNome);
       const prontaEntrega = isProntaEntrega(produto);
 
       const additionalImagesXml = additionalImages
@@ -128,7 +143,7 @@ export async function GET() {
       itemsXml += `
         <item>
             <g:id>${produto.id}</g:id>
-            <g:title>${escapeXml(produto.nome)}</g:title>
+            <g:title>${escapeXml(productTitle)}</g:title>
             <g:description>${escapeXml(descricaoText)}</g:description>
             <g:link>${escapeXml(productUrl)}</g:link>
             <g:image_link>${escapeXml(mainImage)}</g:image_link>${additionalImagesXml}

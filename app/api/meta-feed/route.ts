@@ -39,6 +39,20 @@ export async function GET() {
 
     const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://gringastylebr.com.br').replace(/\/+$/, '');
 
+    const cleanFeedText = (text: string | null | undefined): string => {
+      if (!text) return '';
+      return String(text)
+        .replace(/<[^>]*>?/gm, '')
+        .replace(/&quot;|&#34;/gi, '"')
+        .replace(/&apos;|&#39;/gi, "'")
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
     const escapeXml = (unsafe: string | null | undefined) => {
       if (!unsafe) return '';
       return String(unsafe)
@@ -105,7 +119,8 @@ export async function GET() {
         ? promoNum.toFixed(2)
         : null;
 
-      const descricaoText = produto.descricao?.replace(/<[^>]*>?/gm, '').trim() || produto.nome;
+      const productTitle = cleanFeedText(produto.nome);
+      const descricaoText = cleanFeedText(produto.descricao) || productTitle;
       const categoriaNome = produto.categorias?.nome || 'Diversos';
       const brandName = produto.marca || 'Gringa Style';
       const mpnCode = `GS-${String(produto.id).padStart(3, '0')}`;
@@ -113,7 +128,7 @@ export async function GET() {
       const hasValidGtin = /^\d{8,14}$/.test(rawGtin);
 
       // Taxonomia de produto Meta / Google padronizada
-      const taxonomy = getProductTaxonomy(produto.nome, categoriaNome);
+      const taxonomy = getProductTaxonomy(productTitle, categoriaNome);
 
       const additionalImagesXml = additionalImages
         .map((img) => `\n            <g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`)
@@ -122,7 +137,7 @@ export async function GET() {
       itemsXml += `
         <item>
             <g:id>${produto.id}</g:id>
-            <g:title>${escapeXml(produto.nome)}</g:title>
+            <g:title>${escapeXml(productTitle)}</g:title>
             <g:description>${escapeXml(descricaoText)}</g:description>
             <g:link>${escapeXml(productUrl)}</g:link>
             <g:image_link>${escapeXml(mainImage)}</g:image_link>${additionalImagesXml}
@@ -137,12 +152,17 @@ export async function GET() {
 
       if (hasValidGtin) {
         itemsXml += `\n            <g:gtin>${escapeXml(rawGtin)}</g:gtin>`;
+        itemsXml += `\n            <g:identifier_exists>yes</g:identifier_exists>`;
       } else {
         itemsXml += `\n            <g:identifier_exists>no</g:identifier_exists>`;
       }
 
       if (salePrice) {
-        itemsXml += `\n            <g:sale_price>${salePrice} BRL</g:sale_price>`;
+        const priceEffectiveStart = new Date().toISOString().split('.')[0] + 'Z';
+        const priceEffectiveEnd = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('.')[0] + 'Z';
+        itemsXml += `
+            <g:sale_price>${salePrice} BRL</g:sale_price>
+            <g:sale_price_effective_date>${priceEffectiveStart}/${priceEffectiveEnd}</g:sale_price_effective_date>`;
       }
 
       itemsXml += `

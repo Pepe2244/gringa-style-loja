@@ -17,8 +17,8 @@ export default function Header() {
 
     // Determine the context based on the pathname
     const isPortal = pathname === '/';
-    const isServices = pathname.startsWith('/gs-servicos-industriais');
-    const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
+    const isServices = pathname.startsWith('/gs-servicos-industriais') || pathname.startsWith('/soldas-especiais');
+    const isStore = !isPortal && !isServices;
 
     const [mounted, setMounted] = useState(false);
     const [hasActiveRaffles, setHasActiveRaffles] = useState(false);
@@ -37,7 +37,7 @@ export default function Header() {
     useEffect(() => {
         setMounted(true);
         // Na home e páginas B2B o link de rifas não é exibido no menu; evita puxar o bundle do Supabase
-        if (pathname === '/' || pathname.startsWith('/gs-servicos-industriais')) return;
+        if (isPortal || isServices) return;
 
         let isSubscribed = true;
         const checkActiveRaffles = async () => {
@@ -61,7 +61,7 @@ export default function Header() {
             isSubscribed = false;
             clearTimeout(timer);
         };
-    }, [pathname]);
+    }, [isPortal, isServices]);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -117,7 +117,7 @@ export default function Header() {
         }
     };
 
-    const isActive = (path: string) => pathname === path ? 'active' : '';
+    const isActive = (path: string) => pathname === path ? 'ativo active' : '';
 
     // Determine the contextual "Home" link
     let homeLink = '/';
@@ -128,7 +128,8 @@ export default function Header() {
     }
 
     return (
-        <header className="cabecalho !sticky !top-0 !z-50 !w-full !bg-black/80 !backdrop-blur-md !border-b !border-white/5" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
+        <>
+            <header className="cabecalho !sticky !top-0 !z-50 !w-full !bg-black/80 !backdrop-blur-md !border-b !border-white/5" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
             <div className="container !relative flex items-center justify-between">
                 {/* Contextual Logo Link */}
                 <Link href={homeLink} className="logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
@@ -168,7 +169,7 @@ export default function Header() {
                             <Link href="/" className="nav-item" onClick={handleNavClick}>Portal Gringa</Link>
                         </>
                     )}
-                    {!isServices && <Link href="/#contato" className="nav-item" onClick={handleNavClick}>Contato</Link>}
+                    {!isServices && <Link href={isStore ? '/loja#contato' : '/#contato'} className="nav-item" onClick={handleNavClick}>Contato</Link>}
                     {!isServices && <Link href="/sobre" className={`nav-item ${isActive('/sobre')}`} onClick={handleNavClick}>Sobre</Link>}
 
                     {!isPortal && !isServices && hasActiveRaffles && (
@@ -243,8 +244,9 @@ export default function Header() {
                         </button>
                     </div>
             </div>
-
-                {isMenuOpen && <div className="overlay-menu !fixed !inset-0 !bg-black/50 !backdrop-blur-sm" onClick={closeMenu} style={{ zIndex: 40 }}></div>}
         </header>
+
+        {isMenuOpen && <div className="overlay-menu !fixed !inset-0 !bg-black/50 !backdrop-blur-sm" onClick={closeMenu} style={{ zIndex: 40 }}></div>}
+        </>
     );
 }

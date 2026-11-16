@@ -1,13 +1,35 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { BreadcrumbSchema } from '@/components/SEO/StructuredData';
+import { BreadcrumbSchema, WebPageSchema } from '@/components/SEO/StructuredData';
 
-import { buildCanonicalUrl, buildWhatsAppUrl, getWhatsAppFormatted } from '@/lib/site-config';
+import { buildCanonicalUrl, buildWhatsAppUrl, getWhatsAppFormatted, siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
-  title: 'Política de Privacidade',
+  title: { absolute: 'Política de Privacidade | Gringa Style' },
   description: 'Conheça nossa política de privacidade e como tratamos seus dados com segurança na Gringa Style, em conformidade com a LGPD.',
   alternates: { canonical: buildCanonicalUrl('/privacidade') },
+  openGraph: {
+    title: 'Política de Privacidade | Gringa Style',
+    description: 'Conheça nossa política de privacidade e como tratamos seus dados com segurança na Gringa Style, em conformidade com a LGPD.',
+    url: buildCanonicalUrl('/privacidade'),
+    siteName: 'Gringa Style',
+    locale: 'pt_BR',
+    type: 'website',
+    images: [
+      {
+        url: `${siteConfig.appUrl}/imagens/logo_gringa_style.png`,
+        width: 800,
+        height: 600,
+        alt: 'Política de Privacidade Gringa Style',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Política de Privacidade | Gringa Style',
+    description: 'Conheça nossa política de privacidade e como tratamos seus dados com segurança na Gringa Style.',
+    images: [`${siteConfig.appUrl}/imagens/logo_gringa_style.png`],
+  },
   robots: {
     index: true,
     follow: true,
@@ -17,6 +39,11 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
     return (
         <>
+            <WebPageSchema page={{
+                name: 'Política de Privacidade | Gringa Style',
+                description: 'Conheça nossa política de privacidade e como tratamos seus dados com segurança na Gringa Style, em conformidade com a LGPD.',
+                url: buildCanonicalUrl('/privacidade'),
+            }} />
             <BreadcrumbSchema items={[
                 { name: 'Gringa Style', url: '/' },
                 { name: 'Política de Privacidade', url: '/privacidade' }

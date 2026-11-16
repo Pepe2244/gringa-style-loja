@@ -21,7 +21,7 @@ try {
 
 const HOST = 'gringastylebr.com.br';
 const BASE_URL = `https://${HOST}`;
-const INDEXNOW_KEY = '2bf56f9cae5145ab99c206739f1d1122';
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY || '46493a965afd428fb54c0ca253bfa4eb';
 const KEY_LOCATION = `${BASE_URL}/${INDEXNOW_KEY}.txt`;
 
 const STATIC_URLS = [
@@ -31,10 +31,8 @@ const STATIC_URLS = [
   `${BASE_URL}/historico`,
   `${BASE_URL}/sobre`,
   `${BASE_URL}/gs-servicos-industriais`,
-  `${BASE_URL}/soldas-especiais`,
   `${BASE_URL}/devolucao-e-reembolso`,
   `${BASE_URL}/privacidade`,
-  `${BASE_URL}/busca`
 ];
 
 async function fetchDynamicUrls() {

@@ -219,13 +219,38 @@ export async function saveProduct(input: unknown, id?: number) {
             imagens: mediaList,
             variants: data.variants == null ? null : data.variants
         };
-        const query = id
-            ? client.from('produtos').update(payload).eq('id', positiveId(id))
+        let oldCanonicalSlug: string | undefined;
+        let oldRawSlug: string | undefined;
+        const targetId = id ? positiveId(id) : undefined;
+        if (targetId) {
+            const { data: existingProd } = await client
+                .from('produtos')
+                .select('slug, nome')
+                .eq('id', targetId)
+                .maybeSingle();
+            if (existingProd) {
+                oldRawSlug = existingProd.slug || undefined;
+                oldCanonicalSlug = getCanonicalProductSlug({ id: targetId, nome: existingProd.nome, slug: existingProd.slug });
+            }
+        }
+
+        const query = targetId
+            ? client.from('produtos').update(payload).eq('id', targetId)
             : client.from('produtos').insert(payload);
         const { error } = await query;
         if (error) throw error;
-        const canonicalSlug = getCanonicalProductSlug({ id: id ?? 0, nome: payload.nome, slug: payload.slug });
-        revalidateProducts(canonicalSlug, id);
+        const canonicalSlug = getCanonicalProductSlug({ id: targetId ?? 0, nome: payload.nome, slug: payload.slug });
+        revalidateProducts(canonicalSlug, targetId);
+        if (oldCanonicalSlug && oldCanonicalSlug !== canonicalSlug) {
+            revalidatePath(`/produto/${oldCanonicalSlug}`, 'page');
+            revalidatePath(`/produto/${oldCanonicalSlug}`, 'layout');
+            revalidatePath(`/produto/${oldCanonicalSlug}/opengraph-image`);
+        }
+        if (oldRawSlug && oldRawSlug !== canonicalSlug && oldRawSlug !== oldCanonicalSlug) {
+            revalidatePath(`/produto/${oldRawSlug}`, 'page');
+            revalidatePath(`/produto/${oldRawSlug}`, 'layout');
+            revalidatePath(`/produto/${oldRawSlug}/opengraph-image`);
+        }
     });
 }
 

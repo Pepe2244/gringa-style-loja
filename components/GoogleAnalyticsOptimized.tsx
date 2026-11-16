@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import { useEffect } from 'react';
+import { flushPendingEvents } from '@/utils/analytics';
 
 interface Props {
   gaId: string;
@@ -40,10 +41,16 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
       const script = document.createElement('script');
       script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
       script.async = true;
+      script.onload = () => flushPendingEvents();
       document.head.appendChild(script);
     };
 
     const onUserInteraction = () => {
+      loadGTM();
+      cleanupListeners();
+    };
+
+    const onConsentGranted = () => {
       loadGTM();
       cleanupListeners();
     };
@@ -54,6 +61,7 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
       window.removeEventListener('touchstart', onUserInteraction);
       window.removeEventListener('keydown', onUserInteraction);
       window.removeEventListener('click', onUserInteraction);
+      window.removeEventListener('cookieConsentGranted', onConsentGranted);
     };
 
     window.addEventListener('scroll', onUserInteraction, { passive: true, once: true });
@@ -61,6 +69,11 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
     window.addEventListener('touchstart', onUserInteraction, { passive: true, once: true });
     window.addEventListener('keydown', onUserInteraction, { passive: true, once: true });
     window.addEventListener('click', onUserInteraction, { passive: true, once: true });
+    window.addEventListener('cookieConsentGranted', onConsentGranted, { once: true });
+
+    if (window.gtag) {
+      flushPendingEvents();
+    }
 
     // Fallback por timer para usuários que não interagirem imediatamente
     const timerId = setTimeout(loadGTM, 8500);
@@ -77,6 +90,7 @@ export default function GoogleAnalyticsOptimized({ gaId }: Props) {
     <Script
       id="_next-ga-init"
       strategy="afterInteractive"
+      onReady={() => flushPendingEvents()}
       dangerouslySetInnerHTML={{
         __html: `
           window['dataLayer'] = window['dataLayer'] || [];

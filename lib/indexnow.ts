@@ -23,6 +23,7 @@ export interface IndexNowResult {
 let lastBackgroundSubmitAt = 0;
 const BACKGROUND_COOLDOWN_MS = 60_000;
 const pendingBackgroundUrls = new Set<string>();
+let backgroundFlushTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * Submete URLs ao IndexNow (Bing, Yep/Ahrefs, Yandex, etc.) para indexação e atualização instantânea.
@@ -45,15 +46,20 @@ export async function submitToIndexNow(
     `${siteConfig.appUrl}/categoria/6`,
     `${siteConfig.appUrl}/categoria/7`,
     `${siteConfig.appUrl}/categoria/8`,
+    `${siteConfig.appUrl}/categoria/9`,
     `${siteConfig.appUrl}/sobre`,
     `${siteConfig.appUrl}/gs-servicos-industriais`,
     `${siteConfig.appUrl}/devolucao-e-reembolso`,
     `${siteConfig.appUrl}/privacidade`,
   ];
 
+  const sourceUrls = urls === undefined
+    ? defaultUrls
+    : (urls.length > 0 ? urls : (pendingBackgroundUrls.size > 0 ? [] : defaultUrls));
+
   const targetUrls = Array.from(
     new Set(
-      (urls && urls.length > 0 ? urls : defaultUrls).map((url) => {
+      sourceUrls.map((url) => {
         if (url.startsWith('http')) return url;
         const cleanPath = url.startsWith('/') ? url : `/${url}`;
         return `${siteConfig.appUrl}${cleanPath}`;
@@ -63,10 +69,25 @@ export async function submitToIndexNow(
 
   if (options?.isBackground) {
     const now = Date.now();
-    if (now - lastBackgroundSubmitAt < BACKGROUND_COOLDOWN_MS) {
+    const elapsed = now - lastBackgroundSubmitAt;
+    if (elapsed < BACKGROUND_COOLDOWN_MS) {
       for (const u of targetUrls) {
         pendingBackgroundUrls.add(u);
       }
+      if (backgroundFlushTimer) {
+        clearTimeout(backgroundFlushTimer);
+      }
+      const remainingMs = Math.max(100, BACKGROUND_COOLDOWN_MS - elapsed);
+      backgroundFlushTimer = setTimeout(() => {
+        backgroundFlushTimer = null;
+        if (pendingBackgroundUrls.size > 0) {
+          lastBackgroundSubmitAt = Date.now();
+          void submitToIndexNow([], { isBackground: false }).catch((err) => {
+            console.warn('[IndexNow] Falha ao descarregar fila pendente:', err);
+          });
+        }
+      }, remainingMs);
+
       return {
         success: true,
         status: 200,
@@ -80,7 +101,6 @@ export async function submitToIndexNow(
   const mergedUrls = pendingBackgroundUrls.size > 0
     ? Array.from(new Set([...pendingBackgroundUrls, ...targetUrls]))
     : targetUrls;
-  pendingBackgroundUrls.clear();
 
   const payload = {
     host,
@@ -109,12 +129,19 @@ export async function submitToIndexNow(
       const isSuccess = response.status === 200 || response.status === 202;
 
       if (isSuccess) {
+        for (const u of mergedUrls) {
+          pendingBackgroundUrls.delete(u);
+        }
+        if (pendingBackgroundUrls.size === 0 && backgroundFlushTimer) {
+          clearTimeout(backgroundFlushTimer);
+          backgroundFlushTimer = null;
+        }
         return {
           success: true,
           status: response.status,
           endpoint,
-          message: `IndexNow (${new URL(endpoint).hostname}) aceitou com sucesso ${targetUrls.length} URLs para indexação instantânea.`,
-          submittedUrls: targetUrls,
+          message: `IndexNow (${new URL(endpoint).hostname}) aceitou com sucesso ${mergedUrls.length} URLs para indexação instantânea.`,
+          submittedUrls: mergedUrls,
         };
       }
 
@@ -155,6 +182,6 @@ export async function submitToIndexNow(
     status: lastStatus,
     endpoint: lastEndpoint,
     message: lastMessage,
-    submittedUrls: targetUrls,
+    submittedUrls: mergedUrls,
   };
 }

@@ -6,6 +6,7 @@ import { Product, Category } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
+import ProductFAQ from '@/components/home/ProductFAQ';
 import { trackEvent, trackFilterUsage, trackSearchQuery } from '@/utils/analytics';
 import { getSearchableAvailabilityText } from '@/utils/productAvailability';
 
@@ -14,7 +15,6 @@ import { getSearchableAvailabilityText } from '@/utils/productAvailability';
 const CartRecoveryBanner = dynamic(() => import('@/components/home/CartRecoveryBanner'), { ssr: false });
 const PersonalizedRecommendations = dynamic(() => import('@/components/home/PersonalizedRecommendations'), { ssr: false });
 const DirectPurchaseModal = dynamic(() => import('@/components/modals/DirectPurchaseModal'), { ssr: false });
-const ProductFAQ = dynamic(() => import('@/components/home/ProductFAQ'), { ssr: false });
 
 interface HomeContentProps {
     initialProducts: Product[];
@@ -188,7 +188,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
 
     return (
         <div className="container">
-            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <div id="produtos" style={{ textAlign: 'center', marginBottom: '40px', scrollMarginTop: '100px' }}>
                 <h1 className="titulo-secao" style={{ marginBottom: '10px' }}>Nossos Produtos</h1>
                 <p style={{ color: '#ccc', fontSize: '1.2rem', lineHeight: '1.6' }}>
                     Equipamentos de solda TIG com estilo único, conforto e proteção máxima para profissionais exigentes.

@@ -99,7 +99,7 @@ function SearchPageContent() {
         try {
             let queryBuilder = supabase
                 .from('produtos')
-                .select('id, nome, preco, preco_promocional, preco_pix, descricao, imagens, media_urls, video, em_estoque, categoria_id, created_at, tags, slug, variants')
+                .select('id, nome, preco, preco_promocional, preco_pix, descricao, imagens, media_urls, video, em_estoque, categoria_id, created_at, tags, slug, variants, produtos_relacionados_ids')
                 .limit(1000);
 
             if (selectedCategory) {
@@ -166,6 +166,10 @@ function SearchPageContent() {
     const allMatchedProducts = useMemo(() => {
         let resultList = rawProducts;
 
+        if (hasDiscountOnly) {
+            resultList = resultList.filter(p => Boolean(p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco));
+        }
+
         if (searchTerm.trim()) {
             resultList = resultList.filter(product => matchesSearchTerm(product, searchTerm));
         }
@@ -195,7 +199,7 @@ function SearchPageContent() {
         }
 
         return sorted;
-    }, [rawProducts, searchTerm, priceRange, sortType]);
+    }, [rawProducts, hasDiscountOnly, searchTerm, priceRange, sortType]);
 
     useEffect(() => {
         allMatchedProductsRef.current = allMatchedProducts;

@@ -334,20 +334,6 @@ export default function DirectPurchaseModal({
             const finalTotal = Number(quote.total) + shippingAmount;
             const formatCurrency = (value: number) => value.toFixed(2).replace('.', ',');
 
-            if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
-                (window as any).gtag('event', 'begin_checkout', {
-                    value: finalTotal,
-                    currency: 'BRL',
-                    items: [{
-                        item_id: product.id,
-                        item_name: quotedItem.nome,
-                        price: Number(quotedItem.preco_unitario),
-                        quantity: 1,
-                        variant: selectedVariant ? `${selectedVariant.tipo}: ${selectedVariant.opcao}` : undefined,
-                    }],
-                });
-            }
-
             // Registra o pedido no banco de dados
             const orderResult = await createOrderRecord({
                 clienteNome: clientName,
@@ -379,6 +365,55 @@ export default function DirectPurchaseModal({
             }
 
             const orderIdentifier = orderResult.codigoPedido || '';
+            const analyticsItems = [{
+                item_id: product.id,
+                item_name: quotedItem.nome,
+                price: Number(quotedItem.preco_unitario),
+                quantity: 1,
+                variant: selectedVariant ? `${selectedVariant.tipo}: ${selectedVariant.opcao}` : undefined,
+            }];
+
+            if (typeof window !== 'undefined') {
+                if (typeof (window as any).trackAnalyticsEvent === 'function') {
+                    (window as any).trackAnalyticsEvent({
+                        event: 'conversion',
+                        category: 'ecommerce',
+                        action: 'begin_checkout',
+                        label: orderIdentifier || 'compra_rapida',
+                        value: finalTotal,
+                        customParameters: {
+                            currency: 'BRL',
+                            items: analyticsItems,
+                        },
+                    });
+                    (window as any).trackAnalyticsEvent({
+                        event: 'conversion',
+                        category: 'ecommerce',
+                        action: 'purchase',
+                        label: orderIdentifier || 'compra_rapida',
+                        value: finalTotal,
+                        customParameters: {
+                            currency: 'BRL',
+                            transaction_id: orderIdentifier,
+                            shipping: shippingAmount,
+                            items: analyticsItems,
+                        },
+                    });
+                } else if (typeof (window as any).gtag === 'function') {
+                    (window as any).gtag('event', 'begin_checkout', {
+                        value: finalTotal,
+                        currency: 'BRL',
+                        items: analyticsItems,
+                    });
+                    (window as any).gtag('event', 'purchase', {
+                        transaction_id: orderIdentifier,
+                        value: finalTotal,
+                        currency: 'BRL',
+                        shipping: shippingAmount,
+                        items: analyticsItems,
+                    });
+                }
+            }
 
             let message = `Olá, Gringa Style! 👋\n\nMeu nome é *${clientName}* e eu gostaria de comprar este item${orderIdentifier ? ` (*${orderIdentifier}*)` : ''}:\n`;
             if (clientCpf.trim()) {

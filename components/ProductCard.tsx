@@ -9,6 +9,7 @@ import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { trackPurchaseIntent } from '@/utils/analytics';
 import { isProntaEntrega } from '@/utils/productAvailability';
+import WishlistButton from '@/components/WishlistButton';
 
 const BLUR_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -150,13 +151,16 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
                 )}
             </div>
 
-            {!product.em_estoque ? (
-                <span className="status-estoque fora-de-estoque">Fora de Estoque</span>
-            ) : prontaEntrega ? (
-                <span className="status-estoque em-estoque">Pronta Entrega</span>
-            ) : (
-                <span className="status-estoque sob-encomenda">Sob Encomenda</span>
-            )}
+            <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', alignItems: 'center', gap: '6px', zIndex: 11 }}>
+                {!product.em_estoque ? (
+                    <span className="status-estoque fora-de-estoque" style={{ position: 'static' }}>Fora de Estoque</span>
+                ) : prontaEntrega ? (
+                    <span className="status-estoque em-estoque" style={{ position: 'static' }}>Pronta Entrega</span>
+                ) : (
+                    <span className="status-estoque sob-encomenda" style={{ position: 'static' }}>Sob Encomenda</span>
+                )}
+                <WishlistButton product={product} variant="icon" size="sm" />
+            </div>
 
             <div
                 className="card-imagem-container"

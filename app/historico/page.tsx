@@ -75,10 +75,6 @@ export default function HistoricoPage() {
                                     ? getProxiedImageUrl(rifa.imagem_premio_url)
                                     : '/imagens/logo_gringa_style.png';
 
-                                const rifasComPremios = rifas.filter(rifa =>
-        premios.some(p => p.rifa_id === rifa.id)
-    );
-
     return (
                                     <div key={rifa.id} className="historico-card" style={{
                                         backgroundColor: 'var(--cor-fundo-secundaria)',
@@ -111,7 +107,7 @@ export default function HistoricoPage() {
                                                 }}
                                             />
                                             <div>
-                                                <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.4rem', fontFamily: 'var(--font-titulos)' }}>
+                                                <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1.4rem', fontFamily: 'var(--fonte-titulos)' }}>
                                                     {rifa.nome_premio}
                                                 </h3>
                                                 <p style={{ margin: '5px 0 0 0', color: '#ccc', fontSize: '0.9rem' }}>

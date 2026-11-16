@@ -64,6 +64,7 @@ export async function revalidateProductCache() {
                 for (const p of allProdsRes.data) {
                     const canonicalSlug = getCanonicalProductSlug(p);
                     revalidatePath(`/produto/${canonicalSlug}`, 'page');
+                    revalidatePath(`/produto/${canonicalSlug}/opengraph-image`);
                     if (p.slug && p.slug !== canonicalSlug) revalidatePath(`/produto/${p.slug}`, 'page');
                     if (p.id) revalidatePath(`/produto/${p.id}`, 'page');
                     productCanonicalUrls.push(`${siteConfig.appUrl}/produto/${canonicalSlug}`);

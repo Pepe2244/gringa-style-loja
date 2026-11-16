@@ -171,7 +171,8 @@ export function calculateCouponDiscount(
     let subtotal = 0;
     let eligibleSubtotal = 0;
     const eligibleProducts = new Set<number>();
-    const appType = coupon.tipo_aplicacao || 'geral';
+    const rawAppType = coupon.tipo_aplicacao || 'geral';
+    const appType = rawAppType === 'total' ? 'geral' : rawAppType;
 
     for (const item of items) {
         const product = productById.get(item.produto_id);

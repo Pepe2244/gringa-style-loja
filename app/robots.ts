@@ -21,6 +21,7 @@ export default function robots(): MetadataRoute.Robots {
     '/busca',
     '/favoritos',
     '/acompanhar-rifa',
+    '/api/',
   ];
 
   return {
@@ -33,7 +34,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: ['Bingbot', 'msnbot', 'BingPreview'],
         allow: ['/llms.txt', '/llms-full.txt', ...publicFeeds],
-        disallow: [...commonDisallow, '/api/'],
+        disallow: commonDisallow,
       },
       {
         userAgent: ['facebookexternalhit', 'Facebot', 'Meta-ExternalAgent'],
@@ -57,12 +58,12 @@ export default function robots(): MetadataRoute.Robots {
           'Amazonbot',
         ],
         allow: ['/llms.txt', '/llms-full.txt', ...publicFeeds],
-        disallow: [...commonDisallow, '/api/'],
+        disallow: commonDisallow,
       },
       {
         userAgent: '*',
         allow: publicFeeds,
-        disallow: [...commonDisallow, '/api/'],
+        disallow: commonDisallow,
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

@@ -352,7 +352,8 @@ export default function CartPage() {
             return {
                 produto_id: item.produto_id,
                 quantidade: item.quantidade,
-                preco_unitario: product ? getPrecoFinal(product) : 0
+                preco_unitario: product ? getPrecoFinal(product) : 0,
+                variante: item.variante || null
             };
         });
 
@@ -562,12 +563,48 @@ export default function CartPage() {
 
             const orderIdentifier = orderResult.codigoPedido || '';
 
-            if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
-                (window as any).gtag('event', 'begin_checkout', {
-                    currency: 'BRL',
-                    value: finalTotal,
-                    items: analyticsItems,
-                });
+            if (typeof window !== 'undefined') {
+                if (typeof (window as any).trackAnalyticsEvent === 'function') {
+                    (window as any).trackAnalyticsEvent({
+                        event: 'conversion',
+                        category: 'ecommerce',
+                        action: 'begin_checkout',
+                        label: orderIdentifier || 'checkout_carrinho',
+                        value: finalTotal,
+                        customParameters: {
+                            currency: 'BRL',
+                            items: analyticsItems,
+                        },
+                    });
+                    (window as any).trackAnalyticsEvent({
+                        event: 'conversion',
+                        category: 'ecommerce',
+                        action: 'purchase',
+                        label: orderIdentifier || 'checkout_carrinho',
+                        value: finalTotal,
+                        customParameters: {
+                            currency: 'BRL',
+                            transaction_id: orderIdentifier,
+                            shipping: shippingAmount,
+                            coupon: quote.cupom || appliedCoupon?.codigo || undefined,
+                            items: analyticsItems,
+                        },
+                    });
+                } else if (typeof (window as any).gtag === 'function') {
+                    (window as any).gtag('event', 'begin_checkout', {
+                        currency: 'BRL',
+                        value: finalTotal,
+                        items: analyticsItems,
+                    });
+                    (window as any).gtag('event', 'purchase', {
+                        transaction_id: orderIdentifier,
+                        currency: 'BRL',
+                        value: finalTotal,
+                        shipping: shippingAmount,
+                        coupon: quote.cupom || appliedCoupon?.codigo || undefined,
+                        items: analyticsItems,
+                    });
+                }
             }
 
             const formatCurrency = (value: number) => value.toFixed(2).replace('.', ',');

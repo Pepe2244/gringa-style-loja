@@ -129,13 +129,30 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Processar eventos da sessão apenas na criação ou quando houver eventos novos
-        if (isNewSession && sessionData.events && sessionData.events.length > 0) {
-            await processSessionEvents(supabase, sessionData.sessionId, sessionData.events);
+        // Processar eventos da sessão na criação ou inserir apenas os eventos novos em beacons subsequentes
+        let eventsToProcess = Array.isArray(sessionData.events) ? sessionData.events : [];
+        if (!isNewSession && eventsToProcess.length > 0) {
+            const { count: existingEventCount, error: countError } = await supabase
+                .from('analytics_events')
+                .select('id', { count: 'exact', head: true })
+                .eq('session_id', sessionData.sessionId);
+
+            if (!countError) {
+                const savedCount = existingEventCount || 0;
+                eventsToProcess = savedCount < eventsToProcess.length
+                    ? eventsToProcess.slice(savedCount)
+                    : [];
+            } else {
+                eventsToProcess = [];
+            }
+        }
+
+        if (eventsToProcess.length > 0) {
+            await processSessionEvents(supabase, sessionData.sessionId, eventsToProcess);
         }
 
         // Calcular métricas agregadas (evitando inflar total_sessions em múltiplas chamadas da mesma sessão)
-        await updateAggregatedMetrics(supabase, sessionData, isNewSession);
+        await updateAggregatedMetrics(supabase, sessionData, isNewSession, eventsToProcess);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -178,18 +195,19 @@ async function processSessionEvents(supabase: ReturnType<typeof createSupabaseAd
 async function updateAggregatedMetrics(
     supabase: ReturnType<typeof createSupabaseAdminClient>,
     sessionData: SessionData,
-    isNewSession: boolean = true
+    isNewSession: boolean = true,
+    newEvents: any[] = sessionData.events || []
 ) {
     // 1. Tenta execução atômica direta via RPC PostgreSQL
     try {
         const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-        const pagesList = sessionData.events
+        const pagesList = newEvents
             .filter(e => e.event === 'page_view')
             .map(e => String(e.label || 'unknown').slice(0, 150).trim())
             .filter(p => !FORBIDDEN_KEYS.has(p) && p.length > 0);
 
         const hasConversion = sessionData.events.some(e =>
-            e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
+            e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout', 'begin_checkout'].includes(e.action)
         );
 
         const { error: rpcError } = await (supabase as any).rpc('increment_daily_metrics', {
@@ -271,7 +289,7 @@ async function updateAggregatedMetrics(
 
             // Extrair páginas visitadas com proteção contra prototype pollution
             const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-            const pageEvents = sessionData.events.filter(e => e.event === 'page_view');
+            const pageEvents = newEvents.filter(e => e.event === 'page_view');
             pageEvents.forEach(event => {
                 const rawPage = String(event.label || 'unknown').slice(0, 150).trim();
                 const page = FORBIDDEN_KEYS.has(rawPage) ? 'safe_unknown' : (rawPage || 'unknown');
@@ -280,7 +298,7 @@ async function updateAggregatedMetrics(
 
             // Verificar conversões de funil (calculado ponderadamente sobre o total de sessões)
             const hasConversion = sessionData.events.some(e =>
-                e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout'].includes(e.action)
+                e.category === 'ecommerce' && ['purchase', 'add_to_cart', 'checkout', 'begin_checkout'].includes(e.action)
             );
             const conversionScore = hasConversion ? 1 : 0;
             metrics.conversion_rate = (((Number(metrics.conversion_rate) || 0) * (currentTotalSessions - 1)) + conversionScore) / currentTotalSessions;
