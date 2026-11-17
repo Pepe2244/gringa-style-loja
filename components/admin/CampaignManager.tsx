@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Plus, Calendar, Tag, Search } from 'lucide-react';
+import { Plus, Calendar, Tag, Search, Trash2 } from 'lucide-react';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { deleteCampaign, saveCampaign, setActiveCampaign } from '@/app/actions/admin-data';
 import { Campaign } from '@/types';
@@ -13,6 +13,28 @@ interface ProductOption {
     nome: string;
     preco: number;
     imagens: string[] | null;
+}
+
+interface ProductDiscountItem {
+    produto_id: number;
+    tipo: 'percentual' | 'fixo' | 'preco_fixo';
+    valor: string;
+}
+
+function calculatePreviewPrice(basePrice: number, tipo: string, valorStr: string): number {
+    const val = Number(valorStr);
+    if (!Number.isFinite(val) || val <= 0) return basePrice;
+    if (tipo === 'percentual') {
+        const disc = (basePrice * val) / 100;
+        return Math.max(0.01, Math.round((basePrice - disc) * 100) / 100);
+    }
+    if (tipo === 'fixo') {
+        return Math.max(0.01, Math.round((basePrice - val) * 100) / 100);
+    }
+    if (tipo === 'preco_fixo') {
+        return Math.max(0.01, Math.min(basePrice, Math.round(val * 100) / 100));
+    }
+    return basePrice;
 }
 
 function toDatetimeLocal(isoStr?: string | null): string {
@@ -61,8 +83,11 @@ export default function CampaignManager() {
     const [dataFim, setDataFim] = useState('');
     const [tipoDesconto, setTipoDesconto] = useState<'nenhum' | 'percentual' | 'fixo'>('nenhum');
     const [valorDesconto, setValorDesconto] = useState('');
-    const [aplicarEmTodos, setAplicarEmTodos] = useState(true);
+    const [aplicarEmTodos, setAplicarEmTodos] = useState(false);
     const [produtosAplicaveis, setProdutosAplicaveis] = useState<number[]>([]);
+    const [produtosDescontos, setProdutosDescontos] = useState<ProductDiscountItem[]>([]);
+    const [bulkTipo, setBulkTipo] = useState<'percentual' | 'fixo' | 'preco_fixo'>('percentual');
+    const [bulkValor, setBulkValor] = useState('');
     const [buscaProduto, setBuscaProduto] = useState('');
 
     const fetchCampaigns = async () => {
@@ -117,6 +142,27 @@ export default function CampaignManager() {
             setValorDesconto(campaign.valor_desconto != null ? String(campaign.valor_desconto) : '');
             setAplicarEmTodos(campaign.aplicar_em_todos ?? false);
             setProdutosAplicaveis(Array.isArray(campaign.produtos_aplicaveis) ? campaign.produtos_aplicaveis : []);
+
+            const rawDescontos = (campaign as any).produtos_descontos;
+            if (Array.isArray(rawDescontos) && rawDescontos.length > 0) {
+                setProdutosDescontos(
+                    rawDescontos.map((item: any) => ({
+                        produto_id: Number(item.produto_id),
+                        tipo: ['percentual', 'fixo', 'preco_fixo'].includes(item.tipo) ? item.tipo : 'percentual',
+                        valor: item.valor != null ? String(item.valor) : ''
+                    }))
+                );
+            } else if (Array.isArray(campaign.produtos_aplicaveis) && campaign.produtos_aplicaveis.length > 0) {
+                setProdutosDescontos(
+                    campaign.produtos_aplicaveis.map((id: number) => ({
+                        produto_id: Number(id),
+                        tipo: campaign.tipo_desconto || 'percentual',
+                        valor: campaign.valor_desconto != null ? String(campaign.valor_desconto) : ''
+                    }))
+                );
+            } else {
+                setProdutosDescontos([]);
+            }
         } else {
             setNome('');
             setAviso('');
@@ -129,9 +175,12 @@ export default function CampaignManager() {
             setDataFim('');
             setTipoDesconto('nenhum');
             setValorDesconto('');
-            setAplicarEmTodos(true);
+            setAplicarEmTodos(false);
             setProdutosAplicaveis([]);
+            setProdutosDescontos([]);
         }
+        setBulkTipo('percentual');
+        setBulkValor('');
         setBuscaProduto('');
         setBannerFile(null);
         setShowModal(true);
@@ -222,6 +271,19 @@ export default function CampaignManager() {
             }
         }
 
+        const finalProdutosDescontos = produtosDescontos
+            .map(item => ({
+                produto_id: Number(item.produto_id),
+                tipo: item.tipo,
+                valor: Number(item.valor)
+            }))
+            .filter(item => Number.isSafeInteger(item.produto_id) && item.produto_id > 0 && Number.isFinite(item.valor) && item.valor > 0);
+
+        const finalProdutosAplicaveis = Array.from(new Set([
+            ...(aplicarEmTodos ? [] : produtosAplicaveis),
+            ...finalProdutosDescontos.map(item => item.produto_id)
+        ]));
+
         const campaignData = {
             nome_campanha: nome.trim(),
             banner_url: bannerUrl,
@@ -234,7 +296,8 @@ export default function CampaignManager() {
             tipo_desconto: tipoDesconto === 'nenhum' ? null : tipoDesconto,
             valor_desconto: parsedValorDesconto,
             aplicar_em_todos: aplicarEmTodos,
-            produtos_aplicaveis: aplicarEmTodos ? [] : produtosAplicaveis
+            produtos_aplicaveis: finalProdutosAplicaveis,
+            produtos_descontos: finalProdutosDescontos
         };
 
         try {
@@ -317,13 +380,18 @@ export default function CampaignManager() {
     };
 
     const formatCampaignDiscount = (camp: Campaign) => {
-        if (!camp.tipo_desconto || !camp.valor_desconto) {
+        const rawDescontos = (camp as any).produtos_descontos;
+        const hasCustomProducts = Array.isArray(rawDescontos) && rawDescontos.length > 0;
+        const customCount = hasCustomProducts ? rawDescontos.length : 0;
+        const hasGlobalDiscount = Boolean(camp.tipo_desconto && camp.valor_desconto);
+
+        if (!hasCustomProducts && !hasGlobalDiscount) {
             return <span style={{ color: '#777', fontSize: '0.82rem' }}>Sem desconto</span>;
         }
 
         const discountText = camp.tipo_desconto === 'percentual'
             ? `${camp.valor_desconto}% OFF`
-            : `R$ ${camp.valor_desconto.toFixed(2)} OFF`;
+            : `R$ ${camp.valor_desconto?.toFixed(2)} OFF`;
 
         const scopeText = camp.aplicar_em_todos
             ? 'na loja toda'
@@ -331,10 +399,16 @@ export default function CampaignManager() {
 
         return (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                <span style={{ color: '#FFA500', fontWeight: 'bold', background: 'rgba(255, 165, 0, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(255, 165, 0, 0.3)', fontSize: '0.82rem' }}>
-                    {discountText}
-                </span>
-                <span style={{ color: '#bbb', fontSize: '0.78rem' }}>{scopeText}</span>
+                {hasCustomProducts && (
+                    <span style={{ color: '#00ff88', fontWeight: 'bold', background: 'rgba(0, 255, 136, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(0, 255, 136, 0.3)', fontSize: '0.82rem' }}>
+                        🏷️ {customCount} produto(s) com descontos próprios
+                    </span>
+                )}
+                {hasGlobalDiscount && (
+                    <span style={{ color: '#FFA500', fontWeight: 'bold', background: 'rgba(255, 165, 0, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(255, 165, 0, 0.3)', fontSize: '0.82rem' }}>
+                        {discountText} {scopeText}
+                    </span>
+                )}
             </div>
         );
     };
@@ -430,7 +504,7 @@ export default function CampaignManager() {
 
             {showModal && (
                 <div className="modal-admin-container visivel" style={{ zIndex: 1000 }}>
-                    <div className="modal-admin" style={{ maxHeight: '95vh', overflowY: 'auto', padding: '20px', background: '#111', borderRadius: '15px', width: '95%', maxWidth: '640px' }}>
+                    <div className="modal-admin" style={{ maxHeight: '95vh', overflowY: 'auto', padding: '20px', background: '#111', borderRadius: '15px', width: '95%', maxWidth: '780px' }}>
                         <button className="modal-fechar-btn" onClick={closeModal}>&times;</button>
                         <h2 className="titulo-secao" style={{ textAlign: 'left', marginBottom: '20px' }}>
                             {editingCampaign ? 'Editar Campanha' : 'Nova Campanha'}
@@ -489,149 +563,295 @@ export default function CampaignManager() {
                             </div>
 
                             {/* Bloco de Desconto Promocional */}
-                            <div style={{ background: '#181818', padding: '14px', borderRadius: '10px', border: '1px solid #2b2b2b' }}>
-                                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#eee', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <Tag size={15} color="#00ff88" /> Desconto Promocional da Campanha (Opcional)
+                            <div style={{ background: '#181818', padding: '16px', borderRadius: '10px', border: '1px solid #2b2b2b' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontSize: '0.92rem', color: '#eee', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Tag size={16} color="#00ff88" /> Descontos da Campanha
                                 </h4>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: tipoDesconto === 'nenhum' ? '1fr' : '1fr 1fr', gap: '12px' }}>
-                                    <div className="form-campo" style={{ margin: 0 }}>
-                                        <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '4px', display: 'block' }}>Tipo de Desconto</label>
-                                        <select
-                                            value={tipoDesconto}
-                                            onChange={e => {
-                                                const val = e.target.value as 'nenhum' | 'percentual' | 'fixo';
-                                                setTipoDesconto(val);
-                                                if (val === 'nenhum') {
-                                                    setValorDesconto('');
-                                                }
-                                            }}
-                                            style={{ background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '8px', width: '100%', fontSize: '0.85rem' }}
-                                        >
-                                            <option value="nenhum">Sem desconto adicional</option>
-                                            <option value="percentual">Percentual (%)</option>
-                                            <option value="fixo">Fixo (R$)</option>
-                                        </select>
-                                    </div>
-
-                                    {tipoDesconto !== 'nenhum' && (
-                                        <div className="form-campo" style={{ margin: 0 }}>
-                                            <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '4px', display: 'block' }}>
-                                                {tipoDesconto === 'percentual' ? 'Valor do Desconto (%)' : 'Valor do Desconto (R$)'}
-                                            </label>
+                                <div style={{ marginBottom: '14px' }}>
+                                    <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '8px', display: 'block' }}>Estratégia de Desconto</label>
+                                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.84rem', color: !aplicarEmTodos ? '#00ff88' : '#bbb' }}>
                                             <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0.01"
-                                                max={tipoDesconto === 'percentual' ? 100 : undefined}
-                                                value={valorDesconto}
-                                                onChange={e => setValorDesconto(e.target.value)}
-                                                placeholder={tipoDesconto === 'percentual' ? 'Ex: 15' : 'Ex: 30.00'}
-                                                required
-                                                style={{ background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '8px', width: '100%', fontSize: '0.85rem' }}
+                                                type="radio"
+                                                name="estrategiaDesconto"
+                                                checked={!aplicarEmTodos}
+                                                onChange={() => setAplicarEmTodos(false)}
                                             />
-                                        </div>
-                                    )}
+                                            🏷️ Descontos Individuais por Produto (Ex: R$ 50 em um, 50% em outro)
+                                        </label>
+                                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.84rem', color: aplicarEmTodos ? '#FFA500' : '#bbb' }}>
+                                            <input
+                                                type="radio"
+                                                name="estrategiaDesconto"
+                                                checked={aplicarEmTodos}
+                                                onChange={() => setAplicarEmTodos(true)}
+                                            />
+                                            🌐 Desconto Geral na Loja Toda (Ex: 15% OFF em tudo)
+                                        </label>
+                                    </div>
                                 </div>
 
-                                {tipoDesconto !== 'nenhum' && (
-                                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #2a2a2a' }}>
-                                        <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '8px', display: 'block' }}>Onde Aplicar o Desconto</label>
-                                        <div style={{ display: 'flex', gap: '20px', marginBottom: '12px' }}>
-                                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#eee' }}>
-                                                <input
-                                                    type="radio"
-                                                    name="aplicacaoCampanha"
-                                                    checked={aplicarEmTodos}
-                                                    onChange={() => setAplicarEmTodos(true)}
-                                                />
-                                                Toda a Loja
-                                            </label>
-                                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#eee' }}>
-                                                <input
-                                                    type="radio"
-                                                    name="aplicacaoCampanha"
-                                                    checked={!aplicarEmTodos}
-                                                    onChange={() => setAplicarEmTodos(false)}
-                                                />
-                                                Produtos Selecionados
-                                            </label>
+                                {aplicarEmTodos ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: tipoDesconto === 'nenhum' ? '1fr' : '1fr 1fr', gap: '12px', background: '#111', padding: '12px', borderRadius: '8px', border: '1px solid #333' }}>
+                                        <div className="form-campo" style={{ margin: 0 }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '4px', display: 'block' }}>Tipo de Desconto da Loja</label>
+                                            <select
+                                                value={tipoDesconto}
+                                                onChange={e => {
+                                                    const val = e.target.value as 'nenhum' | 'percentual' | 'fixo';
+                                                    setTipoDesconto(val);
+                                                    if (val === 'nenhum') setValorDesconto('');
+                                                }}
+                                                style={{ background: '#1c1c1c', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '8px', width: '100%', fontSize: '0.85rem' }}
+                                            >
+                                                <option value="nenhum">Sem desconto adicional</option>
+                                                <option value="percentual">Percentual (%)</option>
+                                                <option value="fixo">Fixo (R$)</option>
+                                            </select>
                                         </div>
 
-                                        {!aplicarEmTodos && (
-                                            <div style={{ background: '#111', padding: '10px', borderRadius: '8px', border: '1px solid #333' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: '10px', flexWrap: 'wrap' }}>
-                                                    <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
-                                                        <Search size={14} color="#888" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
-                                                        <input
-                                                            type="text"
-                                                            value={buscaProduto}
-                                                            onChange={e => setBuscaProduto(e.target.value)}
-                                                            placeholder="Buscar produto por nome..."
-                                                            style={{ width: '100%', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '6px 10px 6px 30px', fontSize: '0.8rem' }}
-                                                        />
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const allIds = products.map(p => p.id);
-                                                                setProdutosAplicaveis(allIds);
-                                                            }}
-                                                            style={{ background: '#222', color: '#ccc', border: '1px solid #444', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', cursor: 'pointer' }}
-                                                        >
-                                                            Marcar Todos
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setProdutosAplicaveis([])}
-                                                            style={{ background: '#222', color: '#ccc', border: '1px solid #444', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', cursor: 'pointer' }}
-                                                        >
-                                                            Desmarcar
-                                                        </button>
-                                                        <span style={{ fontSize: '0.75rem', color: '#00ff88', fontWeight: 600 }}>
-                                                            {produtosAplicaveis.length} selecionado(s)
-                                                        </span>
-                                                    </div>
-                                                </div>
+                                        {tipoDesconto !== 'nenhum' && (
+                                            <div className="form-campo" style={{ margin: 0 }}>
+                                                <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '4px', display: 'block' }}>
+                                                    {tipoDesconto === 'percentual' ? 'Valor do Desconto (%)' : 'Valor do Desconto (R$)'}
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0.01"
+                                                    max={tipoDesconto === 'percentual' ? 100 : undefined}
+                                                    value={valorDesconto}
+                                                    onChange={e => setValorDesconto(e.target.value)}
+                                                    placeholder={tipoDesconto === 'percentual' ? 'Ex: 15' : 'Ex: 30.00'}
+                                                    style={{ background: '#1c1c1c', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '8px', width: '100%', fontSize: '0.85rem' }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div style={{ background: '#111', padding: '12px', borderRadius: '8px', border: '1px solid #333' }}>
+                                        {/* Barra de Busca e Ações Rápidas */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: '10px', flexWrap: 'wrap' }}>
+                                            <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
+                                                <Search size={14} color="#888" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                                                <input
+                                                    type="text"
+                                                    value={buscaProduto}
+                                                    onChange={e => setBuscaProduto(e.target.value)}
+                                                    placeholder="Buscar produto para adicionar à campanha..."
+                                                    style={{ width: '100%', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '6px 10px 6px 30px', fontSize: '0.8rem' }}
+                                                />
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const existingIds = new Set(produtosDescontos.map(d => d.produto_id));
+                                                        const toAdd = products
+                                                            .filter(p => !existingIds.has(p.id))
+                                                            .map(p => ({
+                                                                produto_id: p.id,
+                                                                tipo: 'percentual' as const,
+                                                                valor: '10'
+                                                            }));
+                                                        setProdutosDescontos(prev => [...prev, ...toAdd]);
+                                                    }}
+                                                    style={{ background: '#222', color: '#00ff88', border: '1px solid rgba(0, 255, 136, 0.4)', padding: '5px 9px', borderRadius: '4px', fontSize: '0.74rem', cursor: 'pointer' }}
+                                                >
+                                                    + Adicionar Todos da Loja
+                                                </button>
+                                                {produtosDescontos.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProdutosDescontos([])}
+                                                        style={{ background: '#222', color: '#ff7777', border: '1px solid rgba(255, 119, 119, 0.4)', padding: '5px 9px', borderRadius: '4px', fontSize: '0.74rem', cursor: 'pointer' }}
+                                                    >
+                                                        Limpar Lista
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
 
-                                                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                    {products
-                                                        .filter(p => !buscaProduto || p.nome.toLowerCase().includes(buscaProduto.toLowerCase()))
-                                                        .map(prod => {
-                                                            const isSelected = produtosAplicaveis.includes(prod.id);
-                                                            return (
-                                                                <label
-                                                                    key={prod.id}
-                                                                    style={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '10px',
-                                                                        padding: '6px 10px',
-                                                                        borderRadius: '6px',
-                                                                        background: isSelected ? 'rgba(0, 255, 136, 0.08)' : '#181818',
-                                                                        border: isSelected ? '1px solid rgba(0, 255, 136, 0.3)' : '1px solid #222',
-                                                                        cursor: 'pointer'
-                                                                    }}
-                                                                >
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={isSelected}
-                                                                        onChange={e => {
-                                                                            if (e.target.checked) {
-                                                                                setProdutosAplicaveis(prev => [...prev, prod.id]);
-                                                                            } else {
-                                                                                setProdutosAplicaveis(prev => prev.filter(id => id !== prod.id));
-                                                                            }
+                                        {/* Resultados da busca suspensa para adicionar */}
+                                        {buscaProduto.trim() && (
+                                            <div style={{ background: '#181818', border: '1px solid #444', borderRadius: '6px', padding: '8px', marginBottom: '10px', maxHeight: '130px', overflowY: 'auto' }}>
+                                                <div style={{ fontSize: '0.72rem', color: '#888', marginBottom: '4px' }}>Resultados da busca:</div>
+                                                {products
+                                                    .filter(p => p.nome.toLowerCase().includes(buscaProduto.toLowerCase()))
+                                                    .map(prod => {
+                                                        const jaAdicionado = produtosDescontos.some(d => d.produto_id === prod.id);
+                                                        return (
+                                                            <div
+                                                                key={prod.id}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    alignItems: 'center',
+                                                                    padding: '4px 6px',
+                                                                    borderBottom: '1px solid #282828',
+                                                                    fontSize: '0.78rem'
+                                                                }}
+                                                            >
+                                                                <span style={{ color: '#eee' }}>{prod.nome} (R$ {prod.preco.toFixed(2)})</span>
+                                                                {jaAdicionado ? (
+                                                                    <span style={{ color: '#00ff88', fontSize: '0.72rem' }}>✓ Adicionado</span>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setProdutosDescontos(prev => [
+                                                                                ...prev,
+                                                                                { produto_id: prod.id, tipo: 'percentual', valor: '15' }
+                                                                            ]);
                                                                         }}
-                                                                        style={{ cursor: 'pointer' }}
-                                                                    />
-                                                                    <span style={{ fontSize: '0.82rem', color: '#fff', flex: 1 }}>{prod.nome}</span>
-                                                                    <span style={{ fontSize: '0.78rem', color: '#aaa' }}>R$ {prod.preco.toFixed(2)}</span>
-                                                                </label>
-                                                            );
-                                                        })}
-                                                </div>
+                                                                        style={{ background: '#00ff8822', color: '#00ff88', border: '1px solid #00ff88', borderRadius: '4px', padding: '2px 8px', fontSize: '0.72rem', cursor: 'pointer' }}
+                                                                    >
+                                                                        + Adicionar
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                            </div>
+                                        )}
+
+                                        {/* Ação em lote para preencher vários com agilidade */}
+                                        {produtosDescontos.length > 1 && (
+                                            <div style={{ background: '#181818', padding: '6px 10px', borderRadius: '6px', border: '1px solid #2e2e2e', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.72rem', color: '#aaa' }}>Preencher todos da lista com:</span>
+                                                <select
+                                                    value={bulkTipo}
+                                                    onChange={e => setBulkTipo(e.target.value as any)}
+                                                    style={{ background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '4px', padding: '3px 6px', fontSize: '0.74rem' }}
+                                                >
+                                                    <option value="percentual">% Desconto</option>
+                                                    <option value="fixo">R$ Desconto</option>
+                                                    <option value="preco_fixo">R$ Preço Final</option>
+                                                </select>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={bulkValor}
+                                                    onChange={e => setBulkValor(e.target.value)}
+                                                    placeholder="Valor"
+                                                    style={{ width: '65px', background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '4px', padding: '3px 6px', fontSize: '0.74rem' }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!bulkValor || Number(bulkValor) <= 0) {
+                                                            alert('Informe um valor válido para aplicar em lote.');
+                                                            return;
+                                                        }
+                                                        setProdutosDescontos(prev =>
+                                                            prev.map(item => ({
+                                                                ...item,
+                                                                tipo: bulkTipo,
+                                                                valor: bulkValor
+                                                            }))
+                                                        );
+                                                    }}
+                                                    style={{ background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px', padding: '3px 8px', fontSize: '0.74rem', cursor: 'pointer' }}
+                                                >
+                                                    Aplicar em Todos
+                                                </button>
+                                                <span style={{ fontSize: '0.72rem', color: '#888', marginLeft: 'auto' }}>
+                                                    {produtosDescontos.length} produto(s) na campanha
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Tabela de Produtos com Configurações Independentes */}
+                                        {produtosDescontos.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '24px 10px', color: '#777', fontSize: '0.8rem' }}>
+                                                Nenhum produto adicionado nesta campanha ainda.<br />
+                                                Use a busca acima ou clique em <strong>"+ Adicionar Todos da Loja"</strong> para configurar descontos independentes.
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                {produtosDescontos.map((item) => {
+                                                    const prod = products.find(p => p.id === item.produto_id);
+                                                    if (!prod) return null;
+                                                    const precoFinal = calculatePreviewPrice(prod.preco, item.tipo, String(item.valor));
+                                                    const economia = prod.preco - precoFinal;
+
+                                                    return (
+                                                        <div
+                                                            key={item.produto_id}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '8px',
+                                                                padding: '6px 10px',
+                                                                background: '#181818',
+                                                                borderRadius: '6px',
+                                                                border: '1px solid #2a2a2a',
+                                                            }}
+                                                        >
+                                                            <div style={{ flex: 1, minWidth: '140px' }}>
+                                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                    {prod.nome}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.72rem', color: '#888' }}>
+                                                                    Original: R$ {prod.preco.toFixed(2)}
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <select
+                                                                    value={item.tipo}
+                                                                    onChange={e => {
+                                                                        const newTipo = e.target.value as 'percentual' | 'fixo' | 'preco_fixo';
+                                                                        setProdutosDescontos(prev =>
+                                                                            prev.map(p => p.produto_id === item.produto_id ? { ...p, tipo: newTipo } : p)
+                                                                        );
+                                                                    }}
+                                                                    style={{ background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '4px', padding: '4px 6px', fontSize: '0.75rem' }}
+                                                                >
+                                                                    <option value="percentual">% OFF</option>
+                                                                    <option value="fixo">R$ OFF</option>
+                                                                    <option value="preco_fixo">Preço Fixo</option>
+                                                                </select>
+
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0.01"
+                                                                    value={item.valor}
+                                                                    onChange={e => {
+                                                                        const val = e.target.value;
+                                                                        setProdutosDescontos(prev =>
+                                                                            prev.map(p => p.produto_id === item.produto_id ? { ...p, valor: val } : p)
+                                                                        );
+                                                                    }}
+                                                                    placeholder="Valor"
+                                                                    style={{ width: '75px', background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '4px', padding: '4px 6px', fontSize: '0.75rem' }}
+                                                                />
+                                                            </div>
+
+                                                            <div style={{ minWidth: '95px', textAlign: 'right' }}>
+                                                                <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#00ff88' }}>
+                                                                    R$ {precoFinal.toFixed(2)}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.68rem', color: economia > 0 ? '#FFA500' : '#888' }}>
+                                                                    {economia > 0 ? `(-R$ ${economia.toFixed(2)})` : 'sem desc.'}
+                                                                </div>
+                                                            </div>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setProdutosDescontos(prev => prev.filter(p => p.produto_id !== item.produto_id));
+                                                                }}
+                                                                title="Remover produto da campanha"
+                                                                style={{ background: 'transparent', border: 'none', color: '#ff6666', cursor: 'pointer', padding: '2px 4px' }}
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>

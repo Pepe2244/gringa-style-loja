@@ -406,6 +406,30 @@ export async function saveCampaign(input: unknown, id?: number) {
             throw new Error('Lista de produtos aplicáveis inválida.');
         }
 
+        let produtosDescontos: Array<{ produto_id: number; tipo: 'percentual' | 'fixo' | 'preco_fixo'; valor: number }> = [];
+        if (Array.isArray(data.produtos_descontos)) {
+            for (const item of data.produtos_descontos) {
+                if (!item || typeof item !== 'object') continue;
+                const pId = Number((item as any).produto_id);
+                const tipo = String((item as any).tipo);
+                const valor = Number((item as any).valor);
+                if (!Number.isSafeInteger(pId) || pId <= 0) continue;
+                if (!['percentual', 'fixo', 'preco_fixo'].includes(tipo)) continue;
+                if (!Number.isFinite(valor) || valor <= 0) continue;
+                if (tipo === 'percentual' && valor > 100) continue;
+                produtosDescontos.push({
+                    produto_id: pId,
+                    tipo: tipo as 'percentual' | 'fixo' | 'preco_fixo',
+                    valor: Math.round(valor * 100) / 100,
+                });
+            }
+        }
+
+        if (produtosDescontos.length > 0) {
+            const ruleIds = produtosDescontos.map((d) => d.produto_id);
+            produtosAplicaveis = Array.from(new Set([...(produtosAplicaveis || []), ...ruleIds]));
+        }
+
         const payload = {
             nome_campanha: text(data.nome_campanha, 'Nome da campanha', 200),
             banner_url: safeUrl(data.banner_url, 'Banner', true),
@@ -418,7 +442,8 @@ export async function saveCampaign(input: unknown, id?: number) {
             tipo_desconto: tipoDesconto,
             valor_desconto: valorDesconto,
             produtos_aplicaveis: produtosAplicaveis,
-            aplicar_em_todos: aplicarEmTodos
+            aplicar_em_todos: aplicarEmTodos,
+            produtos_descontos: produtosDescontos
         };
         if (![payload.cor_fundo, payload.cor_texto, payload.cor_destaque].every((color) => /^#[0-9a-f]{6}$/i.test(color))) {
             throw new Error('As cores da campanha devem estar no formato hexadecimal.');

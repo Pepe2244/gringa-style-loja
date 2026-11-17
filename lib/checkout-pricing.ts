@@ -14,6 +14,12 @@ export interface PricedProduct {
     fim_promocao?: string | null;
 }
 
+export interface CampaignProductDiscountRule {
+    produto_id: number;
+    tipo: 'percentual' | 'fixo' | 'preco_fixo';
+    valor: number;
+}
+
 export interface ActiveCampaignForPricing {
     id?: number;
     data_inicio?: string | null;
@@ -22,6 +28,7 @@ export interface ActiveCampaignForPricing {
     valor_desconto?: number | null;
     produtos_aplicaveis?: number[] | null;
     aplicar_em_todos?: boolean | null;
+    produtos_descontos?: CampaignProductDiscountRule[] | null;
 }
 
 export interface CouponForCheckout {
@@ -169,27 +176,51 @@ export function getUnitPriceWithCampaign(
     let campaignPrice: number | null = null;
     if (campaign) {
         const isCampaignInDate = isDateWithinRange(campaign.data_inicio, campaign.data_fim, now);
-        const appliesToProduct = Boolean(
-            campaign.aplicar_em_todos ||
-            (Array.isArray(campaign.produtos_aplicaveis) &&
-                campaign.produtos_aplicaveis.some((id) => Number(id) === product.id))
-        );
-
-        if (
-            isCampaignInDate &&
-            appliesToProduct &&
-            campaign.tipo_desconto &&
-            typeof campaign.valor_desconto === 'number' &&
-            campaign.valor_desconto > 0
-        ) {
-            let discount = 0;
-            if (campaign.tipo_desconto === 'percentual') {
-                discount = (product.preco * campaign.valor_desconto) / 100;
-            } else if (campaign.tipo_desconto === 'fixo') {
-                discount = campaign.valor_desconto;
+        if (isCampaignInDate) {
+            // 1. Verifica se há regra individual específica para este produto
+            let itemRule: CampaignProductDiscountRule | null = null;
+            if (Array.isArray(campaign.produtos_descontos)) {
+                const found = campaign.produtos_descontos.find(
+                    (rule) => rule && Number(rule.produto_id) === product.id && typeof rule.valor === 'number' && rule.valor > 0
+                );
+                if (found) itemRule = found;
             }
-            const rawPrice = product.preco - discount;
-            campaignPrice = roundCurrency(Math.max(0.01, rawPrice));
+
+            if (itemRule) {
+                let discount = 0;
+                if (itemRule.tipo === 'percentual') {
+                    discount = (product.preco * itemRule.valor) / 100;
+                    campaignPrice = roundCurrency(Math.max(0.01, product.preco - discount));
+                } else if (itemRule.tipo === 'fixo') {
+                    discount = itemRule.valor;
+                    campaignPrice = roundCurrency(Math.max(0.01, product.preco - discount));
+                } else if (itemRule.tipo === 'preco_fixo') {
+                    campaignPrice = roundCurrency(Math.max(0.01, Math.min(product.preco, itemRule.valor)));
+                }
+            } else {
+                // 2. Caso não haja regra individual, verifica desconto geral da campanha
+                const appliesToProduct = Boolean(
+                    campaign.aplicar_em_todos ||
+                    (Array.isArray(campaign.produtos_aplicaveis) &&
+                        campaign.produtos_aplicaveis.some((id) => Number(id) === product.id))
+                );
+
+                if (
+                    appliesToProduct &&
+                    campaign.tipo_desconto &&
+                    typeof campaign.valor_desconto === 'number' &&
+                    campaign.valor_desconto > 0
+                ) {
+                    let discount = 0;
+                    if (campaign.tipo_desconto === 'percentual') {
+                        discount = (product.preco * campaign.valor_desconto) / 100;
+                    } else if (campaign.tipo_desconto === 'fixo') {
+                        discount = campaign.valor_desconto;
+                    }
+                    const rawPrice = product.preco - discount;
+                    campaignPrice = roundCurrency(Math.max(0.01, rawPrice));
+                }
+            }
         }
     }
 

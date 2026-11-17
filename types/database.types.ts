@@ -87,6 +87,7 @@ export interface Database {
                     valor_desconto: number | null
                     produtos_aplicaveis: number[] | null
                     aplicar_em_todos: boolean
+                    produtos_descontos?: Json | null
                 }
                 Insert: {
                     id?: number
@@ -103,6 +104,7 @@ export interface Database {
                     valor_desconto?: number | null
                     produtos_aplicaveis?: number[] | null
                     aplicar_em_todos?: boolean
+                    produtos_descontos?: Json | null
                 }
                 Update: {
                     id?: number
@@ -119,6 +121,7 @@ export interface Database {
                     valor_desconto?: number | null
                     produtos_aplicaveis?: number[] | null
                     aplicar_em_todos?: boolean
+                    produtos_descontos?: Json | null
                 }
             }
             configuracoes_site: {

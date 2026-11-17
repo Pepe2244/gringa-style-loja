@@ -251,6 +251,60 @@ test('calculateCouponDiscount aplica cupom sobre preços já reduzidos por campa
     assert.equal(result.discount, 20);
 });
 
+test('campanha com descontos individuais independentes por produto (R$ 50 em um e 50% em outro)', () => {
+    const prodCaro: PricedProduct = {
+        id: 101,
+        preco: 1000,
+        preco_promocional: null,
+        preco_pix: null,
+        em_estoque: true,
+    };
+    const prodBarato: PricedProduct = {
+        id: 102,
+        preco: 100,
+        preco_promocional: null,
+        preco_pix: null,
+        em_estoque: true,
+    };
+    const prodPrecoFixo: PricedProduct = {
+        id: 103,
+        preco: 250,
+        preco_promocional: null,
+        preco_pix: null,
+        em_estoque: true,
+    };
+    const prodGeral: PricedProduct = {
+        id: 104,
+        preco: 80,
+        preco_promocional: null,
+        preco_pix: null,
+        em_estoque: true,
+    };
+
+    const campaign: ActiveCampaignForPricing = {
+        tipo_desconto: 'percentual',
+        valor_desconto: 10, // 10% geral como fallback
+        aplicar_em_todos: true,
+        produtos_descontos: [
+            { produto_id: 101, tipo: 'fixo', valor: 50 }, // Tira 50 reais de um de 1000 -> 950
+            { produto_id: 102, tipo: 'percentual', valor: 50 }, // Tira 50% de um de 100 -> 50
+            { produto_id: 103, tipo: 'preco_fixo', valor: 199.90 }, // Preço fixo direto na campanha -> 199.90
+        ],
+    };
+
+    // Prod 101: R$ 50 de desconto fixo sobre R$ 1000 = R$ 950
+    assert.equal(getUnitPriceWithCampaign(prodCaro, 'cartao_credito', campaign), 950);
+
+    // Prod 102: 50% de desconto sobre R$ 100 = R$ 50
+    assert.equal(getUnitPriceWithCampaign(prodBarato, 'cartao_credito', campaign), 50);
+
+    // Prod 103: Preço fixo de R$ 199.90 sobre R$ 250 = R$ 199.90
+    assert.equal(getUnitPriceWithCampaign(prodPrecoFixo, 'cartao_credito', campaign), 199.9);
+
+    // Prod 104: Não tem regra individual, recebe a regra geral de 10% de R$ 80 = R$ 72
+    assert.equal(getUnitPriceWithCampaign(prodGeral, 'cartao_credito', campaign), 72);
+});
+
 test('isProductPromoActive lida com campos opcionais ou parciais', () => {
     assert.equal(isProductPromoActive({ preco: 100, preco_promocional: undefined }), false);
     assert.equal(isProductPromoActive({ preco: 100, preco_promocional: null }), false);
