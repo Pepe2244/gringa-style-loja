@@ -3,7 +3,10 @@
   "name": "gringa-style-loja",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-12",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -33,11 +36,15 @@
   "keep_vars": true,
   // Somente valores não sensíveis ficam versionados aqui.
   "vars": {
+    "ADMIN_PASSWORD": "gringa123",
     "NEXT_PUBLIC_PIX_KEY": "38840525866",
     "NEXT_PUBLIC_R2_PUBLIC_URL": "https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2Z2FiZGh2ZWttZGhmdnp0ZW93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDIzNTgsImV4cCI6MjEwMjcxODM1OH0.oy3G65gw5cWvljjyt0LoZSXk7cnzEQ2BJ9IYtuHtnck",
     "NEXT_PUBLIC_SUPABASE_URL": "https://evgabdhvekmdhfvzteow.supabase.co",
+    "R2_ACCESS_KEY_ID": "5a1e7879ce737647d085a69904c29931",
     "R2_ACCOUNT_ID": "ec7935770dca17ad97ff9d9978727494",
-    "R2_BUCKET_NAME": "gringa-imagens"
+    "R2_SECRET_ACCESS_KEY": "698323b3fb7dbeed63044172e57e76430bafc988fc884f91f777b24eeaed2c89",
+    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2Z2FiZGh2ZWttZGhmdnp0ZW93Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzE0MjM1OCwiZXhwIjoyMTAyNzE4MzU4fQ.9Nv78rrrZzLNcpWXz2RV_Ve0O1wyjOZiUnJozmUxDrU",
+    "SUPERFRETE_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODY2MjE3NjIsInN1YiI6Imo2SXRKM3J4QXVXeEdCdzlHOERxc1BxdTY0eTIifQ.OEOujtaJfHtGkO4zL4UfhMr4FoTy3xmgRErK0l1YdDY"
   }
 }
