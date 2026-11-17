@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem } from '@/types';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 import { Trash2, ShoppingCart, ShieldCheck, Truck } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useCartStore, CartState } from '@/store/useCartStore';
@@ -163,7 +164,8 @@ export default function CartPage() {
     };
 
     const getPrecoFinal = useCallback((p: Product) => {
-        const promoPrice = (p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco)
+        const promoActive = isProductPromoActive(p);
+        const promoPrice = (promoActive && p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco)
             ? p.preco_promocional
             : p.preco;
 

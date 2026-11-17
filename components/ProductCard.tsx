@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/types';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
@@ -87,17 +88,11 @@ export default function ProductCard({ product, diasNovo, onQuickView, priority =
 
     if (!product) return null;
 
-    const getPrecoFinal = (p: Product) => {
-        if (!p || !p.preco) return 0;
-        if (!p.preco_promocional || p.preco_promocional >= p.preco) {
-            return p.preco;
-        }
-        return p.preco_promocional;
-    };
-
-    const precoFinal = getPrecoFinal(product);
+    const isPromo = isProductPromoActive(product, nowMs ?? undefined);
     const precoOriginal = product.preco || 0;
-    const isPromo = precoFinal < precoOriginal;
+    const precoFinal = (isPromo && product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < precoOriginal)
+        ? product.preco_promocional
+        : precoOriginal;
 
     const descontoPercentual = isPromo
         ? Math.round(((precoOriginal - precoFinal) / precoOriginal) * 100)

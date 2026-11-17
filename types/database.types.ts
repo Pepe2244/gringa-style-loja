@@ -27,6 +27,8 @@ export interface Database {
                     video: string | null
                     variants: Json | null
                     produtos_relacionados_ids: number[] | null
+                    inicio_promocao: string | null
+                    fim_promocao: string | null
                 }
                 Insert: {
                     id?: number
@@ -45,6 +47,8 @@ export interface Database {
                     video?: string | null
                     variants?: Json | null
                     produtos_relacionados_ids?: number[] | null
+                    inicio_promocao?: string | null
+                    fim_promocao?: string | null
                 }
                 Update: {
                     id?: number
@@ -63,6 +67,8 @@ export interface Database {
                     video?: string | null
                     variants?: Json | null
                     produtos_relacionados_ids?: number[] | null
+                    inicio_promocao?: string | null
+                    fim_promocao?: string | null
                 }
             }
             campanhas: {
@@ -75,6 +81,12 @@ export interface Database {
                     cor_fundo: string
                     cor_texto: string
                     cor_destaque: string
+                    data_inicio: string | null
+                    data_fim: string | null
+                    tipo_desconto: 'percentual' | 'fixo' | null
+                    valor_desconto: number | null
+                    produtos_aplicaveis: number[] | null
+                    aplicar_em_todos: boolean
                 }
                 Insert: {
                     id?: number
@@ -85,6 +97,12 @@ export interface Database {
                     cor_fundo?: string
                     cor_texto?: string
                     cor_destaque?: string
+                    data_inicio?: string | null
+                    data_fim?: string | null
+                    tipo_desconto?: 'percentual' | 'fixo' | null
+                    valor_desconto?: number | null
+                    produtos_aplicaveis?: number[] | null
+                    aplicar_em_todos?: boolean
                 }
                 Update: {
                     id?: number
@@ -95,6 +113,12 @@ export interface Database {
                     cor_fundo?: string
                     cor_texto?: string
                     cor_destaque?: string
+                    data_inicio?: string | null
+                    data_fim?: string | null
+                    tipo_desconto?: 'percentual' | 'fixo' | null
+                    valor_desconto?: number | null
+                    produtos_aplicaveis?: number[] | null
+                    aplicar_em_todos?: boolean
                 }
             }
             configuracoes_site: {

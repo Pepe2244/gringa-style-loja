@@ -117,6 +117,8 @@ export default function DirectPurchaseModal({
                 preco_promocional: p.preco_promocional,
                 preco_pix: p.preco_pix,
                 em_estoque: p.em_estoque,
+                inicio_promocao: p.inicio_promocao,
+                fim_promocao: p.fim_promocao,
             },
             paymentMethod === 'PIX' ? 'pix' : 'cartao_credito'
         );

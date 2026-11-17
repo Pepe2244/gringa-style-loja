@@ -5,12 +5,14 @@ import { isValidCpf } from '@/lib/validation';
 import {
     aggregateCartItems,
     calculateCouponDiscount,
-    getUnitPrice,
+    getUnitPriceWithCampaign,
     normalizePaymentMethod,
     roundCurrency,
     type CouponForCheckout,
     type PricedProduct,
 } from '@/lib/checkout-pricing';
+import { getActiveCampaign } from '@/lib/campaign-service';
+import { isColumnMissingError } from '@/lib/product-service';
 import {
     quoteShipping,
     parseShippingOptionPrice,
@@ -151,10 +153,19 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
         const paymentMethod = normalizePaymentMethod(basePaymentMethod);
 
         const productIds = Array.from(new Set(aggregatedItems.map((item) => item.produto_id)));
-        const { data: products, error: productsError } = await client
+        let { data: products, error: productsError } = await client
             .from('produtos')
-            .select('id, nome, preco, preco_promocional, preco_pix, em_estoque, variants')
+            .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, em_estoque, variants')
             .in('id', productIds);
+
+        if (productsError && isColumnMissingError(productsError)) {
+            const fallback = await client
+                .from('produtos')
+                .select('id, nome, preco, preco_promocional, preco_pix, em_estoque, variants')
+                .in('id', productIds);
+            products = fallback.data as any;
+            productsError = fallback.error;
+        }
 
         if (productsError) {
             console.error('[Checkout] Erro ao consultar produtos para validação do pedido:', productsError);
@@ -166,6 +177,8 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
         if (products.some((p) => p.em_estoque !== true)) {
             return { success: false, codigoPedido, error: 'Um ou mais produtos estão fora de estoque.' };
         }
+
+        const activeCampaign = await getActiveCampaign();
 
         const productMap = new Map((products as Array<PricedProduct & { nome: string; variants?: unknown }>).map((p) => [p.id, p]));
         const validatedItems = aggregatedItems.map((item) => {
@@ -189,7 +202,7 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
             } else if (item.variante) {
                 throw new Error(`O produto ${product.nome} não possui opções selecionáveis.`);
             }
-            const unitPrice = roundCurrency(getUnitPrice(product, paymentMethod));
+            const unitPrice = roundCurrency(getUnitPriceWithCampaign(product, paymentMethod, activeCampaign));
             return {
                 produto_id: item.produto_id,
                 nome: product.nome,
@@ -227,6 +240,7 @@ export async function createOrderRecord(input: CreateOrderInput): Promise<{ succ
                 aggregatedItems,
                 products as PricedProduct[],
                 paymentMethod,
+                activeCampaign,
             );
             serverDiscount = roundCurrency(calculation.discount);
         }

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Product, Category } from '@/types';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
+import { isColumnMissingError } from '@/lib/product-service';
 import ProductGrid from '@/components/home/ProductGrid';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
 import { useToast } from '@/context/ToastContext';
@@ -24,7 +26,7 @@ const normalizeString = (str: string) => {
 };
 
 const getEffectivePrice = (p: Product) => {
-    if (p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco) {
+    if (isProductPromoActive(p) && p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco) {
         return p.preco_promocional;
     }
     return p.preco;
@@ -55,12 +57,12 @@ export default function SearchPage() {
                     Busca de Produtos
                 </h1>
                 <p style={{ color: '#888' }}>Carregando busca...</p>
-            <DirectPurchaseModal
-                isOpen={false}
-                onClose={() => {}}
-                product={null}
-            />
-        </main>
+                <DirectPurchaseModal
+                    isOpen={false}
+                    onClose={() => { }}
+                    product={null}
+                />
+            </main>
         }>
             <SearchPageContent />
         </Suspense>
@@ -99,7 +101,7 @@ function SearchPageContent() {
         try {
             let queryBuilder = supabase
                 .from('produtos')
-                .select('id, nome, preco, preco_promocional, preco_pix, descricao, imagens, media_urls, video, em_estoque, categoria_id, created_at, tags, slug, variants, produtos_relacionados_ids')
+                .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, descricao, imagens, media_urls, video, em_estoque, categoria_id, created_at, tags, slug, variants, produtos_relacionados_ids')
                 .limit(1000);
 
             if (selectedCategory) {
@@ -114,7 +116,19 @@ function SearchPageContent() {
                 queryBuilder = queryBuilder.not('preco_promocional', 'is', null);
             }
 
-            const { data, error } = await queryBuilder;
+            let { data, error } = await queryBuilder;
+            if (error && isColumnMissingError(error)) {
+                let fallbackBuilder = supabase
+                    .from('produtos')
+                    .select('id, nome, preco, preco_promocional, preco_pix, descricao, imagens, media_urls, video, em_estoque, categoria_id, created_at, tags, slug, variants, produtos_relacionados_ids')
+                    .limit(1000);
+                if (selectedCategory) fallbackBuilder = fallbackBuilder.eq('categoria_id', selectedCategory);
+                if (inStockOnly) fallbackBuilder = fallbackBuilder.eq('em_estoque', true);
+                if (hasDiscountOnly) fallbackBuilder = fallbackBuilder.not('preco_promocional', 'is', null);
+                const fallback = await fallbackBuilder;
+                data = fallback.data as any;
+                error = fallback.error;
+            }
             if (error) throw error;
 
             const resultList: Product[] = (data as unknown as Product[]) || [];
@@ -167,7 +181,7 @@ function SearchPageContent() {
         let resultList = rawProducts;
 
         if (hasDiscountOnly) {
-            resultList = resultList.filter(p => Boolean(p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco));
+            resultList = resultList.filter(p => isProductPromoActive(p));
         }
 
         if (searchTerm.trim()) {

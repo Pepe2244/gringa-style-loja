@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { isColumnMissingError } from '@/lib/product-service';
 
 // Quebra o cache estático do Next.js. Garante leitura em tempo real.
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from('produtos')
-      .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+      .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -57,12 +58,25 @@ export async function GET(request: Request) {
       }
     }
 
-    const { data, error } = await query;
+    let { data, error } = await query;
+    if (error && isColumnMissingError(error)) {
+      let fallbackQuery = supabase
+        .from('produtos')
+        .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      if (inStockOnly) fallbackQuery = fallbackQuery.eq('em_estoque', true);
+      if (categoryId && !Number.isNaN(Number(categoryId))) fallbackQuery = fallbackQuery.eq('categoria_id', Number(categoryId));
+      if (excludeId && !Number.isNaN(Number(excludeId))) fallbackQuery = fallbackQuery.neq('id', Number(excludeId));
+      const fallback = await fallbackQuery;
+      data = fallback.data as any;
+      error = fallback.error;
+    }
     if (error) throw error;
 
     return NextResponse.json(data || []);
   } catch (error) {
-      console.error('Erro em GET /api/produtos:', error);
-      return NextResponse.json({ error: 'Erro ao buscar produtos.' }, { status: 500 });
+    console.error('Erro em GET /api/produtos:', error);
+    return NextResponse.json({ error: 'Erro ao buscar produtos.' }, { status: 500 });
   }
 }

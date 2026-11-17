@@ -10,6 +10,18 @@ export interface PricedProduct {
     preco_promocional: number | null;
     preco_pix: number | null;
     em_estoque: boolean;
+    inicio_promocao?: string | null;
+    fim_promocao?: string | null;
+}
+
+export interface ActiveCampaignForPricing {
+    id?: number;
+    data_inicio?: string | null;
+    data_fim?: string | null;
+    tipo_desconto?: 'percentual' | 'fixo' | null;
+    valor_desconto?: number | null;
+    produtos_aplicaveis?: number[] | null;
+    aplicar_em_todos?: boolean | null;
 }
 
 export interface CouponForCheckout {
@@ -102,23 +114,109 @@ export function aggregateCartItems(items: unknown): CheckoutItem[] {
     return Array.from(quantities.values());
 }
 
-export function getUnitPrice(product: PricedProduct, paymentMethod: PaymentMethod) {
+export function isDateWithinRange(
+    start?: string | null,
+    end?: string | null,
+    now = Date.now()
+): boolean {
+    if (start) {
+        const startTime = Date.parse(start);
+        if (!Number.isFinite(startTime) || now < startTime) {
+            return false;
+        }
+    }
+    if (end) {
+        const endTime = Date.parse(end);
+        if (!Number.isFinite(endTime) || now > endTime) {
+            return false;
+        }
+    }
+    return true;
+}
+
+export function isProductPromoActive(
+    product: {
+        preco: number;
+        preco_promocional?: number | null;
+        inicio_promocao?: string | null;
+        fim_promocao?: string | null;
+    },
+    now = Date.now()
+): boolean {
+    const promo = product.preco_promocional;
+    if (promo === null || promo === undefined || !Number.isFinite(promo) || promo <= 0) {
+        return false;
+    }
+    if (!Number.isFinite(product.preco) || promo >= product.preco) {
+        return false;
+    }
+    return isDateWithinRange(product.inicio_promocao, product.fim_promocao, now);
+}
+
+export function getUnitPriceWithCampaign(
+    product: PricedProduct,
+    paymentMethod: PaymentMethod,
+    campaign?: ActiveCampaignForPricing | null,
+    now = Date.now()
+): number {
     if (!Number.isFinite(product.preco) || product.preco < 0) {
         throw new Error(`Preço inválido para o produto ${product.id}.`);
     }
 
-    const promotionalPrice = product.preco_promocional;
-    const baseEffectivePrice =
-        promotionalPrice !== null && promotionalPrice > 0 && promotionalPrice < product.preco
-            ? promotionalPrice
-            : product.preco;
+    const hasProductPromo = isProductPromoActive(product, now);
+    const productPromoPrice = hasProductPromo ? product.preco_promocional! : null;
+
+    let campaignPrice: number | null = null;
+    if (campaign) {
+        const isCampaignInDate = isDateWithinRange(campaign.data_inicio, campaign.data_fim, now);
+        const appliesToProduct = Boolean(
+            campaign.aplicar_em_todos ||
+            (Array.isArray(campaign.produtos_aplicaveis) &&
+                campaign.produtos_aplicaveis.some((id) => Number(id) === product.id))
+        );
+
+        if (
+            isCampaignInDate &&
+            appliesToProduct &&
+            campaign.tipo_desconto &&
+            typeof campaign.valor_desconto === 'number' &&
+            campaign.valor_desconto > 0
+        ) {
+            let discount = 0;
+            if (campaign.tipo_desconto === 'percentual') {
+                discount = (product.preco * campaign.valor_desconto) / 100;
+            } else if (campaign.tipo_desconto === 'fixo') {
+                discount = campaign.valor_desconto;
+            }
+            const rawPrice = product.preco - discount;
+            campaignPrice = roundCurrency(Math.max(0.01, rawPrice));
+        }
+    }
+
+    let baseEffectivePrice = product.preco;
+    const candidatePrices: number[] = [];
+
+    if (productPromoPrice !== null && productPromoPrice > 0 && productPromoPrice < product.preco) {
+        candidatePrices.push(productPromoPrice);
+    }
+    if (campaignPrice !== null && campaignPrice > 0 && campaignPrice < product.preco) {
+        candidatePrices.push(campaignPrice);
+    }
+
+    if (candidatePrices.length > 0) {
+        baseEffectivePrice = Math.min(...candidatePrices);
+    }
 
     const pixPrice = product.preco_pix;
     if (paymentMethod === 'pix' && pixPrice !== null && pixPrice > 0 && pixPrice < product.preco) {
-        return Math.min(pixPrice, baseEffectivePrice);
+        return roundCurrency(Math.min(pixPrice, baseEffectivePrice));
     }
 
-    return baseEffectivePrice;
+    return roundCurrency(baseEffectivePrice);
+}
+
+export function getUnitPrice(product: PricedProduct, paymentMethod: PaymentMethod, now = Date.now()): number {
+    return getUnitPriceWithCampaign(product, paymentMethod, null, now);
 }
 
 export function getCouponFailure(
@@ -165,7 +263,9 @@ export function calculateCouponDiscount(
     coupon: CouponForCheckout,
     items: CheckoutItem[],
     products: PricedProduct[],
-    paymentMethod: PaymentMethod
+    paymentMethod: PaymentMethod,
+    campaign?: ActiveCampaignForPricing | null,
+    now = Date.now()
 ) {
     const productById = new Map(products.map((product) => [product.id, product]));
     let subtotal = 0;
@@ -177,7 +277,7 @@ export function calculateCouponDiscount(
     for (const item of items) {
         const product = productById.get(item.produto_id);
         if (!product) throw new Error('Um ou mais produtos não estão disponíveis.');
-        const lineTotal = roundCurrency(getUnitPrice(product, paymentMethod) * item.quantidade);
+        const lineTotal = roundCurrency(getUnitPriceWithCampaign(product, paymentMethod, campaign, now) * item.quantidade);
         subtotal = roundCurrency(subtotal + lineTotal);
 
         if (appType === 'produto' && coupon.produtos_aplicaveis?.includes(item.produto_id)) {
@@ -199,7 +299,7 @@ export function calculateCouponDiscount(
         throw new Error('O cupom não é aplicável aos produtos adicionados.');
     }
 
-    const failure = getCouponFailure(coupon, subtotal, paymentMethod);
+    const failure = getCouponFailure(coupon, subtotal, paymentMethod, now);
     if (failure) throw new Error(failure);
 
     const discountBase = appType === 'produto' ? eligibleSubtotal : subtotal;
@@ -219,7 +319,7 @@ export function calculateCouponDiscount(
                     const totalQty = items
                         .filter((i) => i.produto_id === productId)
                         .reduce((acc, i) => acc + i.quantidade, 0);
-                    const productLineTotal = roundCurrency(getUnitPrice(product, paymentMethod) * totalQty);
+                    const productLineTotal = roundCurrency(getUnitPriceWithCampaign(product, paymentMethod, campaign, now) * totalQty);
                     discount = roundCurrency(discount + Math.min(productLineTotal, discountValue));
                 }
             }

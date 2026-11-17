@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Product, Category } from '@/types';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 import { useToast } from '@/context/ToastContext';
 import ProductFilters from '@/components/home/ProductFilters';
 import ProductGrid from '@/components/home/ProductGrid';
@@ -55,7 +56,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
     const [selectedVariant, setSelectedVariant] = useState<{ tipo: string; opcao: string } | null>(null);
 
     const getPrecoFinal = (p: Product) => {
-        if (!p.preco_promocional || p.preco_promocional >= p.preco) {
+        if (!isProductPromoActive(p, nowMs ?? undefined) || !p.preco_promocional) {
             return p.preco;
         }
         return p.preco_promocional;
@@ -106,7 +107,7 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         const matchCategory = selectedCategory ? product.categoria_id === selectedCategory : true;
         const matchPrice = getPrecoFinal(product) >= priceRange[0] && getPrecoFinal(product) <= priceRange[1];
         const matchStock = !inStockOnly || product.em_estoque;
-        const matchDiscount = !hasDiscountOnly || (product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < product.preco);
+        const matchDiscount = !hasDiscountOnly || isProductPromoActive(product, nowMs ?? undefined);
 
         return matchSearch && matchCategory && matchPrice && matchStock && matchDiscount;
     }).sort((a, b) => {
@@ -119,8 +120,8 @@ export default function HomeContent({ initialProducts, categories, diasNovo }: H
         } else if (sortType === 'za') {
             return b.nome.localeCompare(a.nome);
         } else {
-            const aHasPromo = a.preco_promocional && a.preco_promocional > 0 && a.preco_promocional < a.preco;
-            const bHasPromo = b.preco_promocional && b.preco_promocional > 0 && b.preco_promocional < b.preco;
+            const aHasPromo = isProductPromoActive(a, nowMs ?? undefined);
+            const bHasPromo = isProductPromoActive(b, nowMs ?? undefined);
 
             if (aHasPromo && !bHasPromo) return -1;
             if (!aHasPromo && bHasPromo) return 1;

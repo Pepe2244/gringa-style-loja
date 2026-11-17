@@ -5,13 +5,37 @@ import Image from 'next/image';
 // Caminhos relativos para compatibilidade com o ambiente atual
 import { supabase } from '../../lib/supabase';
 import { Product, Category, ProductVariant } from '../../types';
-import { Trash2, Edit, Plus, AlertCircle, Loader2, Package, Tag, Settings2, RefreshCw } from 'lucide-react';
+import { Trash2, Edit, Plus, AlertCircle, Loader2, Package, Tag, Settings2, RefreshCw, Calendar } from 'lucide-react';
 import { compressImage } from '../../utils/imageCompression';
 import { getProxiedImageUrl } from '../../utils/imageUrl';
 import { deleteProduct, saveProduct, setProductStock, setProductProntaEntrega } from '@/app/actions/admin-data';
 import { revalidateProductCache } from '@/app/actions/produtos';
 import { slugify, getCanonicalProductSlug } from '@/utils/slugify';
 import { isProntaEntrega, stripAvailabilityTags, applyProntaEntregaToTags } from '@/utils/productAvailability';
+
+function toDatetimeLocal(isoStr?: string | null): string {
+    if (!isoStr) return '';
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const year = d.getFullYear();
+        const month = pad(d.getMonth() + 1);
+        const day = pad(d.getDate());
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch {
+        return '';
+    }
+}
+
+function fromDatetimeLocal(localStr?: string): string | null {
+    if (!localStr || !localStr.trim()) return null;
+    const d = new Date(localStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+}
 
 export default function ProductManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -35,6 +59,11 @@ export default function ProductManager() {
     const [prontaEntrega, setProntaEntrega] = useState(false);
     const [variantTipo, setVariantTipo] = useState('');
     const [variantOpcoes, setVariantOpcoes] = useState('');
+
+    // Promoção Agendada
+    const [inicioPromocao, setInicioPromocao] = useState('');
+    const [fimPromocao, setFimPromocao] = useState('');
+    const [temAgendamentoPromo, setTemAgendamentoPromo] = useState(false);
 
     const [mediaFiles, setMediaFiles] = useState<File[]>([]);
     const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
@@ -94,6 +123,12 @@ export default function ProductManager() {
                 ? product.media_urls
                 : (Array.isArray(product.imagens) ? product.imagens : []);
             setExistingMedia(medias);
+
+            const iniLocal = toDatetimeLocal(product.inicio_promocao);
+            const fimLocal = toDatetimeLocal(product.fim_promocao);
+            setInicioPromocao(iniLocal);
+            setFimPromocao(fimLocal);
+            setTemAgendamentoPromo(Boolean(product.inicio_promocao || product.fim_promocao));
         } else {
             resetFormFields();
         }
@@ -123,6 +158,9 @@ export default function ProductManager() {
         setVariantTipo('');
         setVariantOpcoes('');
         setExistingMedia([]);
+        setInicioPromocao('');
+        setFimPromocao('');
+        setTemAgendamentoPromo(false);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,6 +267,15 @@ export default function ProductManager() {
             }
         }
 
+        const isoInicio = temAgendamentoPromo ? fromDatetimeLocal(inicioPromocao) : null;
+        const isoFim = temAgendamentoPromo ? fromDatetimeLocal(fimPromocao) : null;
+
+        if (isoInicio && isoFim && new Date(isoInicio) > new Date(isoFim)) {
+            alert('A data de início da promoção não pode ser posterior à data de término.');
+            setLoading(false);
+            return;
+        }
+
         const productData = {
             nome,
             slug: generatedSlug,
@@ -240,7 +287,9 @@ export default function ProductManager() {
             tags: applyProntaEntregaToTags(tags.split(',').map(s => s.trim()).filter(Boolean), prontaEntrega),
             em_estoque,
             media_urls: finalMediaUrls,
-            variants
+            variants,
+            inicio_promocao: isoInicio,
+            fim_promocao: isoFim
         };
 
         try {
@@ -397,16 +446,49 @@ export default function ProductManager() {
                                 <div style={{ flex: 1, minWidth: '220px' }}>
                                     <h3 style={{ margin: 0, color: 'var(--cor-destaque)', fontSize: '1rem' }}>{prod.nome}</h3>
                                     <div style={{ fontSize: '0.82rem', color: '#888', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                        {prod.preco_promocional && prod.preco_promocional < prod.preco ? (
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                                <span style={{ textDecoration: 'line-through', color: '#777' }}>R$ {prod.preco.toFixed(2)}</span>
+                                        {(() => {
+                                            const hasPromo = prod.preco_promocional != null && prod.preco_promocional < prod.preco;
+                                            if (!hasPromo) {
+                                                return <span style={{ color: '#eee' }}>R$ {prod.preco.toFixed(2)}</span>;
+                                            }
+
+                                            const now = Date.now();
+                                            const start = prod.inicio_promocao ? new Date(prod.inicio_promocao).getTime() : null;
+                                            const end = prod.fim_promocao ? new Date(prod.fim_promocao).getTime() : null;
+
+                                            let promoBadge = (
                                                 <span style={{ color: '#00ff88', fontWeight: 'bold', background: 'rgba(0, 255, 136, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(0, 255, 136, 0.3)' }}>
-                                                    Por R$ {prod.preco_promocional.toFixed(2)} (PROMO)
+                                                    Por R$ {prod.preco_promocional!.toFixed(2)} (PROMO)
                                                 </span>
-                                            </span>
-                                        ) : (
-                                            <span style={{ color: '#eee' }}>R$ {prod.preco.toFixed(2)}</span>
-                                        )}
+                                            );
+
+                                            if (start && now < start) {
+                                                promoBadge = (
+                                                    <span style={{ color: '#60a5fa', fontWeight: 'bold', background: 'rgba(96, 165, 250, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(96, 165, 250, 0.3)' }} title={`Inicia em ${new Date(start).toLocaleString('pt-BR')}`}>
+                                                        ⏳ Agendado (Por R$ {prod.preco_promocional!.toFixed(2)})
+                                                    </span>
+                                                );
+                                            } else if (end && now > end) {
+                                                promoBadge = (
+                                                    <span style={{ color: '#9ca3af', fontWeight: 'bold', background: 'rgba(156, 163, 175, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(156, 163, 175, 0.3)' }} title={`Expirou em ${new Date(end).toLocaleString('pt-BR')}`}>
+                                                        ⌛ Promoção Expirada
+                                                    </span>
+                                                );
+                                            } else if (start || end) {
+                                                promoBadge = (
+                                                    <span style={{ color: '#00ff88', fontWeight: 'bold', background: 'rgba(0, 255, 136, 0.12)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(0, 255, 136, 0.3)' }} title={end ? `Válida até ${new Date(end).toLocaleString('pt-BR')}` : undefined}>
+                                                        🔥 Em Promoção (Por R$ {prod.preco_promocional!.toFixed(2)})
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ textDecoration: 'line-through', color: '#777' }}>R$ {prod.preco.toFixed(2)}</span>
+                                                    {promoBadge}
+                                                </span>
+                                            );
+                                        })()}
                                         {prod.preco_pix ? <span style={{ color: '#00d2ff' }}>| PIX R$ {prod.preco_pix.toFixed(2)}</span> : null}
                                         {!prod.em_estoque ? (
                                             <span style={{ color: '#f87171', fontWeight: 600 }}>| Esgotado</span>
@@ -508,6 +590,67 @@ export default function ProductManager() {
                                 }
                                 return null;
                             })()}
+
+                            <div className="form-campo" style={{ background: '#181818', padding: '14px', borderRadius: '10px', border: '1px solid #2b2b2b' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontWeight: 600, fontSize: '0.9rem', color: '#eee' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={temAgendamentoPromo}
+                                            onChange={e => {
+                                                const checked = e.target.checked;
+                                                setTemAgendamentoPromo(checked);
+                                                if (!checked) {
+                                                    setInicioPromocao('');
+                                                    setFimPromocao('');
+                                                }
+                                            }}
+                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                        />
+                                        <span>📅 Agendar Período da Promoção (Opcional)</span>
+                                    </label>
+                                    {temAgendamentoPromo && (inicioPromocao || fimPromocao) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setInicioPromocao('');
+                                                setFimPromocao('');
+                                            }}
+                                            style={{ background: 'transparent', border: 'none', color: '#ff7777', fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline' }}
+                                        >
+                                            Limpar datas
+                                        </button>
+                                    )}
+                                </div>
+
+                                {temAgendamentoPromo && (
+                                    <>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                                            <div className="form-campo" style={{ margin: 0 }}>
+                                                <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '4px', display: 'block' }}>Data e Hora de Início</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={inicioPromocao}
+                                                    onChange={e => setInicioPromocao(e.target.value)}
+                                                    style={{ background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '8px', width: '100%', fontSize: '0.85rem' }}
+                                                />
+                                            </div>
+                                            <div className="form-campo" style={{ margin: 0 }}>
+                                                <label style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '4px', display: 'block' }}>Data e Hora de Término</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={fimPromocao}
+                                                    onChange={e => setFimPromocao(e.target.value)}
+                                                    style={{ background: '#111', color: '#fff', border: '1px solid #444', borderRadius: '6px', padding: '8px', width: '100%', fontSize: '0.85rem' }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <small style={{ color: '#888', fontSize: '0.75rem', marginTop: '8px', display: 'block' }}>
+                                            💡 Se deixar as datas em branco, o preço promocional valerá imediatamente e sem data de término.
+                                        </small>
+                                    </>
+                                )}
+                            </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                 <div className="form-campo">

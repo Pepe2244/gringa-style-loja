@@ -3,6 +3,7 @@ import HomeContent from '@/components/home/HomeContent';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
 import { getCachedValue } from '@/lib/cache';
+import { isColumnMissingError } from '@/lib/product-service';
 import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 import { BreadcrumbSchema, CollectionPageSchema, ItemListSchema } from '@/components/SEO/StructuredData';
 
@@ -48,11 +49,22 @@ export default async function LojaPage() {
   const [products, categories, diasNovo] = await Promise.all([
     getCachedValue(
       async () => {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('produtos')
-          .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+          .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
           .order('created_at', { ascending: false })
           .limit(12);
+
+        if (error && isColumnMissingError(error)) {
+          const fallback = await supabase
+            .from('produtos')
+            .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+            .order('created_at', { ascending: false })
+            .limit(12);
+          data = fallback.data as any;
+          error = fallback.error;
+        }
+
         if (error) throw error;
         return (data || []) as Product[];
       },
@@ -97,6 +109,8 @@ export default async function LojaPage() {
           descricao: p.descricao,
           preco: p.preco,
           preco_promocional: p.preco_promocional,
+          inicio_promocao: p.inicio_promocao,
+          fim_promocao: p.fim_promocao,
           em_estoque: p.em_estoque,
           tags: p.tags,
           imagens: p.imagens,
@@ -117,6 +131,8 @@ export default async function LojaPage() {
           descricao: p.descricao,
           preco: p.preco,
           preco_promocional: p.preco_promocional,
+          inicio_promocao: p.inicio_promocao,
+          fim_promocao: p.fim_promocao,
           em_estoque: p.em_estoque,
           tags: p.tags,
           imagens: p.imagens,

@@ -3,16 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
-
-interface Campaign {
-    id: number;
-    nome_campanha: string;
-    banner_url: string;
-    cor_fundo: string;
-    cor_texto: string;
-    cor_destaque: string;
-    aviso_deslizante_texto: string;
-}
+import type { Campaign } from '@/types';
 
 interface CampaignBannerClientProps {
     campaign: Campaign;

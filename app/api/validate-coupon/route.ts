@@ -7,6 +7,8 @@ import {
     type CouponForCheckout,
     type PricedProduct,
 } from '@/lib/checkout-pricing';
+import { getActiveCampaign } from '@/lib/campaign-service';
+import { isColumnMissingError } from '@/lib/product-service';
 import { supabase } from '@/lib/supabase';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
@@ -41,10 +43,20 @@ export async function POST(request: Request) {
         if (!coupon) return NextResponse.json({ valido: false, mensagem: 'Cupom não encontrado.' });
 
         const productIds = Array.from(new Set(items.map((item) => item.produto_id)));
-        const { data: products, error: productsError } = await supabase
+        let { data: products, error: productsError } = await supabase
             .from('produtos')
-            .select('id, nome, preco, preco_promocional, preco_pix, em_estoque')
+            .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, em_estoque')
             .in('id', productIds);
+
+        if (productsError && isColumnMissingError(productsError)) {
+            const fallback = await supabase
+                .from('produtos')
+                .select('id, nome, preco, preco_promocional, preco_pix, em_estoque')
+                .in('id', productIds);
+            products = fallback.data as any;
+            productsError = fallback.error;
+        }
+
         if (productsError) throw productsError;
         if (!products || products.length !== productIds.length) {
             return NextResponse.json({ valido: false, mensagem: 'Um ou mais produtos não estão disponíveis.' });
@@ -53,11 +65,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ valido: false, mensagem: 'Um ou mais produtos estão fora de estoque.' });
         }
 
+        const activeCampaign = await getActiveCampaign();
+
         const calculation = calculateCouponDiscount(
             coupon as CouponForCheckout,
             items,
             products as PricedProduct[],
             paymentMethod,
+            activeCampaign,
         );
 
         return NextResponse.json({

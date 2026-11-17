@@ -6,6 +6,7 @@ import { Heart, Clock, Trash2 } from 'lucide-react';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
 import { supabase } from '@/lib/supabase';
+import { isColumnMissingError } from '@/lib/product-service';
 import { Product } from '@/types';
 import ProductGrid from '@/components/home/ProductGrid';
 import DirectPurchaseModal from '@/components/modals/DirectPurchaseModal';
@@ -45,10 +46,19 @@ export default function FavoritosPage() {
             }
 
             try {
-                const { data, error } = await supabase
+                let { data, error } = await supabase
                     .from('produtos')
-                    .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+                    .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
                     .in('id', allIds);
+
+                if (error && isColumnMissingError(error)) {
+                    const fallback = await supabase
+                        .from('produtos')
+                        .select('id, nome, preco, preco_promocional, preco_pix, imagens, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, media_urls, produtos_relacionados_ids')
+                        .in('id', allIds);
+                    data = fallback.data as any;
+                    error = fallback.error;
+                }
 
                 if (error) throw error;
 

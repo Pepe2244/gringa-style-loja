@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import { Product, CartItem, ProductVariant } from '@/types';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
 
@@ -21,7 +22,7 @@ import SavingsBadge from '@/components/SavingsBadge';
 import CartRecoveryBanner from '@/components/home/CartRecoveryBanner';
 import { PaymentMethods } from '@/components/PaymentMethods';
 import { useRecentlyViewedStore } from '@/store/useRecentlyViewedStore';
-import { useAnalytics } from '@/components/AdvancedAnalytics'; 
+import { useAnalytics } from '@/components/AdvancedAnalytics';
 import { buildStorageUrl, buildWhatsAppUrl } from '@/lib/site-config';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { isProntaEntrega } from '@/utils/productAvailability';
@@ -154,11 +155,12 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
 
     useEffect(() => {
         if (product) {
-            const price = product.preco_promocional || product.preco;
+            const isPromo = isProductPromoActive(product);
+            const price = (isPromo && product.preco_promocional) ? product.preco_promocional : product.preco;
             trackProductView(
-                String(product.id), 
-                product.nome, 
-                String(product.categoria_id || 'sem-categoria'), 
+                String(product.id),
+                product.nome,
+                String(product.categoria_id || 'sem-categoria'),
                 price
             );
         }
@@ -167,7 +169,8 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     const addItem = useCartStore((state: CartState) => state.addItem);
 
     const getDisplayedPrice = (p: Product, method: string) => {
-        const promoPrice = (p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco)
+        const promoActive = isProductPromoActive(p);
+        const promoPrice = (promoActive && p.preco_promocional && p.preco_promocional > 0 && p.preco_promocional < p.preco)
             ? p.preco_promocional
             : p.preco;
 
@@ -293,12 +296,12 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
     const MAX_DESC_LENGTH = 150;
     const isLongDescription = product.descricao && product.descricao.length > MAX_DESC_LENGTH;
 
-    const cardPrice = (product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < product.preco)
+    const isPromo = isProductPromoActive(product);
+    const cardPrice = (isPromo && product.preco_promocional && product.preco_promocional > 0 && product.preco_promocional < product.preco)
         ? product.preco_promocional
         : product.preco;
     const hasPixDiscount = Boolean(product.preco_pix && product.preco_pix > 0 && product.preco_pix < cardPrice);
     const pixPrice = hasPixDiscount ? product.preco_pix! : cardPrice;
-    const isPromo = cardPrice < product.preco;
     const bestPrice = hasPixDiscount ? pixPrice : cardPrice;
     const descontoPercentual = bestPrice < product.preco
         ? Math.round(((product.preco - bestPrice) / product.preco) * 100)
@@ -311,9 +314,9 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
             {product && (
                 <Breadcrumbs
                     items={[
-                        { 
-                            label: product.categoria_id ? categories?.find((c: any) => c.id === product.categoria_id)?.nome || 'Produtos' : 'Produtos', 
-                            href: product.categoria_id ? `/categoria/${product.categoria_id}` : '/loja' 
+                        {
+                            label: product.categoria_id ? categories?.find((c: any) => c.id === product.categoria_id)?.nome || 'Produtos' : 'Produtos',
+                            href: product.categoria_id ? `/categoria/${product.categoria_id}` : '/loja'
                         },
                         { label: product.nome }
                     ]}
@@ -363,7 +366,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                     placeholder="blur"
                                     blurDataURL={BLUR_DATA_URL}
                                 />
-                                <ImageZoom 
+                                <ImageZoom
                                     src={currentMedia ? resolveOriginalUrl(currentMedia) : fallbackImage}
                                     alt={product.nome}
                                     imageIndex={currentImageIndex}
@@ -401,8 +404,8 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                             mediaUrls.length <= 6 ? (
                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', position: 'absolute', bottom: '15px', width: '100%', zIndex: 12 }}>
                                     {mediaUrls.map((_, idx) => (
-                                        <div 
-                                            key={idx} 
+                                        <div
+                                            key={idx}
                                             style={{
                                                 width: idx === currentImageIndex ? '20px' : '8px',
                                                 height: '8px',
@@ -428,7 +431,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                     {mediaUrls.length > 1 && (
                         <div className="produto-miniaturas-container">
                             {mediaUrls.length > 4 && (
-                                <button 
+                                <button
                                     type="button"
                                     className="miniatura-nav-btn"
                                     onClick={() => scrollThumbnails('left')}
@@ -439,8 +442,8 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                 </button>
                             )}
 
-                            <div 
-                                className="produto-miniaturas" 
+                            <div
+                                className="produto-miniaturas"
                                 ref={thumbnailsRef}
                                 onMouseEnter={() => setShowAllThumbs(true)}
                                 onTouchStart={() => setShowAllThumbs(true)}
@@ -518,7 +521,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                             </div>
 
                             {mediaUrls.length > 4 && (
-                                <button 
+                                <button
                                     type="button"
                                     className="miniatura-nav-btn"
                                     onClick={() => scrollThumbnails('right')}
@@ -540,7 +543,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                             {isLongDescription && !isDescExpanded ? (
                                 <>
                                     <p>{product.descricao?.substring(0, MAX_DESC_LENGTH)}...</p>
-                                    <button 
+                                    <button
                                         onClick={() => setIsDescExpanded(true)}
                                         style={{ background: 'none', border: 'none', color: 'var(--cor-destaque)', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
                                     >
@@ -551,7 +554,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                 <>
                                     <p style={{ whiteSpace: 'pre-wrap' }}>{product.descricao}</p>
                                     {isLongDescription && (
-                                        <button 
+                                        <button
                                             onClick={() => setIsDescExpanded(false)}
                                             style={{ background: 'none', border: 'none', color: '#888', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
                                         >
@@ -586,7 +589,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                 📦 Sob Encomenda
                             </p>
                         )}
-                        <SavingsBadge originalPrice={product.preco} promotionalPrice={product.preco_promocional} />
+                        <SavingsBadge originalPrice={product.preco} promotionalPrice={isPromo ? cardPrice : null} />
                     </div>
 
                     <div className="produto-detalhe-preco" style={{ margin: '10px 0 25px 0' }}>
@@ -705,7 +708,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                             {isLongDescription && !isDescExpanded ? (
                                 <>
                                     <p>{product.descricao?.substring(0, MAX_DESC_LENGTH)}...</p>
-                                    <button 
+                                    <button
                                         onClick={() => setIsDescExpanded(true)}
                                         style={{ background: 'none', border: 'none', color: 'var(--cor-destaque)', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
                                     >
@@ -716,7 +719,7 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                 <>
                                     <p style={{ whiteSpace: 'pre-wrap' }}>{product.descricao}</p>
                                     {isLongDescription && (
-                                        <button 
+                                        <button
                                             onClick={() => setIsDescExpanded(false)}
                                             style={{ background: 'none', border: 'none', color: '#888', fontWeight: 'bold', cursor: 'pointer', padding: '10px 0 0', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.95rem' }}
                                         >
@@ -765,7 +768,9 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
                                         )}
                                     </div>
                                     <h3 style={{ fontSize: '0.95rem', margin: '0 0 10px 0', color: '#eee', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rel.nome}</h3>
-                                    <p style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>R$ {(rel.preco_promocional || rel.preco).toFixed(2).replace('.', ',')}</p>
+                                    <p style={{ color: 'var(--cor-destaque)', fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>
+                                        R$ {((isProductPromoActive(rel) && rel.preco_promocional ? rel.preco_promocional : rel.preco)).toFixed(2).replace('.', ',')}
+                                    </p>
                                 </Link>
                             );
                         })}
@@ -784,7 +789,8 @@ export default function ProductPageContent({ id, initialProduct, initialRelatedP
 
             {product && <StickyCTA product={product} />}
 
-            <style dangerouslySetInnerHTML={{__html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media (max-width: 768px) {
                     .titulo-mobile-container {
                         display: flex !important;

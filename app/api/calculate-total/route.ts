@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import {
     aggregateCartItems,
     calculateCouponDiscount,
-    getUnitPrice,
+    getUnitPriceWithCampaign,
     normalizePaymentMethod,
     roundCurrency,
     type CouponForCheckout,
     type PricedProduct,
 } from '@/lib/checkout-pricing';
+import { getActiveCampaign } from '@/lib/campaign-service';
+import { isColumnMissingError } from '@/lib/product-service';
 import { supabase } from '@/lib/supabase';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
@@ -29,10 +31,19 @@ export async function POST(request: Request) {
         }
 
         const productIds = Array.from(new Set(items.map((item) => item.produto_id)));
-        const { data: products, error } = await supabase
+        let { data: products, error } = await supabase
             .from('produtos')
-            .select('id, nome, preco, preco_promocional, preco_pix, em_estoque, variants')
+            .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, em_estoque, variants')
             .in('id', productIds);
+
+        if (error && isColumnMissingError(error)) {
+            const fallback = await supabase
+                .from('produtos')
+                .select('id, nome, preco, preco_promocional, preco_pix, em_estoque, variants')
+                .in('id', productIds);
+            products = fallback.data as any;
+            error = fallback.error;
+        }
 
         if (error) throw error;
         if (!products || products.length !== productIds.length) {
@@ -45,6 +56,8 @@ export async function POST(request: Request) {
                 error: `O produto ${unavailableProduct.id} está fora de estoque.`,
             }, { status: 409 });
         }
+
+        const activeCampaign = await getActiveCampaign();
 
         const pricedProducts = products as Array<PricedProduct & { nome: string; variants: unknown }>;
         const validatedItems = items.map((item) => {
@@ -66,7 +79,7 @@ export async function POST(request: Request) {
             } else if (item.variante) {
                 throw new Error(`O produto ${product.nome} não possui opções selecionáveis.`);
             }
-            const unitPrice = roundCurrency(getUnitPrice(product, paymentMethod));
+            const unitPrice = roundCurrency(getUnitPriceWithCampaign(product, paymentMethod, activeCampaign));
             return {
                 ...item,
                 nome: product.nome,
@@ -93,6 +106,7 @@ export async function POST(request: Request) {
                 items,
                 pricedProducts,
                 paymentMethod,
+                activeCampaign,
             );
             discount = calculation.discount;
             couponCode = coupon.codigo;

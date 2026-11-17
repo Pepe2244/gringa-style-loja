@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag, updateTag } from 'next/cache';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
-import { clearProductServiceCache } from '@/lib/product-service';
+import { clearProductServiceCache, isColumnMissingError } from '@/lib/product-service';
 import { submitToIndexNow } from '@/lib/indexnow';
 import { siteConfig } from '@/lib/site-config';
 import { applyProntaEntregaToTags } from '@/utils/productAvailability';
@@ -80,6 +80,18 @@ function safeUrl(value: unknown, name: string, optional = false): string | null 
     return input;
 }
 
+function optionalDateIso(value: unknown, name: string): string | null {
+    if (value == null) return null;
+    if (typeof value !== 'string') throw new Error(`${name} inválida.`);
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const timestamp = Date.parse(trimmed);
+    if (!Number.isFinite(timestamp)) {
+        throw new Error(`${name} inválida.`);
+    }
+    return new Date(timestamp).toISOString();
+}
+
 function revalidateProducts(slug?: string, id?: number) {
     clearProductServiceCache();
     try {
@@ -152,15 +164,22 @@ function revalidateCategories() {
 }
 
 function revalidateCampaigns() {
+    clearProductServiceCache();
     try {
         revalidateTag('campaign', 'max');
+        revalidateTag('produtos', 'max');
+        revalidateTag('loja', 'max');
         if (typeof updateTag === 'function') {
             updateTag('campaign');
+            updateTag('produtos');
+            updateTag('loja');
         }
     } catch (err) {
         console.error('Falha ao revalidar tags de campanha:', err);
     }
     revalidatePath('/', 'layout');
+    revalidatePath('/loja', 'page');
+    revalidatePath('/loja', 'layout');
     revalidatePath('/admin', 'layout');
 }
 
@@ -203,6 +222,12 @@ export async function saveProduct(input: unknown, id?: number) {
             ? data.media_urls.map((url) => safeUrl(url, 'URL da mídia') as string)
             : (() => { throw new Error('Mídias inválidas.'); })();
 
+        const inicioPromocao = optionalDateIso(data.inicio_promocao, 'Data de início da promoção');
+        const fimPromocao = optionalDateIso(data.fim_promocao, 'Data de término da promoção');
+        if (inicioPromocao && fimPromocao && Date.parse(inicioPromocao) > Date.parse(fimPromocao)) {
+            throw new Error('A data de início da promoção não pode ser posterior à data de término.');
+        }
+
         const payload = {
             nome: text(data.nome, 'Nome', 200),
             slug: text(data.slug, 'Slug', 220),
@@ -217,7 +242,9 @@ export async function saveProduct(input: unknown, id?: number) {
             em_estoque: booleanValue(data.em_estoque, 'Estoque'),
             media_urls: mediaList,
             imagens: mediaList,
-            variants: data.variants == null ? null : data.variants
+            variants: data.variants == null ? null : data.variants,
+            inicio_promocao: inicioPromocao,
+            fim_promocao: fimPromocao
         };
         let oldCanonicalSlug: string | undefined;
         let oldRawSlug: string | undefined;
@@ -237,7 +264,17 @@ export async function saveProduct(input: unknown, id?: number) {
         const query = targetId
             ? client.from('produtos').update(payload).eq('id', targetId)
             : client.from('produtos').insert(payload);
-        const { error } = await query;
+        let { error } = await query;
+        if (error && isColumnMissingError(error)) {
+            const strippedPayload = { ...payload };
+            delete (strippedPayload as any).inicio_promocao;
+            delete (strippedPayload as any).fim_promocao;
+            const fallbackQuery = targetId
+                ? client.from('produtos').update(strippedPayload).eq('id', targetId)
+                : client.from('produtos').insert(strippedPayload);
+            const fallbackRes = await fallbackQuery;
+            error = fallbackRes.error;
+        }
         if (error) throw error;
         const canonicalSlug = getCanonicalProductSlug({ id: targetId ?? 0, nome: payload.nome, slug: payload.slug });
         revalidateProducts(canonicalSlug, targetId);
@@ -330,13 +367,58 @@ export async function deleteCategory(id: number) {
 export async function saveCampaign(input: unknown, id?: number) {
     return runAdmin(async (client) => {
         const data = record(input);
+
+        const dataInicio = optionalDateIso(data.data_inicio, 'Data de início');
+        const dataFim = optionalDateIso(data.data_fim, 'Data de término');
+        if (dataInicio && dataFim && Date.parse(dataInicio) > Date.parse(dataFim)) {
+            throw new Error('A data de início da campanha não pode ser posterior à data de término.');
+        }
+
+        let tipoDesconto: 'percentual' | 'fixo' | null = null;
+        if (data.tipo_desconto && data.tipo_desconto !== 'nenhum') {
+            if (data.tipo_desconto !== 'percentual' && data.tipo_desconto !== 'fixo') {
+                throw new Error('Tipo de desconto inválido.');
+            }
+            tipoDesconto = data.tipo_desconto;
+        }
+
+        let valorDesconto: number | null = null;
+        if (tipoDesconto) {
+            valorDesconto = numberValue(
+                data.valor_desconto,
+                'Valor do desconto',
+                0.01,
+                tipoDesconto === 'percentual' ? 100 : 1_000_000
+            );
+        }
+
+        const aplicarEmTodos = typeof data.aplicar_em_todos === 'boolean' ? data.aplicar_em_todos : false;
+
+        let produtosAplicaveis: number[] | null = null;
+        if (Array.isArray(data.produtos_aplicaveis)) {
+            if (!data.produtos_aplicaveis.every((item) => Number.isSafeInteger(item) && item > 0)) {
+                throw new Error('Lista de produtos aplicáveis inválida.');
+            }
+            produtosAplicaveis = Array.from(new Set(data.produtos_aplicaveis.map(Number)));
+        } else if (data.produtos_aplicaveis === null || data.produtos_aplicaveis === undefined) {
+            produtosAplicaveis = null;
+        } else {
+            throw new Error('Lista de produtos aplicáveis inválida.');
+        }
+
         const payload = {
             nome_campanha: text(data.nome_campanha, 'Nome da campanha', 200),
             banner_url: safeUrl(data.banner_url, 'Banner', true),
             aviso_deslizante_texto: data.aviso_deslizante_texto == null ? null : text(data.aviso_deslizante_texto, 'Aviso', 1000),
             cor_fundo: text(data.cor_fundo, 'Cor de fundo', 7),
             cor_texto: text(data.cor_texto, 'Cor do texto', 7),
-            cor_destaque: text(data.cor_destaque, 'Cor de destaque', 7)
+            cor_destaque: text(data.cor_destaque, 'Cor de destaque', 7),
+            data_inicio: dataInicio,
+            data_fim: dataFim,
+            tipo_desconto: tipoDesconto,
+            valor_desconto: valorDesconto,
+            produtos_aplicaveis: produtosAplicaveis,
+            aplicar_em_todos: aplicarEmTodos
         };
         if (![payload.cor_fundo, payload.cor_texto, payload.cor_destaque].every((color) => /^#[0-9a-f]{6}$/i.test(color))) {
             throw new Error('As cores da campanha devem estar no formato hexadecimal.');
@@ -344,7 +426,22 @@ export async function saveCampaign(input: unknown, id?: number) {
         const query = id
             ? client.from('campanhas').update(payload).eq('id', positiveId(id))
             : client.from('campanhas').insert(payload);
-        const { error } = await query;
+        let { error } = await query;
+        if (error && isColumnMissingError(error)) {
+            const stripped = {
+                nome_campanha: payload.nome_campanha,
+                banner_url: payload.banner_url,
+                aviso_deslizante_texto: payload.aviso_deslizante_texto,
+                cor_fundo: payload.cor_fundo,
+                cor_texto: payload.cor_texto,
+                cor_destaque: payload.cor_destaque,
+            };
+            const fallbackQuery = id
+                ? client.from('campanhas').update(stripped).eq('id', positiveId(id))
+                : client.from('campanhas').insert(stripped);
+            const fallbackRes = await fallbackQuery;
+            error = fallbackRes.error;
+        }
         if (error) throw error;
         revalidateCampaigns();
     });

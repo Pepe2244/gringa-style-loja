@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { getProductTaxonomy } from '@/lib/taxonomy';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 import { buildStorageUrl, isLegacyDeadStorageUrl } from '@/lib/site-config';
 import { isProntaEntrega } from '@/utils/productAvailability';
 
@@ -118,7 +119,8 @@ export async function GET() {
       const promoNum = produto.preco_promocional !== null && produto.preco_promocional !== undefined
         ? Number(produto.preco_promocional)
         : NaN;
-      const salePrice = (Number.isFinite(promoNum) && promoNum > 0 && promoNum < precoNum)
+      const isPromo = isProductPromoActive(produto);
+      const salePrice = (isPromo && Number.isFinite(promoNum) && promoNum > 0 && promoNum < precoNum)
         ? promoNum.toFixed(2)
         : null;
 

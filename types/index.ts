@@ -4,6 +4,8 @@ export type Product = Database['public']['Tables']['produtos']['Row'];
 
 export type Category = Database['public']['Tables']['categorias']['Row'];
 
+export type Campaign = Database['public']['Tables']['campanhas']['Row'];
+
 export interface CartItem {
     produto_id: number;
     quantidade: number;

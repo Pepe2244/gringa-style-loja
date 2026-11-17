@@ -3,6 +3,7 @@ import { buildStorageUrl, isLegacyDeadStorageUrl, siteConfig } from '@/lib/site-
 import { getProductTaxonomy } from '@/lib/taxonomy';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { isProntaEntrega } from '@/utils/productAvailability';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 
 /**
  * MOTOR DE DADOS ESTRUTURADOS - GRINGA STYLE
@@ -218,6 +219,8 @@ export interface ProductData {
   descricao?: string;
   preco: number;
   preco_promocional?: number | null;
+  inicio_promocao?: string | null;
+  fim_promocao?: string | null;
   categoria_id?: number | null;
   tags?: string[] | null;
   em_estoque?: boolean;
@@ -303,7 +306,7 @@ export const ProductSchema = ({
   referenceDate?: string;
 }) => {
   const productImages = resolveProductImages(product);
-  const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
+  const hasPromo = isProductPromoActive(product);
   const precoNumerico = Number(hasPromo ? product.preco_promocional : product.preco) || 0;
   const precoFormatado = precoNumerico.toFixed(2);
   const canonicalSlug = getCanonicalProductSlug(product);
@@ -452,6 +455,8 @@ export interface ItemListProduct {
   descricao?: string;
   preco: number;
   preco_promocional?: number | null;
+  inicio_promocao?: string | null;
+  fim_promocao?: string | null;
   em_estoque?: boolean;
   tags?: string[] | null;
   imagens?: string[] | null;
@@ -498,7 +503,7 @@ export const ItemListSchema = ({
     const imageUrl = images[0] || `${SITE_URL}/imagens/logo_gringa_style.png`;
     const cleanedName = cleanText(product.nome);
 
-    const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
+    const hasPromo = isProductPromoActive(product);
     const precoNumerico = Number(hasPromo ? product.preco_promocional : product.preco) || 0;
     const precoFormatado = precoNumerico.toFixed(2);
 

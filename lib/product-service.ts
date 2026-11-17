@@ -3,6 +3,14 @@ import { supabase } from '@/lib/supabase';
 import { buildStorageUrl, isLegacyDeadStorageUrl, siteConfig } from '@/lib/site-config';
 import { getCachedValue } from '@/lib/cache';
 
+export function isColumnMissingError(error: any): boolean {
+    return Boolean(
+        error &&
+        (error.code === '42703' ||
+            (typeof error.message === 'string' && error.message.toLowerCase().includes('does not exist')))
+    );
+}
+
 export const resolveAbsoluteUrl = (path?: string | null) => {
     if (!path || isLegacyDeadStorageUrl(path)) return `${siteConfig.appUrl}/imagens/logo_gringa_style.png`;
     if (path.startsWith('http')) return path;

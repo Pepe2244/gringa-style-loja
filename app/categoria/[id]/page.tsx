@@ -7,6 +7,8 @@ import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 import { BreadcrumbSchema, CollectionPageSchema, ItemListSchema } from '@/components/SEO/StructuredData';
 import { resolveAbsoluteUrl } from '@/lib/product-service';
 
+import { isColumnMissingError } from '@/lib/product-service';
+
 export const revalidate = 60;
 
 interface Props {
@@ -114,14 +116,23 @@ export default async function CategoriaPage({ params }: Props) {
         notFound();
     }
 
-    const [categoryResult, productsResult] = await Promise.all([
+    const [categoryResult, initialProductsResult] = await Promise.all([
         supabase.from('categorias').select('*').eq('id', categoryId).maybeSingle(),
         supabase
             .from('produtos')
-            .select('id, nome, preco, preco_promocional, preco_pix, imagens, media_urls, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, produtos_relacionados_ids')
+            .select('id, nome, preco, preco_promocional, preco_pix, inicio_promocao, fim_promocao, imagens, media_urls, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, produtos_relacionados_ids')
             .eq('categoria_id', categoryId)
             .order('created_at', { ascending: false }),
     ]);
+
+    let productsResult = initialProductsResult;
+    if (productsResult.error && isColumnMissingError(productsResult.error)) {
+        productsResult = (await supabase
+            .from('produtos')
+            .select('id, nome, preco, preco_promocional, preco_pix, imagens, media_urls, video, em_estoque, categoria_id, created_at, descricao, tags, variants, slug, produtos_relacionados_ids')
+            .eq('categoria_id', categoryId)
+            .order('created_at', { ascending: false })) as any;
+    }
 
     if (categoryResult.error) {
         throw categoryResult.error;
@@ -141,6 +152,8 @@ export default async function CategoriaPage({ params }: Props) {
         descricao: p.descricao,
         preco: p.preco,
         preco_promocional: p.preco_promocional,
+        inicio_promocao: p.inicio_promocao,
+        fim_promocao: p.fim_promocao,
         em_estoque: p.em_estoque,
         tags: p.tags,
         imagens: p.imagens,

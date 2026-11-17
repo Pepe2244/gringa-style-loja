@@ -7,6 +7,7 @@ import { buildCanonicalUrl } from '@/lib/site-config';
 import { resolveAbsoluteUrl, fetchProductBySlugOrId, getCachedCategories, getCachedRelatedProducts } from '@/lib/product-service';
 import { getCanonicalProductSlug } from '@/utils/slugify';
 import { isProntaEntrega } from '@/utils/productAvailability';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 
 function getProductMediaUrls(product: any): string[] {
     const raw = (Array.isArray(product?.media_urls) && product.media_urls.length > 0)
@@ -80,8 +81,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const mediaUrls = getProductMediaUrls(product);
     const imageUrl = resolveAbsoluteUrl(mediaUrls.find((url) => !url.includes('.mp4') && !url.includes('.webm')));
 
-    const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
-    const precoFinal = hasPromo ? product.preco_promocional : product.preco;
+    const hasPromo = isProductPromoActive(product);
+    const precoFinal = (hasPromo && product.preco_promocional) ? product.preco_promocional : product.preco;
     const precoFormatado = precoFinal ? precoFinal.toFixed(2).replace('.', ',') : '';
     const emEstoque = Boolean(product.em_estoque);
     const prontaEntrega = isProntaEntrega(product);

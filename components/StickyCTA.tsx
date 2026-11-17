@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Product } from '@/types';
+import { isProductPromoActive } from '@/lib/checkout-pricing';
 
 export default function StickyCTA({ product }: { product: Product }) {
     const [isVisible, setIsVisible] = useState(false);
@@ -32,8 +33,8 @@ export default function StickyCTA({ product }: { product: Product }) {
 
     if (!isVisible || !product.em_estoque) return null;
 
-    const hasPromo = product.preco_promocional != null && product.preco_promocional > 0 && product.preco_promocional < product.preco;
-    const precoFinal = hasPromo ? product.preco_promocional! : product.preco;
+    const hasPromo = isProductPromoActive(product);
+    const precoFinal = (hasPromo && product.preco_promocional) ? product.preco_promocional : product.preco;
 
     return (
         <div className="sticky-cta">
