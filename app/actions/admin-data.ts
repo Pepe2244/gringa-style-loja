@@ -616,8 +616,12 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
         const payload: Record<string, unknown> = {
             section,
             url: safeUrl(data.url, 'Imagem') as string,
-            title: data.title == null ? null : text(data.title, 'Título', 200),
-            ...(section === 'projetos' ? { secondary_url: safeUrl(data.secondary_url, 'Imagem secundária') } : {})
+            title: data.title == null ? null : text(data.title, 'Título', 10000),
+            ...(section === 'projetos'
+                ? { secondary_url: safeUrl(data.secondary_url, 'Imagem secundária') }
+                : section === 'galeria' && 'secondary_url' in data
+                    ? { secondary_url: safeUrl(data.secondary_url, 'Imagem secundária', true) }
+                    : {})
         };
         if (replaceHero && section === 'hero' && !id) {
             const { error } = await client.from('b2b_assets').delete().eq('section', 'hero');

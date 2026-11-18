@@ -30,6 +30,18 @@ export default function PWAManager({ children }: PWAManagerProps) {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
+        // Em desenvolvimento local, não registra o Service Worker e limpa registros existentes para não quebrar HMR/Turbopack
+        if (process.env.NODE_ENV === 'development') {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then((registrations) => {
+                    for (const registration of registrations) {
+                        registration.unregister();
+                    }
+                }).catch(() => {});
+            }
+            return;
+        }
+
         // 1. Registro ultra-otimizado do Service Worker (ZERO impacto no PageSpeed / FCP / LCP)
         // Só registra quando o navegador estiver 100% ocioso após o carregamento da página
         if ('serviceWorker' in navigator) {

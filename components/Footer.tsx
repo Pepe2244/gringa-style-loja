@@ -3,27 +3,28 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Mail, MapPin } from 'lucide-react';
+import { Mail, MapPin, PhoneCall, ShieldCheck } from 'lucide-react';
 import { buildWhatsAppUrl, getWhatsAppFormatted } from '@/lib/site-config';
+
+const GS_FOOTER_CONTACTS = [
+    { nome: 'Nalesso', telefone: '(15) 99860-8170', numeroLimpo: '5515998608170' },
+    { nome: 'Emanuel', telefone: '(67) 8145-0995', numeroLimpo: '556781450995' },
+    { nome: 'Fernando', telefone: '(19) 99328-3474', numeroLimpo: '5519993283474' },
+];
 
 export default function Footer() {
     const [clickCount, setClickCount] = useState(0);
     const router = useRouter();
     const pathname = usePathname();
 
-    // Determine context based on the current path
-    const isStore = pathname.startsWith('/loja') || pathname.startsWith('/produto') || pathname.startsWith('/carrinho') || pathname.startsWith('/busca');
-    const isServices = pathname.startsWith('/gs-servicos-industriais');
+    // Contexto com base na rota
+    const isServices = pathname.startsWith('/gs-servicos-industriais') || pathname.startsWith('/soldas-especiais');
     const isPortal = pathname === '/';
+    const isStore = !isPortal && !isServices;
+
     const gringaEmail = 'contato@gringastylebr.com.br';
     const gsServicesEmail = 'contato@gsservicosindustriais.com.br';
     const contactEmail = isServices ? gsServicesEmail : gringaEmail;
-    const contactEmails = isPortal
-        ? [
-            { label: 'Loja Gringa Style', value: gringaEmail },
-            { label: 'GS Serviços Industriais', value: gsServicesEmail },
-        ]
-        : [{ label: isServices ? 'GS Serviços Industriais' : 'Loja Gringa Style', value: contactEmail }];
 
     const handleSecretClick = () => {
         if (process.env.NODE_ENV !== 'production') {
@@ -36,19 +37,110 @@ export default function Footer() {
         }
     };
 
+    // FOOTER EXCLUSIVO E CONTEXTUAL PARA GS SOLUÇÕES INDUSTRIAIS
+    if (isServices) {
+        return (
+            <footer className="bg-[#0F172A] text-neutral-300 relative">
+                {/* Barra gradiente fiel ao rodapé/capa do PDF */}
+                <div
+                    className="h-1 w-full"
+                    style={{ background: 'linear-gradient(90deg, #D95B16 0%, #2AB3A6 100%)' }}
+                    aria-hidden="true"
+                />
+
+                <div className="container !mb-0 !py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                    {/* Coluna 1: Marca & Missão Industrial */}
+                    <div className="space-y-4">
+                        <div className="font-bold text-2xl tracking-wider text-[#D95B16]" style={{ fontFamily: 'var(--fonte-titulos)' }}>
+                            GS SOLUÇÕES INDUSTRIAIS
+                        </div>
+                        <p className="text-sm text-slate-400 leading-relaxed">
+                            Soluções de engenharia em caldeiraria, soldas especiais de alta integridade, recuperação dimensional de peças críticas e manutenção mecânica em todo o Brasil.
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-slate-300 pt-1">
+                            <ShieldCheck className="w-4 h-4 text-[#D95B16] flex-shrink-0" />
+                            <span>Normas ASME, ANSI, NR-33 &amp; NR-35</span>
+                        </div>
+                    </div>
+
+                    {/* Coluna 2: Especialidades Técnicas */}
+                    <div className="space-y-2.5">
+                        <h3 className="text-white font-bold text-lg mb-4" style={{ fontFamily: 'var(--fonte-titulos)' }}>Especialidades</h3>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#especialidades" className="text-slate-300 hover:text-[#D95B16] transition-colors">Tubulações Industriais (Sch 40 / 10S / OD)</a></p>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#soldas-especiais" className="text-slate-300 hover:text-[#D95B16] transition-colors">Soldas Especiais (GTAW / TIG)</a></p>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#caldeiraria" className="text-slate-300 hover:text-[#D95B16] transition-colors">Caldeiraria, Tanques &amp; Estruturas</a></p>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#manutencao" className="text-slate-300 hover:text-[#D95B16] transition-colors">Caldeiras, Torres &amp; Linha de Incêndio</a></p>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#segmentos" className="text-slate-300 hover:text-[#D95B16] transition-colors">Segmentos Atendidos</a></p>
+                    </div>
+
+                    {/* Coluna 3: Portfólio & Confiança */}
+                    <div className="space-y-2.5">
+                        <h3 className="text-white font-bold text-lg mb-4" style={{ fontFamily: 'var(--fonte-titulos)' }}>Portfólio &amp; Confiança</h3>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#sobre" className="text-slate-300 hover:text-[#D95B16] transition-colors">Quem Somos &amp; Valores</a></p>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#portfolio" className="text-[#D95B16] hover:text-white font-semibold transition-colors">Portfólio Técnico de Obras</a></p>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#clientes" className="text-slate-300 hover:text-[#D95B16] transition-colors">Principais Parceiros</a></p>
+                        <p className="text-sm"><a href="/gs-servicos-industriais#diferenciais" className="text-slate-300 hover:text-[#D95B16] transition-colors">Qualidade &amp; Segurança (100% no Prazo)</a></p>
+                        <p className="text-sm"><Link href="/" className="text-slate-400 hover:text-white transition-colors">Portal Grupo Gringa Style</Link></p>
+                    </div>
+
+                    {/* Coluna 4: Atendimento & Engenharia */}
+                    <div className="space-y-3">
+                        <h3 className="text-white font-bold text-lg mb-4" style={{ fontFamily: 'var(--fonte-titulos)' }}>Atendimento Técnico</h3>
+                        <div className="space-y-2">
+                            {GS_FOOTER_CONTACTS.map((ct) => (
+                                <p key={ct.nome} className="text-sm flex items-center gap-2">
+                                    <PhoneCall className="w-3.5 h-3.5 text-[#D95B16] flex-shrink-0" />
+                                    <a
+                                        href={`https://wa.me/${ct.numeroLimpo}?text=${encodeURIComponent(`Olá ${ct.nome}! Gostaria de falar com a equipe técnica da GS Soluções Industriais.`)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-slate-200 hover:text-[#D95B16] transition-colors font-medium"
+                                    >
+                                        <span className="text-slate-400 font-normal">{ct.nome}:</span> {ct.telefone}
+                                    </a>
+                                </p>
+                            ))}
+                        </div>
+                        <p className="text-sm flex items-start gap-2 break-all pt-1">
+                            <Mail className="w-4 h-4 text-[#D95B16] flex-shrink-0 mt-0.5" />
+                            <span className="text-slate-300">{gsServicesEmail}</span>
+                        </p>
+                        <p className="text-sm flex items-center gap-2 text-slate-300">
+                            <MapPin className="w-4 h-4 text-[#D95B16] flex-shrink-0" />
+                            <span>Atendimento em Fábrica em Todo o Brasil</span>
+                        </p>
+                        <div className="pt-2">
+                            <a
+                                href="/gs-servicos-industriais#contato"
+                                className="inline-block px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-md bg-[#D95B16] text-white hover:bg-[#bf4d0e] transition-colors shadow-md"
+                            >
+                                Solicitar Proposta Técnica
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-white/10 py-6 text-center text-xs text-slate-400">
+                    <p>
+                        &copy; <span onClick={handleSecretClick} style={{ cursor: 'default', userSelect: 'none' }} suppressHydrationWarning>{new Date().getFullYear()}</span> GS Soluções Industriais — Divisão de Engenharia &amp; Manutenção. Todos os direitos reservados.
+                    </p>
+                </div>
+            </footer>
+        );
+    }
+
+    // FOOTER PADRÃO DA LOJA E DO PORTAL
     return (
         <footer className="rodape">
             <div className="container">
                 <div className="rodape-coluna">
                     <div style={{ fontFamily: 'var(--fonte-titulos)', fontSize: '24px', color: 'var(--cor-destaque)', marginBottom: '15px', fontWeight: 'bold' }}>
-                        {isServices ? 'GS Serviços Industriais' : isPortal ? 'Grupo Gringa Style' : 'Gringa Style'}
+                        {isPortal ? 'Grupo Gringa Style' : 'Gringa Style'}
                     </div>
                     <p>
-                        {isServices
-                            ? 'Soluções industriais em soldas especiais e mecânica industrial para sua operação.'
-                            : isPortal
-                                ? 'Loja de equipamentos para soldadores e GS Serviços Industriais, com soluções em soldas especiais e mecânica industrial.'
-                                : 'Equipamentos e acessórios para solda com a mais alta qualidade e estilo.'}
+                        {isPortal
+                            ? 'Loja de equipamentos para soldadores e GS Soluções Industriais, com soluções em soldas especiais e mecânica industrial.'
+                            : 'Equipamentos e acessórios para solda com a mais alta qualidade e estilo.'}
                     </p>
                 </div>
 
@@ -56,7 +148,7 @@ export default function Footer() {
                     <h3>Institucional</h3>
                     <p><Link href="/sobre">Sobre nós</Link></p>
                     <p><Link href="/loja">Loja Gringa Style</Link></p>
-                    <p><Link href="/gs-servicos-industriais">GS Serviços Industriais</Link></p>
+                    <p><Link href="/gs-servicos-industriais">GS Soluções Industriais</Link></p>
                     <p><Link href="/rifa">Ações e Rifas</Link></p>
                     <p><Link href="/historico">Histórico de Rifas</Link></p>
                     <p><Link href="/devolucao-e-reembolso">Devolução e Reembolso</Link></p>
@@ -83,15 +175,11 @@ export default function Footer() {
                             {getWhatsAppFormatted()}
                         </a>
                     </p>
-                    {contactEmails.map((item) => (
-                        <p key={item.value} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
-                            <Mail size={16} />
-                            <span>
-                                {isPortal ? `${item.label}: ${item.value}` : item.value}
-                            </span>
-                        </p>
-                    ))}
-                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP {!isServices && '(Loja Online)'}</p>
+                    <p style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
+                        <Mail size={16} />
+                        <span>{contactEmail}</span>
+                    </p>
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={16} /> Itapetininga - SP (Loja Online)</p>
                 </div>
 
                 <div className="rodape-coluna">
@@ -106,9 +194,7 @@ export default function Footer() {
             </div>
             
             <div className="rodape-base">
-                {!isServices && (
-                    <p>Usamos armazenamento local para salvar seu carrinho. Ao navegar, você concorda com nossa <Link href="/privacidade" style={{ textDecoration: 'underline', color: 'var(--cor-destaque)' }}>Política de Privacidade</Link>.</p>
-                )}
+                <p>Usamos armazenamento local para salvar seu carrinho. Ao navegar, você concorda com nossa <Link href="/privacidade" style={{ textDecoration: 'underline', color: 'var(--cor-destaque)' }}>Política de Privacidade</Link>.</p>
                 <p style={{ marginTop: '10px' }}>
                     &copy; <span onClick={handleSecretClick} style={{ cursor: 'default', userSelect: 'none' }} suppressHydrationWarning>{new Date().getFullYear()}</span> Gringa Style. Todos os direitos reservados.
                 </p>

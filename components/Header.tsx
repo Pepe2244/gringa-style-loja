@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { ShoppingCart, Heart, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
+import { supabase } from '@/lib/supabase';
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -42,7 +43,6 @@ export default function Header() {
         let isSubscribed = true;
         const checkActiveRaffles = async () => {
             try {
-                const { supabase } = await import('@/lib/supabase');
                 const { count } = await supabase
                     .from('rifas')
                     .select('*', { count: 'exact', head: true })
@@ -135,7 +135,7 @@ export default function Header() {
                 <Link href={homeLink} className="logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
                     <Image
                         src={isServices ? '/imagens/logo_gs_servicos_industriais.webp' : '/imagens/logo_gringa_style.webp'}
-                        alt={isServices ? 'GS Serviços Industriais' : 'Gringa Style Logo'}
+                        alt={isServices ? 'GS Soluções Industriais' : 'Gringa Style Logo'}
                         width={125}
                         height={125}
                         priority
@@ -153,14 +153,16 @@ export default function Header() {
                     {isPortal ? (
                         <>
                             <Link href="/loja" className="nav-item" onClick={handleNavClick}>Loja</Link>
-                            <Link href="/gs-servicos-industriais" className="nav-item" onClick={handleNavClick}>GS Serviços Industriais</Link>
+                            <Link href="/gs-servicos-industriais" className="nav-item" onClick={handleNavClick}>GS Soluções Industriais</Link>
                         </>
                     ) : isServices ? (
                         <>
-                            <Link href="/gs-servicos-industriais#servicos" className={`nav-item ${isActive('/gs-servicos-industriais#servicos')}`} onClick={handleNavClick}>Serviços</Link>
+                            <Link href="/gs-servicos-industriais#sobre" className="nav-item" onClick={handleNavClick}>Sobre</Link>
+                            <Link href="/gs-servicos-industriais#portfolio" className="nav-item" onClick={handleNavClick}>Portfólio</Link>
+                            <Link href="/gs-servicos-industriais#especialidades" className="nav-item" onClick={handleNavClick}>Especialidades</Link>
+                            <Link href="/gs-servicos-industriais#clientes" className="nav-item" onClick={handleNavClick}>Clientes</Link>
                             <Link href="/gs-servicos-industriais#contato" className="nav-item" onClick={handleNavClick}>Orçamento</Link>
-                            <Link href="/loja" className="nav-item" onClick={handleNavClick}>Conheça a Loja</Link>
-                            <Link href="/" className="nav-item" onClick={handleNavClick}>Portal Gringa</Link>
+                            <Link href="/" className="nav-item opacity-70 hover:opacity-100" onClick={handleNavClick}>Portal Gringa</Link>
                         </>
                     ) : (
                         <>
@@ -233,6 +235,20 @@ export default function Header() {
                                 {mounted ? totalItems : 0}
                             </span>
                         </Link>}
+
+                        {isServices && (
+                            <Link
+                                href="/gs-servicos-industriais#contato"
+                                onClick={handleNavClick}
+                                className="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-md font-bold text-xs uppercase tracking-wider transition-all shadow-md hover:brightness-110"
+                                style={{
+                                    backgroundColor: '#D95B16',
+                                    color: '#ffffff',
+                                }}
+                            >
+                                Solicitar Orçamento
+                            </Link>
+                        )}
 
                         <button
                             id="hamburger-btn"

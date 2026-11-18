@@ -5,23 +5,23 @@ import { buildCanonicalUrl, siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'GS Serviços Industriais | Soldas Especiais e Mecânica',
+    absolute: 'GS Soluções Industriais | Soldas Especiais, Mecânica e Engenharia de Manutenção',
   },
-  description: 'Soluções industriais em soldas especiais e mecânica industrial, da manutenção à recuperação de equipamentos e componentes.',
+  description: 'Soluções avançadas em soldas especiais de alta integridade, recuperação dimensional de peças e manutenção mecânica industrial em todo o Brasil.',
   alternates: { canonical: buildCanonicalUrl('/gs-servicos-industriais') },
   openGraph: {
-    title: 'GS Serviços Industriais | Soldas Especiais e Mecânica',
-    description: 'Serviços industriais especializados em soldagem, manutenção mecânica e recuperação de equipamentos.',
+    title: 'GS Soluções Industriais | Soldas Especiais, Mecânica e Engenharia de Manutenção',
+    description: 'Soluções avançadas em soldas especiais de alta integridade, recuperação dimensional de peças e manutenção mecânica industrial em todo o Brasil.',
     url: buildCanonicalUrl('/gs-servicos-industriais'),
-    siteName: 'GS Serviços Industriais',
-    images: [{ url: new URL('/imagens/logo_gs_servicos_industriais.png', siteConfig.appUrl).toString(), width: 1920, height: 1920, alt: 'Logo GS Serviços Industriais' }],
+    siteName: 'GS Soluções Industriais',
+    images: [{ url: new URL('/imagens/logo_gs_servicos_industriais.png', siteConfig.appUrl).toString(), width: 1920, height: 1920, alt: 'Logo GS Soluções Industriais' }],
     locale: 'pt_BR',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'GS Serviços Industriais | Soldas Especiais e Mecânica Industrial',
-    description: 'Serviços industriais especializados em soldagem, manutenção mecânica.',
+    title: 'GS Soluções Industriais | Soldas Especiais e Mecânica Industrial',
+    description: 'Soluções industriais especializadas em soldas de alta precisão, recuperação de ativos e engenharia de manutenção.',
     images: [new URL('/imagens/logo_gs_servicos_industriais.png', siteConfig.appUrl).toString()],
   },
 };
@@ -31,15 +31,15 @@ export default function GSServicosIndustriaisRoute() {
     <>
       <WebPageSchema
         page={{
-          name: 'GS Serviços Industriais | Soldas Especiais e Mecânica',
-          description: 'Soluções industriais em soldas especiais e mecânica industrial, da manutenção à recuperação de equipamentos e componentes.',
+          name: 'GS Soluções Industriais | Soldas Especiais, Mecânica e Engenharia de Manutenção',
+          description: 'Soluções avançadas em soldas especiais de alta integridade, recuperação dimensional de peças e manutenção mecânica industrial em todo o Brasil.',
           url: buildCanonicalUrl('/gs-servicos-industriais'),
         }}
       />
       <BreadcrumbSchema
         items={[
           { name: 'Gringa Style', url: '/' },
-          { name: 'GS Serviços Industriais', url: '/gs-servicos-industriais' },
+          { name: 'GS Soluções Industriais', url: '/gs-servicos-industriais' },
         ]}
       />
       <GSServicosIndustriaisPage />

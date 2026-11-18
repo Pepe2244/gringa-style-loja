@@ -103,7 +103,7 @@ export default function RootLayout({
   }
 
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         {/* Preload das fontes críticas (elimina atraso no caminho crítico de renderização) */}
         <link
