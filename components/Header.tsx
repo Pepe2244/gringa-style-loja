@@ -132,14 +132,24 @@ export default function Header() {
             <header className="cabecalho !sticky !top-0 !z-50 !w-full !bg-black/80 !backdrop-blur-md !border-b !border-white/5" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
             <div className="container !relative flex items-center justify-between">
                 {/* Contextual Logo Link */}
-                <Link href={homeLink} className="logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}>
+                <Link
+                    href={homeLink}
+                    className={`logo ${isServices ? '!items-center !h-auto !m-0' : ''}`}
+                    onClick={handleNavClick}
+                    style={{ display: 'flex', alignItems: 'center', flexShrink: '0', textDecoration: 'none', zIndex: 51, position: 'relative' }}
+                >
                     <Image
                         src={isServices ? '/imagens/logo_gs_servicos_industriais_v2.webp' : '/imagens/logo_gringa_style.webp'}
                         alt={isServices ? 'GS Soluções Industriais' : 'Gringa Style Logo'}
-                        width={125}
-                        height={125}
+                        width={isServices ? 72 : 125}
+                        height={isServices ? 72 : 125}
                         priority
-                        style={{ width: '125px', height: '125px', maxWidth: 'none', objectFit: 'contain' }}
+                        className={isServices ? '!w-[72px] !h-[72px] !object-contain' : undefined}
+                        style={
+                            isServices
+                                ? { width: '72px', height: '72px', maxWidth: 'none', objectFit: 'contain' }
+                                : { width: '125px', height: '125px', maxWidth: 'none', objectFit: 'contain' }
+                        }
                     />
                 </Link>
 
