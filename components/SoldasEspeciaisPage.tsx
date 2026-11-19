@@ -956,7 +956,7 @@ export default function GSServicosIndustriaisPage({ initialAssets = [] }: { init
             <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
               <div className="relative w-16 h-16 rounded-xl bg-[#0F172A] p-2 flex-shrink-0 border border-slate-200">
                 <Image
-                  src="/imagens/logo_gs_servicos_industriais.webp"
+                  src="/imagens/logo_gs_servicos_industriais_v2.webp"
                   alt="GS Soluções Industriais"
                   fill
                   sizes="64px"

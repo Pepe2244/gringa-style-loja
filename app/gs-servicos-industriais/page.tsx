@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'Soluções avançadas em soldas especiais de alta integridade, recuperação dimensional de peças e manutenção mecânica industrial em todo o Brasil.',
     url: buildCanonicalUrl('/gs-servicos-industriais'),
     siteName: 'GS Soluções Industriais',
-    images: [{ url: new URL('/imagens/logo_gs_servicos_industriais.png', siteConfig.appUrl).toString(), width: 1024, height: 1024, alt: 'Logo GS Soluções Industriais' }],
+    images: [{ url: new URL('/imagens/logo_gs_servicos_industriais_v2.png', siteConfig.appUrl).toString(), width: 1024, height: 1024, alt: 'Logo GS Soluções Industriais' }],
     locale: 'pt_BR',
     type: 'website',
   },
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'GS Soluções Industriais | Soldas Especiais e Mecânica Industrial',
     description: 'Soluções industriais especializadas em soldas de alta precisão, recuperação de ativos e engenharia de manutenção.',
-    images: [new URL('/imagens/logo_gs_servicos_industriais.png', siteConfig.appUrl).toString()],
+    images: [new URL('/imagens/logo_gs_servicos_industriais_v2.png', siteConfig.appUrl).toString()],
   },
 };
 
