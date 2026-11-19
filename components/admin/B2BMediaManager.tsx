@@ -8,7 +8,18 @@ import { getProxiedImageUrl } from '@/utils/imageUrl';
 import Image from 'next/image';
 import { deleteB2BAsset, saveB2BAsset } from '@/app/actions/admin-data';
 
-type B2BSection = 'galeria' | 'cliente' | 'hero' | 'projetos';
+type B2BSection =
+  | 'galeria'
+  | 'cliente'
+  | 'hero'
+  | 'projetos'
+  | 'sobre'
+  | 'tubulacoes'
+  | 'soldas'
+  | 'caldeiraria'
+  | 'manutencao'
+  | 'segmentos';
+
 type B2BTab = B2BSection | 'clientes';
 
 export interface B2BAsset {
@@ -27,15 +38,69 @@ export interface B2BProjectMeta {
   descricao: string;
 }
 
-const tabLabels: Record<B2BTab, string> & { cliente: string } = {
-  galeria: 'Galeria de obras',
-  clientes: 'Clientes / Parceiros',
-  hero: 'Imagem do hero',
-  projetos: 'Projetos antes/depois',
-  cliente: 'Clientes / Parceiros',
+export interface B2BSectionMediaMeta {
+  caption: string;
+  description?: string;
+}
+
+const tabLabels: Record<B2BTab, string> = {
+  hero: '1. Hero (Capa)',
+  sobre: '2. Quem Somos',
+  clientes: '3. Clientes / Parceiros',
+  cliente: '3. Clientes / Parceiros',
+  galeria: '4. Portfólio (Galeria)',
+  projetos: '4b. Portfólio (Antes/Depois)',
+  tubulacoes: '5. Tubulações (3 fotos)',
+  soldas: '6. Soldas Especializadas (3 fotos)',
+  caldeiraria: '7. Caldeiraria (4 fotos)',
+  manutencao: '8. Manutenção (3 cards)',
+  segmentos: '9. Segmentos Atendidos',
 };
 
-const visibleTabs: B2BTab[] = ['galeria', 'projetos', 'clientes', 'hero'];
+const sectionHints: Record<B2BSection, string> = {
+  hero: 'Foto principal do topo da página (1ª dobra). Cadastrar uma nova substitui a foto atual.',
+  sobre: 'Foto lateral da seção "Quem Somos" com legenda na barra preta inferior. (1 foto)',
+  cliente: 'Logos das indústrias parceiras exibidas no carrossel de clientes.',
+  galeria: 'Obras exibidas na grade do Portfólio Técnico com filtros e modal de memorial descritivo.',
+  projetos: 'Obras com comparador interativo Antes / Depois dentro do Portfólio Técnico.',
+  tubulacoes: 'As 3 fotos verticais ao lado de "Tubulações Industriais" (ex: Inox Sch 40/10S, OD Sanitária, Aço Carbono).',
+  soldas: 'As 3 fotos em mosaico da seção "Soldas Especializadas" (1 grande à esquerda + 2 à direita).',
+  caldeiraria: 'As 4 fotos em grade (2x2) da seção "Caldeiraria, Tanques e Estruturas".',
+  manutencao: 'Os 3 cards com foto, título e texto da seção "Manutenção Industrial e Utilidades".',
+  segmentos: 'Foto vertical à esquerda da seção "Segmentos Atendidos" com legenda na barra preta. (1 foto)',
+};
+
+const visibleTabs: B2BTab[] = [
+  'hero',
+  'sobre',
+  'clientes',
+  'galeria',
+  'projetos',
+  'tubulacoes',
+  'soldas',
+  'caldeiraria',
+  'manutencao',
+  'segmentos',
+];
+
+export function parseB2BSectionMedia(rawTitle: string | null | undefined, fallbackCaption = ''): B2BSectionMediaMeta {
+  const trimmed = rawTitle?.trim() || '';
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return {
+        caption: parsed.caption || parsed.title || fallbackCaption,
+        description: parsed.description || parsed.descricao || '',
+      };
+    } catch {
+      // Fallback para texto simples
+    }
+  }
+  return {
+    caption: trimmed || fallbackCaption,
+    description: '',
+  };
+}
 
 export const DEFAULT_B2B_CATALOG_BY_FILENAME: Record<string, B2BProjectMeta> = {
   '1791390326865': {
@@ -191,7 +256,7 @@ export default function B2BMediaManager() {
       const { data, error: fetchError } = await supabase
         .from('b2b_assets')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (fetchError) throw fetchError;
       setAssets((data || []) as B2BAsset[]);
@@ -234,7 +299,7 @@ export default function B2BMediaManager() {
   };
 
   const openModal = (section: B2BSection, asset: B2BAsset | null = null) => {
-    setActiveTab(section);
+    setActiveTab(section === 'cliente' ? 'clientes' : section);
     setEditingAsset(asset);
     
     if (asset) {
@@ -244,13 +309,20 @@ export default function B2BMediaManager() {
         setInputProcess('');
         setInputMaterial('');
         setInputDesc('');
-      } else {
+      } else if (section === 'galeria' || section === 'projetos') {
         const parsed = parseB2BTitle(asset.title, asset.url);
         setInputTitle(parsed.title);
         setInputCategory(parsed.category);
         setInputProcess(parsed.processo);
         setInputMaterial(parsed.material);
         setInputDesc(parsed.descricao);
+      } else {
+        const parsedSection = parseB2BSectionMedia(asset.title);
+        setInputTitle(parsedSection.caption);
+        setInputDesc(parsedSection.description || '');
+        setInputCategory('soldas');
+        setInputProcess('');
+        setInputMaterial('');
       }
     } else {
       setInputTitle('');
@@ -284,6 +356,8 @@ export default function B2BMediaManager() {
     const isProject = section === 'projetos';
     const isGallery = section === 'galeria';
     const isWorkItem = isProject || isGallery;
+    const isManutencao = section === 'manutencao';
+    const isCaptionSection = ['sobre', 'tubulacoes', 'soldas', 'caldeiraria', 'segmentos'].includes(section);
     const mainFileRequired = !editingAsset && !fileToUpload;
 
     if (mainFileRequired || (isProject && !editingAsset && !secondaryFileToUpload)) {
@@ -313,8 +387,18 @@ export default function B2BMediaManager() {
           descricao: inputDesc.trim() || 'Execução técnica realizada sob rígido controle de processo.',
         };
         finalTitleValue = JSON.stringify(metaPayload);
+      } else if (isManutencao) {
+        const sectionPayload: B2BSectionMediaMeta = {
+          caption: inputTitle.trim() || 'MANUTENÇÃO INDUSTRIAL',
+          description: inputDesc.trim() || 'Intervenções rápidas e seguras para máxima confiabilidade operacional.',
+        };
+        finalTitleValue = JSON.stringify(sectionPayload);
+      } else if (isCaptionSection) {
+        finalTitleValue = inputTitle.trim() || 'Execução Técnica GS Soluções Industriais';
       } else if (section === 'cliente') {
         finalTitleValue = inputTitle.trim() || 'Cliente Parceiro';
+      } else if (section === 'hero') {
+        finalTitleValue = inputTitle.trim() || null;
       } else {
         finalTitleValue = null;
       }
@@ -360,16 +444,19 @@ export default function B2BMediaManager() {
   const isProjectModal = modalSection === 'projetos';
   const isGalleryModal = modalSection === 'galeria';
   const isTechnicalWork = isProjectModal || isGalleryModal;
+  const isManutencaoModal = modalSection === 'manutencao';
+  const isCaptionModal = ['sobre', 'tubulacoes', 'soldas', 'caldeiraria', 'segmentos'].includes(modalSection);
+  const isHeroModal = modalSection === 'hero';
 
   return (
     <div className="admin-container" style={{ maxWidth: '1150px', color: 'white' }}>
       <div className="admin-header">
         <div>
           <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Portfólio & Mídia B2B (GS Soluções Industriais)
+            Controle por Seção &amp; Portfólio B2B (GS Soluções Industriais)
           </h1>
           <p style={{ color: '#aaa', fontSize: '0.88rem', margin: '6px 0 0' }}>
-            Cadastre e edite fotos, processos técnicos, materiais e descrições das obras exibidas no portfólio.
+            Gerencie individualmente as fotos e legendas de cada seção da página industrial, sem misturar ou repetir imagens involuntariamente.
           </p>
         </div>
         <button className="btn-admin btn-adicionar" onClick={() => openModal(modalSection)}>
@@ -377,12 +464,57 @@ export default function B2BMediaManager() {
         </button>
       </div>
 
-      <div className="admin-tabs" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '22px' }}>
-        {visibleTabs.map((tab) => (
-          <button key={tab} className={`btn ${activeTab === tab ? '' : 'btn-secundario'}`} onClick={() => setActiveTab(tab)}>
-            {tabLabels[tab]}
-          </button>
-        ))}
+      <div className="admin-tabs" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        {visibleTabs.map((tab) => {
+          const secKey = tab === 'clientes' ? 'cliente' : tab;
+          const count = assets.filter((a) => a.section === secKey).length;
+          return (
+            <button
+              key={tab}
+              className={`btn ${activeTab === tab ? '' : 'btn-secundario'}`}
+              onClick={() => setActiveTab(tab)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '8px 14px' }}
+            >
+              <span>{tabLabels[tab]}</span>
+              <span
+                style={{
+                  background: activeTab === tab ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.1)',
+                  padding: '1px 7px',
+                  borderRadius: '999px',
+                  fontSize: '0.72rem',
+                  fontWeight: 'bold',
+                }}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        style={{
+          background: '#18181b',
+          border: '1px solid #2e2e36',
+          borderLeft: '4px solid #ffaa00',
+          padding: '11px 16px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          color: '#d4d4d8',
+          fontSize: '0.84rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span>
+          <strong style={{ color: '#ffaa00' }}>{tabLabels[activeTab]}:</strong> {sectionHints[modalSection]}
+        </span>
+        <span style={{ color: '#888', fontSize: '0.78rem' }}>
+          Seção no banco: <code style={{ color: '#ffaa00' }}>{modalSection}</code>
+        </span>
       </div>
 
       {error && (
@@ -403,8 +535,18 @@ export default function B2BMediaManager() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: isProjectModal ? 'repeat(auto-fit, minmax(320px, 1fr))' : 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
-          {visibleAssets.map((asset) => {
-            const parsed = parseB2BTitle(asset.title, asset.url);
+          {visibleAssets.map((asset, index) => {
+            const parsed = isTechnicalWork
+              ? parseB2BTitle(asset.title, asset.url)
+              : null;
+            const parsedSection = !isTechnicalWork
+              ? parseB2BSectionMedia(asset.title, modalSection === 'hero' ? 'TECNOLOGIA METALÚRGICA APLICADA' : 'Sem legenda')
+              : null;
+            const displayTitle = isTechnicalWork
+              ? parsed!.title
+              : modalSection === 'cliente'
+                ? asset.title || 'Cliente Parceiro'
+                : parsedSection!.caption;
             const hasBeforeAfter = isProjectModal || Boolean(asset.secondary_url);
             return (
               <article key={asset.id} style={{ background: '#161616', border: '1px solid #2d2d2d', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -421,14 +563,17 @@ export default function B2BMediaManager() {
                   </div>
                 ) : (
                   <div style={{ position: 'relative', width: '100%', aspectRatio: activeTab === 'hero' ? '16 / 9' : '4 / 3', overflow: 'hidden', background: '#0f0f0f' }}>
-                    <Image src={getProxiedImageUrl(asset.url)} alt={parsed.title} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: activeTab === 'clientes' ? 'contain' : 'cover', padding: activeTab === 'clientes' ? '14px' : '0' }} />
+                    <Image src={getProxiedImageUrl(asset.url)} alt={displayTitle} fill sizes="(max-width: 768px) 100vw, 300px" style={{ objectFit: activeTab === 'clientes' ? 'contain' : 'cover', padding: activeTab === 'clientes' ? '14px' : '0' }} />
+                    <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.75)', color: '#ffaa00', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '999px', fontWeight: 'bold' }}>
+                      #{index + 1}
+                    </span>
                   </div>
                 )}
                 
                 <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <strong style={{ color: '#fff', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {parsed.title}
+                    <strong style={{ color: '#fff', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={displayTitle}>
+                      {displayTitle}
                     </strong>
                     <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                       <button aria-label="Editar" title="Editar" onClick={() => openModal(asset.section, asset)} className="btn-admin" style={{ background: '#252525', color: '#ffaa00', padding: '6px 10px' }}><Edit size={15} /></button>
@@ -436,7 +581,7 @@ export default function B2BMediaManager() {
                     </div>
                   </div>
 
-                  {isTechnicalWork && (
+                  {isTechnicalWork && parsed && (
                     <>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         <span style={{ background: 'rgba(255,170,0,0.15)', color: '#ffaa00', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
@@ -453,6 +598,16 @@ export default function B2BMediaManager() {
                       )}
                     </>
                   )}
+
+                  {isManutencaoModal && parsedSection?.description && (
+                    <p style={{ color: '#999', fontSize: '0.8rem', margin: 0, lineHeight: 1.4 }}>
+                      {parsedSection.description}
+                    </p>
+                  )}
+
+                  <span style={{ color: '#666', fontSize: '0.7rem', marginTop: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Arquivo: {asset.url.split('/').pop()}
+                  </span>
                 </div>
               </article>
             );
@@ -466,14 +621,14 @@ export default function B2BMediaManager() {
           <div className="modal-admin" style={{ maxWidth: '720px', maxHeight: '90vh', overflowY: 'auto', background: '#141414', border: '1px solid #333', borderRadius: '16px', padding: '26px' }}>
             <button className="modal-fechar-btn" onClick={closeModal} aria-label="Fechar modal"><X size={24} /></button>
             <h2 className="titulo-secao" style={{ fontSize: '1.4rem', color: '#ffaa00', marginBottom: '4px' }}>
-              {editingAsset ? 'Editar Mídia B2B' : 'Adicionar Nova Mídia B2B'}
+              {editingAsset ? 'Editar Mídia da Seção' : 'Adicionar Nova Mídia na Seção'}
             </h2>
             <p style={{ color: '#888', marginBottom: '22px', fontSize: '0.88rem' }}>
               Seção ativa: <strong>{tabLabels[activeTab]}</strong>
             </p>
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              {/* SE FOR PROJETOS OU GALERIA (CAMPOS TÉCNICOS COMPLETOS) */}
+              {/* SE FOR PROJETOS OU GALERIA (CAMPOS TÉCNICOS COMPLETOS DO PORTFÓLIO) */}
               {isTechnicalWork ? (
                 <>
                   <div className="form-campo" style={{ marginBottom: 0 }}>
@@ -497,7 +652,7 @@ export default function B2BMediaManager() {
                       >
                         <option value="soldas">Soldas Especiais</option>
                         <option value="recuperacao">Recuperação de Peças</option>
-                        <option value="caldeiraria">Caldeiraria & Estruturas</option>
+                        <option value="caldeiraria">Caldeiraria &amp; Estruturas</option>
                         <option value="mecanica">Mecânica Industrial</option>
                       </select>
                     </div>
@@ -514,7 +669,7 @@ export default function B2BMediaManager() {
                   </div>
 
                   <div className="form-campo" style={{ marginBottom: 0 }}>
-                    <label style={{ fontWeight: 'bold', color: '#ddd' }}>Material & Metal Base</label>
+                    <label style={{ fontWeight: 'bold', color: '#ddd' }}>Material &amp; Metal Base</label>
                     <input 
                       value={inputMaterial} 
                       onChange={(e) => setInputMaterial(e.target.value)} 
@@ -534,6 +689,51 @@ export default function B2BMediaManager() {
                     />
                   </div>
                 </>
+              ) : isManutencaoModal ? (
+                <>
+                  <div className="form-campo" style={{ marginBottom: 0 }}>
+                    <label style={{ fontWeight: 'bold', color: '#ddd' }}>Título do Card de Manutenção *</label>
+                    <input 
+                      value={inputTitle} 
+                      onChange={(e) => setInputTitle(e.target.value)} 
+                      required 
+                      placeholder="Ex.: MANUTENÇÃO EM CALDEIRAS" 
+                      style={{ background: '#222', border: '1px solid #444', color: '#fff', padding: '10px 12px', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <div className="form-campo" style={{ marginBottom: 0 }}>
+                    <label style={{ fontWeight: 'bold', color: '#ddd' }}>Texto Descritivo do Card *</label>
+                    <textarea 
+                      value={inputDesc} 
+                      onChange={(e) => setInputDesc(e.target.value)} 
+                      rows={3}
+                      required
+                      placeholder="Ex.: Intervenções rápidas e seguras em feixes tubulares e componentes térmicos para reduzir o tempo de parada." 
+                      style={{ background: '#222', border: '1px solid #444', color: '#fff', padding: '10px 12px', borderRadius: '6px', lineHeight: 1.5 }}
+                    />
+                  </div>
+                </>
+              ) : isCaptionModal ? (
+                <div className="form-campo" style={{ marginBottom: 0 }}>
+                  <label style={{ fontWeight: 'bold', color: '#ddd' }}>Legenda da Foto (exibida na tarja preta inferior) *</label>
+                  <input 
+                    value={inputTitle} 
+                    onChange={(e) => setInputTitle(e.target.value)} 
+                    required 
+                    placeholder="Ex.: Aço Inox Sch 40 / 10s, Raiz interna / OD Injetado, etc." 
+                    style={{ background: '#222', border: '1px solid #444', color: '#fff', padding: '10px 12px', borderRadius: '6px' }}
+                  />
+                </div>
+              ) : isHeroModal ? (
+                <div className="form-campo" style={{ marginBottom: 0 }}>
+                  <label style={{ fontWeight: 'bold', color: '#ddd' }}>Selo / Legenda da Capa (Opcional)</label>
+                  <input 
+                    value={inputTitle} 
+                    onChange={(e) => setInputTitle(e.target.value)} 
+                    placeholder="Padrão: TECNOLOGIA METALÚRGICA APLICADA" 
+                    style={{ background: '#222', border: '1px solid #444', color: '#fff', padding: '10px 12px', borderRadius: '6px' }}
+                  />
+                </div>
               ) : modalSection === 'cliente' ? (
                 <div className="form-campo" style={{ marginBottom: 0 }}>
                   <label style={{ fontWeight: 'bold', color: '#ddd' }}>Nome da Empresa / Cliente *</label>
@@ -550,7 +750,7 @@ export default function B2BMediaManager() {
               {/* SELETORES DE IMAGEM */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <FilePicker 
-                  label={isTechnicalWork ? 'Foto do DEPOIS (ou Foto Principal da Obra)' : 'Imagem'} 
+                  label={isTechnicalWork ? 'Foto do DEPOIS (ou Foto Principal da Obra)' : 'Imagem da Seção'} 
                   file={fileToUpload} 
                   currentUrl={editingAsset?.url} 
                   onChange={setFileToUpload} 
@@ -573,7 +773,7 @@ export default function B2BMediaManager() {
                   Cancelar
                 </button>
                 <button type="submit" className="btn-admin" style={{ flex: 2, background: '#ffaa00', color: 'black', fontWeight: 'bold', padding: '12px' }} disabled={uploading}>
-                  {uploading ? <Loader2 className="animate-spin" style={{ margin: '0 auto' }} size={20} /> : editingAsset ? 'Salvar Alterações' : 'Cadastrar no Portfólio'}
+                  {uploading ? <Loader2 className="animate-spin" style={{ margin: '0 auto' }} size={20} /> : editingAsset ? 'Salvar Alterações' : 'Salvar nesta Seção'}
                 </button>
               </div>
             </form>

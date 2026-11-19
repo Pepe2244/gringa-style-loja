@@ -29,6 +29,7 @@ import { supabase } from '@/lib/supabase';
 import { getProxiedImageUrl } from '@/utils/imageUrl';
 import GSPortfolio from '@/components/b2b/GSPortfolio';
 import GSWhatsAppButton from '@/components/b2b/GSWhatsAppButton';
+import { parseB2BSectionMedia } from '@/components/admin/B2BMediaManager';
 
 const contatosTecnicos = [
   { nome: 'Nalesso', telefone: '(15) 99860-8170', numeroLimpo: '5515998608170' },
@@ -120,7 +121,7 @@ const caldeirariaDiferenciais = [
   { title: 'ALTA DURABILIDADE', sub: 'Acabamento técnico contra corrosão' },
 ];
 
-const manutencaoCards = [
+const defaultManutencaoCards = [
   {
     title: 'MANUTENÇÃO EM CALDEIRAS',
     text: 'Intervenções rápidas e seguras em feixes tubulares e componentes térmicos para reduzir o tempo de parada.',
@@ -137,6 +138,65 @@ const manutencaoCards = [
     img: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390646250-WhatsApp_Image_2026-10-07_at_12.53.32__1_.webp',
   },
 ];
+
+const defaultSobreMedia = {
+  src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390414807-WhatsApp_Image_2026-10-07_at_12.53.31.webp',
+  caption: 'Execução segura em áreas críticas e espaços confinados',
+};
+
+const defaultTubulacoesMedia = [
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390326865-WhatsApp_Image_2026-10-07_at_12.18.11.webp',
+    caption: 'Aço Inox Sch 40 / 10s',
+  },
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390340643-WhatsApp_Image_2026-10-07_at_12.18.10.webp',
+    caption: 'OD Sanitária e Alimentícia',
+  },
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390384705-WhatsApp_Image_2026-10-07_at_12.18.10__1_.webp',
+    caption: 'Aço Carbono no procedimento',
+  },
+];
+
+const defaultSoldasMedia = [
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390447746-WhatsApp_Image_2026-10-07_at_12.53.32.webp',
+    caption: 'Precisão em vasos e tubulações',
+  },
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390488081-WhatsApp_Image_2026-10-07_at_12.53.33.webp',
+    caption: 'Raiz interna / OD Injetado',
+  },
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390505175-WhatsApp_Image_2026-10-07_at_12.53.33__3_.webp',
+    caption: 'Acabamento GTAW',
+  },
+];
+
+const defaultCaldeirariaMedia = [
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390475375-WhatsApp_Image_2026-10-07_at_12.53.34.webp',
+    caption: 'Montagem e solda em tanques',
+  },
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390447746-WhatsApp_Image_2026-10-07_at_12.53.32.webp',
+    caption: 'Caixa de captação ETE em Inox',
+  },
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390384705-WhatsApp_Image_2026-10-07_at_12.18.10__1_.webp',
+    caption: 'Eixo de biodigestor',
+  },
+  {
+    src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390646250-WhatsApp_Image_2026-10-07_at_12.53.32__1_.webp',
+    caption: 'Estruturas e tubulações',
+  },
+];
+
+const defaultSegmentosMedia = {
+  src: 'https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390475375-WhatsApp_Image_2026-10-07_at_12.53.34.webp',
+  caption: 'Atendimento técnico em plantas industriais',
+};
 
 const segmentosMercado = [
   { name: 'BEBIDAS', icon: Beer },
@@ -165,19 +225,42 @@ export default function GSServicosIndustriaisPage() {
   });
 
   const [heroImage, setHeroImage] = useState('/imagens/tocha-2.webp');
+  const [heroCaption, setHeroCaption] = useState('TECNOLOGIA METALÚRGICA APLICADA');
+  const [sobreMedia, setSobreMedia] = useState(defaultSobreMedia);
   const [clientesDinamicos, setClientesDinamicos] = useState<{ name: string; src: string }[]>([]);
   const [galeriaImagens, setGaleriaImagens] = useState<any[]>([]);
+  const [tubulacoesMedia, setTubulacoesMedia] = useState(defaultTubulacoesMedia);
+  const [soldasMedia, setSoldasMedia] = useState(defaultSoldasMedia);
+  const [caldeirariaMedia, setCaldeirariaMedia] = useState(defaultCaldeirariaMedia);
+  const [manutencaoCards, setManutencaoCards] = useState(defaultManutencaoCards);
+  const [segmentosMedia, setSegmentosMedia] = useState(defaultSegmentosMedia);
 
   useEffect(() => {
     const fetchB2BAssets = async () => {
       const { data, error } = await supabase
         .from('b2b_assets')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (!error && data) {
-        const hero = data.find((item) => item.section === 'hero');
-        if (hero && hero.url) setHeroImage(getProxiedImageUrl(hero.url));
+        const heroList = data.filter((item) => item.section === 'hero');
+        const hero = heroList[heroList.length - 1];
+        if (hero && hero.url) {
+          setHeroImage(getProxiedImageUrl(hero.url));
+          if (hero.title && hero.title.trim()) {
+            setHeroCaption(parseB2BSectionMedia(hero.title, 'TECNOLOGIA METALÚRGICA APLICADA').caption);
+          }
+        }
+
+        const sobreList = data.filter((item) => item.section === 'sobre');
+        const sobre = sobreList[sobreList.length - 1];
+        if (sobre && sobre.url) {
+          const parsed = parseB2BSectionMedia(sobre.title, defaultSobreMedia.caption);
+          setSobreMedia({
+            src: getProxiedImageUrl(sobre.url),
+            caption: parsed.caption,
+          });
+        }
 
         const cl = data.filter((item) => item.section === 'cliente');
         if (cl.length > 0) {
@@ -198,6 +281,60 @@ export default function GSServicosIndustriaisPage() {
               secondary_url: g.secondary_url ? getProxiedImageUrl(g.secondary_url) : null,
             }))
           );
+        }
+
+        const tub = data.filter((item) => item.section === 'tubulacoes');
+        if (tub.length > 0) {
+          setTubulacoesMedia(
+            tub.map((t, idx) => ({
+              src: getProxiedImageUrl(t.url),
+              caption: parseB2BSectionMedia(t.title, defaultTubulacoesMedia[idx]?.caption || 'Tubulação Industrial').caption,
+            }))
+          );
+        }
+
+        const sol = data.filter((item) => item.section === 'soldas');
+        if (sol.length > 0) {
+          setSoldasMedia(
+            sol.map((s, idx) => ({
+              src: getProxiedImageUrl(s.url),
+              caption: parseB2BSectionMedia(s.title, defaultSoldasMedia[idx]?.caption || 'Soldagem Especializada').caption,
+            }))
+          );
+        }
+
+        const cald = data.filter((item) => item.section === 'caldeiraria');
+        if (cald.length > 0) {
+          setCaldeirariaMedia(
+            cald.map((c, idx) => ({
+              src: getProxiedImageUrl(c.url),
+              caption: parseB2BSectionMedia(c.title, defaultCaldeirariaMedia[idx]?.caption || 'Caldeiraria Industrial').caption,
+            }))
+          );
+        }
+
+        const manut = data.filter((item) => item.section === 'manutencao');
+        if (manut.length > 0) {
+          setManutencaoCards(
+            manut.map((m, idx) => {
+              const parsed = parseB2BSectionMedia(m.title, defaultManutencaoCards[idx]?.title || 'MANUTENÇÃO INDUSTRIAL');
+              return {
+                title: parsed.caption,
+                text: parsed.description || defaultManutencaoCards[idx]?.text || 'Intervenções rápidas e seguras para máxima confiabilidade operacional.',
+                img: getProxiedImageUrl(m.url),
+              };
+            })
+          );
+        }
+
+        const segList = data.filter((item) => item.section === 'segmentos');
+        const seg = segList[segList.length - 1];
+        if (seg && seg.url) {
+          const parsed = parseB2BSectionMedia(seg.title, defaultSegmentosMedia.caption);
+          setSegmentosMedia({
+            src: getProxiedImageUrl(seg.url),
+            caption: parsed.caption,
+          });
         }
       }
     };
@@ -294,7 +431,7 @@ export default function GSServicosIndustriaisPage() {
                 className="object-cover"
               />
               <div className="gs-visual-caption-pdf">
-                <span>TECNOLOGIA METALÚRGICA APLICADA</span>
+                <span>{heroCaption}</span>
               </div>
             </div>
           </div>
@@ -351,14 +488,14 @@ export default function GSServicosIndustriaisPage() {
 
             <div className="relative h-[360px] sm:h-[430px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
               <Image
-                src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390414807-WhatsApp_Image_2026-10-07_at_12.53.31.webp"
-                alt="Execução segura em áreas críticas pela equipe da GS"
+                src={sobreMedia.src}
+                alt={sobreMedia.caption}
                 fill
                 sizes="(max-width: 900px) 100vw, 45vw"
                 className="object-cover"
               />
               <div className="gs-caption-bar-black">
-                Execução segura em áreas críticas e espaços confinados
+                {sobreMedia.caption}
               </div>
             </div>
           </div>
@@ -437,38 +574,18 @@ export default function GSServicosIndustriaisPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:h-[440px]">
-              <div className="relative h-[260px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390326865-WhatsApp_Image_2026-10-07_at_12.18.11.webp"
-                  alt="Aço Inox Sch 40 / 10s"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 20vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black text-[11px]">Aço Inox Sch 40 / 10s</div>
-              </div>
-
-              <div className="relative h-[260px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390340643-WhatsApp_Image_2026-10-07_at_12.18.10.webp"
-                  alt="OD Sanitária e Alimentícia"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 20vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black text-[11px]">OD Sanitária e Alimentícia</div>
-              </div>
-
-              <div className="relative h-[260px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390384705-WhatsApp_Image_2026-10-07_at_12.18.10__1_.webp"
-                  alt="Aço Carbono no procedimento"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 20vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black text-[11px]">Aço Carbono no procedimento</div>
-              </div>
+              {tubulacoesMedia.map((item, idx) => (
+                <div key={`${item.src}-${idx}`} className="relative h-[260px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
+                  <Image
+                    src={item.src}
+                    alt={item.caption}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 20vw"
+                    className="object-cover"
+                  />
+                  <div className="gs-caption-bar-black text-[11px]">{item.caption}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -508,36 +625,21 @@ export default function GSServicosIndustriaisPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:h-[440px]">
-              <div className="relative h-[280px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md sm:row-span-2">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390447746-WhatsApp_Image_2026-10-07_at_12.53.32.webp"
-                  alt="Precisão em vasos e tubulações"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 30vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black">Precisão em vasos e tubulações</div>
-              </div>
-              <div className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390488081-WhatsApp_Image_2026-10-07_at_12.53.33.webp"
-                  alt="Raiz interna / OD Injetado"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 30vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black">Raiz interna / OD Injetado</div>
-              </div>
-              <div className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390505175-WhatsApp_Image_2026-10-07_at_12.53.33__3_.webp"
-                  alt="Acabamento GTAW"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 30vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black">Acabamento GTAW</div>
-              </div>
+              {soldasMedia.map((item, idx) => (
+                <div
+                  key={`${item.src}-${idx}`}
+                  className={`relative ${idx === 0 ? 'h-[280px] sm:h-auto sm:row-span-2' : 'h-[220px] sm:h-auto'} rounded-xl overflow-hidden border border-slate-200 shadow-md`}
+                >
+                  <Image
+                    src={item.src}
+                    alt={item.caption}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 30vw"
+                    className="object-cover"
+                  />
+                  <div className="gs-caption-bar-black">{item.caption}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -574,46 +676,18 @@ export default function GSServicosIndustriaisPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:h-[420px]">
-              <div className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390475375-WhatsApp_Image_2026-10-07_at_12.53.34.webp"
-                  alt="Montagem e solda em tanques"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 30vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black">Montagem e solda em tanques</div>
-              </div>
-              <div className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390447746-WhatsApp_Image_2026-10-07_at_12.53.32.webp"
-                  alt="Caixa de captação ETE em Inox"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 30vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black">Caixa de captação ETE em Inox</div>
-              </div>
-              <div className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390384705-WhatsApp_Image_2026-10-07_at_12.18.10__1_.webp"
-                  alt="Eixo de biodigestor"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 30vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black">Eixo de biodigestor</div>
-              </div>
-              <div className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
-                <Image
-                  src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390646250-WhatsApp_Image_2026-10-07_at_12.53.32__1_.webp"
-                  alt="Estruturas e tubulações"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 30vw"
-                  className="object-cover"
-                />
-                <div className="gs-caption-bar-black">Estruturas e tubulações</div>
-              </div>
+              {caldeirariaMedia.map((item, idx) => (
+                <div key={`${item.src}-${idx}`} className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
+                  <Image
+                    src={item.src}
+                    alt={item.caption}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 30vw"
+                    className="object-cover"
+                  />
+                  <div className="gs-caption-bar-black">{item.caption}</div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -643,8 +717,8 @@ export default function GSServicosIndustriaisPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {manutencaoCards.map((card) => (
-              <div key={card.title} className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
+            {manutencaoCards.map((card, idx) => (
+              <div key={`${card.title}-${idx}`} className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
                 <div className="relative h-64 w-full overflow-hidden border-b-[3px] border-[#D95B16]">
                   <Image src={card.img} alt={card.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
                 </div>
@@ -665,14 +739,14 @@ export default function GSServicosIndustriaisPage() {
             {/* Foto Lateral Vertical (Página 8 do PDF) */}
             <div className="lg:col-span-5 relative h-[360px] lg:h-auto lg:min-h-[520px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
               <Image
-                src="https://pub-564d2f4b7a4d46f0a354513cc782519c.r2.dev/1791390475375-WhatsApp_Image_2026-10-07_at_12.53.34.webp"
-                alt="Atendimento técnico em plantas industriais pela GS Soluções Industriais"
+                src={segmentosMedia.src}
+                alt={segmentosMedia.caption}
                 fill
                 sizes="(max-width: 1024px) 100vw, 40vw"
                 className="object-cover"
               />
               <div className="gs-caption-bar-black">
-                Atendimento técnico em plantas industriais
+                {segmentosMedia.caption}
               </div>
             </div>
 

@@ -608,11 +608,26 @@ export async function deletePushNotification(id: number) {
     });
 }
 
-export async function saveB2BAsset(input: unknown, id?: string, replaceHero = false) {
+const VALID_B2B_SECTIONS = [
+    'galeria',
+    'cliente',
+    'hero',
+    'projetos',
+    'sobre',
+    'tubulacoes',
+    'soldas',
+    'caldeiraria',
+    'manutencao',
+    'segmentos',
+] as const;
+
+const SINGLE_ASSET_B2B_SECTIONS = new Set(['hero', 'sobre', 'segmentos']);
+
+export async function saveB2BAsset(input: unknown, id?: string, replaceSingle = false) {
     return runAdmin(async (client) => {
         const data = record(input);
         const section = text(data.section, 'Seção', 30);
-        if (!['galeria', 'cliente', 'hero', 'projetos'].includes(section)) throw new Error('Seção inválida.');
+        if (!VALID_B2B_SECTIONS.includes(section as any)) throw new Error('Seção inválida.');
         const payload: Record<string, unknown> = {
             section,
             url: safeUrl(data.url, 'Imagem') as string,
@@ -623,9 +638,9 @@ export async function saveB2BAsset(input: unknown, id?: string, replaceHero = fa
                     ? { secondary_url: safeUrl(data.secondary_url, 'Imagem secundária', true) }
                     : {})
         };
-        if (replaceHero && section === 'hero' && !id) {
-            const { error } = await client.from('b2b_assets').delete().eq('section', 'hero');
-            if (error) console.warn('Erro ao substituir hero:', error.message);
+        if (replaceSingle && SINGLE_ASSET_B2B_SECTIONS.has(section) && !id) {
+            const { error } = await client.from('b2b_assets').delete().eq('section', section);
+            if (error) console.warn(`Erro ao substituir ${section}:`, error.message);
         }
         const cleanId = id ? String(id).trim() : undefined;
         const isPureInteger = cleanId ? /^\d+$/.test(cleanId) : false;
