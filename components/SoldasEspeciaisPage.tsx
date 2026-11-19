@@ -233,50 +233,36 @@ export default function GSServicosIndustriaisPage() {
 
   return (
     <div className="gs-pdf-theme">
-      {/* 1. CAPA / HERO INSTITUCIONAL (Estilo Página 1 do PDF) */}
+      {/* 1. CAPA / HERO INSTITUCIONAL */}
       <section className="gs-pdf-section gs-hero-pdf">
         <div className="container gs-hero-pdf-grid">
           <div className="gs-hero-pdf-content">
-            <div className="gs-hero-brand-lockup">
-              <div className="relative w-14 h-14 rounded-xl bg-[#0F172A] p-1.5 border border-slate-200 shadow-sm flex-shrink-0">
-                <Image
-                  src="/imagens/logo_gs_servicos_industriais.webp"
-                  alt="Brasão GS Soluções Industriais"
-                  fill
-                  sizes="56px"
-                  className="object-contain p-1"
-                />
-              </div>
-              <div>
-                <div className="gs-kicker-bar mb-0.5">
-                  <span className="gs-kicker-dash">—</span>
-                  <span className="gs-kicker-text">PORTFÓLIO INSTITUCIONAL</span>
-                </div>
-                <span className="gs-brand-sub">GS SOLUÇÕES INDUSTRIAIS</span>
-              </div>
+            <div className="gs-kicker-bar mb-3">
+              <span className="gs-kicker-dash">—</span>
+              <span className="gs-kicker-text">ATENDIMENTO EM CAMPO &amp; PARADAS DE PLANTA EM TODO O BRASIL</span>
             </div>
 
-            <h1 className="gs-title-split">
-              SOLUÇÕES <br />
-              <span className="text-accent">INDUSTRIAIS</span>
+            <h1 className="gs-title-split gs-hero-title-main">
+              ENGENHARIA EM SOLDAS, <br />
+              <span className="text-accent">CALDEIRARIA &amp; MANUTENÇÃO</span>
             </h1>
 
             <p className="gs-lead-pdf">
-              Excelência e precisão em <strong>montagem, caldeiraria e manutenção industrial</strong> para operações que não podem parar.
+              Intervenções de alta integridade em linhas de processo, vasos de pressão, caldeiras e ativos críticos — com procedimentos qualificados e mobilização rápida para operações que não podem parar.
             </p>
 
             <div className="gs-hero-pills-row">
               <div className="gs-hero-spec-item">
-                <span className="spec-title">CALDEIRARIA</span>
-                <span className="spec-sub">Tanques, vasos e estruturas</span>
+                <span className="spec-title">PROCESSO GTAW (TIG) &amp; SCH</span>
+                <span className="spec-sub">Inox 40/10S, OD sanitária injetada e carbono</span>
               </div>
               <div className="gs-hero-spec-item">
-                <span className="spec-title">SOLDAGEM ESPECIALIZADA</span>
-                <span className="spec-sub">GTAW (TIG) · Inox · Carbono</span>
+                <span className="spec-title">VASOS, CALDEIRAS &amp; TANQUES</span>
+                <span className="spec-sub">Fabricação e reparos sob normas ASME e ANSI</span>
               </div>
               <div className="gs-hero-spec-item">
-                <span className="spec-title">MECÂNICA INDUSTRIAL</span>
-                <span className="spec-sub">Montagem e paradas de planta</span>
+                <span className="spec-title">OPERAÇÃO NR-33 &amp; NR-35</span>
+                <span className="spec-sub">Equipe certificada para áreas críticas e paradas</span>
               </div>
             </div>
 
@@ -329,7 +315,7 @@ export default function GSServicosIndustriaisPage() {
                 QUEM <span className="text-accent">SOMOS</span>
               </h2>
               <p className="gs-text-desc mt-4">
-                Somos a solução completa em <strong>caldeiraria, soldagem especializada e mecânica industrial</strong>. Garantimos agilidade, segurança total e equipe certificada, prontos para minimizar o tempo de parada da sua operação.
+                Atuamos lado a lado com a <strong>engenharia da sua planta</strong> para executar serviços críticos com rigor dimensional, materiais certificados e cumprimento estrito de cronogramas em campo.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
@@ -1010,13 +996,6 @@ export default function GSServicosIndustriaisPage() {
           align-items: center;
         }
 
-        .gs-hero-brand-lockup {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-
         .gs-grid-split {
           display: grid;
           grid-template-columns: 1.15fr 0.85fr;
@@ -1045,14 +1024,6 @@ export default function GSServicosIndustriaisPage() {
           color: #D95B16;
         }
 
-        .gs-brand-sub {
-          font-size: 0.95rem;
-          font-weight: 800;
-          letter-spacing: 0.06em;
-          color: #D95B16;
-          display: block;
-        }
-
         .gs-title-split {
           font-family: var(--fonte-titulos, sans-serif);
           font-size: clamp(38px, 4.8vw, 64px);
@@ -1061,6 +1032,11 @@ export default function GSServicosIndustriaisPage() {
           line-height: 1;
           letter-spacing: -0.01em;
           margin-bottom: 18px;
+        }
+
+        .gs-hero-title-main {
+          font-size: clamp(32px, 3.85vw, 52px);
+          line-height: 1.04;
         }
 
         .gs-lead-pdf {
@@ -1401,10 +1377,6 @@ export default function GSServicosIndustriaisPage() {
             height: 360px;
           }
 
-          .gs-hero-pills-row {
-            grid-template-columns: 1fr;
-          }
-
           .gs-kpis-strip {
             grid-template-columns: 1fr;
           }
@@ -1423,6 +1395,13 @@ export default function GSServicosIndustriaisPage() {
 
           .gs-box-big-prazo {
             padding: 32px 24px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .gs-hero-pills-row {
+            grid-template-columns: 1fr;
+            gap: 14px;
           }
         }
       `}} />
