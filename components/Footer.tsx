@@ -112,9 +112,9 @@ export default function Footer() {
                         <div className="pt-2">
                             <a
                                 href="/gs-servicos-industriais#contato"
-                                className="inline-block px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-md bg-[#D95B16] text-white hover:bg-[#bf4d0e] transition-colors shadow-md"
+                                className="inline-block px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-md bg-[#B84507] text-white hover:bg-[#9A3412] transition-colors shadow-md"
                             >
-                                Solicitar Proposta Técnica
+                                Ir para Formulário de Cotação
                             </a>
                         </div>
                     </div>

@@ -257,7 +257,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
         </div>
 
         {/* Grade de Cards do Portfólio */}
-        <div className="portfolio-grid">
+        <div key={selectedCategory} className="portfolio-grid portfolio-grid-animate">
           {filteredProjects.map((item) => (
             <article 
               key={item.id} 
@@ -522,7 +522,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           border-radius: 6px;
           font-size: 0.72rem;
           font-weight: 800;
-          color: #D95B16;
+          color: #B84507;
           letter-spacing: 0.05em;
           box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
         }
@@ -559,7 +559,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
         }
 
         .portfolio-title-split .text-accent {
-          color: #D95B16;
+          color: #B84507;
         }
 
         .portfolio-subtitle {
@@ -590,7 +590,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           border-radius: 999px;
           font-size: 0.85rem;
           font-weight: 600;
-          color: #64748b;
+          color: #334155;
           background: transparent;
           border: none;
           cursor: pointer;
@@ -600,20 +600,35 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
 
         .portfolio-filter-btn:hover {
           color: #0F172A;
-          background: rgba(255, 255, 255, 0.6);
+          background: rgba(255, 255, 255, 0.75);
         }
 
         .portfolio-filter-btn.is-active {
-          background: #D95B16;
+          background: #B84507;
           color: #ffffff;
           font-weight: 700;
-          box-shadow: 0 4px 12px rgba(217, 91, 22, 0.3);
+          box-shadow: 0 4px 12px rgba(184, 69, 7, 0.3);
         }
 
         .portfolio-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
           gap: 26px;
+        }
+
+        .portfolio-grid-animate {
+          animation: portfolioGridEnter 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes portfolioGridEnter {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .portfolio-card {
@@ -667,7 +682,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
         }
 
         .portfolio-compare-badge {
-          background: #D95B16;
+          background: #B84507;
           color: #ffffff;
           padding: 4px 10px;
           border-radius: 999px;
@@ -675,7 +690,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           font-weight: 800;
           letter-spacing: 0.04em;
           text-transform: uppercase;
-          box-shadow: 0 2px 8px rgba(217, 91, 22, 0.4);
+          box-shadow: 0 2px 8px rgba(184, 69, 7, 0.4);
         }
 
         .portfolio-caption-black {
@@ -738,7 +753,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           display: inline-block;
           font-size: 0.75rem;
           font-weight: 700;
-          color: #D95B16;
+          color: #B84507;
           text-transform: uppercase;
           letter-spacing: 0.04em;
           margin-bottom: 6px;
@@ -780,7 +795,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           align-items: center;
           font-size: 0.82rem;
           font-weight: 800;
-          color: #D95B16;
+          color: #B84507;
           letter-spacing: 0.04em;
           text-transform: uppercase;
         }
@@ -830,7 +845,7 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           justify-content: center;
           padding: 15px 26px;
           border-radius: 8px;
-          background: #D95B16;
+          background: #B84507;
           color: #ffffff;
           font-weight: 800;
           font-size: 0.9rem;
@@ -838,13 +853,13 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           text-transform: uppercase;
           white-space: nowrap;
           transition: all 0.2s ease;
-          box-shadow: 0 6px 18px rgba(217, 91, 22, 0.35);
+          box-shadow: 0 6px 18px rgba(184, 69, 7, 0.35);
         }
 
         .portfolio-direct-cta:hover {
-          background: #ea6923;
+          background: #9A3412;
           transform: translateY(-2px);
-          box-shadow: 0 10px 24px rgba(217, 91, 22, 0.5);
+          box-shadow: 0 10px 24px rgba(184, 69, 7, 0.5);
         }
 
         /* MODAL STYLES TEMA BLUEPRINT / PDF */
@@ -873,6 +888,25 @@ export default function GSPortfolio({ dynamicImages = [] }: GSPortfolioProps) {
           box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
           padding: 32px;
           color: #0F172A;
+          animation: portfolioModalPop 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes portfolioModalPop {
+          from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.97);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .portfolio-grid-animate,
+          .portfolio-modal-content {
+            animation: none;
+          }
         }
 
         .portfolio-modal-close {

@@ -214,7 +214,110 @@ const segmentosMercado = [
   { name: 'CIMENTÍCIO', icon: Building2 },
 ];
 
-export default function GSServicosIndustriaisPage() {
+function extractB2BState(data: any[] = []) {
+  const heroList = data.filter((item) => item.section === 'hero');
+  const hero = heroList[heroList.length - 1];
+  const heroImage = hero?.url ? getProxiedImageUrl(hero.url) : '/imagens/tocha-2.webp';
+  const heroCaption =
+    hero?.title && hero.title.trim()
+      ? parseB2BSectionMedia(hero.title, 'TECNOLOGIA METALÚRGICA APLICADA').caption
+      : 'TECNOLOGIA METALÚRGICA APLICADA';
+
+  const sobreList = data.filter((item) => item.section === 'sobre');
+  const sobre = sobreList[sobreList.length - 1];
+  const sobreMedia = sobre?.url
+    ? {
+        src: getProxiedImageUrl(sobre.url),
+        caption: parseB2BSectionMedia(sobre.title, defaultSobreMedia.caption).caption,
+      }
+    : defaultSobreMedia;
+
+  const cl = data.filter((item) => item.section === 'cliente');
+  const clientesDinamicos =
+    cl.length > 0
+      ? cl.map((c) => ({
+          name: c.title || 'Indústria Parceira',
+          src: getProxiedImageUrl(c.url),
+        }))
+      : [];
+
+  const gal = data.filter((item) => item.section === 'galeria' || item.section === 'projetos');
+  const galeriaImagens =
+    gal.length > 0
+      ? gal.map((g) => ({
+          ...g,
+          url: getProxiedImageUrl(g.url),
+          secondary_url: g.secondary_url ? getProxiedImageUrl(g.secondary_url) : null,
+        }))
+      : [];
+
+  const tub = data.filter((item) => item.section === 'tubulacoes');
+  const tubulacoesMedia =
+    tub.length > 0
+      ? tub.map((t, idx) => ({
+          src: getProxiedImageUrl(t.url),
+          caption: parseB2BSectionMedia(t.title, defaultTubulacoesMedia[idx]?.caption || 'Tubulação Industrial').caption,
+        }))
+      : defaultTubulacoesMedia;
+
+  const sol = data.filter((item) => item.section === 'soldas');
+  const soldasMedia =
+    sol.length > 0
+      ? sol.map((s, idx) => ({
+          src: getProxiedImageUrl(s.url),
+          caption: parseB2BSectionMedia(s.title, defaultSoldasMedia[idx]?.caption || 'Soldagem Especializada').caption,
+        }))
+      : defaultSoldasMedia;
+
+  const cald = data.filter((item) => item.section === 'caldeiraria');
+  const caldeirariaMedia =
+    cald.length > 0
+      ? cald.map((c, idx) => ({
+          src: getProxiedImageUrl(c.url),
+          caption: parseB2BSectionMedia(c.title, defaultCaldeirariaMedia[idx]?.caption || 'Caldeiraria Industrial').caption,
+        }))
+      : defaultCaldeirariaMedia;
+
+  const manut = data.filter((item) => item.section === 'manutencao');
+  const manutencaoCards =
+    manut.length > 0
+      ? manut.map((m, idx) => {
+          const parsed = parseB2BSectionMedia(m.title, defaultManutencaoCards[idx]?.title || 'MANUTENÇÃO INDUSTRIAL');
+          return {
+            title: parsed.caption,
+            text:
+              parsed.description ||
+              defaultManutencaoCards[idx]?.text ||
+              'Intervenções rápidas e seguras para máxima confiabilidade operacional.',
+            img: getProxiedImageUrl(m.url),
+          };
+        })
+      : defaultManutencaoCards;
+
+  const segList = data.filter((item) => item.section === 'segmentos');
+  const seg = segList[segList.length - 1];
+  const segmentosMedia = seg?.url
+    ? {
+        src: getProxiedImageUrl(seg.url),
+        caption: parseB2BSectionMedia(seg.title, defaultSegmentosMedia.caption).caption,
+      }
+    : defaultSegmentosMedia;
+
+  return {
+    heroImage,
+    heroCaption,
+    sobreMedia,
+    clientesDinamicos,
+    galeriaImagens,
+    tubulacoesMedia,
+    soldasMedia,
+    caldeirariaMedia,
+    manutencaoCards,
+    segmentosMedia,
+  };
+}
+
+export default function GSServicosIndustriaisPage({ initialAssets = [] }: { initialAssets?: any[] }) {
   const [formData, setFormData] = useState({
     nome: '',
     empresa: '',
@@ -224,18 +327,11 @@ export default function GSServicosIndustriaisPage() {
     mensagem: '',
   });
 
-  const [heroImage, setHeroImage] = useState('/imagens/tocha-2.webp');
-  const [heroCaption, setHeroCaption] = useState('TECNOLOGIA METALÚRGICA APLICADA');
-  const [sobreMedia, setSobreMedia] = useState(defaultSobreMedia);
-  const [clientesDinamicos, setClientesDinamicos] = useState<{ name: string; src: string }[]>([]);
-  const [galeriaImagens, setGaleriaImagens] = useState<any[]>([]);
-  const [tubulacoesMedia, setTubulacoesMedia] = useState(defaultTubulacoesMedia);
-  const [soldasMedia, setSoldasMedia] = useState(defaultSoldasMedia);
-  const [caldeirariaMedia, setCaldeirariaMedia] = useState(defaultCaldeirariaMedia);
-  const [manutencaoCards, setManutencaoCards] = useState(defaultManutencaoCards);
-  const [segmentosMedia, setSegmentosMedia] = useState(defaultSegmentosMedia);
+  const [b2bState, setB2bState] = useState(() => extractB2BState(initialAssets));
 
   useEffect(() => {
+    if (initialAssets.length > 0) return;
+
     const fetchB2BAssets = async () => {
       const { data, error } = await supabase
         .from('b2b_assets')
@@ -243,104 +339,59 @@ export default function GSServicosIndustriaisPage() {
         .order('created_at', { ascending: true });
 
       if (!error && data) {
-        const heroList = data.filter((item) => item.section === 'hero');
-        const hero = heroList[heroList.length - 1];
-        if (hero && hero.url) {
-          setHeroImage(getProxiedImageUrl(hero.url));
-          if (hero.title && hero.title.trim()) {
-            setHeroCaption(parseB2BSectionMedia(hero.title, 'TECNOLOGIA METALÚRGICA APLICADA').caption);
-          }
-        }
-
-        const sobreList = data.filter((item) => item.section === 'sobre');
-        const sobre = sobreList[sobreList.length - 1];
-        if (sobre && sobre.url) {
-          const parsed = parseB2BSectionMedia(sobre.title, defaultSobreMedia.caption);
-          setSobreMedia({
-            src: getProxiedImageUrl(sobre.url),
-            caption: parsed.caption,
-          });
-        }
-
-        const cl = data.filter((item) => item.section === 'cliente');
-        if (cl.length > 0) {
-          setClientesDinamicos(
-            cl.map((c) => ({
-              name: c.title || 'Indústria Parceira',
-              src: getProxiedImageUrl(c.url),
-            }))
-          );
-        }
-
-        const gal = data.filter((item) => item.section === 'galeria' || item.section === 'projetos');
-        if (gal.length > 0) {
-          setGaleriaImagens(
-            gal.map((g) => ({
-              ...g,
-              url: getProxiedImageUrl(g.url),
-              secondary_url: g.secondary_url ? getProxiedImageUrl(g.secondary_url) : null,
-            }))
-          );
-        }
-
-        const tub = data.filter((item) => item.section === 'tubulacoes');
-        if (tub.length > 0) {
-          setTubulacoesMedia(
-            tub.map((t, idx) => ({
-              src: getProxiedImageUrl(t.url),
-              caption: parseB2BSectionMedia(t.title, defaultTubulacoesMedia[idx]?.caption || 'Tubulação Industrial').caption,
-            }))
-          );
-        }
-
-        const sol = data.filter((item) => item.section === 'soldas');
-        if (sol.length > 0) {
-          setSoldasMedia(
-            sol.map((s, idx) => ({
-              src: getProxiedImageUrl(s.url),
-              caption: parseB2BSectionMedia(s.title, defaultSoldasMedia[idx]?.caption || 'Soldagem Especializada').caption,
-            }))
-          );
-        }
-
-        const cald = data.filter((item) => item.section === 'caldeiraria');
-        if (cald.length > 0) {
-          setCaldeirariaMedia(
-            cald.map((c, idx) => ({
-              src: getProxiedImageUrl(c.url),
-              caption: parseB2BSectionMedia(c.title, defaultCaldeirariaMedia[idx]?.caption || 'Caldeiraria Industrial').caption,
-            }))
-          );
-        }
-
-        const manut = data.filter((item) => item.section === 'manutencao');
-        if (manut.length > 0) {
-          setManutencaoCards(
-            manut.map((m, idx) => {
-              const parsed = parseB2BSectionMedia(m.title, defaultManutencaoCards[idx]?.title || 'MANUTENÇÃO INDUSTRIAL');
-              return {
-                title: parsed.caption,
-                text: parsed.description || defaultManutencaoCards[idx]?.text || 'Intervenções rápidas e seguras para máxima confiabilidade operacional.',
-                img: getProxiedImageUrl(m.url),
-              };
-            })
-          );
-        }
-
-        const segList = data.filter((item) => item.section === 'segmentos');
-        const seg = segList[segList.length - 1];
-        if (seg && seg.url) {
-          const parsed = parseB2BSectionMedia(seg.title, defaultSegmentosMedia.caption);
-          setSegmentosMedia({
-            src: getProxiedImageUrl(seg.url),
-            caption: parsed.caption,
-          });
-        }
+        setB2bState(extractB2BState(data));
       }
     };
 
     fetchB2BAssets();
+  }, [initialAssets.length]);
+
+  // Scroll reveal leve (GPU-only: transform + opacity) apenas para seções abaixo da 1ª dobra
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion || !('IntersectionObserver' in window)) return;
+
+    const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-gs-reveal]'));
+    if (targets.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('gs-revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -36px 0px' }
+    );
+
+    const viewportH = window.innerHeight || 800;
+    targets.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      // Só oculta para animar o que ainda está abaixo da dobra atual (protege LCP e navegação por âncora)
+      if (rect.top > viewportH * 0.92) {
+        el.classList.add('gs-reveal-ready');
+        observer.observe(el);
+      }
+    });
+
+    return () => observer.disconnect();
   }, []);
+
+  const {
+    heroImage,
+    heroCaption,
+    sobreMedia,
+    clientesDinamicos,
+    galeriaImagens,
+    tubulacoesMedia,
+    soldasMedia,
+    caldeirariaMedia,
+    manutencaoCards,
+    segmentosMedia,
+  } = b2bState;
 
   const clientesFinais =
     clientesDinamicos.length > 0
@@ -441,7 +492,7 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 2. QUEM SOMOS & PILARES DE EXCELÊNCIA (Estilo Página 2 do PDF) */}
       <section id="sobre" className="gs-pdf-section gs-bg-white border-y border-slate-200">
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="gs-grid-split items-center">
             <div>
               <div className="gs-kicker-bar">
@@ -462,7 +513,7 @@ export default function GSServicosIndustriaisPage() {
                     <div key={item.title} className="gs-card-white gs-card-top-accent">
                       <div className="flex items-center gap-2 mb-2 text-accent">
                         <Icon className="w-5 h-5 flex-shrink-0" />
-                        <h4 className="font-bold text-slate-900 tracking-wider text-sm">{item.title}</h4>
+                        <h3 className="font-bold text-slate-900 tracking-wider text-sm">{item.title}</h3>
                       </div>
                       <p className="text-slate-600 text-xs leading-relaxed">{item.text}</p>
                     </div>
@@ -486,7 +537,7 @@ export default function GSServicosIndustriaisPage() {
               </div>
             </div>
 
-            <div className="relative h-[360px] sm:h-[430px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
+            <div className="gs-photo-card relative h-[360px] sm:h-[430px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
               <Image
                 src={sobreMedia.src}
                 alt={sobreMedia.caption}
@@ -504,7 +555,7 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 3. PRINCIPAIS PARCEIROS & INDÚSTRIAS ATENDIDAS */}
       <section id="clientes" className="gs-pdf-section gs-clients-section">
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="text-center max-w-3xl mx-auto mb-10">
             <div className="gs-kicker-bar justify-center">
               <span className="gs-kicker-dash">—</span>
@@ -540,13 +591,15 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 4. O PORTFÓLIO DE OBRAS TÉCNICAS (Estilo Página 3 do PDF com Grid e Filtros) */}
       <section id="portfolio" className="gs-pdf-section gs-bg-white border-y border-slate-200">
-        <GSPortfolio dynamicImages={galeriaImagens} />
+        <div data-gs-reveal>
+          <GSPortfolio dynamicImages={galeriaImagens} />
+        </div>
       </section>
 
       {/* 5. TUBULAÇÕES INDUSTRIAIS & SCHEDULE (Estilo Página 4 do PDF) */}
       <section id="especialidades" className="gs-pdf-section">
         <span id="tubulacoes" className="sr-only" aria-hidden="true" />
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="gs-grid-split items-center">
             <div>
               <div className="gs-kicker-bar">
@@ -565,7 +618,7 @@ export default function GSServicosIndustriaisPage() {
                   <div key={spec.code} className="gs-spec-row-card">
                     <span className="gs-code-badge">{spec.code}</span>
                     <div>
-                      <h4 className="font-bold text-slate-900 text-sm tracking-wide">{spec.title}</h4>
+                      <h3 className="font-bold text-slate-900 text-sm tracking-wide">{spec.title}</h3>
                       <p className="text-slate-600 text-xs mt-0.5">{spec.desc}</p>
                     </div>
                   </div>
@@ -575,7 +628,7 @@ export default function GSServicosIndustriaisPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:h-[440px]">
               {tubulacoesMedia.map((item, idx) => (
-                <div key={`${item.src}-${idx}`} className="relative h-[260px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
+                <div key={`${item.src}-${idx}`} className="gs-photo-card relative h-[260px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
                   <Image
                     src={item.src}
                     alt={item.caption}
@@ -593,7 +646,7 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 6. DESTAQUE TÉCNICO: SOLDAS ESPECIALIZADAS (Estilo Página 5 do PDF) */}
       <section id="soldas-especiais" className="gs-pdf-section gs-bg-white border-y border-slate-200">
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="gs-grid-split items-center">
             <div className="bg-white p-7 sm:p-8 rounded-2xl border border-slate-200 border-l-4 border-l-[#D95B16] shadow-sm">
               <div className="gs-kicker-bar">
@@ -612,7 +665,7 @@ export default function GSServicosIndustriaisPage() {
                   >
                     <span className="gs-step-num">{item.number}</span>
                     <div>
-                      <h4 className="font-bold text-slate-900 text-sm tracking-wide">{item.title}</h4>
+                      <h3 className="font-bold text-slate-900 text-sm tracking-wide">{item.title}</h3>
                       <p className="text-slate-600 text-xs mt-1 leading-relaxed">{item.text}</p>
                     </div>
                   </div>
@@ -628,7 +681,7 @@ export default function GSServicosIndustriaisPage() {
               {soldasMedia.map((item, idx) => (
                 <div
                   key={`${item.src}-${idx}`}
-                  className={`relative ${idx === 0 ? 'h-[280px] sm:h-auto sm:row-span-2' : 'h-[220px] sm:h-auto'} rounded-xl overflow-hidden border border-slate-200 shadow-md`}
+                  className={`gs-photo-card relative ${idx === 0 ? 'h-[280px] sm:h-auto sm:row-span-2' : 'h-[220px] sm:h-auto'} rounded-xl overflow-hidden border border-slate-200 shadow-md`}
                 >
                   <Image
                     src={item.src}
@@ -647,7 +700,7 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 7. CALDEIRARIA, TANQUES E ESTRUTURAS (Estilo Página 6 do PDF) */}
       <section id="caldeiraria" className="gs-pdf-section">
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="gs-grid-split items-center">
             <div>
               <div className="gs-kicker-bar">
@@ -667,7 +720,7 @@ export default function GSServicosIndustriaisPage() {
                   <div key={item.number} className="gs-spec-row-card">
                     <span className="gs-code-badge">{item.number}</span>
                     <div>
-                      <h4 className="font-bold text-slate-900 text-sm tracking-wide">{item.title}</h4>
+                      <h3 className="font-bold text-slate-900 text-sm tracking-wide">{item.title}</h3>
                       <p className="text-slate-600 text-xs mt-0.5">{item.text}</p>
                     </div>
                   </div>
@@ -677,7 +730,7 @@ export default function GSServicosIndustriaisPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:h-[420px]">
               {caldeirariaMedia.map((item, idx) => (
-                <div key={`${item.src}-${idx}`} className="relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
+                <div key={`${item.src}-${idx}`} className="gs-photo-card relative h-[220px] sm:h-auto rounded-xl overflow-hidden border border-slate-200 shadow-md">
                   <Image
                     src={item.src}
                     alt={item.caption}
@@ -705,7 +758,7 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 8. MANUTENÇÃO INDUSTRIAL E UTILIDADES (Estilo Página 7 do PDF) */}
       <section id="manutencao" className="gs-pdf-section gs-bg-white border-y border-slate-200">
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="text-center max-w-3xl mx-auto mb-10">
             <div className="gs-kicker-bar justify-center">
               <span className="gs-kicker-dash">—</span>
@@ -718,7 +771,7 @@ export default function GSServicosIndustriaisPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {manutencaoCards.map((card, idx) => (
-              <div key={`${card.title}-${idx}`} className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
+              <div key={`${card.title}-${idx}`} className="gs-photo-card gs-card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
                 <div className="relative h-64 w-full overflow-hidden border-b-[3px] border-[#D95B16]">
                   <Image src={card.img} alt={card.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
                 </div>
@@ -734,10 +787,10 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 9. SEGMENTOS ATENDIDOS (Estilo Página 8 do PDF - Layout Split) */}
       <section id="segmentos" className="gs-pdf-section">
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             {/* Foto Lateral Vertical (Página 8 do PDF) */}
-            <div className="lg:col-span-5 relative h-[360px] lg:h-auto lg:min-h-[520px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
+            <div className="gs-photo-card lg:col-span-5 relative h-[360px] lg:h-auto lg:min-h-[520px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
               <Image
                 src={segmentosMedia.src}
                 alt={segmentosMedia.caption}
@@ -815,9 +868,9 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 10. DIFERENCIAIS COMPETITIVOS: 100% NO PRAZO (Estilo Página 9 do PDF) */}
       <section id="diferenciais" className="gs-pdf-section gs-bg-white border-y border-slate-200">
-        <div className="container">
+        <div className="container" data-gs-reveal>
           <div className="gs-grid-split items-stretch">
-            <div className="gs-box-big-prazo">
+            <div className="gs-box-big-prazo gs-card-hover">
               <span className="text-accent text-xs font-bold tracking-widest uppercase block mb-2">— POR QUE NOS ESCOLHER?</span>
               <strong className="text-6xl md:text-8xl font-black text-accent block leading-none">100%</strong>
               <h3 className="text-2xl md:text-3xl font-black text-slate-900 mt-2 mb-4 tracking-tight">PROJETOS NO PRAZO</h3>
@@ -827,7 +880,7 @@ export default function GSServicosIndustriaisPage() {
             </div>
 
             <div className="flex flex-col justify-between gap-5">
-              <div className="bg-white p-7 rounded-2xl border border-slate-200 border-l-[5px] border-l-[#D95B16] shadow-sm">
+              <div className="gs-card-hover bg-white p-7 rounded-2xl border border-slate-200 border-l-[5px] border-l-[#D95B16] shadow-sm">
                 <h4 className="text-accent font-extrabold text-lg mb-2 flex items-center gap-2">
                   <Award className="w-5 h-5 text-accent flex-shrink-0" />
                   QUALIDADE CERTIFICADA (ASME &amp; ANSI)
@@ -837,7 +890,7 @@ export default function GSServicosIndustriaisPage() {
                 </p>
               </div>
 
-              <div className="bg-white p-7 rounded-2xl border border-slate-200 border-l-[5px] border-l-[#D95B16] shadow-sm">
+              <div className="gs-card-hover bg-white p-7 rounded-2xl border border-slate-200 border-l-[5px] border-l-[#D95B16] shadow-sm">
                 <h4 className="text-accent font-extrabold text-lg mb-2 flex items-center gap-2">
                   <HardHat className="w-5 h-5 text-accent flex-shrink-0" />
                   SEGURANÇA EM PRIMEIRO LUGAR (NR-33 &amp; NR-35)
@@ -853,7 +906,7 @@ export default function GSServicosIndustriaisPage() {
 
       {/* 11. ATENDIMENTO COMERCIAL & CONTATOS REAIS (Estilo Página 10 do PDF) */}
       <section id="contato" className="gs-pdf-section border-t border-slate-200">
-        <div className="container gs-grid-split items-start">
+        <div className="container gs-grid-split items-start" data-gs-reveal>
           <div>
             <div className="gs-kicker-bar">
               <span className="gs-kicker-dash">—</span>
@@ -968,8 +1021,9 @@ export default function GSServicosIndustriaisPage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">Demanda Principal:</label>
+                <label htmlFor="gs-servico" className="text-xs font-bold text-slate-700 block mb-1">Demanda Principal:</label>
                 <select
+                  id="gs-servico"
                   name="servico"
                   value={formData.servico}
                   onChange={handleChange}
@@ -1033,11 +1087,11 @@ export default function GSServicosIndustriaisPage() {
         }
 
         .text-accent {
-          color: #D95B16 !important;
+          color: #B84507 !important;
         }
 
         .bg-accent {
-          background-color: #D95B16 !important;
+          background-color: #B84507 !important;
         }
 
         .gs-pdf-section {
@@ -1084,7 +1138,7 @@ export default function GSServicosIndustriaisPage() {
         }
 
         .gs-kicker-dash {
-          color: #D95B16;
+          color: #B84507;
           font-weight: 900;
           font-size: 1.2rem;
           line-height: 1;
@@ -1095,7 +1149,7 @@ export default function GSServicosIndustriaisPage() {
           font-weight: 800;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: #D95B16;
+          color: #B84507;
         }
 
         .gs-title-split {
@@ -1148,13 +1202,13 @@ export default function GSServicosIndustriaisPage() {
         .spec-title {
           font-size: 0.78rem;
           font-weight: 800;
-          color: #D95B16;
+          color: #B84507;
           letter-spacing: 0.06em;
         }
 
         .spec-sub {
           font-size: 0.74rem;
-          color: #64748b;
+          color: #475569;
           line-height: 1.35;
         }
 
@@ -1168,7 +1222,7 @@ export default function GSServicosIndustriaisPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: #D95B16;
+          background: #B84507;
           color: #fff;
           font-weight: 800;
           font-size: 0.88rem;
@@ -1176,14 +1230,14 @@ export default function GSServicosIndustriaisPage() {
           text-transform: uppercase;
           padding: 14px 24px;
           border-radius: 8px;
-          box-shadow: 0 4px 14px rgba(217, 91, 22, 0.35);
+          box-shadow: 0 4px 14px rgba(184, 69, 7, 0.35);
           transition: all 0.2s ease;
         }
 
         .gs-btn-orange:hover {
-          background: #bf4d0e;
+          background: #9A3412;
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(217, 91, 22, 0.45);
+          box-shadow: 0 6px 20px rgba(184, 69, 7, 0.45);
         }
 
         .gs-btn-outline-dark {
@@ -1269,14 +1323,14 @@ export default function GSServicosIndustriaisPage() {
 
         .kpi-box strong {
           display: block;
-          color: #D95B16;
+          color: #B84507;
           font-size: 1.1rem;
           font-weight: 900;
         }
 
         .kpi-box span {
           font-size: 0.75rem;
-          color: #64748b;
+          color: #475569;
         }
 
         .gs-caption-bar-black {
@@ -1374,8 +1428,8 @@ export default function GSServicosIndustriaisPage() {
           width: 44px;
           height: 44px;
           border-radius: 8px;
-          background: rgba(217, 91, 22, 0.1);
-          color: #D95B16;
+          background: rgba(184, 69, 7, 0.1);
+          color: #9A3412;
           font-weight: 900;
           font-size: 0.92rem;
           display: flex;
@@ -1388,7 +1442,7 @@ export default function GSServicosIndustriaisPage() {
           width: 38px;
           height: 38px;
           border-radius: 8px;
-          background: #D95B16;
+          background: #B84507;
           color: #fff;
           font-weight: 900;
           font-size: 0.95rem;
@@ -1476,6 +1530,80 @@ export default function GSServicosIndustriaisPage() {
           .gs-hero-pills-row {
             grid-template-columns: 1fr;
             gap: 14px;
+          }
+        }
+
+        /* ANIMAÇÕES LEVES E FLUIDAS (GPU-ONLY: TRANSFORM + OPACITY, CLS = 0) */
+        html:has(.gs-pdf-theme) {
+          scroll-behavior: smooth;
+        }
+
+        .gs-pdf-section[id] {
+          scroll-margin-top: 84px;
+        }
+
+        [data-gs-reveal].gs-reveal-ready {
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 0.52s cubic-bezier(0.22, 1, 0.36, 1), transform 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, transform;
+        }
+
+        [data-gs-reveal].gs-reveal-ready.gs-revealed {
+          opacity: 1;
+          transform: translateY(0);
+          will-change: auto;
+        }
+
+        .gs-card-white,
+        .gs-spec-row-card,
+        .gs-card-hover {
+          transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.24s ease, box-shadow 0.24s ease;
+        }
+
+        .gs-card-white:hover,
+        .gs-spec-row-card:hover,
+        .gs-card-hover:hover {
+          transform: translateY(-3px);
+          border-color: rgba(184, 69, 7, 0.5);
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .gs-photo-card img {
+          transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .gs-photo-card:hover img {
+          transform: scale(1.04);
+        }
+
+        .gs-visual-card-pdf img {
+          transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .gs-visual-card-pdf:hover img {
+          transform: scale(1.03);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          html:has(.gs-pdf-theme) {
+            scroll-behavior: auto;
+          }
+
+          [data-gs-reveal].gs-reveal-ready,
+          [data-gs-reveal].gs-reveal-ready.gs-revealed {
+            opacity: 1;
+            transform: none;
+            transition: none;
+          }
+
+          .gs-card-white,
+          .gs-spec-row-card,
+          .gs-card-hover,
+          .gs-photo-card img,
+          .gs-visual-card-pdf img {
+            transition: none;
+            transform: none;
           }
         }
       `}} />
